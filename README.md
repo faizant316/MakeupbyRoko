@@ -1,39 +1,45 @@
-**Welcome to your Base44 project** 
+# Makeup by Roko
 
-**About**
+Professional makeup artistry website for Roqia Moshref.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## Stack
 
-This project contains everything you need to run your app locally.
+- **Framework:** Next.js 14 (App Router)
+- **Database:** Supabase (PostgreSQL)
+- **Auth:** Supabase Auth
+- **Email:** Resend
+- **Storage:** Supabase Storage
+- **Deploy:** Vercel
 
-**Edit the code in your local development environment**
+## Getting Started
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+```bash
+npm install
+npm run dev
 ```
 
-Run the app: `npm run dev`
+Open [http://localhost:3000](http://localhost:3000).
 
-**Publish your changes**
+## Environment Variables
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+Create a `.env.local` file:
 
-**Docs & Support**
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+NEXT_PUBLIC_GOOGLE_MAPS_KEY=
+GOOGLE_MAPS_SERVER_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+```
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+## Database
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+Run `supabase/schema.sql` in your Supabase SQL editor to set up all tables.
+
+## Admin
+
+Visit `/login` to access the admin dashboard.
