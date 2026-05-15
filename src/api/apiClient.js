@@ -1,6 +1,5 @@
 /**
- * Drop-in replacement for the Base44 SDK.
- * All components import { base44 } from '@/api/apiClient' instead of base44Client.
+ * API client — wraps all Supabase/backend calls used across components.
  */
 
 import { createClient } from '@/lib/supabase/client';
