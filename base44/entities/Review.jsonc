@@ -1,0 +1,45 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Your Name"
+    },
+    "service": {
+      "type": "string",
+      "title": "Service Received",
+      "enum": [
+        "Luxury Bridal Look",
+        "Full Day Service",
+        "Non-Bridal Makeup",
+        "Photoshoot Makeup",
+        "Makeup Courses"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "title": "Your Review"
+    },
+    "rating": {
+      "type": "number",
+      "title": "Rating (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved"
+      ],
+      "default": "pending",
+      "title": "Status"
+    }
+  },
+  "required": [
+    "name",
+    "message",
+    "rating"
+  ]
+}

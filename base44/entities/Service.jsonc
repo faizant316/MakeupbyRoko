@@ -1,0 +1,103 @@
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Service Name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "bridal",
+        "event",
+        "creative",
+        "lessons"
+      ],
+      "title": "Category"
+    },
+    "price": {
+      "type": "string",
+      "title": "Price Display (e.g. From $250)"
+    },
+    "price_value": {
+      "type": "number",
+      "title": "Base Price ($)"
+    },
+    "duration": {
+      "type": "string",
+      "title": "Duration (e.g. 90 min)"
+    },
+    "deposit": {
+      "type": "string",
+      "title": "Deposit Info"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "includes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "What's Included"
+    },
+    "key_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Key Features"
+    },
+    "what_to_expect": {
+      "type": "string",
+      "title": "What to Expect (Process Description)"
+    },
+    "before_after_photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Before & After Photo URLs"
+    },
+    "photo": {
+      "type": "string",
+      "title": "Photo URL"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "title": "Active"
+    },
+    "sort_order": {
+      "type": "number",
+      "default": 0,
+      "title": "Sort Order"
+    }
+  },
+  "required": [
+    "title",
+    "category",
+    "price",
+    "duration"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "DayCapacity",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "title": "Date (YYYY-MM-DD)"
+    },
+    "capacity": {
+      "type": "number",
+      "title": "Max Bookings for This Day"
+    }
+  },
+  "required": [
+    "date",
+    "capacity"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

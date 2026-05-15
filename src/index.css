@@ -1,0 +1,286 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --bg: #FFFFFF;
+    --surface: #FAF8F6;
+    --surface-2: #F3EEE9;
+    --accent: #A0785A;
+    --accent-light: #E8D5C4;
+    --accent-dark: #6B4E37;
+    --text: #111111;
+    --text-muted: #6B6B6B;
+    --text-light: #9E9189;
+    --border: #E8E2DC;
+    --white: #FFFFFF;
+    --font-serif: 'Cormorant Garamond', serif;
+    --font-sans: 'Inter', sans-serif;
+    --radius: 2px;
+    --radius-lg: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.10);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --nav-h: 52px;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  h1 {
+    font-size: clamp(3rem, 8vw, 7rem);
+  }
+
+  h2 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  h3 {
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  }
+}
+
+/* Layout & Typography */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+}
+
+.section {
+  padding: clamp(5rem, 10vw, 9rem) 0;
+}
+
+.section-header {
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius);
+  transition: all 0.25s var(--ease);
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--text);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background: #2a2a2a;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--white);
+}
+
+.btn-accent:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+/* Scroll Reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+
+/* Dropdown fade-in */
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile bottom sheet slide-up */
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Desktop drawer slide-in from right */
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); opacity: 0.6; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Service card fade-in */
+.service-card.animate-in {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Hide scrollbar for filter bars */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Thin scrollbar for filter pills */
+.thin-scrollbar::-webkit-scrollbar { height: 3px; }
+.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background: var(--accent-light); border-radius: 4px; }
+.thin-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Bridal aura glow */
+@keyframes aura-rotate {
+  0% { filter: blur(22px) brightness(1); }
+  50% { filter: blur(30px) brightness(1.3); }
+  100% { filter: blur(22px) brightness(1); }
+}
+
+.bridal-aura {
+  position: relative;
+}
+
+.bridal-aura::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: calc(var(--radius-lg) + 6px);
+  background: conic-gradient(
+    from 0deg,
+    rgba(212, 160, 176, 0.72),
+    rgba(180, 140, 200, 0.64),
+    rgba(170, 190, 230, 0.47),
+    rgba(255, 255, 255, 0.34),
+    rgba(200, 170, 210, 0.6),
+    rgba(212, 160, 176, 0.72)
+  );
+  filter: blur(22px);
+  z-index: -1;
+  animation: aura-rotate 4s ease-in-out infinite;
+  opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+  .bridal-aura::before {
+    inset: -3px;
+    filter: blur(14px);
+    opacity: 0.7;
+  }
+}
+
+/* Full Day Service — red/pink aura */
+.fullday-aura {
+  position: relative;
+}
+
+.fullday-aura::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: calc(var(--radius-lg) + 6px);
+  background: conic-gradient(
+    from 0deg,
+    rgba(180, 40, 40, 0.68),
+    rgba(200, 60, 50, 0.6),
+    rgba(218, 165, 32, 0.55),
+    rgba(255, 200, 60, 0.42),
+    rgba(190, 50, 40, 0.55),
+    rgba(180, 40, 40, 0.68)
+  );
+  filter: blur(22px);
+  z-index: -1;
+  animation: aura-rotate 4s ease-in-out infinite;
+  opacity: 0.35;
+}
+
+@media (max-width: 768px) {
+  .fullday-aura::before {
+    inset: -3px;
+    filter: blur(14px);
+    opacity: 0.3;
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; gap: 2.5rem; }
+  .grid-3 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}
