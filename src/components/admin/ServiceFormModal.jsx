@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import ServicePreview from './ServicePreview';
 
 const CATEGORIES = [
@@ -29,6 +29,9 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
   const [featureInput, setFeatureInput] = useState('');
   const [photoInput, setPhotoInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoDragOver, setPhotoDragOver] = useState(false);
+  const photoInputRef = useRef(null);
   const [showPreview, setShowPreview] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const catRef = useRef(null);
@@ -57,6 +60,30 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
   const removeFeature = (idx) => setForm(f => ({ ...f, key_features: f.key_features.filter((_, i) => i !== idx) }));
   const addPhoto = () => { if (!photoInput.trim()) return; setForm(f => ({ ...f, before_after_photos: [...f.before_after_photos, photoInput.trim()] })); setPhotoInput(''); };
   const removePhoto = (idx) => setForm(f => ({ ...f, before_after_photos: f.before_after_photos.filter((_, i) => i !== idx) }));
+
+  const uploadServicePhoto = useCallback(async (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    setPhotoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload-photo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm(f => ({ ...f, photo: data.url }));
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setPhotoUploading(false);
+    }
+  }, []);
+
+  const handlePhotoDrop = useCallback((e) => {
+    e.preventDefault();
+    setPhotoDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadServicePhoto(file);
+  }, [uploadServicePhoto]);
 
   // Theme tokens
   const modalBg = dm ? '#27272a' : '#ffffff';
@@ -244,9 +271,44 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
           </div>
 
           <div>
-            <label style={labelStyle}>Photo URL</label>
-            <input value={form.photo} onChange={e => setForm({ ...form, photo: e.target.value })}
-              placeholder="https://..." className={inputClass} style={inputStyle} />
+            <label style={labelStyle}>Service Photo</label>
+            <div
+              onDrop={handlePhotoDrop}
+              onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
+              onDragLeave={() => setPhotoDragOver(false)}
+              onClick={() => photoInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${photoDragOver ? '#D4A0B0' : inputBorder}`,
+                borderRadius: '10px',
+                padding: '16px',
+                cursor: 'pointer',
+                background: photoDragOver ? 'rgba(212,160,176,0.06)' : inputBg,
+                transition: 'all 0.15s',
+                textAlign: 'center',
+              }}
+            >
+              {photoUploading ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#D4A0B0', fontSize: '0.8rem' }}>
+                  <div style={{ width: '14px', height: '14px', border: '2px solid #D4A0B0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  Uploading…
+                </div>
+              ) : form.photo ? (
+                <div style={{ position: 'relative' }}>
+                  <img src={form.photo} alt="Service" style={{ width: '100%', maxHeight: '140px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
+                  <p style={{ fontSize: '0.65rem', color: textMuted, margin: 0 }}>Drop a new image or click to replace</p>
+                </div>
+              ) : (
+                <div>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.5" style={{ width: '28px', height: '28px', margin: '0 auto 8px' }}>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  <p style={{ fontSize: '0.78rem', color: textMuted, margin: '0 0 3px', fontWeight: 500 }}>Drop image here or click to upload</p>
+                  <p style={{ fontSize: '0.65rem', color: textMuted, margin: 0, opacity: 0.6 }}>PNG, JPG up to 10MB</p>
+                </div>
+              )}
+              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadServicePhoto(f); e.target.value = ''; }} />
+            </div>
           </div>
 
           <div className="w-full h-px" style={{ background: borderColor }} />
