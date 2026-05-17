@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
 
+async function withScreenshotUrl(supabase, booking) {
+  if (!booking?.zelle_screenshot) return booking;
+  const { data } = await supabase.storage
+    .from('zelle-screenshots')
+    .createSignedUrl(booking.zelle_screenshot, 3600);
+  return { ...booking, screenshot_url: data?.signedUrl || null };
+}
+
 export async function POST(req) {
   try {
     const supabase = createClient();
     const { token, booking_id } = await req.json();
     if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
 
-    // Check bookings first
     let { data: booking, error } = await supabase
       .from('bookings')
       .select('*')
@@ -16,7 +23,6 @@ export async function POST(req) {
 
     if (error) throw error;
 
-    // If not found in bookings, check bridal_inquiries
     if (!booking) {
       const { data: bridal, error: bridalErr } = await supabase
         .from('bridal_inquiries')
@@ -25,12 +31,14 @@ export async function POST(req) {
         .maybeSingle();
       if (bridalErr) throw bridalErr;
       if (bridal) {
-        return NextResponse.json({ booking: { ...bridal, name: bridal.bride_name, created_date: bridal.created_at } });
+        const withUrl = await withScreenshotUrl(supabase, bridal);
+        return NextResponse.json({ booking: { ...withUrl, name: withUrl.bride_name, created_date: withUrl.created_at } });
       }
       return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
     }
 
-    return NextResponse.json({ booking: { ...booking, created_date: booking.created_at } });
+    const withUrl = await withScreenshotUrl(supabase, booking);
+    return NextResponse.json({ booking: { ...withUrl, created_date: withUrl.created_at } });
   } catch (err) {
     console.error('get-booking-by-token:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

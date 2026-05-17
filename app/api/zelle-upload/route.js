@@ -33,23 +33,27 @@ export async function POST(req) {
 
     const mimeToExt = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic' };
     const ext = mimeToExt[file.type] || 'jpg';
-    const path = `${recordId}/${Date.now()}.${ext}`;
+    const storagePath = `${recordId}/${Date.now()}.${ext}`;
     const arrayBuffer = await file.arrayBuffer();
 
     const { error: uploadError } = await supabase.storage
       .from('zelle-screenshots')
-      .upload(path, arrayBuffer, { contentType: file.type, upsert: true });
+      .upload(storagePath, arrayBuffer, { contentType: file.type, upsert: true });
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage.from('zelle-screenshots').getPublicUrl(path);
-
-    const updateData = { zelle_screenshot: publicUrl };
+    // Store the path (not URL) so we can generate signed URLs on demand
+    const updateData = { zelle_screenshot: storagePath };
     if (table === 'bridal_inquiries') updateData.zelle_received = true;
     else updateData.deposit_received = true;
 
     await supabase.from(table).update(updateData).eq('id', recordId);
 
-    return NextResponse.json({ url: publicUrl, success: true });
+    const { data: signedData, error: signedErr } = await supabase.storage
+      .from('zelle-screenshots')
+      .createSignedUrl(storagePath, 3600);
+    if (signedErr) throw signedErr;
+
+    return NextResponse.json({ url: signedData.signedUrl, success: true });
   } catch (err) {
     console.error('zelle-upload:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

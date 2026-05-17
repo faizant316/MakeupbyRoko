@@ -131,7 +131,7 @@ export default function UploadZelle() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setUploaded(true);
-      setBooking(b => ({ ...b, zelle_screenshot: data.url }));
+      setBooking(b => ({ ...b, zelle_screenshot: 'uploaded', screenshot_url: data.url }));
     } catch {
       alert('Upload failed. Please try again.');
     } finally {
@@ -212,13 +212,13 @@ export default function UploadZelle() {
               <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
 
               {/* Col 2: Screenshot preview */}
-              {booking?.zelle_screenshot && (
+              {booking?.screenshot_url && (
                 <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden flex flex-col">
                   <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
                     <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Your Screenshot</p>
                   </div>
                   <div className="p-4 flex items-center justify-center flex-1">
-                    <img src={booking.zelle_screenshot} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[300px]" />
+                    <img src={booking.screenshot_url} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[300px]" />
                   </div>
                 </div>
               )}
@@ -251,13 +251,13 @@ export default function UploadZelle() {
             <div className="lg:hidden flex flex-col gap-4">
               <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
 
-              {booking?.zelle_screenshot && (
+              {booking?.screenshot_url && (
                 <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
                   <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
                     <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Your Screenshot</p>
                   </div>
                   <div className="p-4">
-                    <img src={booking.zelle_screenshot} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[280px]" />
+                    <img src={booking.screenshot_url} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[280px]" />
                   </div>
                 </div>
               )}

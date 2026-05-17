@@ -6,12 +6,34 @@ import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
 import confetti from 'canvas-confetti';
 
-function ZelleScreenshotViewer({ url, dm }) {
+function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
+  const [signedUrl, setSignedUrl] = useState(null);
+  const [loadingUrl, setLoadingUrl] = useState(false);
+
+  const handleExpand = async () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && !signedUrl) {
+      setLoadingUrl(true);
+      try {
+        const res = await fetch('/api/screenshot-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: bookingId, table }),
+        });
+        const data = await res.json();
+        setSignedUrl(data.url);
+      } finally {
+        setLoadingUrl(false);
+      }
+    }
+  };
+
   return (
     <div className="mb-3 rounded-xl overflow-hidden border" style={{ borderColor: dm ? '#3a3a48' : '#e8e2dc' }}>
       <button
-        onClick={() => setExpanded(e => !e)}
+        onClick={handleExpand}
         className="w-full flex items-center justify-between px-4 py-3 transition-colors"
         style={{ background: dm ? '#2e2e38' : '#F7F3F0' }}
       >
@@ -29,14 +51,19 @@ function ZelleScreenshotViewer({ url, dm }) {
       </button>
       {expanded && (
         <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-          <img
-            src={url}
-            alt="Zelle screenshot"
-            className="w-full rounded-lg object-contain max-h-[400px] cursor-pointer"
-            onClick={() => window.open(url, '_blank')}
-            title="Click to open full size"
-          />
-          <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#52525b' : '#bbb' }}>Click image to open full size</p>
+          {loadingUrl && <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#71717a' : '#aaa' }}>Loading…</p>}
+          {signedUrl && (
+            <>
+              <img
+                src={signedUrl}
+                alt="Zelle screenshot"
+                className="w-full rounded-lg object-contain max-h-[400px] cursor-pointer"
+                onClick={() => window.open(signedUrl, '_blank')}
+                title="Click to open full size"
+              />
+              <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#52525b' : '#bbb' }}>Click image to open full size</p>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -418,7 +445,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Screenshot viewer */}
           {booking.zelle_screenshot && (
-            <ZelleScreenshotViewer url={booking.zelle_screenshot} dm={dm} />
+            <ZelleScreenshotViewer bookingId={booking.id} table="bookings" dm={dm} />
           )}
 
           <div className="flex items-stretch gap-3">
