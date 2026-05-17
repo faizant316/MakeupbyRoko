@@ -2,13 +2,13 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/apiClient';
 
-function BookingSummary({ booking, dateFormatted }) {
+function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden h-full flex flex-col">
       <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
         <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Booking Summary</p>
       </div>
-      <div className="divide-y divide-[#F5EFE9]">
+      <div className="divide-y divide-[#F5EFE9] flex-1">
         {booking?.name && (
           <div className="flex items-center justify-between px-5 py-3">
             <span className="text-[0.75rem] text-[#9E8E84]">Client</span>
@@ -21,30 +21,54 @@ function BookingSummary({ booking, dateFormatted }) {
             <span className="text-[0.82rem] font-semibold text-[#2C1A14] text-right ml-4">{booking.service}</span>
           </div>
         )}
+        {servicePrice && (
+          <div className="flex items-center justify-between px-5 py-3">
+            <span className="text-[0.75rem] text-[#9E8E84]">Service Price</span>
+            <span className="text-[0.82rem] font-semibold text-[#2C1A14]">{servicePrice}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between px-5 py-3">
           <span className="text-[0.75rem] text-[#9E8E84]">Date</span>
           <span className="text-[0.82rem] font-semibold text-[#2C1A14]">{dateFormatted || 'TBD'}</span>
         </div>
+        {depositAmount && (
+          <div className="flex items-center justify-between px-5 py-3 bg-[#FDF7F4]">
+            <span className="text-[0.75rem] font-semibold text-[#A0785A]">Zelle deposit</span>
+            <span className="text-[0.95rem] font-bold text-[#2C1A14]">{depositAmount}</span>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function ZelleCard() {
+function ZelleCard({ depositAmount }) {
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #1A0F14 0%, #2C1820 100%)' }}>
-      <div className="px-6 py-5 border-b border-white/8">
-        <p className="text-[0.58rem] font-bold tracking-[0.18em] uppercase text-[#D4A0B0]">Step 1 — Send Your Zelle Deposit</p>
+    <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden h-full flex flex-col">
+      <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
+        <p className="text-[0.58rem] font-bold tracking-[0.18em] uppercase text-[#C4849A]">Step 1 — Send Your Zelle Deposit</p>
       </div>
-      <div className="px-6 py-5 text-center">
-        <p className="font-serif text-[1.4rem] text-white font-light leading-tight">Ruqia Moshref</p>
-        <p className="text-[0.82rem] text-[#C4B4B8] mt-1 mb-5">📞 510-491-6497</p>
-        <div className="bg-white/6 rounded-xl px-4 py-3.5 text-left mb-4 border border-white/8">
-          <p className="text-[0.73rem] text-[#D4C4C8] leading-[1.75]">
-            Include your <strong className="text-white">name</strong> + <strong className="text-white">appointment date</strong> in the note when you send.
+      <div className="px-6 py-5 flex flex-col gap-4 flex-1">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-serif text-[1.1rem] text-[#2C1A14] font-light">Ruqia Moshref</p>
+            <p className="text-[0.78rem] text-[#9E8E84] mt-0.5">📞 510-491-6497</p>
+          </div>
+          {depositAmount && (
+            <div className="text-right">
+              <p className="text-[0.62rem] text-[#9E8E84] uppercase tracking-wide">Amount</p>
+              <p className="text-[1.05rem] font-bold text-[#2C1A14]">{depositAmount}</p>
+            </div>
+          )}
+        </div>
+        <div className="bg-[#FDF7F4] rounded-xl px-4 py-3 border border-[#EDE6DF]">
+          <p className="text-[0.73rem] text-[#6E6058] leading-[1.7]">
+            Include your <strong className="text-[#2C1A14]">name</strong> + <strong className="text-[#2C1A14]">appointment date</strong> in the note when you send.
           </p>
         </div>
-        <p className="text-[0.65rem] text-[#b5a5a9]">💵 Remaining balance due in <strong className="text-[#F0E8EA]">CASH</strong> on appointment day</p>
+        <p className="text-[0.65rem] text-[#B8A8A0] text-center mt-auto">
+          💵 Remaining balance due in <strong className="text-[#6E6058]">cash</strong> on appointment day
+        </p>
       </div>
     </div>
   );
@@ -54,6 +78,8 @@ export default function UploadZelle() {
   const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const bookingId = params.get('id');
   const token = params.get('token');
+  const depositAmount = params.get('deposit') || null;
+  const servicePrice = params.get('price') || null;
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -146,9 +172,18 @@ export default function UploadZelle() {
     <div className="min-h-screen flex flex-col" style={{ background: '#FAF7F4' }}>
 
       {/* Navbar */}
-      <div className="flex-shrink-0 py-4 text-center border-b border-[#EDE6DF]" style={{ background: '#fff' }}>
-        <p className="text-[0.62rem] font-bold tracking-[0.22em] uppercase text-[#D4A0B0]">Roqia Moshref</p>
-        <p className="text-[0.5rem] tracking-[0.16em] uppercase text-gray-400 mt-0.5">Makeup Artistry</p>
+      <div className="flex-shrink-0 border-b border-[#EDE6DF] px-5 py-3.5 flex items-center justify-between" style={{ background: '#fff' }}>
+        <a href="/" className="flex items-center gap-1.5 text-[0.68rem] text-[#9E8E84] hover:text-[#2C1A14] transition-colors group">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back to site
+        </a>
+        <div className="text-center">
+          <p className="text-[0.62rem] font-bold tracking-[0.22em] uppercase text-[#D4A0B0]">Roqia Moshref</p>
+          <p className="text-[0.5rem] tracking-[0.16em] uppercase text-gray-400 mt-0.5">Makeup Artistry</p>
+        </div>
+        <div className="w-[80px]" />
       </div>
 
       {/* ─── UPLOADED STATE ─── */}
@@ -172,17 +207,17 @@ export default function UploadZelle() {
           <div className="flex-1 max-w-5xl mx-auto w-full px-5 pb-10">
 
             {/* Desktop layout */}
-            <div className="hidden lg:grid grid-cols-3 gap-5 items-start">
+            <div className="hidden lg:grid grid-cols-3 gap-5 items-stretch">
               {/* Col 1: Summary */}
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
 
               {/* Col 2: Screenshot preview */}
               {booking?.zelle_screenshot && (
-                <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+                <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden flex flex-col">
                   <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
                     <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Your Screenshot</p>
                   </div>
-                  <div className="p-4">
+                  <div className="p-4 flex items-center justify-center flex-1">
                     <img src={booking.zelle_screenshot} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[300px]" />
                   </div>
                 </div>
@@ -214,7 +249,7 @@ export default function UploadZelle() {
 
             {/* Mobile layout */}
             <div className="lg:hidden flex flex-col gap-4">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
 
               {booking?.zelle_screenshot && (
                 <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
@@ -265,16 +300,16 @@ export default function UploadZelle() {
           <div className="flex-1 max-w-5xl mx-auto w-full px-5 pb-10">
 
             {/* Desktop layout */}
-            <div className="hidden lg:grid grid-cols-3 gap-5 items-start">
+            <div className="hidden lg:grid grid-cols-3 gap-5 items-stretch">
               {/* Col 1: Zelle instructions */}
-              <ZelleCard />
+              <ZelleCard depositAmount={depositAmount} />
 
               {/* Col 2: Upload */}
-              <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+              <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden flex flex-col">
                 <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
                   <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Step 2 — Upload Screenshot</p>
                 </div>
-                <div className="p-5 flex flex-col gap-4">
+                <div className="p-5 flex flex-col gap-4 flex-1">
                   {filePreview ? (
                     <div className="relative rounded-xl overflow-hidden border border-[#D4A0B0]/30">
                       <img src={filePreview} alt="Preview" className="w-full object-contain max-h-[220px]" />
@@ -324,19 +359,19 @@ export default function UploadZelle() {
               </div>
 
               {/* Col 3: Booking summary */}
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} />
             </div>
 
             {/* Mobile layout */}
             <div className="lg:hidden flex flex-col gap-4">
-              <ZelleCard />
+              <ZelleCard depositAmount={depositAmount} />
 
               {/* Upload */}
               <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-[#EDE6DF]" style={{ background: 'rgba(212,160,176,0.05)' }}>
                   <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Step 2 — Upload Screenshot</p>
                 </div>
-                <div className="p-5 flex flex-col gap-4">
+                <div className="p-5 flex flex-col gap-4 flex-1">
                   {filePreview ? (
                     <div className="relative rounded-xl overflow-hidden border border-[#D4A0B0]/30">
                       <img src={filePreview} alt="Preview" className="w-full object-contain max-h-[220px]" />
@@ -382,7 +417,7 @@ export default function UploadZelle() {
               </div>
 
               {/* Booking summary always visible on mobile */}
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} />
 
               <p className="text-[0.65rem] text-center text-gray-400 pb-2">
                 Trouble? Email <a href="mailto:makeupbyroko22@gmail.com" className="text-[#D4A0B0] hover:underline">makeupbyroko22@gmail.com</a>

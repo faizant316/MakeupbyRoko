@@ -113,6 +113,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setTimeout(() => setCelebrate(false), 2200);
     } else if (s === 'confirmed') {
       showToast('Appointment Confirmed', '#3b82f6');
+      if (booking.email) {
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: booking.email,
+            subject: `Your appointment is confirmed — ${booking.service} ✦`,
+            html: `<div style="font-family:-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:20px;background:#FAF7F4;"><div style="background:#fff;border-radius:16px;padding:24px;text-align:center;margin-bottom:10px;border:1px solid #EDE6DF;"><p style="font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Roqia Moshref · Makeup Artistry</p><div style="width:42px;height:42px;border-radius:50%;background:#EBF5EB;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:18px;">✓</div><h1 style="font-family:Georgia,serif;font-size:24px;font-weight:300;color:#2C1A14;margin:0 0 6px;">You're <em style="color:#C4849A;">Confirmed!</em></h1><p style="font-family:Georgia,serif;font-style:italic;font-size:13px;color:#A0785A;margin:0;">Can't wait to see you ✦</p></div><div style="background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid #EDE6DF;"><p style="font-size:14px;color:#2C1A14;margin:0 0 4px;">Hey <strong>${booking.name?.split(' ')[0] || 'there'}</strong> 👋</p><p style="font-size:13px;color:#6E6058;margin:0;line-height:1.6;">Your appointment has been confirmed! See you soon.</p></div><div style="background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid #EDE6DF;"><p style="font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Appointment Details</p><table style="width:100%;border-collapse:collapse;"><tr><td style="padding:6px 0;font-size:12px;color:#9E8E84;border-bottom:1px solid #F0EAE5;">Service</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#2C1A14;text-align:right;border-bottom:1px solid #F0EAE5;">${booking.service}</td></tr><tr><td style="padding:6px 0;font-size:12px;color:#9E8E84;">Date</td><td style="padding:6px 0;font-size:13px;font-weight:600;color:#2C1A14;text-align:right;">${dateFormatted}</td></tr></table></div><div style="background:#fff;border-radius:12px;padding:16px;text-align:center;margin-bottom:8px;border:1px solid #EDE6DF;"><p style="font-size:11px;color:#9E8E84;margin:0 0 4px;">Questions? Reach out anytime.</p><p style="font-size:12px;color:#A0785A;margin:0;">makeupbyroko22@gmail.com · @makeupbyroko_</p></div><div style="text-align:center;"><p style="font-family:Georgia,serif;font-style:italic;font-size:18px;color:#A0785A;margin:0 0 3px;">Xoxo, Roko 💋</p></div></div>`,
+          }),
+        }).catch(err => console.error('confirmed email error:', err));
+      }
     }
   };
 
@@ -120,6 +131,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     onUpdateStatus('cancelled');
     setConfirmCancel(false);
     showToast('Appointment Cancelled', '#ef4444');
+    if (booking.email) {
+      fetch('/api/on-booking-cancelled', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: booking.email,
+          name: booking.name?.split(' ')[0] || booking.name || 'there',
+          service: booking.service,
+          date: dateFormatted,
+        }),
+      }).catch(err => console.error('cancelled email error:', err));
+    }
   };
 
   const dateFormatted = booking.date
