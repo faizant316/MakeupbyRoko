@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
+import { validateImageFile } from '../../../src/lib/requireAdmin';
 
 export async function POST(req) {
   try {
@@ -9,9 +10,12 @@ export async function POST(req) {
     const token = formData.get('token');
     const bookingId = formData.get('bookingId');
 
-    if (!file || !token) return NextResponse.json({ error: 'file and token required' }, { status: 400 });
+    if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
 
-    // Validate token
+    const validationError = validateImageFile(file);
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
+
+    // Validate token against database
     let recordId = bookingId;
     let table = 'bookings';
 
@@ -25,12 +29,13 @@ export async function POST(req) {
       }
     }
 
-    if (!recordId) return NextResponse.json({ error: 'Invalid token' }, { status: 404 });
+    if (!recordId) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 });
 
-    // Upload to Supabase Storage
-    const ext = file.name?.split('.').pop() || 'jpg';
+    const mimeToExt = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic' };
+    const ext = mimeToExt[file.type] || 'jpg';
     const path = `${recordId}/${Date.now()}.${ext}`;
     const arrayBuffer = await file.arrayBuffer();
+
     const { error: uploadError } = await supabase.storage
       .from('zelle-screenshots')
       .upload(path, arrayBuffer, { contentType: file.type, upsert: true });
@@ -38,7 +43,6 @@ export async function POST(req) {
 
     const { data: { publicUrl } } = supabase.storage.from('zelle-screenshots').getPublicUrl(path);
 
-    // Update the record
     const updateData = { zelle_screenshot: publicUrl };
     if (table === 'bridal_inquiries') updateData.zelle_received = true;
     else updateData.deposit_received = true;

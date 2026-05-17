@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
 
 export async function POST(req) {
   try {
+    const { authError } = await requireAdmin();
+    if (authError) return authError;
+
     const resend = new Resend(process.env.RESEND_API_KEY);
     const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
     const { to, name, service } = await req.json();

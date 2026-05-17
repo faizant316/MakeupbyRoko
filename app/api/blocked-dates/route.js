@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
 
 export async function GET() {
   try {
@@ -13,6 +14,8 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const supabase = createClient();
     const body = await req.json();

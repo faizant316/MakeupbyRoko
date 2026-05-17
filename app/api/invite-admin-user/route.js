@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
 
 export async function POST(req) {
   try {
+    const { authError } = await requireAdmin();
+    if (authError) return authError;
+
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
 
