@@ -118,7 +118,7 @@ export default function ClassCheckoutFlow({ onClose }) {
           phone: form.phone,
           additional_notes: form.additional_notes,
           selected_classes: selected,
-          success_url: `${origin}${path}`,
+          success_url: `${origin}/payment-success`,
           cancel_url: `${origin}${path}`,
         }),
       });
