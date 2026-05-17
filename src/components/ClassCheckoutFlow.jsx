@@ -82,9 +82,10 @@ export default function ClassCheckoutFlow({ onClose }) {
       setStep('success');
 
       // Confirm payment + trigger emails in background
-      base44.functions.invoke('confirmClassPayment', {
-        session_id: sessionId,
-        registration_id: regId,
+      fetch('/api/confirm-class-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, registration_id: regId }),
       }).catch(console.error);
 
       window.history.replaceState({}, '', window.location.pathname);
@@ -103,32 +104,39 @@ export default function ClassCheckoutFlow({ onClose }) {
   const totalFull = selectedClasses.reduce((sum, c) => sum + c.price, 0);
 
   const handleCheckout = async () => {
-    if (window.self !== window.top) {
-      alert('Checkout only works from the published app. Please open the live app URL to complete payment.');
-      return;
-    }
     setIsRedirecting(true);
-    const origin = window.location.origin;
-    const path = window.location.pathname;
+    try {
+      const origin = window.location.origin;
+      const path = window.location.pathname;
 
-    const res = await base44.functions.invoke('createClassCheckout', {
-      ...form,
-      selected_classes: selected,
-      success_url: `${origin}${path}`,
-      cancel_url: `${origin}${path}`,
-    });
+      const res = await fetch('/api/create-class-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: form.full_name,
+          email: form.email,
+          phone: form.phone,
+          additional_notes: form.additional_notes,
+          selected_classes: selected,
+          success_url: `${origin}${path}`,
+          cancel_url: `${origin}${path}`,
+        }),
+      });
+      const data = await res.json();
 
-    if (res.data?.url) {
-      // Save registration data to sessionStorage before redirecting
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-        full_name: form.full_name,
-        email: form.email,
-        selectedClasses: selectedClasses.map(c => ({ name: c.title, duration: c.duration, price: c.price, deposit: c.deposit })),
-        totalDeposit,
-        totalFull,
-      }));
-      window.location.href = res.data.url;
-    } else {
+      if (data.url) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+          full_name: form.full_name,
+          email: form.email,
+          selectedClasses: selectedClasses.map(c => ({ name: c.title, duration: c.duration, price: c.price })),
+          totalPaid: totalFull,
+        }));
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Something went wrong. Please try again.');
+        setIsRedirecting(false);
+      }
+    } catch {
       alert('Something went wrong. Please try again.');
       setIsRedirecting(false);
     }
@@ -180,6 +188,7 @@ export default function ClassCheckoutFlow({ onClose }) {
             setForm={setForm}
             selectedClasses={selectedClasses}
             totalDeposit={totalDeposit}
+            totalFull={totalFull}
             onBack={() => setStep('cart')}
             onClose={onClose}
             onCheckout={handleCheckout}

@@ -1,6 +1,7 @@
 const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.85rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none";
 
-export default function ClassContactForm({ form, setForm, selectedClasses, totalDeposit, onBack, onClose, onCheckout, isRedirecting }) {
+export default function ClassContactForm({ form, setForm, selectedClasses, totalDeposit, totalFull, onBack, onClose, onCheckout, isRedirecting }) {
+  const totalDue = totalFull || totalDeposit;
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const isValid = form.full_name && form.email && form.phone;
 
@@ -44,7 +45,7 @@ export default function ClassContactForm({ form, setForm, selectedClasses, total
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Almost Done</p>
             <h2 className="font-serif text-[1.6rem] text-[#111] mb-2">Your Information</h2>
             <p className="text-[0.85rem] text-gray-400 leading-[1.7]">
-              Enter your details below. You'll be taken to Stripe's secure checkout to pay your deposit.
+              Enter your details below. You'll be taken to Stripe's secure checkout to complete your payment.
             </p>
             {/* Selected classes summary */}
             <div className="mt-3 flex flex-wrap gap-2">
@@ -90,8 +91,8 @@ export default function ClassContactForm({ form, setForm, selectedClasses, total
           <div className="rounded-xl border border-[#e8e2dc]" style={{ background: '#FAFAF9' }}>
             <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #ede8e4' }}>
               <div>
-                <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#A0785A] mb-1">Deposit Due Today</p>
-                <p className="font-serif text-[2rem] text-[#111] leading-none">${totalDeposit.toLocaleString()}</p>
+                <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#A0785A] mb-1">Total Due Today</p>
+                <p className="font-serif text-[2rem] text-[#111] leading-none">${totalDue.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-[0.65rem] text-gray-400 leading-relaxed">Apple Pay · Google Pay<br/>All major cards · Stripe</p>
@@ -101,7 +102,7 @@ export default function ClassContactForm({ form, setForm, selectedClasses, total
               {selectedClasses.map(cls => (
                 <div key={cls.key} className="flex items-center justify-between text-[0.72rem]">
                   <span className="text-gray-500">{cls.title}</span>
-                  <span className="font-medium text-[#111]">${cls.deposit}</span>
+                  <span className="font-medium text-[#111]">${cls.price}</span>
                 </div>
               ))}
             </div>
@@ -124,7 +125,7 @@ export default function ClassContactForm({ form, setForm, selectedClasses, total
                   Redirecting to Stripe…
                 </>
               ) : (
-                isValid ? `Pay $${totalDeposit.toLocaleString()} Deposit →` : 'Fill in your details to continue'
+                isValid ? `Pay $${totalDue.toLocaleString()} →` : 'Fill in your details to continue'
               )}
             </button>
             <p className="text-[0.65rem] text-center text-gray-400 mt-2">
