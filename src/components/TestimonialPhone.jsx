@@ -18,7 +18,7 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
   };
 
   // High-quality iPhone 15 Pro frame PNG with transparent background
-  const IPHONE_FRAME = 'https://www.dropbox.com/s/o7pj5p5p5p5p5p5/iphone15pro-black.png?raw=1';
+  const IPHONE_FRAME = '/apple-iphone-15-pro-black-titanium-portrait.png';
 
   return (
     <div className="relative mx-auto select-none" style={{ width: '100%', maxWidth: 280 }}>
@@ -37,11 +37,11 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
         <div
           className="absolute overflow-hidden"
           style={{
-            top: '3.5%',
-            left: '7%',
-            right: '7%',
-            bottom: '3.5%',
-            borderRadius: '44px',
+            top: '7.2%',
+            left: '8.2%',
+            right: '8.2%',
+            bottom: '7.2%',
+            borderRadius: '40px',
             background: '#000',
             zIndex: 1,
           }}
@@ -58,10 +58,11 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
                 inset: 0,
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
+                objectFit: 'contain',
                 objectPosition: 'center',
                 opacity: activeIndex === i ? 1 : 0,
                 transition: 'opacity 0.6s ease-out',
+                background: '#000',
               }}
               loading="lazy"
               decoding="async"

@@ -16,7 +16,7 @@ function getMinBookingDate() {
   return d;
 }
 
-const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.825rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none";
+const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.6rem] font-semibold tracking-[0.14em] text-[#999] uppercase mb-1.5";
 
 function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {

@@ -72,7 +72,7 @@ function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick
   );
 }
 
-const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.85rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none";
+const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.85rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 
 export default function BookingModal({ service: initialService, onClose }) {
   const [service, setService] = useState(initialService);
