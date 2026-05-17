@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
 const ADMIN_EMAIL = 'roqiamoshref@gmail.com';
 
 export async function POST(req) {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
     const body = await req.json();
     const { name, service, date, email, phone } = body;
     await resend.emails.send({
