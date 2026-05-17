@@ -208,17 +208,22 @@ export default function BookingModal({ service: initialService, onClose }) {
     // Send confirmation email via backend function (keeps payload small, avoids Gmail clipping)
     const dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const uploadUrl = `${window.location.origin}/upload-zelle?id=${newBooking.id}&token=${token}`;
-    base44.functions.invoke('sendBookingConfirmation', {
-      bookingType: 'nonbridal',
-      to: formData.email,
-      firstName: formData.fname,
-      serviceName: service.title,
-      servicePrice: service.price,
-      serviceDeposit: service.deposit,
-      dateFormatted,
-      uploadUrl,
-      isEarlyArrival,
-    });
+
+    try {
+      await base44.functions.invoke('sendBookingConfirmation', {
+        bookingType: 'nonbridal',
+        to: formData.email,
+        firstName: formData.fname,
+        serviceName: service.title,
+        servicePrice: service.price,
+        serviceDeposit: service.deposit,
+        dateFormatted,
+        uploadUrl,
+        isEarlyArrival,
+      });
+    } catch (err) {
+      console.error('Failed to send confirmation email:', err);
+    }
 
     setStep('done');
   };

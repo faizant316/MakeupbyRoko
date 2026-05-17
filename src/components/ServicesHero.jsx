@@ -211,22 +211,9 @@ export default function ServicesHero() {
         style={{
           minHeight: 'calc(100vh - var(--nav-h))',
           marginTop: 'var(--nav-h)',
-          background: '#0C0A09',
+          background: '#080607',
         }}
       >
-        {/* Ambient glow blobs */}
-        <div style={{
-          position: 'absolute', top: '-10%', left: '-5%',
-          width: '55%', height: '70%',
-          background: 'radial-gradient(circle, rgba(160,120,90,0.08) 0%, transparent 70%)',
-          filter: 'blur(80px)', pointerEvents: 'none', zIndex: 0,
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '-15%', left: '20%',
-          width: '50%', height: '60%',
-          background: 'radial-gradient(circle, rgba(80,60,50,0.1) 0%, transparent 70%)',
-          filter: 'blur(90px)', pointerEvents: 'none', zIndex: 0,
-        }} />
 
         {/* LEFT PANEL */}
         <div className="relative z-10 flex flex-col justify-center px-[clamp(2rem,8vw,5rem)] py-16 w-[50%] min-h-[calc(100vh-var(--nav-h))] flex-shrink-0">
@@ -339,7 +326,7 @@ export default function ServicesHero() {
           }} />
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(to right, #0C0A09 0%, rgba(12,10,9,0.6) 12%, transparent 40%)',
+            background: 'linear-gradient(to right, #080607 0%, rgba(8,6,7,0.85) 18%, rgba(8,6,7,0.3) 40%, transparent 60%)',
             pointerEvents: 'none',
           }} />
           <div style={{

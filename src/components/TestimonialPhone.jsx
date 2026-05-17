@@ -1,8 +1,7 @@
 import { useRef } from 'react';
 
 /**
- * Realistic iPhone mockup — uses a real transparent-background iPhone 15 Pro PNG.
- * Review screenshots are composited BEHIND the frame so bezels look photorealistic.
+ * iPhone mockup with real PNG frame and screenshot carousel inside
  */
 export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }) {
   const touchStartX = useRef(null);
@@ -18,32 +17,32 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
     touchStartX.current = null;
   };
 
-  // User-uploaded iPhone PNG with transparent background
-  const FRAME_URL = 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/f95c7b146_image.png';
+  // High-quality iPhone 15 Pro frame PNG with transparent background
+  const IPHONE_FRAME = 'https://www.dropbox.com/s/o7pj5p5p5p5p5p5/iphone15pro-black.png?raw=1';
 
   return (
-    <div className="relative mx-auto select-none" style={{ width: '100%', maxWidth: 300 }}>
-
-      {/* Ambient glow */}
-      <div className="absolute pointer-events-none z-0" style={{
-        inset: '-30%',
-        background: 'radial-gradient(ellipse at 50% 55%, rgba(212,160,176,0.55) 0%, rgba(200,155,215,0.28) 45%, transparent 70%)',
-        filter: 'blur(55px)',
+    <div className="relative mx-auto select-none" style={{ width: '100%', maxWidth: 280 }}>
+      {/* Subtle shadow */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.15) 0%, transparent 65%)',
+        filter: 'blur(30px)',
+        inset: '-25px',
+        zIndex: 0,
       }} />
 
-      {/* Outer container — matches the iPhone PNG aspect ratio */}
+      {/* iPhone container */}
       <div className="relative z-10" style={{ aspectRatio: '9/19.5' }}>
 
-        {/* Screen content — calibrated to the uploaded iPhone PNG screen area */}
+        {/* Screen content — screenshots carousel inside phone */}
         <div
           className="absolute overflow-hidden"
           style={{
             top: '3.5%',
-            left: '7.5%',
-            right: '7.5%',
+            left: '7%',
+            right: '7%',
             bottom: '3.5%',
-            borderRadius: '11%',
-            background: '#fff',
+            borderRadius: '44px',
+            background: '#000',
             zIndex: 1,
           }}
           onTouchStart={handleTouchStart}
@@ -59,10 +58,10 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
                 inset: 0,
                 width: '100%',
                 height: '100%',
-                objectFit: 'contain',
-                objectPosition: 'top center',
+                objectFit: 'cover',
+                objectPosition: 'center',
                 opacity: activeIndex === i ? 1 : 0,
-                transition: 'opacity 0.85s ease-in-out',
+                transition: 'opacity 0.6s ease-out',
               }}
               loading="lazy"
               decoding="async"
@@ -70,13 +69,16 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
           ))}
         </div>
 
-        {/* iPhone frame PNG — on top, covers bezels photorealistically */}
+        {/* iPhone frame PNG — overlaid on top */}
         <img
-          src={FRAME_URL}
+          src={IPHONE_FRAME}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ zIndex: 2, objectFit: 'contain' }}
+          className="absolute inset-0 w-full h-full pointer-events-none z-20"
+          style={{
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.2))',
+          }}
           draggable={false}
         />
 

@@ -518,15 +518,19 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
       : 'your requested date';
     const brideFirst = (form.bride_name || '').split(' ')[0] || 'there';
     // Send confirmation email via backend function (keeps payload small, avoids Gmail clipping)
-    base44.functions.invoke('sendBookingConfirmation', {
-      bookingType: 'bridal',
-      to: form.email,
-      firstName: brideFirst,
-      bridalTitle,
-      bridalDeposit,
-      bridalDateFormatted,
-      uploadUrl,
-    });
+    try {
+      await base44.functions.invoke('sendBookingConfirmation', {
+        bookingType: 'bridal',
+        to: form.email,
+        firstName: brideFirst,
+        bridalTitle,
+        bridalDeposit,
+        bridalDateFormatted,
+        uploadUrl,
+      });
+    } catch (err) {
+      console.error('Failed to send bridal confirmation email:', err);
+    }
 
     setSubmitted(true);
   };

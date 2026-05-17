@@ -2,25 +2,25 @@ export default function Services() {
   const previews = [
     {
       title: 'Bridal Package',
-      photo: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=900&q=90&auto=format&fit=crop',
+      photo: '/images/services/bridal.jpg',
       price: '$400+',
       duration: '3–4 hrs',
     },
     {
       title: 'Full Glam',
-      photo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=900&q=90&auto=format&fit=crop',
+      photo: '/images/services/full-glam.jpg',
       price: '$250+',
       duration: '90 min',
     },
     {
       title: 'Editorial & Shoot',
-      photo: 'https://images.unsplash.com/photo-1515688594412-d1b32d8f50ed?w=900&q=90&auto=format&fit=crop',
+      photo: '/images/services/editorial.jpg',
       price: '$300+',
       duration: '90 min',
     },
     {
       title: 'Natural Everyday',
-      photo: 'https://images.unsplash.com/photo-1503236823255-94d827a26d5c?w=900&q=90&auto=format&fit=crop',
+      photo: '/images/services/natural.jpg',
       price: '$150+',
       duration: '60 min',
     },
