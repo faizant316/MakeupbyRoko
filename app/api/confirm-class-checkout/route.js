@@ -57,8 +57,8 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
 
-    // Client confirmation email
-    await resend.emails.send({
+    // Send both emails in parallel — failures are logged independently so one doesn't block the other
+    const clientEmail = resend.emails.send({
       from: FROM,
       to: [reg.email],
       subject: "You're officially booked! 🎨",
@@ -69,35 +69,39 @@ export async function POST(req) {
         <div style="background:#FAF7F4;border-radius:12px;padding:16px;margin:20px 0;border:1px solid #EDE6DF;">
           <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Your Class${bookedClasses.length > 1 ? 'es' : ''}</p>
           <ul style="margin:0;padding-left:16px;">${classListHtml}</ul>
-          <div style="border-top:1px solid #EDE6DF;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;">
-            <span style="color:#6E6058;font-size:14px;">Total Paid</span>
+          <div style="border-top:1px solid #EDE6DF;margin-top:12px;padding-top:12px;">
+            <span style="color:#6E6058;font-size:14px;">Total Paid: </span>
             <strong style="color:#111;font-size:14px;">$${totalPaid.toLocaleString()}</strong>
           </div>
         </div>
         <p style="color:#6E6058;font-size:13px;">Questions? Reply to this email or text me directly.</p>
         <p style="font-family:Georgia,serif;font-style:italic;color:#A0785A;">Xoxo, Roko 💄</p>
       </div>`,
-    });
+    }).catch(e => console.error('client email failed:', e));
 
-    // Admin notification
-    await resend.emails.send({
+    const adminEmail = resend.emails.send({
       from: FROM,
       to: ['makeupbyroko22@gmail.com'],
-      subject: `💳 New Class Payment — ${reg.full_name} ($${totalPaid.toLocaleString()})`,
+      subject: `💳 New Class Booking — ${reg.full_name} ($${totalPaid.toLocaleString()})`,
       html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
-        <h2 style="font-family:Georgia,serif;font-weight:300;color:#2C1A14;">New Class Registration 🎨</h2>
-        <p style="color:#6E6058;"><strong>${reg.full_name}</strong> just paid <strong style="color:#111;">$${totalPaid.toLocaleString()}</strong>.</p>
+        <h2 style="font-family:Georgia,serif;font-weight:300;color:#2C1A14;">New Class Booking 🎨</h2>
+        <p style="color:#6E6058;"><strong>${reg.full_name}</strong> just paid <strong style="color:#111;">$${totalPaid.toLocaleString()}</strong> via Stripe.</p>
         <div style="background:#FAF7F4;border-radius:12px;padding:16px;margin:20px 0;border:1px solid #EDE6DF;">
-          <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Details</p>
+          <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
+          <p style="margin:4px 0;color:#6E6058;font-size:14px;"><strong>Name:</strong> ${reg.full_name}</p>
           <p style="margin:4px 0;color:#6E6058;font-size:14px;"><strong>Email:</strong> ${reg.email}</p>
           <p style="margin:4px 0;color:#6E6058;font-size:14px;"><strong>Phone:</strong> ${reg.phone}</p>
           ${reg.additional_notes ? `<p style="margin:4px 0;color:#6E6058;font-size:14px;"><strong>Notes:</strong> ${reg.additional_notes}</p>` : ''}
           <p style="margin:12px 0 4px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;">Classes Booked</p>
           <ul style="margin:0;padding-left:16px;">${classListHtml}</ul>
+          <p style="margin:12px 0 0;color:#111;font-size:14px;font-weight:700;">Total Paid: $${totalPaid.toLocaleString()}</p>
         </div>
-        <p style="color:#6E6058;font-size:13px;">Stripe Session: <code>${session_id}</code></p>
+        <p style="color:#6E6058;font-size:13px;">Please reach out to them within 24–48 hours to confirm their class schedule.</p>
+        <p style="color:#aaa;font-size:11px;">Stripe Session: ${session_id}</p>
       </div>`,
-    });
+    }).catch(e => console.error('admin email failed:', e));
+
+    await Promise.allSettled([clientEmail, adminEmail]);
 
     return NextResponse.json({ success: true });
   } catch (err) {
