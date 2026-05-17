@@ -11,17 +11,3 @@ Professional makeup artistry website for Roqia Moshref.
 - **Storage:** Supabase Storage
 - **Deploy:** Vercel
 
-## Getting Started
-
-```bash
-npm install
-npm run dev
-```
-
-## Database
-
-Run `supabase/schema.sql` in your Supabase SQL editor to set up all tables.
-
-## Admin
-
-Visit `/login` to access the admin dashboard.
