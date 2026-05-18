@@ -29,7 +29,7 @@ const STATUS_COLORS_DM = {
   cancelled: '#991B1B',
 };
 
-function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confirmedDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
+function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${year}-${pad(month + 1)}-${pad(day)}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
   const isToday = key === todayKey;
@@ -38,6 +38,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
   const statuses = dateMap[key] || [];
   const activeStatuses = statuses.filter(s => s !== 'cancelled');
   const hasBookings = activeStatuses.length > 0;
+  const hasConsultation = (consultationDateMap[key] || []).length > 0;
   const confirmedStatuses = confirmedDateMap[key] || [];
   const count = confirmedStatuses.length;
   const isFull = count >= effectiveCap;
@@ -88,17 +89,21 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
       ) : (
         <>
           <span className={`text-[0.875rem] font-${isSel || isToday ? 'bold' : 'medium'} ${isToday && dm ? 'text-indigo-200' : isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : isBlocked && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{day}</span>
-          {hasBookings && (
+          {(hasBookings || hasConsultation) && (
             <div className="flex gap-[3px] items-center">
               {isFull ? (
                 <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
               ) : (
                 <>
-                  {[...new Set(statuses.filter(s => s !== 'cancelled'))].slice(0, 4).map((s, i) => (
+                  {[...new Set(statuses.filter(s => s !== 'cancelled'))].slice(0, 3).map((s, i) => (
                     <span key={i} className="w-[5px] h-[5px] rounded-full"
                       style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
                   ))}
-                  <span className={`text-[0.5rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
+                  {hasConsultation && (
+                    <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
+                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
+                  )}
+                  {hasBookings && <span className={`text-[0.5rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
                 </>
               )}
             </div>
@@ -109,7 +114,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
   );
 }
 
-function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
+function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
   const isToday = key === todayKey;
@@ -118,6 +123,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   const statuses = dateMap[key] || [];
   const activeStatuses = statuses.filter(s => s !== 'cancelled');
   const hasBookings = activeStatuses.length > 0;
+  const hasConsultation = (consultationDateMap[key] || []).length > 0;
   const confirmedStatuses = confirmedDateMap[key] || [];
   const count = confirmedStatuses.length;
   const isFull = count >= effectiveCap;
@@ -163,17 +169,21 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
       <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
       {isBlocked ? (
         <span className={`text-[0.65rem] ${dm ? 'text-red-400/70' : 'text-red-400'}`}>✕</span>
-      ) : hasBookings ? (
+      ) : (hasBookings || hasConsultation) ? (
         <div className="flex gap-[3px] items-center">
           {isFull ? (
             <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
           ) : (
             <>
-              {[...new Set(activeStatuses)].slice(0, 4).map((s, i) => (
+              {[...new Set(activeStatuses)].slice(0, 3).map((s, i) => (
                 <span key={i} className="w-[5px] h-[5px] rounded-full"
                   style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
               ))}
-              <span className={`text-[0.5rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
+              {hasConsultation && (
+                <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
+                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
+              )}
+              {hasBookings && <span className={`text-[0.5rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
             </>
           )}
         </div>
@@ -225,13 +235,21 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
     confirmedDateMap[b.date].push(b.status);
   });
 
+  // Consultation dates — purple dots
+  const consultationDateMap = {};
+  bookings.forEach(b => {
+    if (!b.consultation_date) return;
+    if (!consultationDateMap[b.consultation_date]) consultationDateMap[b.consultation_date] = [];
+    consultationDateMap[b.consultation_date].push(b.name || 'Client');
+  });
+
   const goToToday = () => { setCurrentMonth(new Date()); setSelectedDate(todayKey); };
   const handleSingleClick = (key) => setSelectedDate(key === selectedDate ? null : key);
   const handleDoubleClick = (key) => setBlockPopup({ date: key });
   const handleUnblock = (id) => unblockMutation.mutate(id);
 
   const sharedCellProps = {
-    todayKey, selectedDate, dateMap, confirmedDateMap, blockedSet, blockedMap, maxPerDay, dayCapacityMap, dm,
+    todayKey, selectedDate, dateMap, confirmedDateMap, consultationDateMap, blockedSet, blockedMap, maxPerDay, dayCapacityMap, dm,
     onSingleClick: handleSingleClick,
     onDoubleClick: handleDoubleClick,
     onUnblock: handleUnblock,
