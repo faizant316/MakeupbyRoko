@@ -355,8 +355,8 @@ export default function BookingModal({ service: initialService, onClose }) {
         )}
 
         {/* Scrollable content */}
-        <div ref={scrollRef} data-modal-scroll className="flex-1 overflow-y-auto min-h-0 overscroll-contain flex flex-col" onScroll={handleMobileScroll}>
-        <div className="w-full sm:max-w-[1200px] sm:mx-auto flex-1 flex flex-col">
+        <div ref={scrollRef} data-modal-scroll className="flex-1 overflow-y-auto min-h-0 overscroll-contain flex flex-col bg-white" onScroll={handleMobileScroll}>
+        <div className="w-full sm:max-w-[1200px] sm:mx-auto flex-1 flex flex-col bg-white">
 
         {/* BRIDAL: Special inquiry form */}
         {service.category === 'bridal' && step !== 'done' && (
