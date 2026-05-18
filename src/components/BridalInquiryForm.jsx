@@ -221,61 +221,64 @@ function BridalSuccess({ onClose, brideName, bookingId, uploadToken }) {
   }, []);
 
   return (
-    <div className="bg-[#FAF7F4] p-6 sm:p-8 overflow-y-auto">
-      {/* Hero header — full width */}
-      <div className="text-center mb-6">
-        <div className="w-12 h-12 rounded-full bg-[#F7EEF2] flex items-center justify-center mx-auto mb-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.8" className="w-5 h-5">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+    <div className="bg-white p-6 sm:p-8 overflow-y-auto flex-1">
+      <div className="max-w-[520px] mx-auto flex flex-col gap-4">
+
+        {/* Header */}
+        <div className="text-center py-2">
+          <div className="w-11 h-11 rounded-full bg-[#F7EEF2] flex items-center justify-center mx-auto mb-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-4 h-4">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Bridal Inquiry Received</p>
+          <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
+            Hey {firstName}, you're on <em className="italic text-[#C4849A]">the list!</em>
+          </h3>
+          <p className="font-serif italic text-[#A0785A] text-[0.9rem]">I can't wait to be part of your big day 💍</p>
         </div>
-        <p className="text-[0.6rem] font-semibold tracking-[0.18em] uppercase text-[#C4849A] mb-2">Bridal Inquiry Received</p>
-        <h3 className="font-serif text-[1.8rem] lg:text-[2.2rem] font-light text-[#2C1A14] mb-1 leading-tight">
-          Hey {firstName}, you're on <em className="italic text-[#C4849A]">the list!</em>
-        </h3>
-        <p className="font-serif italic text-[#A0785A] text-[0.95rem]">I can't wait to be part of your big day ✦</p>
-      </div>
 
-      {/* Two-column on desktop, stacked on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-[900px] mx-auto">
-
-        {/* LEFT column */}
-        <div className="flex flex-col gap-4">
-          {/* Confirmation message */}
-          <div className="bg-white rounded-2xl px-5 py-5 border border-[#EDE6DF]">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#C4849A] mb-2">What's Next</p>
+        {/* What's next */}
+        <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+          <div className="px-5 pt-4 pb-1">
+            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">What's Next</p>
+          </div>
+          <div className="px-5 pb-4 pt-2">
             <p className="text-[0.82rem] text-[#6E6058] leading-[1.75]">
               Your bridal inquiry has been received. I'll be in touch within <strong className="text-[#2C1A14]">24–48 hours</strong> to confirm everything and schedule your consultation.
             </p>
-          </div>
-
-          {/* Before consultation */}
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE6DF] flex-1">
-            <p className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-3">Before Your Consultation</p>
-            <p className="text-[0.75rem] text-[#6E6058] leading-[1.7] mb-3">
-              Once confirmed, Roko will reach out to schedule. Please have the following ready:
-            </p>
-            <div className="flex flex-col gap-2.5">
-              {[
-                { icon: '📸', text: <>A photo of yourself <strong>with makeup on</strong> and one <strong>without any makeup</strong></> },
-                { icon: '💡', text: <>Any <strong>inspiration photos</strong> for your bridal look</> },
-                { icon: '👗', text: <>Photos of your <strong>gown / outfit(s)</strong></> },
-              ].map(({ icon, text }, i) => (
-                <div key={i} className="flex items-start gap-2.5 text-[0.78rem] text-[#444]">
-                  <span className="flex-shrink-0 mt-0.5">{icon}</span>
-                  <span>{text}</span>
-                </div>
-              ))}
+            <div className="mt-3 px-3 py-2.5 bg-[#F7F3F0] rounded-lg border-l-2 border-[#D4A0B0]">
+              <p className="text-[0.72rem] text-[#A0785A] font-medium">💌 Full deposit details sent to your email.</p>
             </div>
           </div>
         </div>
 
-        {/* RIGHT column */}
-        <div className="flex flex-col gap-4">
-          {/* Send photos to */}
-          <div className="bg-white rounded-2xl p-5 border border-[#EDE6DF]">
-            <p className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-3">Send Prep Photos To</p>
-            <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors mb-3">
+        {/* Before consultation */}
+        <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+          <div className="px-5 pt-4 pb-1">
+            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Before Your Consultation</p>
+          </div>
+          <div className="px-5 pb-4 pt-2 flex flex-col gap-2.5">
+            {[
+              { icon: '📸', text: <>A photo <strong>with makeup on</strong> and one <strong>without makeup</strong></> },
+              { icon: '💡', text: <>Any <strong>inspiration photos</strong> for your bridal look</> },
+              { icon: '👗', text: <>Photos of your <strong>gown / outfit(s)</strong></> },
+            ].map(({ icon, text }, i) => (
+              <div key={i} className="flex items-start gap-2.5 text-[0.78rem] text-[#444]">
+                <span className="flex-shrink-0 mt-0.5">{icon}</span>
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Send photos to */}
+        <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+          <div className="px-5 pt-4 pb-1">
+            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Send Prep Photos To</p>
+          </div>
+          <div className="px-5 pb-4 pt-2 flex flex-col gap-2.5">
+            <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
               <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -291,29 +294,21 @@ function BridalSuccess({ onClose, brideName, bookingId, uploadToken }) {
               </div>
               @makeupbyroko_ (Instagram DM)
             </a>
-            <div className="mt-4 px-3 py-2.5 bg-[#FDF7F4] rounded-lg border-l-2 border-[#D4A0B0]">
-              <p className="text-[0.72rem] text-[#A0785A] font-medium">⚡ Deposit info & full details sent to your email.</p>
-            </div>
-          </div>
-
-          {/* Zelle upload note */}
-          {bookingId && uploadToken && (
-            <ZelleSuccessUpload />
-          )}
-
-          {/* Sign off */}
-          <div className="bg-white rounded-2xl px-5 py-5 border border-[#EDE6DF] text-center">
-            <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko 💍</p>
-            <p className="text-[0.7rem] text-[#B8A8A0]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
           </div>
         </div>
-      </div>
 
-      <div className="flex justify-center mt-6">
-        <button onClick={onClose}
-          className="px-8 py-3 rounded-xl border border-gray-200 text-[0.8rem] font-medium text-gray-500 hover:border-[#2C1A14] hover:text-[#2C1A14] transition-all">
-          Close
-        </button>
+        {/* Sign off */}
+        <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-5 text-center">
+          <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko 💋</p>
+          <p className="text-[0.7rem] text-[#B8A8A0]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+        </div>
+
+        <div className="pb-4">
+          <button onClick={onClose}
+            className="w-full py-3.5 rounded-xl border border-gray-200 text-[0.8rem] font-medium text-gray-500 hover:border-[#2C1A14] hover:text-[#2C1A14] transition-all">
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -502,6 +497,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
     if (!form.wedding_date || form.wedding_date === 'partial') { alert('Please select a complete wedding date (month, day, and year).'); return; }
+    if (!selectedDate) { alert('Please select a preferred appointment date from the calendar.'); return; }
     if (!form.event_location) { alert('Please enter the event location.'); return; }
     if (!form.event_start_time) { alert('Please enter the event start time.'); return; }
     if (!form.venue_access_time) { alert('Please enter the venue access time.'); return; }
@@ -549,10 +545,17 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
         bookingType: 'bridal',
         to: form.email,
         firstName: brideFirst,
+        phone: form.phone,
         bridalTitle,
         bridalDeposit,
         bridalDateFormatted,
         uploadUrl,
+        eventLocation: form.event_location,
+        eventStartTime: form.event_start_time,
+        venueAccessTime: form.venue_access_time,
+        numPeopleGlam: form.num_people_glam,
+        outOfState: form.out_of_state,
+        weddingDate: form.wedding_date,
       }),
     }).catch(err => console.error('bridal email error:', err));
 

@@ -601,7 +601,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                 </div>
 
                 {/* Travel Question */}
-                <div>
+                <div className="mt-4">
                   <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Do you need Roko to travel to you?</label>
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mb-2 leading-[1.6]">
                     🏠 By default, all appointments are held at Roko's studio. Select "Yes" only if you need her to come to your location.
