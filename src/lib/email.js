@@ -35,10 +35,17 @@ function row(label, value, color) {
 }
 
 function step(n, title, sub) {
-  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F5F0EC;">
-    <div style="min-width:22px;height:22px;border-radius:50%;background:#F7EEF2;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#C4849A;text-align:center;line-height:22px;">${n}</div>
-    <div><p style="font-size:13px;font-weight:600;color:#2C1A14;margin:0 0 2px;">${title}</p><p style="font-size:11px;color:#9E8E84;margin:0;">${sub}</p></div>
-  </div>`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #F5F0EC;">
+    <tr>
+      <td width="32" valign="top" style="padding:10px 8px 10px 0;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#F7EEF2;text-align:center;line-height:22px;font-size:10px;font-weight:700;color:#C4849A;">${n}</div>
+      </td>
+      <td valign="top" style="padding:10px 0;">
+        <p style="font-size:13px;font-weight:600;color:#2C1A14;margin:0 0 2px;">${title}</p>
+        <p style="font-size:11px;color:#9E8E84;margin:0;">${sub}</p>
+      </td>
+    </tr>
+  </table>`;
 }
 
 export async function sendEmail({ to, subject, html }) {
@@ -254,7 +261,12 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
         <tr><td style="padding:8px 0;font-size:14px;font-weight:700;color:#2C1A14;">Total Paid</td><td style="padding:8px 0;font-size:14px;font-weight:700;color:#2C1A14;text-align:right;">$${totalPaid.toLocaleString()}</td></tr>
       </table>
     `)}
-    ${card(`<p style="font-size:13px;color:#6E6058;margin:0;">Please reach out within 24–48 hours to confirm their schedule. <a href="https://makeupby-roko.vercel.app/admin" style="color:#C4849A;">View in Admin Dashboard →</a></p>`)}
+    ${card(`
+      <p style="font-size:13px;color:#6E6058;margin:0 0 14px;">Please reach out within 24–48 hours to confirm their class schedule.</p>
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
+    `)}
   `);
 }
 
@@ -270,6 +282,10 @@ export function adminBookingEmail({ name, service, date, email, phone, bookingTy
         ${row('Phone', phone || 'N/A')}
       </table>
     `)}
-    ${card(`<p style="font-size:13px;color:#6E6058;margin:0;"><a href="https://makeupby-roko.vercel.app/admin" style="color:#C4849A;">View in Admin Dashboard →</a></p>`)}
+    ${card(`
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
+    `)}
   `);
 }
