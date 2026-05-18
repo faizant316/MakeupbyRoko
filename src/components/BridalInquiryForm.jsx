@@ -505,21 +505,47 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     if (!form.event_location) { alert('Please enter the event location.'); return; }
     if (!form.event_start_time) { alert('Please enter the event start time.'); return; }
     if (!form.venue_access_time) { alert('Please enter the venue access time.'); return; }
+
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    await base44.entities.BridalInquiry.create({ ...form, preferred_date: selectedDate || '', preferred_time: '', status: 'new' });
-    const newBooking = await base44.entities.Booking.create({ name: form.bride_name, email: form.email, phone: form.phone, service: bridalTitle, date: selectedDate || '', time: '', notes: `Ready by: ${form.ready_by_time || 'Not specified'}. ${form.additional_details}`, status: 'pending', upload_token: token, reference_photos: inspoPhotos });
+
+    // Create bridal inquiry record
+    await fetch('/api/bridal-inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, preferred_date: selectedDate || '', preferred_time: '', status: 'new', upload_token: token }),
+    });
+
+    // Create associated booking record (carries the upload token + inspo photos)
+    const bookingRes = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.bride_name,
+        email: form.email,
+        phone: form.phone,
+        service: bridalTitle,
+        date: selectedDate || '',
+        time: '',
+        notes: `Ready by: ${form.ready_by_time || 'Not specified'}. ${form.additional_details || ''}`.trim(),
+        status: 'pending',
+        upload_token: token,
+        reference_photos: inspoPhotos,
+      }),
+    });
+    const newBooking = await bookingRes.json();
     setNewBookingId(newBooking.id);
     setUploadToken(token);
-    const uploadUrl = `${window.location.origin}/upload-zelle?id=${newBooking.id}&token=${token}`;
 
-    // Send bridal confirmation email to client
+    const uploadUrl = `${window.location.origin}/upload-zelle?id=${newBooking.id}&token=${token}`;
     const bridalDateFormatted = selectedDate
       ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
       : 'your requested date';
     const brideFirst = (form.bride_name || '').split(' ')[0] || 'there';
-    // Send confirmation email via backend function (keeps payload small, avoids Gmail clipping)
-    try {
-      await base44.functions.invoke('sendBookingConfirmation', {
+
+    fetch('/api/send-booking-confirmation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         bookingType: 'bridal',
         to: form.email,
         firstName: brideFirst,
@@ -527,10 +553,8 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
         bridalDeposit,
         bridalDateFormatted,
         uploadUrl,
-      });
-    } catch (err) {
-      console.error('Failed to send bridal confirmation email:', err);
-    }
+      }),
+    }).catch(err => console.error('bridal email error:', err));
 
     setSubmitted(true);
   };
@@ -806,6 +830,62 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="What do I need to know about your day? Your makeup vision? Any inspo images?" className={`${inputClass} resize-none h-[80px] border-b`} />
           </div>
 
+          {/* Inspo Photos — moved here, right next to makeup vision */}
+          <div>
+            <label className={labelClass}>Inspo Photos <span className="text-gray-300 normal-case tracking-normal font-normal">— optional</span></label>
+            <p className="text-[0.68rem] text-gray-400 mb-3">Share any inspiration photos, mood board images, or looks you love.</p>
+
+            {inspoPhotos.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {inspoPhotos.map((url, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
+                    <img src={url} alt={`Inspo ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setInspoPhotos(p => p.filter((_, i) => i !== idx))}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ background: 'rgba(0,0,0,0.6)' }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <label className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed cursor-pointer transition-colors w-fit ${inspoUploading ? 'opacity-50 pointer-events-none' : 'hover:border-[#D4A0B0] hover:text-[#A0785A]'}`}
+              style={{ borderColor: '#e8e2dc', color: '#aaa' }}>
+              {inspoUploading ? (
+                <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /><span className="text-[0.72rem]">Uploading…</span></>
+              ) : (
+                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span className="text-[0.72rem] font-medium">Add inspo photos</span></>
+              )}
+              <input type="file" accept="image/*" multiple className="hidden" disabled={inspoUploading}
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files);
+                  if (!files.length) return;
+                  setInspoUploading(true);
+                  try {
+                    const urls = await Promise.all(files.map(async (f) => {
+                      const fd = new FormData();
+                      fd.append('file', f);
+                      const res = await fetch('/api/upload-inspo-photo', { method: 'POST', body: fd });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Upload failed');
+                      return data.url;
+                    }));
+                    setInspoPhotos(p => [...p, ...urls]);
+                  } catch (err) {
+                    alert('Photo upload failed. Please try again.');
+                  } finally {
+                    setInspoUploading(false);
+                    e.target.value = '';
+                  }
+                }}
+              />
+            </label>
+          </div>
+
           <div>
             <CustomSelect
               label="How Did You Hear About Me?"
@@ -870,51 +950,6 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Inspo Photos */}
-          <div className="w-full h-px bg-gray-100" />
-          <div>
-            <label className={labelClass}>Inspo Photos <span className="text-gray-300 normal-case tracking-normal font-normal">— optional</span></label>
-            <p className="text-[0.68rem] text-gray-400 mb-3">Share any inspiration photos, mood board images, or looks you love.</p>
-
-            {inspoPhotos.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                {inspoPhotos.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                    <img src={url} alt={`Inspo ${idx + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setInspoPhotos(p => p.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: 'rgba(0,0,0,0.6)' }}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed cursor-pointer transition-colors w-fit ${inspoUploading ? 'opacity-50 pointer-events-none' : 'hover:border-[#D4A0B0] hover:text-[#A0785A]'}`}
-              style={{ borderColor: '#e8e2dc', color: '#aaa' }}>
-              {inspoUploading ? (
-                <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /><span className="text-[0.72rem]">Uploading…</span></>
-              ) : (
-                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span className="text-[0.72rem] font-medium">Add inspo photos</span></>
-              )}
-              <input type="file" accept="image/*" multiple className="hidden" disabled={inspoUploading}
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files);
-                  if (!files.length) return;
-                  setInspoUploading(true);
-                  const urls = await Promise.all(files.map(f => base44.integrations.Core.UploadFile({ file: f }).then(r => r.file_url)));
-                  setInspoPhotos(p => [...p, ...urls]);
-                  setInspoUploading(false);
-                  e.target.value = '';
-                }}
-              />
-            </label>
           </div>
 
           <div className="mt-auto pt-2">
