@@ -10,7 +10,7 @@ function resolveTo(address) {
 
 function base(content) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#FAF7F4;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
 <div style="max-width:500px;margin:0 auto;padding:24px 16px;">
 <div style="text-align:center;margin-bottom:16px;">
   <p style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#C4849A;margin:0;">Roqia Moshref · Makeup Artistry</p>
@@ -98,7 +98,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Action Required — Send Your Deposit</p>
       <p style="font-family:Georgia,serif;font-size:20px;color:#2C1A14;margin:0 0 4px;">${serviceDeposit || 'Deposit required'}</p>
       <p style="font-size:12px;color:#9E8E84;margin:0 0 12px;">Send via Zelle to lock in your date</p>
-      <div style="background:#FDF7F4;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left;border:1px solid #EDE6DF;">
+      <div style="background:#F7F3F0;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left;border:1px solid #EDE6DF;">
         <p style="font-size:13px;color:#2C1A14;margin:0 0 4px;"><strong>Zelle to:</strong> Ruqia Moshref</p>
         <p style="font-size:13px;color:#2C1A14;margin:0;"><strong>Phone:</strong> 510-491-6497</p>
       </div>
@@ -129,7 +129,7 @@ export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateForm
     <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:2px solid #E8C4D0;text-align:center;">
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Action Required — Send Your Deposit</p>
       <p style="font-family:Georgia,serif;font-size:20px;color:#2C1A14;margin:0 0 4px;">${bridalDeposit}</p>
-      <div style="background:#FDF7F4;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left;border:1px solid #EDE6DF;">
+      <div style="background:#F7F3F0;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left;border:1px solid #EDE6DF;">
         <p style="font-size:13px;color:#2C1A14;margin:0 0 4px;"><strong>Zelle to:</strong> Ruqia Moshref</p>
         <p style="font-size:13px;color:#2C1A14;margin:0;"><strong>Phone:</strong> 510-491-6497</p>
       </div>
@@ -273,13 +273,48 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
 export function adminBookingEmail({ name, service, date, email, phone, bookingType }) {
   return base(`
     ${card(`
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#2C1A14;margin:0 0 10px;">New ${bookingType === 'bridal' ? 'Bridal Inquiry' : 'Booking'}</h2>
+      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#2C1A14;margin:0 0 10px;">New Booking</h2>
       <table style="width:100%;border-collapse:collapse;">
         ${row('Name', name)}
         ${row('Service', service)}
         ${row('Date', date)}
         ${row('Email', email)}
         ${row('Phone', phone || 'N/A')}
+      </table>
+    `)}
+    ${card(`
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
+    `)}
+  `);
+}
+
+export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, eventLocation, eventStartTime, venueAccessTime, numPeopleGlam, outOfState }) {
+  return base(`
+    ${card(`
+      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#2C1A14;margin:0 0 10px;">New Bridal Inquiry 💍</h2>
+      <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;"><strong>${firstName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Name', firstName)}
+        ${row('Email', email)}
+        ${row('Phone', phone || 'N/A')}
+      </table>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Event Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Service', bridalTitle)}
+        ${weddingDate ? row('Wedding Date', weddingDate) : ''}
+        ${bridalDateFormatted ? row('Preferred Appt Date', bridalDateFormatted) : ''}
+        ${eventLocation ? row('Location', eventLocation) : ''}
+        ${eventStartTime ? row('Event Start Time', eventStartTime) : ''}
+        ${venueAccessTime ? row('Venue Access Time', venueAccessTime) : ''}
+        ${numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : ''}
+        ${outOfState !== undefined ? row('Out of State', outOfState ? 'Yes ✈️' : 'No') : ''}
       </table>
     `)}
     ${card(`
