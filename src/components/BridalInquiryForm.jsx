@@ -275,25 +275,30 @@ function BridalSuccess({ onClose, brideName, bookingId, uploadToken }) {
         {/* Send photos to */}
         <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
           <div className="px-5 pt-4 pb-1">
-            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Send Prep Photos To</p>
+            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Inspiration & Prep Photos</p>
           </div>
-          <div className="px-5 pb-4 pt-2 flex flex-col gap-2.5">
-            <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
-              <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </div>
-              makeupbyroko22@gmail.com
-            </a>
-            <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
-              <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
-                  <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#D4A0B0" stroke="none"/>
-                </svg>
-              </div>
-              @makeupbyroko_ (Instagram DM)
-            </a>
+          <div className="px-5 pb-4 pt-2">
+            <p className="text-[0.75rem] text-[#6E6058] leading-[1.7] mb-3">
+              If you uploaded inspo photos in the form, you're all set! If you haven't yet — or want to add more — send them here:
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                </div>
+                makeupbyroko22@gmail.com
+              </a>
+              <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
+                    <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#D4A0B0" stroke="none"/>
+                  </svg>
+                </div>
+                @makeupbyroko_ (Instagram DM)
+              </a>
+            </div>
           </div>
         </div>
 
@@ -334,8 +339,13 @@ function LocationAutocomplete({ value, onChange }) {
     if (q.length < 2) { setSuggestions([]); setOpen(false); return; }
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('placesAutocomplete', { input: q });
-      const predictions = res.data?.predictions || [];
+      const res = await fetch('/api/places-autocomplete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: q }),
+      });
+      const data = await res.json();
+      const predictions = data.predictions || [];
       setSuggestions(predictions);
       setOpen(predictions.length > 0);
     } catch {

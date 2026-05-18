@@ -149,21 +149,29 @@ export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateForm
 export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted }) {
   return base(`
     ${card(`
-      <div style="text-align:center;margin-bottom:12px;">
-        <div style="width:40px;height:40px;border-radius:50%;background:#dcfce7;margin:0 auto 10px;line-height:40px;text-align:center;font-size:18px;">✓</div>
-        <h1 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#2C1A14;margin:0 0 4px;">You're <em style="color:#C4849A;">Confirmed!</em></h1>
+      <div style="text-align:center;margin-bottom:14px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#F7EEF2,#EDD9E3);margin:0 auto 12px;line-height:48px;text-align:center;font-size:20px;color:#C4849A;">✓</div>
+        <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:300;color:#2C1A14;margin:0 0 4px;">You're <em style="color:#C4849A;">Confirmed!</em></h1>
         <p style="font-family:Georgia,serif;font-style:italic;font-size:13px;color:#A0785A;margin:0;">Can't wait to see you ✦</p>
       </div>
-      <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;">Hey <strong>${firstName}</strong>! Your <strong>${serviceName}</strong> appointment on <strong>${dateFormatted}</strong> is officially confirmed. See you then!</p>
+      <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;">Hey <strong>${firstName}</strong>! Your <strong>${serviceName}</strong> appointment on <strong>${dateFormatted}</strong> is officially confirmed. I'm so excited — see you then!</p>
     `)}
     ${card(`
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Appointment Details</p>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Appointment Details</p>
       <table style="width:100%;border-collapse:collapse;">
         ${row('Service', serviceName)}
         ${row('Date', dateFormatted)}
-        ${row('Status', 'Confirmed')}
+        ${row('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')}
       </table>
-      <p style="font-size:12px;color:#9E8E84;margin:12px 0 0;">Remaining balance is due in cash on the day of your appointment.</p>
+      <div style="margin-top:12px;padding:10px 12px;background:#F7F3F0;border-radius:8px;border-left:3px solid #D4A0B0;">
+        <p style="font-size:12px;color:#A0785A;margin:0;">💵 Remaining balance is due in <strong>cash</strong> on the day of your appointment.</p>
+      </div>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">What to Expect</p>
+      ${step(1, 'Arrive on time', 'Roko will be ready for you at your confirmed time')}
+      ${step(2, 'Bring your inspiration', 'Photos of your desired look are always welcome')}
+      ${step(3, 'Bring cash for remaining balance', 'Exact amount confirmed with Roko beforehand')}
     `)}
   `);
 }
@@ -292,10 +300,11 @@ export function adminBookingEmail({ name, service, date, email, phone, bookingTy
 
 export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, eventLocation, eventStartTime, venueAccessTime, numPeopleGlam, outOfState }) {
   return base(`
-    ${card(`
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#2C1A14;margin:0 0 10px;">New Bridal Inquiry 💍</h2>
-      <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;"><strong>${firstName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
-    `)}
+    <div style="background:linear-gradient(135deg,#F7EEF2,#EDD9E3);border-radius:14px;padding:20px;margin-bottom:10px;text-align:center;">
+      <p style="font-size:28px;margin:0 0 8px;">💍</p>
+      <h2 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#2C1A14;margin:0 0 4px;">New Bridal Inquiry</h2>
+      <p style="font-size:13px;color:#6E6058;margin:0;"><strong>${firstName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
+    </div>
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
       <table style="width:100%;border-collapse:collapse;">
@@ -304,20 +313,21 @@ export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDa
         ${row('Phone', phone || 'N/A')}
       </table>
     `)}
-    ${card(`
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #EDE6DF;">
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Event Details</p>
       <table style="width:100%;border-collapse:collapse;">
-        ${row('Service', bridalTitle)}
-        ${weddingDate ? row('Wedding Date', weddingDate) : ''}
-        ${bridalDateFormatted ? row('Preferred Appt Date', bridalDateFormatted) : ''}
+        ${row('Service', `<strong style="color:#C4849A;">${bridalTitle}</strong>`)}
+        ${weddingDate ? row('Wedding Date', `<strong>${weddingDate}</strong>`) : ''}
+        ${bridalDateFormatted ? row('Preferred Appt', bridalDateFormatted) : ''}
         ${eventLocation ? row('Location', eventLocation) : ''}
-        ${eventStartTime ? row('Event Start Time', eventStartTime) : ''}
-        ${venueAccessTime ? row('Venue Access Time', venueAccessTime) : ''}
+        ${eventStartTime ? row('Event Starts', eventStartTime) : ''}
+        ${venueAccessTime ? row('Venue Access', venueAccessTime) : ''}
         ${numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : ''}
-        ${outOfState !== undefined ? row('Out of State', outOfState ? 'Yes ✈️' : 'No') : ''}
+        ${outOfState !== undefined ? row('Out of State', outOfState ? '✈️ Yes' : '📍 No — Local') : ''}
       </table>
-    `)}
+    </div>
     ${card(`
+      <p style="font-size:13px;color:#6E6058;margin:0 0 14px;">Reach out within <strong>24–48 hours</strong> to confirm and schedule their consultation.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
         <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
