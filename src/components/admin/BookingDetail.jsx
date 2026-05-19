@@ -114,18 +114,14 @@ const TIME_SLOTS = (() => {
   return slots;
 })();
 
-const genMeetLink = () => {
-  const id = Math.random().toString(36).slice(2, 6).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `https://meet.jit.si/RokoConsult-${id}`;
-};
-
 function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
   const hasConsult = !!booking.consultation_date;
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [meetLink, setMeetLink] = useState(() => genMeetLink());
+  const [meetLink, setMeetLink] = useState('');
+  const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: booking.consultation_date || '',
     time: booking.consultation_time || TIME_SLOTS[4],
@@ -135,12 +131,35 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const regenerateLink = () => {
-    setMeetLink(genMeetLink());
+  const generateZoomLink = async () => {
+    setGeneratingLink(true);
     setLinkCopied(false);
+    try {
+      const res = await fetch('/api/create-zoom-meeting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: `Makeup by Roko — Consultation with ${booking.name || 'Client'}`,
+          duration: 30,
+          date: form.date || undefined,
+          time: form.time || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.join_url) {
+        setMeetLink(data.join_url);
+      } else {
+        alert('Could not create Zoom meeting. Check that your Zoom app has the meeting:write:admin scope activated.');
+      }
+    } catch {
+      alert('Failed to create Zoom meeting. Please try again.');
+    } finally {
+      setGeneratingLink(false);
+    }
   };
 
   const copyMeetLink = () => {
+    if (!meetLink) return;
     navigator.clipboard.writeText(meetLink);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
@@ -274,29 +293,50 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
               </div>
             </div>
 
-            {/* Auto-generated meet link — only shows when Zoom is selected */}
+            {/* Zoom meeting link — generated via Zoom API */}
             {form.type === 'Zoom' && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[0.62rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#999' }}>Video Call Link</label>
-                  <button type="button" onClick={regenerateLink}
-                    className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
-                    style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: '#7C3AED', border: '1px solid #C4A8E8' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                    New Link
-                  </button>
+                  <label className="text-[0.62rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#999' }}>Zoom Meeting Link</label>
+                  {meetLink && (
+                    <button type="button" onClick={generateZoomLink} disabled={generatingLink}
+                      className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                      style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: '#7C3AED', border: '1px solid #C4A8E8' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                      New Link
+                    </button>
+                  )}
                 </div>
-                <button type="button" onClick={copyMeetLink}
-                  className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                  style={{ minHeight: '52px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : (dm ? '#1c1c28' : '#F5F0FF'), border: `1.5px solid ${linkCopied ? '#22c55e' : '#C4A8E8'}` }}>
-                  <span className="text-[0.75rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#7C3AED' }}>
-                    {meetLink}
-                  </span>
-                  <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
-                    style={{ background: linkCopied ? '#22c55e' : '#7C3AED', color: '#fff' }}>
-                    {linkCopied ? '✓ Copied!' : 'Tap to Copy'}
-                  </span>
-                </button>
+
+                {!meetLink ? (
+                  <button type="button" onClick={generateZoomLink} disabled={generatingLink}
+                    className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                    style={{ minHeight: '52px', fontSize: '14px', background: generatingLink ? (dm ? '#2a1f4a' : '#EDE8FF') : '#2D8CFF', color: '#fff', border: 'none' }}>
+                    {generatingLink ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generating…</>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
+                        Generate Zoom Link
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button type="button" onClick={copyMeetLink}
+                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                    style={{ minHeight: '52px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : (dm ? '#1c1c28' : '#EBF5FF'), border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg viewBox="0 0 24 24" fill="#2D8CFF" className="w-4 h-4 flex-shrink-0"><path d="M19 11c0 1.19-.34 2.3-.92 3.24L17.24 13.4C17.71 12.68 18 11.87 18 11c0-2.76-2.24-5-5-5-2.76 0-5 2.24-5 5 0 2.76 2.24 5 5 5 .87 0 1.68-.29 2.4-.76l.84.84C15.3 16.66 14.19 17 13 17c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6zm-6 3.5c-.83 0-1.5-.67-1.5-1.5S6.17 11.5 7 11.5s1.5.67 1.5 1.5S7.83 14.5 7 14.5z"/></svg>
+                      <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>
+                        {meetLink}
+                      </span>
+                    </div>
+                    <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
+                      style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
+                      {linkCopied ? '✓ Copied!' : 'Copy'}
+                    </span>
+                  </button>
+                )}
               </div>
             )}
 
