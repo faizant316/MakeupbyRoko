@@ -335,32 +335,40 @@ export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDa
   `);
 }
 
-export function consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, consultationNotes }) {
+export function consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }) {
   const typeIcon = consultationType === 'Zoom' ? '💻' : consultationType === 'Phone' ? '📞' : '📍';
   const gcalTitle = encodeURIComponent(`Makeup Consultation — ${serviceName}`);
-  const gcalDetails = encodeURIComponent(`Consultation with Roqia Moshref (Makeup by Roko) for ${serviceName}`);
+  const gcalDetails = encodeURIComponent(`Consultation with Roqia Moshref (Makeup by Roko) for ${serviceName}${zoomLink ? `\nZoom: ${zoomLink}` : ''}`);
   const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&details=${gcalDetails}`;
 
   return base(`
     ${card(`
       <div style="text-align:center;margin-bottom:14px;">
         <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#F0E8FF,#DDD0F7);margin:0 auto 12px;line-height:48px;text-align:center;font-size:22px;">📅</div>
-        <h1 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#2C1A14;margin:0 0 4px;">Consultation <em style="color:#C4849A;">Scheduled!</em></h1>
+        <h1 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#2C1A14;margin:0 0 4px;">Consultation <em style="color:#7C3AED;">Scheduled!</em></h1>
         <p style="font-family:Georgia,serif;font-style:italic;font-size:13px;color:#A0785A;margin:0;">Can't wait to connect with you ✦</p>
       </div>
       <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;">Hey <strong>${firstName}</strong>! Your consultation for <strong>${serviceName}</strong> has been scheduled. Here are your details:</p>
     `)}
-    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:2px solid #E8C4D0;">
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Consultation Details</p>
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:2px solid #C4A8E8;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#7C3AED;margin:0 0 10px;">Consultation Details</p>
       <table style="width:100%;border-collapse:collapse;">
         ${row('Date', `<strong>${consultationDate}</strong>`)}
         ${row('Time', `<strong>${consultationTime}</strong>`)}
         ${row('Type', `${typeIcon} <strong>${consultationType}</strong>`)}
         ${consultationNotes ? row('Notes', consultationNotes) : ''}
       </table>
+      ${zoomLink ? `
+      <div style="margin-top:14px;padding:12px;background:#F5F0FF;border-radius:10px;border:1px solid #C4A8E8;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7C3AED;margin:0 0 8px;">Your Zoom Link</p>
+        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+          <a href="${zoomLink}" style="display:inline-block;background:#7C3AED;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">💻 Join Zoom Call</a>
+        </td></tr></table>
+        <p style="font-size:11px;color:#9E8E84;text-align:center;margin:8px 0 0;word-break:break-all;">${zoomLink}</p>
+      </div>` : ''}
       <div style="margin-top:14px;">
         <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-          <a href="${gcalUrl}" style="display:inline-block;background:#7C3AED;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;">+ Add to Google Calendar</a>
+          <a href="${gcalUrl}" style="display:inline-block;background:#F5F0FF;color:#7C3AED;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #C4A8E8;">+ Add to Google Calendar</a>
         </td></tr></table>
       </div>
     </div>

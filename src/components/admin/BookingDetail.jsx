@@ -119,20 +119,32 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [form, setForm] = useState({
     date: booking.consultation_date || '',
-    time: booking.consultation_time || TIME_SLOTS[2],
+    time: booking.consultation_time || TIME_SLOTS[4],
     type: booking.consultation_type || 'Zoom',
+    zoomLink: '',
     notes: booking.consultation_notes || '',
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const copyZoomLink = () => {
+    if (!form.zoomLink) return;
+    navigator.clipboard.writeText(form.zoomLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   const handleSend = async () => {
     if (!form.date || !form.time) { alert('Please select a date and time.'); return; }
     setSaving(true);
     try {
       const dateFormatted = new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      const notesWithLink = form.type === 'Zoom' && form.zoomLink
+        ? (form.notes ? `${form.notes}\nZoom: ${form.zoomLink}` : `Zoom: ${form.zoomLink}`)
+        : form.notes;
       const res = await fetch('/api/send-consultation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,11 +156,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
           consultationDate: dateFormatted,
           consultationTime: form.time,
           consultationType: form.type,
+          zoomLink: form.type === 'Zoom' ? form.zoomLink : '',
           consultationNotes: form.notes,
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: form.notes });
+      onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: notesWithLink });
       setSent(true);
       setExpanded(false);
     } catch {
@@ -159,96 +172,159 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
   };
 
   const border = dm ? '#3a3a48' : '#e8e2dc';
-  const cardBg = dm ? '#27272a' : '#fff';
+  const inputBg = dm ? '#1c1c28' : '#fafafa';
+  const inputColor = dm ? '#e4e4e7' : '#111';
+  const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
 
   return (
     <div className="mb-6">
       <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a] mb-3">Consultation</p>
 
-      {hasConsult && !expanded ? (
+      {/* Scheduled state */}
+      {hasConsult && !expanded && (
         <div className="rounded-2xl p-4 flex items-start justify-between gap-3" style={{ background: dm ? '#1c1c28' : '#F5F0FF', border: '1px solid #C4A8E8' }}>
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#7C3AED' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-3.5 h-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#7C3AED' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
-            <div>
-              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#d4b8ff' : '#5B21B6' }}>{booking.consultation_type} Consultation</p>
-              <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>{booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {booking.consultation_time}</p>
-              {booking.consultation_notes && <p className="text-[0.68rem] mt-1" style={{ color: dm ? '#71717a' : '#9E8E84' }}>{booking.consultation_notes}</p>}
+            <div className="min-w-0">
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#d4b8ff' : '#5B21B6' }}>{booking.consultation_type} Consultation</p>
+              <p className="text-[0.75rem] mt-0.5" style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>
+                {booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {booking.consultation_time}
+              </p>
+              {booking.consultation_notes && <p className="text-[0.7rem] mt-1 break-all" style={{ color: dm ? '#71717a' : '#9E8E84' }}>{booking.consultation_notes}</p>}
             </div>
           </div>
-          <button onClick={() => { setExpanded(true); setSent(false); }} className="text-[0.65rem] font-semibold shrink-0 mt-0.5" style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>Reschedule</button>
+          <button onClick={() => { setExpanded(true); setSent(false); }}
+            className="text-[0.72rem] font-semibold shrink-0 mt-0.5 px-3 py-1.5 rounded-lg"
+            style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: dm ? '#a78bfa' : '#7C3AED' }}>
+            Reschedule
+          </button>
         </div>
-      ) : !expanded ? (
-        <button
-          onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-[0.78rem] font-semibold transition-all"
-          style={{ background: dm ? '#1c1c28' : '#F5F0FF', border: '1.5px dashed #C4A8E8', color: dm ? '#a78bfa' : '#7C3AED' }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      )}
+
+      {/* Empty state */}
+      {!hasConsult && !expanded && (
+        <button onClick={() => setExpanded(true)}
+          className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-semibold transition-all touch-manipulation"
+          style={{ background: dm ? '#1c1c28' : '#F5F0FF', border: '1.5px dashed #C4A8E8', color: dm ? '#a78bfa' : '#7C3AED', minHeight: '52px', fontSize: '14px' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           Schedule Consultation
         </button>
-      ) : null}
+      )}
 
+      {/* Picker */}
       {expanded && (
         <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #C4A8E8' }}>
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,#F5F0FF,#EDE8FF)' }}>
-            <p className="text-[0.7rem] font-bold tracking-[0.1em] uppercase" style={{ color: '#5B21B6' }}>📅 Schedule Consultation</p>
-            <button onClick={() => setExpanded(false)} className="text-[#a78bfa]">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          {/* Header */}
+          <div className="px-4 py-3.5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,#F5F0FF,#EDE8FF)' }}>
+            <p className="text-[0.72rem] font-bold tracking-[0.08em] uppercase" style={{ color: '#5B21B6' }}>📅 Schedule Consultation</p>
+            <button onClick={() => setExpanded(false)} className="w-7 h-7 flex items-center justify-center rounded-full" style={{ background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
-          <div className="p-4 flex flex-col gap-3" style={{ background: cardBg }}>
-            {/* Date */}
-            <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Date</label>
-              <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-[0.82rem] outline-none focus:ring-2"
-                style={{ border: `1px solid ${border}`, background: dm ? '#1c1c28' : '#fafafa', color: dm ? '#e4e4e7' : '#111', focusRingColor: '#a78bfa' }} />
+
+          <div className="p-4 flex flex-col gap-4" style={{ background: dm ? '#27272a' : '#fff' }}>
+            {/* Date + Time row on larger screens, stacked on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>Date</label>
+                <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
+                  className="w-full px-4 rounded-xl outline-none appearance-none"
+                  style={{ ...inputStyle, minHeight: '48px', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>Time</label>
+                <select value={form.time} onChange={e => set('time', e.target.value)}
+                  className="w-full px-4 rounded-xl outline-none appearance-none"
+                  style={{ ...inputStyle, minHeight: '48px' }}>
+                  {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
             </div>
-            {/* Time */}
-            <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Time</label>
-              <select value={form.time} onChange={e => set('time', e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-[0.82rem] outline-none"
-                style={{ border: `1px solid ${border}`, background: dm ? '#1c1c28' : '#fafafa', color: dm ? '#e4e4e7' : '#111' }}>
-                {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+
             {/* Type */}
             <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Type</label>
-              <div className="flex gap-2">
-                {['Zoom', 'Phone', 'In-Person'].map(t => (
-                  <button key={t} type="button" onClick={() => set('type', t)}
-                    className="flex-1 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
-                    style={form.type === t
-                      ? { background: '#7C3AED', color: '#fff', border: '1px solid #7C3AED' }
-                      : { background: dm ? '#1c1c28' : '#fafafa', color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }}>
-                    {t === 'Zoom' ? '💻' : t === 'Phone' ? '📞' : '📍'} {t}
+              <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>Type</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: 'Zoom', icon: '💻', label: 'Zoom' },
+                  { key: 'Phone', icon: '📞', label: 'Phone' },
+                  { key: 'In-Person', icon: '📍', label: 'In-Person' },
+                ].map(({ key, icon, label }) => (
+                  <button key={key} type="button" onClick={() => set('type', key)}
+                    className="rounded-xl font-semibold transition-all touch-manipulation"
+                    style={{
+                      minHeight: '48px', fontSize: '13px',
+                      ...(form.type === key
+                        ? { background: '#7C3AED', color: '#fff', border: '2px solid #7C3AED' }
+                        : { background: inputBg, color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }),
+                    }}>
+                    <span>{icon}</span><br /><span style={{ fontSize: '11px' }}>{label}</span>
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Zoom link — only shows when Zoom is selected */}
+            {form.type === 'Zoom' && (
+              <div>
+                <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>
+                  Zoom Link <span style={{ color: dm ? '#52525b' : '#c5bdb5', textTransform: 'lowercase', letterSpacing: 0 }}>— optional</span>
+                </label>
+                <div className="flex gap-2 items-stretch">
+                  <input
+                    type="url"
+                    value={form.zoomLink}
+                    onChange={e => set('zoomLink', e.target.value)}
+                    placeholder="https://zoom.us/j/..."
+                    className="flex-1 px-4 rounded-xl outline-none"
+                    style={{ ...inputStyle, minHeight: '48px' }}
+                  />
+                  {form.zoomLink && (
+                    <button type="button" onClick={copyZoomLink}
+                      className="px-3 rounded-xl text-[0.7rem] font-semibold flex-shrink-0 transition-all"
+                      style={{ background: linkCopied ? '#22c55e' : (dm ? '#2a1f4a' : '#EDE8FF'), color: linkCopied ? '#fff' : '#7C3AED', border: `1px solid ${linkCopied ? '#22c55e' : '#C4A8E8'}`, minHeight: '48px' }}>
+                      {linkCopied ? '✓ Copied' : 'Copy'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Notes */}
             <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Notes <span style={{ color: dm ? '#52525b' : '#c5bdb5', textTransform: 'lowercase' }}>— optional</span></label>
-              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} placeholder="Zoom link, call-in number, or any prep info…"
-                className="w-full px-3 py-2 rounded-xl text-[0.82rem] outline-none resize-none"
-                style={{ border: `1px solid ${border}`, background: dm ? '#1c1c28' : '#fafafa', color: dm ? '#e4e4e7' : '#111' }} />
+              <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>
+                Notes <span style={{ color: dm ? '#52525b' : '#c5bdb5', textTransform: 'lowercase', letterSpacing: 0 }}>— optional</span>
+              </label>
+              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
+                placeholder="Any extra info for the client…"
+                className="w-full px-4 py-3 rounded-xl outline-none resize-none"
+                style={{ ...inputStyle, minHeight: '80px' }} />
             </div>
+
             {/* CTA */}
             <button onClick={handleSend} disabled={saving || !form.date}
-              className="w-full py-3 rounded-xl text-[0.78rem] font-semibold flex items-center justify-center gap-2 transition-all"
-              style={!form.date ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
-                : { background: '#7C3AED', color: '#fff', boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
-              {saving ? (
-                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
-              ) : (
-                <>📅 Confirm & Notify Client</>
-              )}
+              className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+              style={{
+                minHeight: '52px', fontSize: '15px',
+                ...(!form.date
+                  ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                  : { background: '#7C3AED', color: '#fff', boxShadow: '0 4px 18px rgba(124,58,237,0.35)' }),
+              }}>
+              {saving
+                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                : '📅 Confirm & Notify Client'}
             </button>
-            {sent && <p className="text-[0.72rem] text-center" style={{ color: '#7C3AED' }}>✓ Consultation scheduled and client notified!</p>}
+
+            {sent && (
+              <div className="flex items-center justify-center gap-1.5 py-1">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#7C3AED' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <p className="text-[0.75rem] font-medium" style={{ color: '#7C3AED' }}>Consultation scheduled and client notified!</p>
+              </div>
+            )}
           </div>
         </div>
       )}
