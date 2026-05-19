@@ -61,7 +61,8 @@ export async function POST(req) {
 
     if (!meetingRes.ok) {
       const err = await meetingRes.json();
-      throw new Error(err.message || 'Zoom meeting creation failed');
+      console.error('Zoom meeting creation failed:', JSON.stringify(err));
+      throw new Error(`Zoom error ${meetingRes.status}: ${err.message || JSON.stringify(err)}`);
     }
 
     const meeting = await meetingRes.json();
