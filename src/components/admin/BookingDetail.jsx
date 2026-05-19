@@ -149,10 +149,10 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
       if (data.join_url) {
         setMeetLink(data.join_url);
       } else {
-        alert('Could not create Zoom meeting. Check that your Zoom app has the meeting:write:admin scope activated.');
+        alert(`Zoom error: ${data.error || 'Unknown error'}`);
       }
-    } catch {
-      alert('Failed to create Zoom meeting. Please try again.');
+    } catch (err) {
+      alert(`Failed: ${err.message}`);
     } finally {
       setGeneratingLink(false);
     }
