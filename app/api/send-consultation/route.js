@@ -11,27 +11,36 @@ export async function POST(req) {
     const supabase = createClient();
     const {
       bookingId, clientEmail, clientName, serviceName,
-      consultationDate, consultationTime, consultationType, consultationNotes,
+      consultationDate, consultationTime, consultationType, zoomLink, consultationNotes,
     } = await req.json();
 
     if (!bookingId || !clientEmail || !consultationDate || !consultationTime) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Save to DB
+    // Build stored notes (include Zoom link if provided)
+    const storedNotes = [
+      consultationType === 'Zoom' && zoomLink ? `Zoom: ${zoomLink}` : null,
+      consultationNotes || null,
+    ].filter(Boolean).join('\n') || null;
+
     const { error: dbErr } = await supabase
       .from('bookings')
-      .update({ consultation_date: consultationDate, consultation_time: consultationTime, consultation_type: consultationType, consultation_notes: consultationNotes || null })
+      .update({
+        consultation_date: consultationDate,
+        consultation_time: consultationTime,
+        consultation_type: consultationType,
+        consultation_notes: storedNotes,
+      })
       .eq('id', bookingId);
 
     if (dbErr) throw dbErr;
 
-    // Send email to client
     const firstName = (clientName || '').split(' ')[0] || 'there';
     await sendEmail({
       to: clientEmail,
       subject: `Your consultation is scheduled — ${consultationDate} at ${consultationTime}`,
-      html: consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, consultationNotes }),
+      html: consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
     });
 
     return NextResponse.json({ success: true });
