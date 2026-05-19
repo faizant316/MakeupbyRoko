@@ -114,25 +114,34 @@ const TIME_SLOTS = (() => {
   return slots;
 })();
 
+const genMeetLink = () => {
+  const id = Math.random().toString(36).slice(2, 6).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `https://meet.jit.si/RokoConsult-${id}`;
+};
+
 function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
   const hasConsult = !!booking.consultation_date;
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [meetLink, setMeetLink] = useState(() => genMeetLink());
   const [form, setForm] = useState({
     date: booking.consultation_date || '',
     time: booking.consultation_time || TIME_SLOTS[4],
     type: booking.consultation_type || 'Zoom',
-    zoomLink: '',
     notes: booking.consultation_notes || '',
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const copyZoomLink = () => {
-    if (!form.zoomLink) return;
-    navigator.clipboard.writeText(form.zoomLink);
+  const regenerateLink = () => {
+    setMeetLink(genMeetLink());
+    setLinkCopied(false);
+  };
+
+  const copyMeetLink = () => {
+    navigator.clipboard.writeText(meetLink);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
   };
@@ -142,9 +151,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
     setSaving(true);
     try {
       const dateFormatted = new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-      const notesWithLink = form.type === 'Zoom' && form.zoomLink
-        ? (form.notes ? `${form.notes}\nZoom: ${form.zoomLink}` : `Zoom: ${form.zoomLink}`)
-        : form.notes;
+      const activeLink = form.type === 'Zoom' ? meetLink : '';
       const res = await fetch('/api/send-consultation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,12 +163,13 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
           consultationDate: dateFormatted,
           consultationTime: form.time,
           consultationType: form.type,
-          zoomLink: form.type === 'Zoom' ? form.zoomLink : '',
+          zoomLink: activeLink,
           consultationNotes: form.notes,
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: notesWithLink });
+      const storedNotes = [activeLink ? `Link: ${activeLink}` : null, form.notes || null].filter(Boolean).join('\n');
+      onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: storedNotes });
       setSent(true);
       setExpanded(false);
     } catch {
@@ -266,29 +274,29 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
               </div>
             </div>
 
-            {/* Zoom link — only shows when Zoom is selected */}
+            {/* Auto-generated meet link — only shows when Zoom is selected */}
             {form.type === 'Zoom' && (
               <div>
-                <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>
-                  Zoom Link <span style={{ color: dm ? '#52525b' : '#c5bdb5', textTransform: 'lowercase', letterSpacing: 0 }}>— optional</span>
-                </label>
-                <div className="flex gap-2 items-stretch">
-                  <input
-                    type="url"
-                    value={form.zoomLink}
-                    onChange={e => set('zoomLink', e.target.value)}
-                    placeholder="https://zoom.us/j/..."
-                    className="flex-1 px-4 rounded-xl outline-none"
-                    style={{ ...inputStyle, minHeight: '48px' }}
-                  />
-                  {form.zoomLink && (
-                    <button type="button" onClick={copyZoomLink}
-                      className="px-3 rounded-xl text-[0.7rem] font-semibold flex-shrink-0 transition-all"
-                      style={{ background: linkCopied ? '#22c55e' : (dm ? '#2a1f4a' : '#EDE8FF'), color: linkCopied ? '#fff' : '#7C3AED', border: `1px solid ${linkCopied ? '#22c55e' : '#C4A8E8'}`, minHeight: '48px' }}>
-                      {linkCopied ? '✓ Copied' : 'Copy'}
-                    </button>
-                  )}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[0.62rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#999' }}>Video Call Link</label>
+                  <button type="button" onClick={regenerateLink}
+                    className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                    style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: '#7C3AED', border: '1px solid #C4A8E8' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    New Link
+                  </button>
                 </div>
+                <button type="button" onClick={copyMeetLink}
+                  className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                  style={{ minHeight: '52px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : (dm ? '#1c1c28' : '#F5F0FF'), border: `1.5px solid ${linkCopied ? '#22c55e' : '#C4A8E8'}` }}>
+                  <span className="text-[0.75rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#7C3AED' }}>
+                    {meetLink}
+                  </span>
+                  <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
+                    style={{ background: linkCopied ? '#22c55e' : '#7C3AED', color: '#fff' }}>
+                    {linkCopied ? '✓ Copied!' : 'Tap to Copy'}
+                  </span>
+                </button>
               </div>
             )}
 
