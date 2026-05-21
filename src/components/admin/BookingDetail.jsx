@@ -833,7 +833,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[0.65rem] font-medium tracking-[0.08em] uppercase rounded-full transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-[0.65rem] font-medium tracking-[0.08em] uppercase rounded-lg transition-all"
               style={{ color: dm ? '#f87171' : '#dc2626', border: `1px solid ${dm ? 'rgba(185,28,28,0.3)' : 'rgba(239,68,68,0.25)'}` }}
               onMouseEnter={e => { e.currentTarget.style.background = dm ? 'rgba(120,20,20,0.2)' : 'rgba(244,63,63,0.08)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
@@ -843,8 +843,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           ) : (
             <div className="flex items-center gap-3">
               <span className="text-[0.75rem] text-red-400">Are you sure?</span>
-              <button onClick={onDelete} className="px-4 py-2 text-[0.65rem] font-medium uppercase bg-red-500 text-white rounded-full hover:bg-red-600 transition-all">Yes, Delete</button>
-              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-[0.65rem] font-medium uppercase rounded-full transition-all"
+              <button onClick={onDelete} className="px-4 py-2 text-[0.65rem] font-medium uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Yes, Delete</button>
+              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-[0.65rem] font-medium uppercase rounded-lg transition-all"
                 style={{ color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>Cancel</button>
             </div>
           )}
@@ -911,7 +911,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       {/* Cancel confirmation */}
       {confirmCancel && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
-          <div className="rounded-2xl shadow-2xl p-7 max-w-[340px] w-full text-center"
+          <div className="rounded-xl shadow-2xl p-7 max-w-[340px] w-full text-center"
             style={{
               background: dm ? '#27272a' : '#fff',
               border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`,
@@ -921,14 +921,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             <p className="text-[0.8rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>This will mark the appointment as cancelled.</p>
             <div className="flex gap-3 justify-center">
               <button onClick={() => setConfirmCancel(false)}
-                className="px-5 py-2 text-[0.75rem] font-medium rounded-full transition-all"
+                className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
                 style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = dm ? '#71717a' : '#bbb'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = dm ? '#3f3f46' : '#e8e2dc'}>
                 Keep It
               </button>
               <button onClick={handleConfirmCancel}
-                className="px-5 py-2 text-[0.75rem] font-medium text-white bg-red-500 rounded-full hover:bg-red-600 transition-all">
+                className="px-5 py-2 text-[0.75rem] font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-all">
                 Yes, Cancel
               </button>
             </div>

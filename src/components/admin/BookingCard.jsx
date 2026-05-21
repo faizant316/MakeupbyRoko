@@ -55,7 +55,7 @@ export default function BookingCard({ booking, onClick, darkMode: dm }) {
         {booking.email && (
           <a href={`mailto:${booking.email}?subject=Appointment%20with%20Roko%20—%20${encodeURIComponent(booking.service || '')}`}
             onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[0.65rem] font-medium tracking-[0.04em] uppercase rounded-full hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[0.65rem] font-medium tracking-[0.04em] uppercase rounded-lg hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all"
             style={{ color: dm ? '#71717a' : '#555', border: `1px solid ${dm ? '#3a3a48' : '#e4ddd7'}` }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -66,7 +66,7 @@ export default function BookingCard({ booking, onClick, darkMode: dm }) {
         {booking.phone && (
           <a href={`sms:${booking.phone}`}
             onClick={e => e.stopPropagation()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[0.65rem] font-medium tracking-[0.04em] uppercase rounded-full hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[0.65rem] font-medium tracking-[0.04em] uppercase rounded-lg hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all"
             style={{ color: dm ? '#71717a' : '#555', border: `1px solid ${dm ? '#3a3a48' : '#e4ddd7'}` }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>

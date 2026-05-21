@@ -37,8 +37,8 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
           Reference Photos & Mood Board
           {photos.length > 0 && <span className="ml-2 text-[#D4A0B0]">({photos.length})</span>}
         </p>
-        <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold cursor-pointer transition-all ${uploading ? 'opacity-50 pointer-events-none' : 'hover:opacity-80'}`}
-          style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#D4A0B0' : '#A0785A', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+        <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold cursor-pointer transition-all touch-manipulation ${uploading ? 'opacity-50 pointer-events-none' : 'active:opacity-70'}`}
+          style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#D4A0B0' : '#A0785A', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}`, minHeight: '32px' }}>
           {uploading ? (
             <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Uploading…</>
           ) : (
@@ -49,17 +49,17 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
       </div>
 
       {photos.length === 0 ? (
-        <label className={`flex flex-col items-center gap-2.5 px-5 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors group ${uploading ? 'pointer-events-none opacity-50' : ''}`}
+        <label className={`flex items-center gap-3 px-4 py-4 border border-dashed rounded-xl cursor-pointer transition-colors touch-manipulation ${uploading ? 'pointer-events-none opacity-50' : ''}`}
           style={{ borderColor: dm ? '#3a3a48' : '#e8e2dc' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4">
               <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
             </svg>
           </div>
-          <div className="text-center">
+          <div>
             <p className="text-[0.78rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>Upload reference photos or mood board</p>
-            <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#52525b' : '#ccc' }}>PNG, JPG — multiple files OK</p>
+            <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#52525b' : '#ccc' }}>PNG, JPG — multiple OK</p>
           </div>
           <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>
