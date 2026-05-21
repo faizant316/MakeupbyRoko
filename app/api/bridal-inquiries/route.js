@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function GET() {
+export async function GET(req) {
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('bridal_inquiries')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { searchParams } = new URL(req.url);
+    let query = supabase.from('bridal_inquiries').select('*').order('created_at', { ascending: false });
+    const email = searchParams.get('email');
+    if (email) query = query.eq('email', email);
+    const { data, error } = await query;
     if (error) throw error;
     return NextResponse.json(data.map(r => ({ ...r, created_date: r.created_at })));
   } catch (err) {
