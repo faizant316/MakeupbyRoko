@@ -66,7 +66,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
       const bookingRes = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, name: form.name.trim(), source: 'admin' }),
+        body: JSON.stringify({ ...form, name: form.name.trim() }),
       });
       const booking = await bookingRes.json();
       if (!bookingRes.ok) throw new Error(booking.error || 'Failed to create booking');
@@ -80,7 +80,6 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
             email: form.email,
             phone: form.phone,
             service: form.service,
-            source: 'admin',
           }),
         });
       }
@@ -121,13 +120,18 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center sm:px-6"
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center sm:px-6 lg:px-10"
       style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full sm:max-w-[780px] max-h-[92vh] sm:max-h-[calc(100vh-4rem)] overflow-y-auto rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col"
-        style={{ background: cardBg, border: `1px solid ${border}`, animation: 'slideUpSheet 0.3s cubic-bezier(0.32,0.72,0,1)' }}
+        className="w-full sm:max-w-[960px] overflow-y-auto rounded-t-2xl sm:rounded-xl shadow-2xl flex flex-col"
+        style={{
+          background: cardBg,
+          border: `1px solid ${border}`,
+          animation: 'slideUpSheet 0.3s cubic-bezier(0.32,0.72,0,1)',
+          maxHeight: 'calc(92dvh)',
+        }}
       >
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 sm:px-6 pt-5 pb-4"
@@ -402,7 +406,8 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           </div>
 
           {/* Actions */}
-          <div className="flex-shrink-0 flex gap-3 px-5 sm:px-6 pb-8 pt-2">
+          <div className="flex-shrink-0 flex gap-3 px-5 sm:px-6 pt-2"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)' }}>
             <button type="submit" disabled={saving || !form.name.trim() || !form.service.trim()}
               className="flex-1 py-3.5 rounded-xl text-[0.82rem] font-semibold tracking-[0.04em] transition-all flex items-center justify-center gap-2"
               style={!form.name.trim() || !form.service.trim()

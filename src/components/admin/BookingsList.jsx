@@ -48,6 +48,27 @@ export default function BookingsList({
 
   return (
     <div>
+      {/* Add Client + header row */}
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+          {selectedDate
+            ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
+            : monthLabel}
+        </p>
+        {onAddClient && (
+          <button
+            onClick={onAddClient}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+            style={{ background: dm ? '#2e2e38' : '#111', color: dm ? '#e4e4e7' : '#fff' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Client
+          </button>
+        )}
+      </div>
+
       {/* Recent Bookings — last 24 hours, collapsible */}
       {recentBookings.length > 0 && (
         <div className="mb-7 overflow-hidden rounded-2xl" style={{ border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`, boxShadow: '0 2px 20px rgba(160,120,90,0.07)' }}>
@@ -153,24 +174,6 @@ export default function BookingsList({
 
 
 
-      {/* Add Client button */}
-      {onAddClient && (
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={onAddClient}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
-            style={{
-              background: dm ? '#2e2e38' : '#111',
-              color: dm ? '#e4e4e7' : '#fff',
-              border: dm ? `1px solid ${dm ? '#3f3f46' : ''}` : 'none',
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Client
-          </button>
-        </div>
-      )}
-
       {/* Search */}
       <div className="relative mb-4">
         <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2">
@@ -208,7 +211,7 @@ export default function BookingsList({
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
                   style={isActive
                     ? { background: colors.active, color: colors.activeTxt, border: `1px solid ${colors.active}` }
                     : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }

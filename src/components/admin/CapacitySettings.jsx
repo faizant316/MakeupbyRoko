@@ -75,7 +75,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const futureOverrides = dayOverrides.filter(o => o.date >= today).sort((a, b) => a.date.localeCompare(b.date));
 
   return (
-    <div className="rounded-2xl p-5 shadow-sm" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+    <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
       <div className="flex items-center gap-2 mb-4">
         <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -122,7 +122,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
       <div className="flex items-center gap-2 mb-3">
         <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Set Override for a Specific Date</p>
         {selectedDate && (
-          <span className="px-2.5 py-1 bg-[#111] text-white text-[0.6rem] font-semibold rounded-full tracking-wide">
+          <span className="px-2.5 py-1 bg-[#111] text-white text-[0.6rem] font-semibold rounded-md tracking-wide">
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
         )}
@@ -174,7 +174,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
                   <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#111' }}>
                     {new Date(o.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
-                  <span className="px-2 py-0.5 bg-[#D4A0B0]/15 text-[#D4A0B0] text-[0.65rem] font-bold rounded-full">{o.capacity} spots</span>
+                  <span className="px-2 py-0.5 bg-[#D4A0B0]/15 text-[#D4A0B0] text-[0.65rem] font-bold rounded-md">{o.capacity} spots</span>
                 </div>
                 <button onClick={() => deleteOverrideMutation.mutate(o.id)}
                   className="hover:text-red-400 transition-colors text-[0.75rem] px-2" style={{ color: dm ? '#52525b' : '#ccc' }}>✕</button>

@@ -280,7 +280,7 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
               style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>›</button>
           </div>
           <button onClick={goToToday}
-            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-full transition-all flex-shrink-0"
+            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all flex-shrink-0"
             style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>
             Today
           </button>
@@ -320,7 +320,7 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
             <span className="text-[0.8rem] font-semibold text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
             <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>›</button>
           </div>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] px-3 py-1 rounded-full transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
+          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
         </div>
         <div className="grid grid-cols-7 gap-1.5">
           {days.map(d => (
@@ -351,14 +351,14 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
-              className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-full border transition-all ${
+              className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-lg border transition-all ${
                 isBlocked
                   ? 'text-red-500 border-red-200 hover:bg-red-50'
                   : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#b5a99a] border-[#e8e2dc] hover:text-red-500 hover:border-red-200'
               }`}>
               {isBlocked ? '✕ Unblock' : '+ Block Day'}
             </button>
-            <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-full transition-all" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
+            <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
           </div>
         </div>
 
@@ -392,7 +392,7 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
 
   return (
     <>
-      <div className="rounded-2xl p-5 shadow-sm" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+      <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
         {/* View switcher + hint */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-0.5 rounded-xl p-1" style={{ background: dm ? '#1e1e24' : '#F5F0EC' }}>
