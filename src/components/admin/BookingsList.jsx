@@ -16,7 +16,7 @@ function isBridalBooking(booking) {
 export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
-  allBookings, darkMode: dm
+  allBookings, darkMode: dm, onAddClient
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
@@ -152,6 +152,24 @@ export default function BookingsList({
       )}
 
 
+
+      {/* Add Client button */}
+      {onAddClient && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={onAddClient}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+            style={{
+              background: dm ? '#2e2e38' : '#111',
+              color: dm ? '#e4e4e7' : '#fff',
+              border: dm ? `1px solid ${dm ? '#3f3f46' : ''}` : 'none',
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Client
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative mb-4">

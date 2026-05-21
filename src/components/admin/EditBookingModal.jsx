@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/apiClient';
-import { useQuery } from '@tanstack/react-query';
 
 const TIMES = [
   '6:00 AM', '6:30 AM', '7:00 AM', '7:30 AM',
@@ -131,8 +129,8 @@ function StyledSelect({ value, onChange, options, placeholder, dm }) {
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="sm:hidden w-full bg-transparent text-[0.85rem] outline-none font-medium cursor-pointer py-1"
-        style={{ color: value ? textPrimary : textMuted }}
+        className="sm:hidden w-full bg-transparent outline-none font-medium cursor-pointer py-1"
+        style={{ color: value ? textPrimary : textMuted, fontSize: '16px' }}
       >
         <option value="">{placeholder}</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -170,11 +168,12 @@ function StyledSelect({ value, onChange, options, placeholder, dm }) {
 }
 
 export default function EditBookingModal({ booking, onSave, onClose, darkMode: dm }) {
-  const { data: serviceEntities = [] } = useQuery({
-    queryKey: ['admin-services-edit'],
-    queryFn: () => base44.entities.Service.list('sort_order', 50),
-  });
-  const SERVICES = serviceEntities.map(s => s.title);
+  const [SERVICES, setServices] = useState([]);
+  useEffect(() => {
+    fetch('/api/services')
+      .then(r => r.json())
+      .then(data => setServices(Array.isArray(data) ? data.map(s => s.title).filter(Boolean) : []));
+  }, []);
 
   const [form, setForm] = useState({
     name: booking.name || '',
@@ -263,12 +262,12 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
                 { key: 'phone', label: 'Phone', type: 'tel', ph: '(555) 000-0000' },
                 { key: 'email', label: 'Email', type: 'email', ph: 'email@example.com' },
               ].map(({ key, label, type, ph }, i, arr) => (
-                <div key={key} className="flex items-center px-4 py-3 gap-3"
+                <div key={key} className="flex items-center px-4 py-3.5 gap-3"
                   style={{ borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none' }}>
                   <p className="text-[0.72rem] w-12 flex-shrink-0" style={{ color: textMuted }}>{label}</p>
                   <input type={type} value={form[key]} onChange={e => set(key, e.target.value)}
-                    className="flex-1 text-[0.85rem] bg-transparent outline-none font-medium"
-                    style={{ color: textPrimary }} placeholder={ph} />
+                    className="flex-1 bg-transparent outline-none font-medium"
+                    style={{ color: textPrimary, fontSize: '16px' }} placeholder={ph} />
                 </div>
               ))}
             </div>
@@ -298,11 +297,11 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
               </div>
 
               {/* Mobile: native date input */}
-              <div className="sm:hidden flex items-center px-4 py-3 gap-3" style={{ borderBottom: `1px solid ${border}` }}>
+              <div className="sm:hidden flex items-center px-4 py-3.5 gap-3" style={{ borderBottom: `1px solid ${border}` }}>
                 <p className="text-[0.72rem] w-12 flex-shrink-0" style={{ color: textMuted }}>Date</p>
                 <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                  className="flex-1 text-[0.85rem] bg-transparent outline-none font-medium cursor-pointer"
-                  style={{ color: textPrimary }} />
+                  className="flex-1 bg-transparent outline-none font-medium cursor-pointer"
+                  style={{ color: textPrimary, fontSize: '16px' }} />
               </div>
 
               {/* Desktop: custom calendar */}
@@ -328,11 +327,11 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                   {TIMES.map(t => (
                     <button key={t} type="button"
                       onClick={() => set('time', form.time === t ? '' : t)}
-                      className="py-2 rounded-xl text-[0.65rem] font-medium transition-all text-center"
+                      className="py-2.5 rounded-xl text-[0.68rem] font-medium transition-all text-center touch-manipulation"
                       style={form.time === t
                         ? { background: '#111', color: '#fff', border: '1px solid #111' }
                         : { background: dm ? '#1e1e24' : '#F5F0EC', color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }
@@ -352,8 +351,8 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
               </div>
               <div className="p-4">
                 <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
-                  className="w-full text-[0.83rem] bg-transparent outline-none resize-none leading-relaxed"
-                  style={{ color: textPrimary, minHeight: 72 }}
+                  className="w-full bg-transparent outline-none resize-none leading-relaxed"
+                  style={{ color: textPrimary, minHeight: 72, fontSize: '16px' }}
                   placeholder="Ready by time, makeup vision, special requests…" />
               </div>
             </div>
@@ -398,14 +397,14 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
           </div>
 
           {/* Actions */}
-          <div className="flex-shrink-0 flex gap-3 px-5 pb-6 pt-2">
+          <div className="flex-shrink-0 flex gap-3 px-5 pb-8 pt-2">
             <button type="submit"
-              className="flex-1 py-3.5 rounded-2xl text-[0.82rem] font-semibold tracking-[0.04em] transition-all"
+              className="flex-1 py-3.5 rounded-xl text-[0.82rem] font-semibold tracking-[0.04em] transition-all"
               style={{ background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
               Save Changes
             </button>
             <button type="button" onClick={onClose}
-              className="px-5 py-3.5 rounded-2xl text-[0.82rem] font-medium transition-all"
+              className="px-5 py-3.5 rounded-xl text-[0.82rem] font-medium transition-all"
               style={{ color: textMuted, border: `1px solid ${border}` }}>
               Cancel
             </button>
