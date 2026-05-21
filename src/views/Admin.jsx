@@ -13,6 +13,7 @@ import AdminTabSwitcher from '../components/admin/AdminTabSwitcher';
 import CapacitySettings from '../components/admin/CapacitySettings';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
+import AddClientModal from '../components/admin/AddClientModal';
 
 const DEFAULT_CAP = 3;
 
@@ -26,6 +27,7 @@ export default function Admin() {
   const [userName, setUserName] = useState('');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [authGranted, setAuthGranted] = useState(false);
   const [authError, setAuthError] = useState(null);
@@ -400,8 +402,19 @@ export default function Admin() {
               <CapacitySettings selectedDate={selectedDate} darkMode={dm} />
             </div>
             <div id="bookings-list">
-              <BookingsList bookings={filtered} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} darkMode={dm} />
+              <BookingsList bookings={filtered} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
             </div>
+            {showAddClient && (
+              <AddClientModal
+                onSave={(newBooking) => {
+                  queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+                  setShowAddClient(false);
+                  setSelectedBooking(newBooking);
+                }}
+                onClose={() => setShowAddClient(false)}
+                darkMode={dm}
+              />
+            )}
           </>
         )}
 

@@ -201,6 +201,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
   const border = dm ? '#3a3a48' : '#e8e2dc';
   const inputBg = dm ? '#1c1c28' : '#fafafa';
   const inputColor = dm ? '#e4e4e7' : '#111';
+  const textMuted = dm ? '#71717a' : '#999';
   const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
 
   return (
@@ -209,23 +210,28 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
-        <div className="rounded-2xl p-4 flex items-start justify-between gap-3" style={{ background: dm ? '#1c1c28' : '#F5F0FF', border: '1px solid #C4A8E8' }}>
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#7C3AED' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div className="flex items-center justify-between px-4 py-4 rounded-xl transition-all"
+          style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2a1f4a' : '#EDE8FF' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#d4b8ff' : '#5B21B6' }}>{booking.consultation_type} Consultation</p>
-              <p className="text-[0.75rem] mt-0.5" style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>
-                {booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {booking.consultation_time}
+              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>
+                {booking.consultation_type} · {booking.consultation_time}
               </p>
-              {booking.consultation_notes && <p className="text-[0.7rem] mt-1 break-all" style={{ color: dm ? '#71717a' : '#9E8E84' }}>{booking.consultation_notes}</p>}
+              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>
+                {booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </p>
+              {booking.consultation_notes && (
+                <p className="text-[0.65rem] mt-1 break-all" style={{ color: dm ? '#52525b' : '#bbb' }}>{booking.consultation_notes}</p>
+              )}
             </div>
           </div>
           <button onClick={() => { setExpanded(true); setSent(false); }}
-            className="text-[0.72rem] font-semibold shrink-0 mt-0.5 px-3 py-1.5 rounded-lg"
-            style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: dm ? '#a78bfa' : '#7C3AED' }}>
-            Reschedule
+            className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase ml-3 flex-shrink-0"
+            style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>
+            Edit
           </button>
         </div>
       )}
@@ -233,35 +239,51 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
       {/* Empty state */}
       {!hasConsult && !expanded && (
         <button onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-semibold transition-all touch-manipulation"
-          style={{ background: dm ? '#1c1c28' : '#F5F0FF', border: '1.5px dashed #C4A8E8', color: dm ? '#a78bfa' : '#7C3AED', minHeight: '52px', fontSize: '14px' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Schedule Consultation
+          className="w-full flex items-center justify-between px-4 py-4 rounded-xl transition-all touch-manipulation"
+          style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2a1f4a' : '#EDE8FF' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div className="text-left">
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#a78bfa' : '#7C3AED' }}>Schedule Consultation</p>
+              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Set date, time &amp; meeting type</p>
+            </div>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" className="w-3.5 h-3.5 opacity-40">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
         </button>
       )}
 
       {/* Picker */}
       {expanded && (
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #C4A8E8' }}>
+        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
           {/* Header */}
-          <div className="px-4 py-3.5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,#F5F0FF,#EDE8FF)' }}>
-            <p className="text-[0.72rem] font-bold tracking-[0.08em] uppercase" style={{ color: '#5B21B6' }}>📅 Schedule Consultation</p>
-            <button onClick={() => setExpanded(false)} className="w-7 h-7 flex items-center justify-center rounded-full" style={{ background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}>
+          <div className="px-5 py-4 flex items-center justify-between"
+            style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+            <div>
+              <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase" style={{ color: '#7C3AED' }}>Consultation</p>
+              <p className="font-serif text-[1rem] mt-0.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>Schedule a Meeting</p>
+            </div>
+            <button onClick={() => setExpanded(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
+              style={{ background: dm ? '#3f3f46' : '#f0ece8', color: dm ? '#71717a' : '#888' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
-          <div className="p-4 flex flex-col gap-4" style={{ background: dm ? '#27272a' : '#fff' }}>
-            {/* Date + Time row on larger screens, stacked on mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-5 flex flex-col gap-5" style={{ background: dm ? '#27272a' : '#fff' }}>
+            {/* Date + Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>Date</label>
+                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
                 <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
                   className="w-full px-4 rounded-xl outline-none appearance-none"
-                  style={{ ...inputStyle, minHeight: '48px', boxSizing: 'border-box' }} />
+                  style={{ ...inputStyle, minHeight: '48px' }} />
               </div>
               <div>
-                <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>Time</label>
+                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Time</label>
                 <select value={form.time} onChange={e => set('time', e.target.value)}
                   className="w-full px-4 rounded-xl outline-none appearance-none"
                   style={{ ...inputStyle, minHeight: '48px' }}>
@@ -272,36 +294,30 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
 
             {/* Type */}
             <div>
-              <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>Type</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { key: 'Zoom', icon: '💻', label: 'Zoom' },
-                  { key: 'Phone', icon: '📞', label: 'Phone' },
-                  { key: 'In-Person', icon: '📍', label: 'In-Person' },
-                ].map(({ key, icon, label }) => (
+              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
+              <div className="flex gap-2">
+                {['Zoom', 'Phone', 'In-Person'].map(key => (
                   <button key={key} type="button" onClick={() => set('type', key)}
-                    className="rounded-xl font-semibold transition-all touch-manipulation"
-                    style={{
-                      minHeight: '48px', fontSize: '13px',
-                      ...(form.type === key
-                        ? { background: '#7C3AED', color: '#fff', border: '2px solid #7C3AED' }
-                        : { background: inputBg, color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }),
-                    }}>
-                    <span>{icon}</span><br /><span style={{ fontSize: '11px' }}>{label}</span>
+                    className="flex-1 py-3 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
+                    style={form.type === key
+                      ? { background: '#7C3AED', color: '#fff', border: '1px solid #7C3AED' }
+                      : { background: inputBg, color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }
+                    }>
+                    {key}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Zoom meeting link — generated via Zoom API */}
+            {/* Zoom meeting link */}
             {form.type === 'Zoom' && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[0.62rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#999' }}>Zoom Meeting Link</label>
+                  <label className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase" style={{ color: textMuted }}>Zoom Link</label>
                   {meetLink && (
                     <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                       className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
-                      style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: '#7C3AED', border: '1px solid #C4A8E8' }}>
+                      style={{ background: dm ? '#2a1f4a' : '#EDE8FF', color: '#7C3AED', border: `1px solid ${border}` }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                       New Link
                     </button>
@@ -311,29 +327,23 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
                 {!meetLink ? (
                   <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                     className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
-                    style={{ minHeight: '52px', fontSize: '14px', background: generatingLink ? (dm ? '#2a1f4a' : '#EDE8FF') : '#2D8CFF', color: '#fff', border: 'none' }}>
+                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f0ece8') : '#2D8CFF', color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
                     {generatingLink ? (
-                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generating…</>
+                      <><div className="w-4 h-4 border-2 border-[#2D8CFF]/30 border-t-[#2D8CFF] rounded-full animate-spin" /> Generating…</>
                     ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
-                        Generate Zoom Link
-                      </>
+                      <>Generate Zoom Link</>
                     )}
                   </button>
                 ) : (
                   <button type="button" onClick={copyMeetLink}
                     className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                    style={{ minHeight: '52px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : (dm ? '#1c1c28' : '#EBF5FF'), border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <svg viewBox="0 0 24 24" fill="#2D8CFF" className="w-4 h-4 flex-shrink-0"><path d="M19 11c0 1.19-.34 2.3-.92 3.24L17.24 13.4C17.71 12.68 18 11.87 18 11c0-2.76-2.24-5-5-5-2.76 0-5 2.24-5 5 0 2.76 2.24 5 5 5 .87 0 1.68-.29 2.4-.76l.84.84C15.3 16.66 14.19 17 13 17c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6zm-6 3.5c-.83 0-1.5-.67-1.5-1.5S6.17 11.5 7 11.5s1.5.67 1.5 1.5S7.83 14.5 7 14.5z"/></svg>
-                      <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>
-                        {meetLink}
-                      </span>
-                    </div>
+                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
+                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>
+                      {meetLink}
+                    </span>
                     <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
                       style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
-                      {linkCopied ? '✓ Copied!' : 'Copy'}
+                      {linkCopied ? '✓ Copied' : 'Copy'}
                     </span>
                   </button>
                 )}
@@ -342,8 +352,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
 
             {/* Notes */}
             <div>
-              <label className="block text-[0.62rem] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#999' }}>
-                Notes <span style={{ color: dm ? '#52525b' : '#c5bdb5', textTransform: 'lowercase', letterSpacing: 0 }}>— optional</span>
+              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
+                Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>— optional</span>
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
@@ -355,14 +365,14 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
             <button onClick={handleSend} disabled={saving || !form.date}
               className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
               style={{
-                minHeight: '52px', fontSize: '15px',
+                minHeight: '50px', fontSize: '14px',
                 ...(!form.date
                   ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
-                  : { background: '#7C3AED', color: '#fff', boxShadow: '0 4px 18px rgba(124,58,237,0.35)' }),
+                  : { background: '#7C3AED', color: '#fff', boxShadow: '0 4px 16px rgba(124,58,237,0.3)' }),
               }}>
               {saving
                 ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
-                : '📅 Confirm & Notify Client'}
+                : 'Confirm & Notify Client'}
             </button>
 
             {sent && (
@@ -370,7 +380,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
                 <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#7C3AED' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <p className="text-[0.75rem] font-medium" style={{ color: '#7C3AED' }}>Consultation scheduled and client notified!</p>
+                <p className="text-[0.75rem] font-medium" style={{ color: '#7C3AED' }}>Consultation scheduled — client notified.</p>
               </div>
             )}
           </div>
