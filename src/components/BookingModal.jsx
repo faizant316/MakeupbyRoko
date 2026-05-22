@@ -294,26 +294,43 @@ export default function BookingModal({ service: initialService, onClose }) {
           }),
         }}
       >
-        {/* Header — Apple-style top bar */}
-        <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm z-10 flex justify-between items-center px-6 sm:px-10 py-4 sm:py-5" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
-              <span className="text-[#D4A0B0] text-xs">✦</span>
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm z-10 flex items-center px-4 sm:px-8 py-3.5 sm:py-4 gap-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+          {/* Back arrow */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            className="flex items-center gap-1.5 group flex-shrink-0 touch-manipulation"
+            aria-label="Back"
+          >
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg transition-all group-hover:bg-[#D4A0B0]/12 group-active:bg-[#D4A0B0]/20">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.75" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
             </div>
-            <div>
-              <span className="font-serif text-[1.1rem] tracking-tight text-[#111] block leading-tight">
+            <span className="hidden sm:block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] group-hover:text-[#C4849A] transition-colors">Back</span>
+          </button>
+
+          {/* Title — centered */}
+          <div className="flex-1 flex items-center justify-center gap-2.5 min-w-0">
+            <span className="text-[#D4A0B0] text-xs flex-shrink-0">✦</span>
+            <div className="min-w-0">
+              <span className="font-serif text-[1.05rem] tracking-tight text-[#111] block leading-tight truncate">
                 {service.category === 'bridal' ? 'Bridal Inquiry' : step === 'done' ? 'Request Sent!' : `Book — ${service.title}`}
               </span>
               {service.category !== 'bridal' && step !== 'done' && service.duration && (
-                <span className="text-[0.62rem] text-[#c5bdb5] tracking-wide">{service.duration}</span>
+                <span className="text-[0.6rem] text-[#c5bdb5] tracking-wide block">{service.duration}</span>
               )}
             </div>
           </div>
+
+          {/* Close X */}
           <button onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all flex-shrink-0 relative z-20 text-[#999] hover:text-[#111]"
-            style={{ background: 'rgba(0,0,0,0.06)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0 relative z-20 text-[#bbb] hover:text-[#555]"
+            style={{ background: 'rgba(0,0,0,0.05)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.09)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+            aria-label="Close"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
