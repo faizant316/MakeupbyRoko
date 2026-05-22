@@ -89,7 +89,7 @@ function DateDropdown({ value, placeholder, options, onChange, width }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full pl-0 pr-6 py-2.5 border-0 border-b text-[0.825rem] text-left transition-all bg-transparent cursor-pointer outline-none rounded-none
+        className={`w-full pl-0 pr-6 py-2.5 border-0 border-b text-base sm:text-[0.825rem] text-left transition-all bg-transparent cursor-pointer outline-none rounded-none
           ${open ? 'border-[#D4A0B0]' : 'border-gray-200 hover:border-gray-300'}
           ${selected ? 'text-[#111]' : 'text-gray-300'}`}
       >
@@ -165,7 +165,7 @@ function WeddingDatePicker({ value, onChange }) {
           <select
             value={selMonth}
             onChange={e => { setSelMonth(e.target.value); handleChange(e.target.value, selDay, selYear); }}
-            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
+            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
             style={{ WebkitAppearance: 'none' }}
           >
             <option value="">Month</option>
@@ -177,7 +177,7 @@ function WeddingDatePicker({ value, onChange }) {
           <select
             value={selDay}
             onChange={e => { setSelDay(e.target.value); handleChange(selMonth, e.target.value, selYear); }}
-            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
+            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
             style={{ WebkitAppearance: 'none' }}
           >
             <option value="">Day</option>
@@ -189,7 +189,7 @@ function WeddingDatePicker({ value, onChange }) {
           <select
             value={selYear}
             onChange={e => { setSelYear(e.target.value); handleChange(selMonth, selDay, e.target.value); }}
-            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
+            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
             style={{ WebkitAppearance: 'none' }}
           >
             <option value="">Year</option>
@@ -384,7 +384,7 @@ function LocationAutocomplete({ value, onChange }) {
           onChange={handleInput}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder="Venue name & city"
-          className="flex-1 py-2.5 border-0 text-[0.825rem] outline-none bg-transparent text-[#111] placeholder:text-gray-300"
+          className="flex-1 py-2.5 border-0 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] placeholder:text-gray-300"
           autoComplete="off"
         />
         {loading && (

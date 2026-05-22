@@ -257,18 +257,6 @@ export default function BookingModal({ service: initialService, onClose }) {
     }
   }, [step]);
 
-  // Mobile: expand to full screen on scroll
-  const [mobileExpanded, setMobileExpanded] = useState(false);
-
-  const handleMobileScroll = (e) => {
-    if (window.innerWidth >= 640) return; // only on mobile
-    const scrollTop = e.target.scrollTop;
-    if (!mobileExpanded && scrollTop > 10) {
-      setMobileExpanded(true);
-    } else if (mobileExpanded && scrollTop <= 0) {
-      setMobileExpanded(false);
-    }
-  };
 
   return (
     <div
@@ -282,16 +270,10 @@ export default function BookingModal({ service: initialService, onClose }) {
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
         style={{
-          animation: 'slideUpSheet 0.38s cubic-bezier(0.32, 0.72, 0, 1)',
+          animation: 'slideUpSheet 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
           boxShadow: window.innerWidth >= 640 ? 'inset 0 0 200px rgba(212,140,170,0.12), inset 100px 0 200px rgba(212,140,170,0.08), inset -100px 0 200px rgba(180,140,220,0.08), 0 -1px 0 rgba(212,160,176,0.35)' : undefined,
-          ...(window.innerWidth >= 640 ? {
-            marginTop: '52px',
-            height: 'calc(100vh - 52px)',
-          } : {
-            marginTop: (step === 'done' || mobileExpanded) ? '52px' : '15dvh',
-            height: (step === 'done' || mobileExpanded) ? 'calc(100dvh - 52px)' : '85dvh',
-            transition: 'margin-top 0.35s cubic-bezier(0.32, 0.72, 0, 1), height 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
-          }),
+          marginTop: '52px',
+          height: window.innerWidth >= 640 ? 'calc(100vh - 52px)' : 'calc(100dvh - 52px)',
         }}
       >
         {/* Header */}
@@ -372,7 +354,7 @@ export default function BookingModal({ service: initialService, onClose }) {
         )}
 
         {/* Scrollable content */}
-        <div ref={scrollRef} data-modal-scroll className="flex-1 overflow-y-auto min-h-0 overscroll-contain flex flex-col bg-white" onScroll={handleMobileScroll}>
+        <div ref={scrollRef} data-modal-scroll className="flex-1 overflow-y-auto min-h-0 overscroll-contain flex flex-col bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="w-full sm:max-w-[1200px] sm:mx-auto flex-1 flex flex-col bg-white">
 
         {/* BRIDAL: Special inquiry form */}
