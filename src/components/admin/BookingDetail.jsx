@@ -124,6 +124,29 @@ const APPT_TIMES = [
 
 const STATUS_COLORS = { pending: '#F59E0B', confirmed: '#3B82F6', completed: '#22C55E', cancelled: '#EF4444' };
 
+// "9:30 AM" → "09:30"  (for <input type="time"> value)
+function to24h(val) {
+  if (!val) return '';
+  const isPM = val.includes('PM') && !val.trim().startsWith('12');
+  const isAM12 = val.trim().startsWith('12') && val.includes('AM');
+  const clean = val.replace(/\s?(AM|PM)/i, '').trim();
+  const [hStr, mStr = '00'] = clean.split(':');
+  let h = parseInt(hStr, 10);
+  if (isPM) h += 12;
+  if (isAM12) h = 0;
+  return `${String(h).padStart(2, '0')}:${mStr}`;
+}
+
+// "09:30" → "9:30 AM"
+function from24h(val) {
+  if (!val) return '';
+  const [hStr, mStr = '00'] = val.split(':');
+  const h = parseInt(hStr, 10);
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${mStr} ${ampm}`;
+}
+
 const CONSULT_COLOR = '#4A7FA5';
 const CONSULT_BG = 'rgba(74,127,165,0.07)';
 const CONSULT_BORDER = 'rgba(74,127,165,0.2)';
@@ -428,6 +451,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [toastVisible, setToastVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
   const [mapsKey, setMapsKey] = useState('');
 
   useEffect(() => {
@@ -447,15 +471,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   };
 
   const executeStatusChange = () => {
-    const s = pendingStatus;
+    const s = pendingStatus === 'reconfirm' ? 'confirmed' : pendingStatus;
+    const isReconfirm = pendingStatus === 'reconfirm';
     setPendingStatus(null);
-    onUpdateStatus(s);
+    if (!isReconfirm) onUpdateStatus(s);
     if (s === 'completed') {
       setCelebrate(true);
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.3, x: 0.5 }, colors: ['#F0C27A', '#D4A0B0', '#B8A0D4', '#60A5FA'], scalar: 1.0 });
       setTimeout(() => setCelebrate(false), 2200);
     } else if (s === 'confirmed') {
-      showToast('Appointment Confirmed — Email Sent ✓', '#3b82f6');
+      showToast(isReconfirm ? 'Reconfirmed — Client Notified ✓' : 'Appointment Confirmed — Email Sent ✓', '#3b82f6');
       if (booking.email) {
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
@@ -826,15 +851,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a]">Appointment Time</p>
-            {booking.time && (
-              <button onClick={() => setShowTimePicker(t => !t)}
+            {booking.time && !showTimePicker && (
+              <button onClick={() => { setShowTimePicker(true); setShowReconfirmBanner(false); }}
                 className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase transition-colors"
                 style={{ color: dm ? '#71717a' : '#A0785A' }}>
-                {showTimePicker ? 'Done' : 'Change'}
+                Change
               </button>
             )}
           </div>
 
+          {/* Current time display */}
           {booking.time && !showTimePicker && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
@@ -844,37 +870,100 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </div>
           )}
 
-          {(!booking.time || showTimePicker) && (
-            <div>
-              {!booking.time && (
-                <button onClick={() => setShowTimePicker(true)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl mb-3 touch-manipulation transition-all"
-                  style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {/* Picker — native on mobile, grid on desktop */}
+          {(!booking.time || showTimePicker) && (() => {
+            const handleTimeSelect = (t) => {
+              onUpdateBooking({ time: t });
+              setShowTimePicker(false);
+              showToast(`Time set — ${t}`, '#A0785A');
+              if (booking.status === 'confirmed') setShowReconfirmBanner(true);
+            };
+            return (
+              <div>
+                {!booking.time && !showTimePicker && (
+                  <button onClick={() => setShowTimePicker(true)}
+                    className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl mb-3 touch-manipulation transition-all"
+                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </div>
+                      <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#A0785A' }}>Set Appointment Time</p>
                     </div>
-                    <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#A0785A' }}>Set Appointment Time</p>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3.5 h-3.5 opacity-40"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                )}
+
+                {(showTimePicker || !booking.time) && (
+                  <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+                    {/* Mobile: native iOS time wheel */}
+                    <div className="sm:hidden">
+                      <input
+                        type="time"
+                        defaultValue={booking.time ? to24h(booking.time) : ''}
+                        onChange={e => { if (e.target.value) handleTimeSelect(from24h(e.target.value)); }}
+                        className="w-full outline-none"
+                        style={{ fontSize: '16px', padding: '14px 16px', background: dm ? '#1e1e24' : '#fafafa', color: dm ? '#F0EBE6' : '#111', border: 'none' }}
+                      />
+                    </div>
+                    {/* Desktop: pill grid */}
+                    <div className="hidden sm:block p-4" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {APPT_TIMES.map(t => (
+                          <button key={t} type="button" onClick={() => handleTimeSelect(t)}
+                            className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center"
+                            style={booking.time === t
+                              ? { background: '#111', color: '#fff', border: '1px solid #111' }
+                              : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }
+                            }
+                          >{t}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {showTimePicker && (
+                      <div className="flex justify-end px-4 pb-3 sm:pt-0 pt-0" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+                        <button onClick={() => setShowTimePicker(false)}
+                          className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase"
+                          style={{ color: dm ? '#71717a' : '#A0785A' }}>Done</button>
+                      </div>
+                    )}
                   </div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3.5 h-3.5 opacity-40"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-              )}
-              {showTimePicker && (
-                <div className="p-4 rounded-xl" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-                    {APPT_TIMES.map(t => (
-                      <button key={t} type="button"
-                        onClick={() => { onUpdateBooking({ time: t }); setShowTimePicker(false); showToast(`Time set — ${t}`, '#A0785A'); }}
-                        className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
-                        style={booking.time === t
-                          ? { background: '#111', color: '#fff', border: '1px solid #111' }
-                          : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }
-                        }
-                      >{t}</button>
-                    ))}
-                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Reconfirm banner — appears when time changes on a confirmed booking */}
+          {showReconfirmBanner && booking.status === 'confirmed' && (
+            <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{
+                background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.07)',
+                border: '1px solid rgba(59,130,246,0.25)',
+                animation: 'fadeSlideDown 0.3s ease-out',
+              }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.15)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 </div>
-              )}
+                <div className="min-w-0">
+                  <p className="text-[0.75rem] font-semibold" style={{ color: '#3B82F6' }}>Time was updated</p>
+                  <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Notify client of their new appointment time?</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                <button
+                  onClick={() => { setShowReconfirmBanner(false); setPendingStatus('reconfirm'); }}
+                  className="px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold text-white transition-all"
+                  style={{ background: '#3B82F6' }}>
+                  Reconfirm →
+                </button>
+                <button
+                  onClick={() => setShowReconfirmBanner(false)}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg"
+                  style={{ background: 'rgba(0,0,0,0.06)', color: dm ? '#71717a' : '#aaa' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -982,33 +1071,42 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
           <div className="rounded-xl shadow-2xl p-7 max-w-[340px] w-full text-center"
             style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`, animation: 'fadeSlideDown 0.25s ease-out' }}>
-            <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
-              style={{ background: STATUS_COLORS[pendingStatus] + '22', border: `1.5px solid ${STATUS_COLORS[pendingStatus]}44` }}>
-              <span style={{ color: STATUS_COLORS[pendingStatus], fontSize: '16px', fontWeight: 700 }}>
-                {pendingStatus === 'completed' ? '✓' : pendingStatus === 'confirmed' ? '✓' : pendingStatus === 'cancelled' ? '✕' : '⏳'}
-              </span>
-            </div>
-            <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
-              {pendingStatus === 'cancelled' ? 'Cancel this appointment?' : `Mark as ${pendingStatus}?`}
-            </p>
-            <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>
-              {pendingStatus === 'confirmed' ? 'A confirmation email will be sent to the client.'
-               : pendingStatus === 'cancelled' ? 'A cancellation email will be sent to the client.'
-               : pendingStatus === 'completed' ? 'This will archive the appointment as complete.'
-               : 'This will update the appointment status.'}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button onClick={() => setPendingStatus(null)}
-                className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
-                style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}>
-                Never Mind
-              </button>
-              <button onClick={executeStatusChange}
-                className="px-5 py-2 text-[0.75rem] font-semibold text-white rounded-lg transition-all"
-                style={{ background: STATUS_COLORS[pendingStatus] }}>
-                {pendingStatus === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update'}
-              </button>
-            </div>
+            {(() => {
+              const isReconfirm = pendingStatus === 'reconfirm';
+              const statusKey = isReconfirm ? 'confirmed' : pendingStatus;
+              return (
+                <>
+                  <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
+                    style={{ background: STATUS_COLORS[statusKey] + '22', border: `1.5px solid ${STATUS_COLORS[statusKey]}44` }}>
+                    <span style={{ color: STATUS_COLORS[statusKey], fontSize: '16px', fontWeight: 700 }}>
+                      {statusKey === 'cancelled' ? '✕' : statusKey === 'completed' ? '✓' : '✓'}
+                    </span>
+                  </div>
+                  <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+                    {isReconfirm ? 'Reconfirm appointment?' : statusKey === 'cancelled' ? 'Cancel this appointment?' : `Mark as ${statusKey}?`}
+                  </p>
+                  <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>
+                    {isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
+                     : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
+                     : statusKey === 'cancelled' ? 'A cancellation email will be sent to the client.'
+                     : statusKey === 'completed' ? 'This will archive the appointment as complete.'
+                     : 'This will update the appointment status.'}
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <button onClick={() => setPendingStatus(null)}
+                      className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
+                      style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}>
+                      Never Mind
+                    </button>
+                    <button onClick={executeStatusChange}
+                      className="px-5 py-2 text-[0.75rem] font-semibold text-white rounded-lg transition-all"
+                      style={{ background: STATUS_COLORS[statusKey] }}>
+                      {isReconfirm ? 'Yes, Reconfirm' : statusKey === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update'}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
