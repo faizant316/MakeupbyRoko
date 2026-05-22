@@ -21,7 +21,7 @@ export default function CustomSelect({ value, onChange, options, placeholder = '
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`w-full px-0 py-2.5 border-0 border-b text-[0.825rem] text-left flex items-center justify-between transition-all bg-transparent rounded-none outline-none ${
+        className={`w-full px-0 py-2.5 border-0 border-b text-base sm:text-[0.825rem] text-left flex items-center justify-between transition-all bg-transparent rounded-none outline-none ${
           open ? 'border-[#D4A0B0]' : 'border-gray-200 hover:border-gray-300'
         } ${displayLabel ? 'text-[#111]' : 'text-gray-400'}`}
       >
