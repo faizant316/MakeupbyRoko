@@ -114,6 +114,16 @@ const TIME_SLOTS = (() => {
   return slots;
 })();
 
+const APPT_TIMES = [
+  '6:00 AM','6:30 AM','7:00 AM','7:30 AM','8:00 AM','8:30 AM',
+  '9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
+  '12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM',
+  '3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM',
+  '6:00 PM','6:30 PM','7:00 PM','7:30 PM','8:00 PM',
+];
+
+const STATUS_COLORS = { pending: '#F59E0B', confirmed: '#3B82F6', completed: '#22C55E', cancelled: '#EF4444' };
+
 const CONSULT_COLOR = '#4A7FA5';
 const CONSULT_BG = 'rgba(74,127,165,0.07)';
 const CONSULT_BORDER = 'rgba(74,127,165,0.2)';
@@ -124,7 +134,7 @@ function parseConsultNotes(raw) {
   return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
 }
 
-function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
+function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
   const hasConsult = !!booking.consultation_date;
   const parsed = parseConsultNotes(booking.consultation_notes);
   const [expanded, setExpanded] = useState(false);
@@ -202,6 +212,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm }) {
       onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: storedNotes });
       setSent(true);
       setExpanded(false);
+      onSent?.();
     } catch {
       alert('Failed to send. Please try again.');
     } finally {
@@ -415,7 +426,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [celebrate, setCelebrate] = useState(false);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [mapsKey, setMapsKey] = useState('');
 
   useEffect(() => {
@@ -430,53 +442,36 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   };
 
   const handleStatusChange = (s) => {
-    if (s === 'cancelled') {
-      setConfirmCancel(true);
-      return;
-    }
+    if (booking.status === s) return;
+    setPendingStatus(s);
+  };
+
+  const executeStatusChange = () => {
+    const s = pendingStatus;
+    setPendingStatus(null);
     onUpdateStatus(s);
     if (s === 'completed') {
       setCelebrate(true);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.3, x: 0.5 },
-        colors: ['#F0C27A', '#D4A0B0', '#B8A0D4', '#60A5FA'],
-        scalar: 1.0,
-      });
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.3, x: 0.5 }, colors: ['#F0C27A', '#D4A0B0', '#B8A0D4', '#60A5FA'], scalar: 1.0 });
       setTimeout(() => setCelebrate(false), 2200);
     } else if (s === 'confirmed') {
-      showToast('Appointment Confirmed', '#3b82f6');
+      showToast('Appointment Confirmed — Email Sent ✓', '#3b82f6');
       if (booking.email) {
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: booking.email,
-            firstName: booking.name?.split(' ')[0] || 'there',
-            serviceName: booking.service,
-            dateFormatted,
-          }),
+          body: JSON.stringify({ to: booking.email, firstName: booking.name?.split(' ')[0] || 'there', serviceName: booking.service, dateFormatted, time: booking.time }),
         }).catch(err => console.error('confirmed email error:', err));
       }
-    }
-  };
-
-  const handleConfirmCancel = () => {
-    onUpdateStatus('cancelled');
-    setConfirmCancel(false);
-    showToast('Appointment Cancelled', '#ef4444');
-    if (booking.email) {
-      fetch('/api/on-booking-cancelled', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: booking.email,
-          name: booking.name?.split(' ')[0] || booking.name || 'there',
-          service: booking.service,
-          date: dateFormatted,
-        }),
-      }).catch(err => console.error('cancelled email error:', err));
+    } else if (s === 'cancelled') {
+      showToast('Appointment Cancelled — Email Sent ✓', '#ef4444');
+      if (booking.email) {
+        fetch('/api/on-booking-cancelled', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: booking.email, name: booking.name?.split(' ')[0] || booking.name || 'there', service: booking.service, date: dateFormatted }),
+        }).catch(err => console.error('cancelled email error:', err));
+      }
     }
   };
 
@@ -519,6 +514,28 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const handleSaveEdit = (data) => {
     onUpdateBooking(data);
     setShowEdit(false);
+    const newStatus = data.status;
+    const oldStatus = booking.status;
+    if (newStatus !== oldStatus && booking.email) {
+      const editDate = data.date
+        ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+        : dateFormatted;
+      if (newStatus === 'confirmed') {
+        showToast('Appointment Confirmed — Email Sent ✓', '#3b82f6');
+        fetch('/api/send-booking-confirmed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: booking.email, firstName: (data.name || booking.name)?.split(' ')[0] || 'there', serviceName: data.service || booking.service, dateFormatted: editDate, time: data.time || booking.time }),
+        }).catch(err => console.error('confirmed email error:', err));
+      } else if (newStatus === 'cancelled') {
+        showToast('Appointment Cancelled — Email Sent ✓', '#ef4444');
+        fetch('/api/on-booking-cancelled', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: booking.email, name: (data.name || booking.name)?.split(' ')[0] || 'there', service: data.service || booking.service, date: editDate }),
+        }).catch(err => console.error('cancelled email error:', err));
+      }
+    }
   };
 
   return (
@@ -749,7 +766,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Consultation Scheduler */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
-          <ConsultationScheduler booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
+          <ConsultationScheduler booking={booking} onUpdateBooking={onUpdateBooking} dm={dm}
+            onSent={() => showToast('Consultation sent — client notified ✓', '#22c55e')} />
         </div>
 
         {/* Zelle Deposit Received */}
@@ -804,23 +822,74 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </button>
         </div>
 
+        {/* Appointment Time Setter */}
+        <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a]">Appointment Time</p>
+            {booking.time && (
+              <button onClick={() => setShowTimePicker(t => !t)}
+                className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase transition-colors"
+                style={{ color: dm ? '#71717a' : '#A0785A' }}>
+                {showTimePicker ? 'Done' : 'Change'}
+              </button>
+            )}
+          </div>
+
+          {booking.time && !showTimePicker && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>{booking.time}</p>
+            </div>
+          )}
+
+          {(!booking.time || showTimePicker) && (
+            <div>
+              {!booking.time && (
+                <button onClick={() => setShowTimePicker(true)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl mb-3 touch-manipulation transition-all"
+                  style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#A0785A' }}>Set Appointment Time</p>
+                  </div>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3.5 h-3.5 opacity-40"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              )}
+              {showTimePicker && (
+                <div className="p-4 rounded-xl" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                    {APPT_TIMES.map(t => (
+                      <button key={t} type="button"
+                        onClick={() => { onUpdateBooking({ time: t }); setShowTimePicker(false); showToast(`Time set — ${t}`, '#A0785A'); }}
+                        className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
+                        style={booking.time === t
+                          ? { background: '#111', color: '#fff', border: '1px solid #111' }
+                          : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }
+                        }
+                      >{t}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Update Status */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
           <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a] mb-3">Update Status</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {STATUSES.map(s => {
               const isActive = booking.status === s;
-              const statusColors = {
-                pending:   { bg: '#F59E0B', text: '#fff' },
-                confirmed: { bg: '#3B82F6', text: '#fff' },
-                completed: { bg: '#22C55E', text: '#fff' },
-                cancelled: { bg: '#EF4444', text: '#fff' },
-              };
               return (
                 <button key={s} onClick={() => handleStatusChange(s)}
                   className="py-2.5 px-3 text-[0.65rem] font-semibold tracking-[0.06em] uppercase rounded-xl transition-all hover:opacity-90 truncate"
                   style={isActive
-                    ? { background: statusColors[s].bg, color: statusColors[s].text }
+                    ? { background: STATUS_COLORS[s], color: '#fff' }
                     : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
                   }
                 >{s}</button>
@@ -908,28 +977,36 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         </div>
       )}
 
-      {/* Cancel confirmation */}
-      {confirmCancel && (
+      {/* Status change confirmation */}
+      {pendingStatus && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
           <div className="rounded-xl shadow-2xl p-7 max-w-[340px] w-full text-center"
-            style={{
-              background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`,
-              animation: 'fadeSlideDown 0.25s ease-out',
-            }}>
-            <p className="text-[1.1rem] font-serif mb-2" style={{ color: dm ? '#e4e4e7' : '#111' }}>Cancel this appointment?</p>
-            <p className="text-[0.8rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>This will mark the appointment as cancelled.</p>
+            style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`, animation: 'fadeSlideDown 0.25s ease-out' }}>
+            <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
+              style={{ background: STATUS_COLORS[pendingStatus] + '22', border: `1.5px solid ${STATUS_COLORS[pendingStatus]}44` }}>
+              <span style={{ color: STATUS_COLORS[pendingStatus], fontSize: '16px', fontWeight: 700 }}>
+                {pendingStatus === 'completed' ? '✓' : pendingStatus === 'confirmed' ? '✓' : pendingStatus === 'cancelled' ? '✕' : '⏳'}
+              </span>
+            </div>
+            <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+              {pendingStatus === 'cancelled' ? 'Cancel this appointment?' : `Mark as ${pendingStatus}?`}
+            </p>
+            <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>
+              {pendingStatus === 'confirmed' ? 'A confirmation email will be sent to the client.'
+               : pendingStatus === 'cancelled' ? 'A cancellation email will be sent to the client.'
+               : pendingStatus === 'completed' ? 'This will archive the appointment as complete.'
+               : 'This will update the appointment status.'}
+            </p>
             <div className="flex gap-3 justify-center">
-              <button onClick={() => setConfirmCancel(false)}
+              <button onClick={() => setPendingStatus(null)}
                 className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
-                style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = dm ? '#71717a' : '#bbb'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = dm ? '#3f3f46' : '#e8e2dc'}>
-                Keep It
+                style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}>
+                Never Mind
               </button>
-              <button onClick={handleConfirmCancel}
-                className="px-5 py-2 text-[0.75rem] font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-all">
-                Yes, Cancel
+              <button onClick={executeStatusChange}
+                className="px-5 py-2 text-[0.75rem] font-semibold text-white rounded-lg transition-all"
+                style={{ background: STATUS_COLORS[pendingStatus] }}>
+                {pendingStatus === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update'}
               </button>
             </div>
           </div>

@@ -146,7 +146,7 @@ export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateForm
   `);
 }
 
-export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted }) {
+export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time }) {
   return base(`
     ${card(`
       <div style="text-align:center;margin-bottom:14px;">
@@ -154,13 +154,14 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted })
         <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:300;color:#2C1A14;margin:0 0 4px;">You're <em style="color:#C4849A;">Confirmed!</em></h1>
         <p style="font-family:Georgia,serif;font-style:italic;font-size:13px;color:#A0785A;margin:0;">Can't wait to see you ✦</p>
       </div>
-      <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;">Hey <strong>${firstName}</strong>! Your <strong>${serviceName}</strong> appointment on <strong>${dateFormatted}</strong> is officially confirmed. I'm so excited — see you then!</p>
+      <p style="font-size:13px;color:#6E6058;margin:0;line-height:1.7;">Hey <strong>${firstName}</strong>! Your <strong>${serviceName}</strong> appointment on <strong>${dateFormatted}</strong>${time ? ` at <strong>${time}</strong>` : ''} is officially confirmed. I'm so excited — see you then!</p>
     `)}
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Appointment Details</p>
       <table style="width:100%;border-collapse:collapse;">
         ${row('Service', serviceName)}
         ${row('Date', dateFormatted)}
+        ${time ? row('Time', `<strong>${time}</strong>`) : ''}
         ${row('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')}
       </table>
       <div style="margin-top:12px;padding:10px 12px;background:#F7F3F0;border-radius:8px;border-left:3px solid #D4A0B0;">
@@ -169,7 +170,7 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted })
     `)}
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">What to Expect</p>
-      ${step(1, 'Arrive on time', 'Roko will be ready for you at your confirmed time')}
+      ${step(1, 'Arrive on time', time ? `Roko will be ready for you at ${time}` : 'Roko will be ready for you at your confirmed time')}
       ${step(2, 'Bring your inspiration', 'Photos of your desired look are always welcome')}
       ${step(3, 'Bring cash for remaining balance', 'Exact amount confirmed with Roko beforehand')}
     `)}
@@ -377,6 +378,40 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
       ${step(1, 'Have your inspiration photos ready', 'Screenshots, Pinterest boards, anything you love')}
       ${step(2, 'Think about your vibe', 'Natural glam, bold, soft — anything goes!')}
       ${step(3, 'Write down any questions', 'Roko is here to answer everything')}
+    `)}
+  `);
+}
+
+export function adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }) {
+  const typeIcon = consultationType === 'Zoom' ? '💻' : consultationType === 'Phone' ? '📞' : '📍';
+  return base(`
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Admin Copy — Consultation Sent</p>
+      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#2C1A14;margin:0 0 6px;">📅 Consultation Scheduled</h2>
+      <p style="font-size:13px;color:#6E6058;margin:0;">Consultation confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${serviceName}</strong>.</p>
+    `)}
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #EDE6DF;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Name', clientName || 'N/A')}
+        ${row('Email', clientEmail || 'N/A')}
+        ${row('Service', serviceName || 'N/A')}
+      </table>
+    </div>
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #EDE6DF;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Consultation Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Date', `<strong>${consultationDate}</strong>`)}
+        ${row('Time', `<strong>${consultationTime}</strong>`)}
+        ${row('Type', `${typeIcon} ${consultationType}`)}
+        ${zoomLink ? row('Zoom Link', `<a href="${zoomLink}" style="color:#4A7FA5;word-break:break-all;">${zoomLink}</a>`) : ''}
+        ${consultationNotes ? row('Notes', consultationNotes) : ''}
+      </table>
+    </div>
+    ${card(`
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#111;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
     `)}
   `);
 }
