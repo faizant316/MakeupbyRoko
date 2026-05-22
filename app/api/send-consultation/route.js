@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
 import { createClient } from '../../../src/lib/supabase/server';
-import { sendEmail, consultationScheduledEmail } from '../../../src/lib/email';
+import { sendEmail, consultationScheduledEmail, adminConsultationEmail } from '../../../src/lib/email';
 
 export async function POST(req) {
   try {
@@ -18,9 +18,9 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Build stored notes (include Zoom link if provided)
+    // Store notes — prefix with link so it's parseable in the UI
     const storedNotes = [
-      consultationType === 'Zoom' && zoomLink ? `Zoom: ${zoomLink}` : null,
+      consultationType === 'Zoom' && zoomLink ? `Link: ${zoomLink}` : null,
       consultationNotes || null,
     ].filter(Boolean).join('\n') || null;
 
@@ -37,11 +37,21 @@ export async function POST(req) {
     if (dbErr) throw dbErr;
 
     const firstName = (clientName || '').split(' ')[0] || 'there';
+
+    // Client email
     await sendEmail({
       to: clientEmail,
       subject: `Your consultation is scheduled — ${consultationDate} at ${consultationTime}`,
       html: consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
     });
+
+    // Admin notification (fire-and-forget, don't fail the request if this errors)
+    const adminEmail = process.env.ADMIN_EMAIL || 'makeupbyroko22@gmail.com';
+    sendEmail({
+      to: adminEmail,
+      subject: `📋 Consultation Scheduled — ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
+      html: adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
+    }).catch(err => console.error('admin consultation email error:', err));
 
     return NextResponse.json({ success: true });
   } catch (err) {
