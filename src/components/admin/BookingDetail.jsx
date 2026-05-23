@@ -451,6 +451,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [toastVisible, setToastVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pendingTime, setPendingTime] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
   const [mapsKey, setMapsKey] = useState('');
 
@@ -849,89 +850,109 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Appointment Time Setter */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a]">Appointment Time</p>
-            {booking.time && !showTimePicker && (
-              <button onClick={() => { setShowTimePicker(true); setShowReconfirmBanner(false); }}
-                className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase transition-colors"
-                style={{ color: dm ? '#71717a' : '#A0785A' }}>
-                Change
-              </button>
-            )}
-          </div>
+          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a] mb-3">Appointment Time</p>
 
-          {/* Current time display */}
-          {booking.time && !showTimePicker && (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
-              <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>{booking.time}</p>
-            </div>
+          {/* Trigger — current time display (clickable) or empty state button */}
+          {!showTimePicker && (
+            booking.time ? (
+              <button
+                type="button"
+                onClick={() => { setPendingTime(booking.time); setShowTimePicker(true); setShowReconfirmBanner(false); }}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all touch-manipulation hover:opacity-80 active:opacity-60"
+                style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>{booking.time}</p>
+                </div>
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#ccc'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setPendingTime(''); setShowTimePicker(true); }}
+                className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl touch-manipulation transition-all hover:opacity-80"
+                style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#A0785A' }}>Set Appointment Time</p>
+                </div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3.5 h-3.5 opacity-40"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )
           )}
 
-          {/* Picker — native on mobile, grid on desktop */}
-          {(!booking.time || showTimePicker) && (() => {
-            const handleTimeSelect = (t) => {
-              onUpdateBooking({ time: t });
-              setShowTimePicker(false);
-              showToast(`Time set — ${t}`, '#A0785A');
-              if (booking.status === 'confirmed') setShowReconfirmBanner(true);
-            };
-            return (
-              <div>
-                {!booking.time && !showTimePicker && (
-                  <button onClick={() => setShowTimePicker(true)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl mb-3 touch-manipulation transition-all"
-                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      </div>
-                      <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#A0785A' }}>Set Appointment Time</p>
-                    </div>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3.5 h-3.5 opacity-40"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                )}
-
-                {(showTimePicker || !booking.time) && (
-                  <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
-                    {/* Mobile: native iOS time wheel */}
-                    <div className="sm:hidden">
-                      <input
-                        type="time"
-                        defaultValue={booking.time ? to24h(booking.time) : ''}
-                        onChange={e => { if (e.target.value) handleTimeSelect(from24h(e.target.value)); }}
-                        className="w-full outline-none"
-                        style={{ fontSize: '16px', padding: '14px 16px', background: dm ? '#1e1e24' : '#fafafa', color: dm ? '#F0EBE6' : '#111', border: 'none' }}
-                      />
-                    </div>
-                    {/* Desktop: pill grid */}
-                    <div className="hidden sm:block p-4" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {APPT_TIMES.map(t => (
-                          <button key={t} type="button" onClick={() => handleTimeSelect(t)}
-                            className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center"
-                            style={booking.time === t
-                              ? { background: '#111', color: '#fff', border: '1px solid #111' }
-                              : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }
-                            }
-                          >{t}</button>
-                        ))}
-                      </div>
-                    </div>
-                    {showTimePicker && (
-                      <div className="flex justify-end px-4 pb-3 sm:pt-0 pt-0" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
-                        <button onClick={() => setShowTimePicker(false)}
-                          className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase"
-                          style={{ color: dm ? '#71717a' : '#A0785A' }}>Done</button>
-                      </div>
-                    )}
-                  </div>
-                )}
+          {/* Time picker — pill grid on ALL screen sizes */}
+          {showTimePicker && (
+            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3"
+                style={{ background: dm ? '#27272a' : '#f7f3f0', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: dm ? '#71717a' : '#A0785A' }}>
+                  Select a time
+                  {pendingTime && (
+                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+                      — {pendingTime}
+                    </span>
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowTimePicker(false)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation"
+                  style={{ background: dm ? '#3f3f46' : '#e8e2dc', color: dm ? '#71717a' : '#888' }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
               </div>
-            );
-          })()}
+
+              {/* Pill grid */}
+              <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {APPT_TIMES.map(t => (
+                    <button key={t} type="button" onClick={() => setPendingTime(t)}
+                      className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
+                      style={pendingTime === t
+                        ? { background: '#111', color: '#fff', border: '1px solid #111' }
+                        : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }
+                      }
+                    >{t}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Confirm button */}
+              <div className="px-3 pb-3" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+                <button
+                  type="button"
+                  disabled={!pendingTime}
+                  onClick={() => {
+                    if (!pendingTime) return;
+                    onUpdateBooking({ time: pendingTime });
+                    setShowTimePicker(false);
+                    showToast(`Time updated — ${pendingTime}`, '#A0785A');
+                    if (booking.status === 'confirmed') setShowReconfirmBanner(true);
+                  }}
+                  className="w-full py-3 rounded-xl text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
+                  style={pendingTime
+                    ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }
+                    : { background: dm ? '#27272a' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                  }
+                >
+                  {pendingTime ? `Update Time — ${pendingTime}` : 'Select a time above'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Reconfirm banner — appears when time changes on a confirmed booking */}
           {showReconfirmBanner && booking.status === 'confirmed' && (

@@ -78,12 +78,18 @@ export default function FAQSection() {
                   </span>
                 </button>
                 <div
-                  className="overflow-hidden transition-all duration-300 ease-in-out"
-                  style={{ maxHeight: isOpen ? '300px' : '0px', opacity: isOpen ? 1 : 0 }}
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: isOpen ? '1fr' : '0fr',
+                    transition: 'grid-template-rows 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease',
+                    opacity: isOpen ? 1 : 0,
+                  }}
                 >
-                  <p className="text-[0.83rem] text-[#888] leading-[1.8] pb-5 pr-10">
-                    {faq.a}
-                  </p>
+                  <div style={{ overflow: 'hidden' }}>
+                    <p className="text-[0.83rem] text-[#888] leading-[1.8] pb-5 pr-10">
+                      {faq.a}
+                    </p>
+                  </div>
                 </div>
               </div>
             );

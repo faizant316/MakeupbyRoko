@@ -101,7 +101,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
                   ))}
                   {hasConsultation && (
                     <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
+                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#4A7FA5' }} />
                   )}
                   {hasBookings && <span className={`text-[0.5rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
                 </>
@@ -428,6 +428,9 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
               <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: color }} /> {s}
             </span>
           ))}
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#4A7FA5' }} /> Consultation
+          </span>
         </div>
       </div>
 

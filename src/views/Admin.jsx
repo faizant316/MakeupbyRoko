@@ -123,6 +123,11 @@ export default function Admin() {
     return matchesStatus && matchesSearch && matchesDate;
   });
 
+  // Bookings that have a Zoom/consultation scheduled on the selected date
+  const consultationsOnDate = selectedDate
+    ? bookings.filter(b => b.consultation_date === selectedDate)
+    : [];
+
   const today = new Date().toISOString().split('T')[0];
   const todayCount = bookings.filter(b => b.date === today).length;
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
@@ -402,7 +407,7 @@ export default function Admin() {
               <CapacitySettings selectedDate={selectedDate} darkMode={dm} />
             </div>
             <div id="bookings-list">
-              <BookingsList bookings={filtered} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
+              <BookingsList bookings={filtered} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} consultationsOnDate={consultationsOnDate} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
             </div>
             {showAddClient && (
               <AddClientModal

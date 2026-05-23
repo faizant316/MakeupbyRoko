@@ -2,11 +2,14 @@ const AURA_CLASSES = ['bridal-aura', 'fullday-aura', ''];
 const LABELS = ['Featured Service', 'Premium Package', 'Trial Package'];
 const BUTTON_LABELS = ['Inquire About Bridal →', 'Inquire About Full Day Service →', 'Inquire About Trial →'];
 
-export default function BridalCard({ svc, idx, onSelect }) {
+export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
   return (
-    <div className={`service-card h-full relative z-0 ${AURA_CLASSES[idx] || ''}`}>
-      <div className="group relative bg-white border-0 rounded-[var(--radius-lg)] overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.08)] active:scale-[0.985] transition-all duration-300 flex flex-col h-full"
-        style={{ touchAction: 'manipulation' }}>
+    <div
+      className={`service-card h-full relative z-0 cursor-pointer ${AURA_CLASSES[idx] || ''}`}
+      onClick={() => onViewDetail && onViewDetail(svc)}
+      style={{ touchAction: 'manipulation' }}
+    >
+      <div className="group relative bg-white border-0 rounded-[var(--radius-lg)] overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.08)] active:scale-[0.985] transition-all duration-300 flex flex-col h-full">
         {/* Photo */}
         <div className="aspect-[4/3] overflow-hidden bg-[#f5f5f5] flex-shrink-0">
           <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
@@ -61,10 +64,13 @@ export default function BridalCard({ svc, idx, onSelect }) {
                   <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
                 </li>
               ))}
+              {svc.includes.length > 3 && (
+                <li className="text-[0.72rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 3} more — tap to see all</li>
+              )}
             </ul>
           </div>
           <button
-            onClick={() => onSelect(svc)}
+            onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
             className="w-full py-2.5 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.04em] rounded-[var(--radius)] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
             style={{ touchAction: 'manipulation' }}
           >
