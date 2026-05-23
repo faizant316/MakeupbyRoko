@@ -54,9 +54,18 @@ export default function FAQ() {
                 </div>
               </button>
 
-              <div className={`overflow-hidden transition-all duration-400 ${openIdx === idx ? 'max-h-[500px]' : 'max-h-0'}`}>
-                <div className="pb-6">
-                  <p className="text-[0.9375rem] text-[var(--text-muted)] leading-[1.75]">{faq.a}</p>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: openIdx === idx ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease',
+                  opacity: openIdx === idx ? 1 : 0,
+                }}
+              >
+                <div style={{ overflow: 'hidden' }}>
+                  <div className="pb-6">
+                    <p className="text-[0.9375rem] text-[var(--text-muted)] leading-[1.75]">{faq.a}</p>
+                  </div>
                 </div>
               </div>
             </div>

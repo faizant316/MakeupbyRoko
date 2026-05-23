@@ -37,12 +37,12 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
           Reference Photos & Mood Board
           {photos.length > 0 && <span className="ml-2 text-[#D4A0B0]">({photos.length})</span>}
         </p>
-        <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold cursor-pointer transition-all touch-manipulation ${uploading ? 'opacity-50 pointer-events-none' : 'active:opacity-70'}`}
-          style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#D4A0B0' : '#A0785A', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}`, minHeight: '32px' }}>
+        <label className={`flex items-center gap-1 cursor-pointer transition-all touch-manipulation ${uploading ? 'opacity-50 pointer-events-none' : 'active:opacity-70'} ${photos.length > 0 ? 'px-2 py-0.5 rounded-md text-[0.58rem]' : 'px-3 py-1.5 rounded-lg text-[0.65rem]'}`}
+          style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#D4A0B0' : '#A0785A', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}`, ...(photos.length === 0 ? { minHeight: '32px' } : {}) }}>
           {uploading ? (
             <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Uploading…</>
           ) : (
-            <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Add Photos</>
+            <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={photos.length > 0 ? 'w-2.5 h-2.5' : 'w-3 h-3'}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> {photos.length > 0 ? 'Add' : 'Add Photos'}</>
           )}
           <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>

@@ -15,6 +15,7 @@ import BridalCard from '../components/BridalCard';
 import NonBridalCard from '../components/NonBridalCard';
 import BridalComparison from '../components/BridalComparison';
 import MakeupClassModal from '../components/MakeupClassModal';
+import ServiceDetailModal from '../components/ServiceDetailModal';
 
 // Hook to track scroll progress through the hero (0 = top, 1 = hero fully covered)
 function useHeroScrollProgress() {
@@ -60,6 +61,7 @@ function mapService(svc) {
 
 export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState(null);
+  const [detailService, setDetailService] = useState(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeBridalId, setActiveBridalId] = useState(null); // null = show both
@@ -380,7 +382,7 @@ export default function ServicesPage() {
               {/* Mobile: horizontal snap scroll — Desktop: grid */}
               <div className="hidden lg:grid gap-5" style={{ gridTemplateColumns: bridalServices.length >= 3 ? 'repeat(3, 1fr)' : bridalServices.length === 2 ? 'repeat(2, 1fr)' : '1fr' }}>
                 {bridalServices.map((svc, idx) => (
-                  <BridalCard key={svc.key} svc={svc} idx={idx} onSelect={setSelectedService} />
+                  <BridalCard key={svc.key} svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={setDetailService} />
                 ))}
               </div>
 
@@ -392,7 +394,7 @@ export default function ServicesPage() {
                 >
                   {bridalServices.map((svc, idx) => (
                     <div key={svc.key} className="snap-center flex-shrink-0 w-[82vw] max-w-[340px]">
-                      <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} />
+                      <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={setDetailService} />
                     </div>
                   ))}
                   {/* Peek spacer */}
@@ -426,7 +428,7 @@ export default function ServicesPage() {
               {/* Desktop: vertical stacked cards */}
               <div className="hidden sm:flex flex-col gap-4">
                 {nonBridal.map((svc) => (
-                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} />
+                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={setDetailService} />
                 ))}
               </div>
 
@@ -438,7 +440,7 @@ export default function ServicesPage() {
                 >
                   {nonBridal.map((svc) => (
                     <div key={svc.key} className="snap-center flex-shrink-0 w-[82vw] max-w-[320px] self-stretch">
-                      <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} />
+                      <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={setDetailService} />
                     </div>
                   ))}
                   <div className="flex-shrink-0 w-4" />
@@ -474,6 +476,16 @@ export default function ServicesPage() {
       {/* Booking Modal */}
       {selectedService && (
         <BookingModal service={selectedService} onClose={() => setSelectedService(null)} />
+      )}
+
+      {/* Service Detail Modal — tap card body to preview full description */}
+      {detailService && (
+        <ServiceDetailModal
+          svc={detailService}
+          onClose={() => setDetailService(null)}
+          onBook={(svc) => { setDetailService(null); setSelectedService(svc); }}
+          onOpenClassModal={() => { setDetailService(null); setShowClassModal(true); }}
+        />
       )}
 
       {/* Makeup Class Registration Modal */}
