@@ -10,20 +10,35 @@ function dedupeText(text, phrases) {
   return filtered.length ? filtered.join(' ').trim() : text;
 }
 
-// SVG icons
-const IconBack = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+// ── Shared button style ──────────────────────────────────────
+// Used in both light (white card) and dark (over-image) contexts.
+// `light` = on white background, `dark` = over photo (frosted glass)
+function NavBtn({ onClick, children, variant = 'light' }) {
+  const bg   = variant === 'dark'  ? 'rgba(0,0,0,0.38)' : '#f0ebe6';
+  const bkdr = variant === 'dark'  ? 'blur(6px)'        : 'none';
+  return (
+    <button
+      onClick={onClick}
+      className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
+      style={{ background: bg, backdropFilter: bkdr }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const stroke = (v) => (v === 'dark' ? '#fff' : '#111');
+
+const IconBack = ({ v = 'dark' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={stroke(v)} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
     <polyline points="15 18 9 12 15 6" />
   </svg>
 );
-const IconClose = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
+const IconClose = ({ v = 'dark' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={stroke(v)} strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
-
-const BTN = 'w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0';
-const BTN_STYLE = { background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' };
 
 export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal }) {
   const [visible, setVisible]   = useState(false);
@@ -32,9 +47,17 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const desktopScrollRef        = useRef(null);
 
   useEffect(() => {
-    const t = requestAnimationFrame(() => setVisible(true));
+    // Compensate for scrollbar width so page doesn't jitter when overflow is toggled
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
-    return () => { cancelAnimationFrame(t); document.body.style.overflow = ''; };
+
+    const t = requestAnimationFrame(() => setVisible(true));
+    return () => {
+      cancelAnimationFrame(t);
+      document.body.style.overflow     = '';
+      document.body.style.paddingRight = '';
+    };
   }, []);
 
   const handleClose = () => {
@@ -64,20 +87,19 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     }, 240);
   };
 
-  // Strip repeated travel-fee copy for Luxury Bridal
   const dupeFilters  = svc.title === 'Luxury Bridal Look' ? ['travel fee', '$200'] : [];
-  const descToShow   = dupeFilters.length ? dedupeText(svc.desc,             dupeFilters) : svc.desc;
-  const expectToShow = dupeFilters.length ? dedupeText(svc.what_to_expect,   dupeFilters) : svc.what_to_expect;
+  const descToShow   = dupeFilters.length ? dedupeText(svc.desc,           dupeFilters) : svc.desc;
+  const expectToShow = dupeFilters.length ? dedupeText(svc.what_to_expect, dupeFilters) : svc.what_to_expect;
 
-  // Animation timing — fast on exit, smooth on enter
+  // Animation timing
   const slideT = closing
     ? 'transform 0.22s cubic-bezier(0.4, 0, 1, 1)'
     : 'transform 0.40s cubic-bezier(0.32, 0.72, 0, 1)';
-  const fadeT = closing
+  const fadeT  = closing
     ? 'background 0.18s ease, backdrop-filter 0.18s ease'
     : 'background 0.30s ease, backdrop-filter 0.30s ease';
 
-  /* ── Inline JSX fragments ───────────────────────────────── */
+  /* ── Reusable JSX fragments ─────────────────────────────── */
   const badges = (
     <>
       {svc.title === 'Luxury Bridal Look' && (
@@ -116,7 +138,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         {svc.deposit  && <><span className="text-[#ddd]">·</span><span className="text-[0.7rem]  text-[#aaa]">{svc.deposit}</span></>}
       </div>
       {badges}
-      {descToShow && <p className="text-[0.87rem] text-[#666] leading-[1.78] mb-5">{descToShow}</p>}
+      {descToShow   && <p className="text-[0.87rem] text-[#666] leading-[1.78] mb-5">{descToShow}</p>}
       {expectToShow && (
         <div className="mb-5">
           <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2">What to Expect</p>
@@ -162,15 +184,15 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════════════════
-          DESKTOP — large parallax modal
-          Image fills top ~48% of the modal box.
-          Content card scrolls up over the image from below.
-          ═══════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════
+          DESKTOP — large parallax modal (700px × 84vh)
+          Image fills top 50%. Card scrolls up over it.
+          ← back (top-left) and × close (top-right) over image.
+          ═══════════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
         style={{
-          background:    visible ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0)',
+          background:     visible ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0)',
           backdropFilter: visible ? 'blur(7px)' : 'blur(0px)',
           transition: fadeT,
           padding: '72px 24px 40px',
@@ -190,7 +212,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           }}
           onClick={e => e.stopPropagation()}
         >
-          {/* ── Image layer (back) ── */}
+          {/* Image layer */}
           <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '50%' }}>
             {svc.photo
               ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
@@ -198,31 +220,20 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             }
           </div>
 
-          {/* ── Scrollable content (middle layer) ── */}
+          {/* Scroll container — card slides up over image */}
           <div
             ref={desktopScrollRef}
             className="absolute inset-0 overflow-y-auto z-10"
             style={{ scrollbarWidth: 'none' }}
           >
-            {/* Spacer — transparent, shows image; click backdrop doesn't apply here */}
             <div style={{ height: '43%' }} />
-
-            {/* White card slides up over image */}
-            <div
-              style={{
-                background: '#fff',
-                borderRadius: '22px 22px 0 0',
-                minHeight: '62%',
-              }}
-            >
-              {/* Drag pill */}
+            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62%' }}>
               <div className="mx-auto mt-3 w-9 h-1 rounded-full bg-black/10" />
               <div className="px-7 pt-5 pb-[84px]">{content}</div>
             </div>
           </div>
 
-          {/* ── CTA footer (above scroll layer) ── */}
-          {/* pointer-events: none so scroll still works over the footer area */}
+          {/* CTA footer */}
           <div
             className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
             style={{ background: '#fff', pointerEvents: 'none' }}
@@ -230,42 +241,39 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
 
-          {/* ── Header buttons (top layer) ── */}
-          {/* ← Back / exit — top left */}
+          {/* ← Back — top-left, dark frosted glass over image */}
           <button
             onClick={handleClose}
-            className={`absolute top-4 left-4 z-30 ${BTN}`}
-            style={BTN_STYLE}
+            className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}
           >
-            <IconBack />
+            <IconBack v="dark" />
           </button>
-          {/* × Close — top right */}
+
+          {/* × Close — top-right, dark frosted glass over image */}
           <button
             onClick={handleClose}
-            className={`absolute top-4 right-4 z-30 ${BTN}`}
-            style={BTN_STYLE}
+            className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}
           >
-            <IconClose />
+            <IconClose v="dark" />
           </button>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          MOBILE — parallax bottom sheet, fully optimised
-          Fixed header (← back + × close) always visible at top.
-          Image stays fixed behind the scrolling content card.
-          ═══════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════
+          MOBILE — parallax bottom sheet
+          White card has its own header row with ← and × buttons.
+          No floating overlay buttons — 100% reliable on iOS Safari.
+          ═══════════════════════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 z-[9990]">
         {/* Backdrop */}
         <div
           className="absolute inset-0"
-          style={{
-            background:  visible ? 'rgba(0,0,0,0.52)' : 'rgba(0,0,0,0)',
-            transition: fadeT,
-          }}
+          style={{ background: visible ? 'rgba(0,0,0,0.52)' : 'rgba(0,0,0,0)', transition: fadeT }}
         />
 
-        {/* ── Fixed image layer (behind everything) ── */}
+        {/* Image — fixed behind the scrolling card */}
         <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
           {svc.photo
             ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
@@ -273,34 +281,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           }
         </div>
 
-        {/* ── Header bar — ALWAYS on top (z-50), never scrolled away ──
-             Gradient tint so buttons are legible over the image.
-             Left: back arrow   Right: × close                          */}
-        <div
-          className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4"
-          style={{
-            height: '64px',
-            paddingTop: 'env(safe-area-inset-top, 0px)',
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, transparent 100%)',
-            // Slides in with the rest of the modal
-            transform: visible ? 'translateY(0)' : 'translateY(-20px)',
-            opacity:   visible ? 1 : 0,
-            transition: closing
-              ? 'opacity 0.16s ease, transform 0.20s ease'
-              : 'opacity 0.32s ease 0.06s, transform 0.32s ease 0.06s',
-          }}
-        >
-          {/* ← Back */}
-          <button onClick={handleClose} className={BTN} style={BTN_STYLE}>
-            <IconBack />
-          </button>
-          {/* × Close */}
-          <button onClick={handleClose} className={BTN} style={BTN_STYLE}>
-            <IconClose />
-          </button>
-        </div>
-
-        {/* ── Scroll container (z-10 — above image, below header & CTA) ── */}
+        {/* Scroll container — slides up from bottom */}
         <div
           ref={mobileScrollRef}
           className="absolute inset-0 z-10 overflow-y-auto"
@@ -310,31 +291,50 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             transition: slideT,
           }}
         >
-          {/* Transparent spacer — tap to close */}
+          {/* Transparent spacer — tap to dismiss, shows image through */}
           <div style={{ height: '44vh' }} onClick={handleClose} />
 
-          {/* White content card — scrolls up over the image */}
-          <div
-            style={{
-              background:   '#fff',
-              borderRadius: '22px 22px 0 0',
-              minHeight:    '62vh',
-              position:     'relative',
-            }}
-          >
-            {/* Drag handle */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-9 h-1 rounded-full bg-black/12" />
-            <div className="px-5 pt-8 pb-24">{content}</div>
+          {/* White card */}
+          <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
+
+            {/* ── Card header: ← back · drag pill · × close ── */}
+            <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+              {/* ← Back */}
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: '#f0ebe6' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+
+              {/* Drag handle */}
+              <div className="w-9 h-1 rounded-full bg-black/10" />
+
+              {/* × Close */}
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: '#f0ebe6' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-5 pt-4 pb-24">{content}</div>
           </div>
         </div>
 
-        {/* ── CTA pinned at bottom (z-20) ── */}
+        {/* CTA — pinned at screen bottom, slides in with card */}
         <div
           className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
           style={{
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
-            // pointer-events: none on wrapper so content beneath stays scrollable
-            // pointer-events: auto restored on inner button
             pointerEvents: 'none',
             transform: visible ? 'translateY(0)' : 'translateY(100%)',
             transition: slideT,

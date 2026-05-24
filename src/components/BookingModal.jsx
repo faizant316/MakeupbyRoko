@@ -278,19 +278,16 @@ export default function BookingModal({ service: initialService, onClose }) {
       >
         {/* Header */}
         <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm z-10 flex items-center px-4 sm:px-8 py-3.5 sm:py-4 gap-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-          {/* Back arrow */}
+          {/* ← Back */}
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="flex items-center gap-1.5 group flex-shrink-0 touch-manipulation"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0 touch-manipulation"
+            style={{ background: '#f0ebe6' }}
             aria-label="Back"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg transition-all group-hover:bg-[#D4A0B0]/12 group-active:bg-[#D4A0B0]/20">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.75" className="w-4 h-4 transition-transform group-hover:-translate-x-0.5">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
-              </svg>
-            </div>
-            <span className="hidden sm:block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] group-hover:text-[#C4849A] transition-colors">Back</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
           </button>
 
           {/* Title — centered */}
@@ -306,15 +303,14 @@ export default function BookingModal({ service: initialService, onClose }) {
             </div>
           </div>
 
-          {/* Close X */}
-          <button onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0 relative z-20 text-[#bbb] hover:text-[#555]"
-            style={{ background: 'rgba(0,0,0,0.05)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.09)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          {/* × Close */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0 touch-manipulation"
+            style={{ background: '#f0ebe6' }}
             aria-label="Close"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
