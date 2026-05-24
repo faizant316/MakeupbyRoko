@@ -230,7 +230,16 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
 
-          {/* ── Close button (top layer) ── */}
+          {/* ── Header buttons (top layer) ── */}
+          {/* ← Back / exit — top left */}
+          <button
+            onClick={handleClose}
+            className={`absolute top-4 left-4 z-30 ${BTN}`}
+            style={BTN_STYLE}
+          >
+            <IconBack />
+          </button>
+          {/* × Close — top right */}
           <button
             onClick={handleClose}
             className={`absolute top-4 right-4 z-30 ${BTN}`}
