@@ -67,7 +67,9 @@ export default function ServicesPage() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeBridalId, setActiveBridalId] = useState(null); // null = show both
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef      = useRef(null);
+  const bridalScrollRef  = useRef(null);
+  const otherScrollRef   = useRef(null);
 
   const { data: serviceEntities = [], isLoading: servicesLoading, isError: servicesError } = useQuery({
     queryKey: ['public-services'],
@@ -102,6 +104,26 @@ export default function ServicesPage() {
   const handleViewDetail = useCallback((svc, e) => {
     setDetailOrigin(e ? { x: e.clientX, y: e.clientY } : null);
     setDetailService(svc);
+  }, []);
+
+  // Instantly snap carousel to the nearest card on touchend — kills iOS momentum
+  // so the next card is tappable immediately after a swipe.
+  const makeSnapHandler = useCallback((scrollRef) => () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const containerW = el.clientWidth;
+    const items = Array.from(el.querySelectorAll('[data-snap-card]'));
+    if (!items.length) return;
+    // For each card, compute the scrollLeft that centers it in the viewport
+    const snapPoints = items.map(item =>
+      Math.max(0, item.offsetLeft - (containerW - item.offsetWidth) / 2)
+    );
+    const current = el.scrollLeft;
+    const nearest = snapPoints.reduce((best, pt) =>
+      Math.abs(pt - current) < Math.abs(best - current) ? pt : best
+    , snapPoints[0]);
+    // Direct scrollLeft assignment = instant (no momentum tail)
+    el.scrollLeft = nearest;
   }, []);
 
   const allBridalServices = SERVICE_DATA.filter(s => s.category === 'bridal');
@@ -395,11 +417,15 @@ export default function ServicesPage() {
               {/* Mobile snap scroll */}
               <div className="lg:hidden -mx-[clamp(1.25rem,5vw,3rem)]">
                 <div
+                  ref={bridalScrollRef}
                   className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
-                  style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                  style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
+                  onTouchEnd={makeSnapHandler(bridalScrollRef)}
                 >
                   {bridalServices.map((svc, idx) => (
-                    <div key={svc.key} className="snap-center flex-shrink-0 w-[82vw] max-w-[340px]">
+                    <div data-snap-card key={svc.key}
+                      className="snap-center flex-shrink-0 w-[82vw] max-w-[340px]"
+                      style={{ scrollSnapStop: 'always' }}>
                       <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
@@ -441,11 +467,15 @@ export default function ServicesPage() {
               {/* Mobile: horizontal snap scroll */}
               <div className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)]">
                 <div
+                  ref={otherScrollRef}
                   className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
-                  style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                  style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
+                  onTouchEnd={makeSnapHandler(otherScrollRef)}
                 >
                   {nonBridal.map((svc) => (
-                    <div key={svc.key} className="snap-center flex-shrink-0 w-[82vw] max-w-[320px] self-stretch">
+                    <div data-snap-card key={svc.key}
+                      className="snap-center flex-shrink-0 w-[82vw] max-w-[320px] self-stretch"
+                      style={{ scrollSnapStop: 'always' }}>
                       <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                     </div>
                   ))}

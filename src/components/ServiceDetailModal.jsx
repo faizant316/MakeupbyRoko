@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 
 // Remove sentences that duplicate info already shown in a badge
 function dedupeText(text, phrases) {
@@ -25,23 +24,18 @@ const IconClose = ({ dark = false }) => (
   </svg>
 );
 
-// Shared style for the floating nav buttons on mobile
-const mobileNavBtnStyle = {
-  pointerEvents: 'auto',
-  background: 'rgba(255,255,255,0.94)',
-  backdropFilter: 'blur(14px)',
-  WebkitBackdropFilter: 'blur(14px)',
-  border: '1px solid rgba(0,0,0,0.07)',
-  boxShadow: '0 3px 16px rgba(0,0,0,0.16)',
-  width: 42,
-  height: 42,
+// Dark frosted pill — matches desktop button style exactly
+const darkPillStyle = {
+  background: 'rgba(0,0,0,0.38)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  width: 36, height: 36,
   borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  outline: 'none',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', outline: 'none',
   WebkitTapHighlightColor: 'transparent',
+  border: 'none', padding: 0,
+  flexShrink: 0,
 };
 
 export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal, originPoint }) {
@@ -49,19 +43,15 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const [closing, setClosing]   = useState(false);
   const mobileScrollRef         = useRef(null);
   const desktopScrollRef        = useRef(null);
-  // Desktop: FLIP applied to the 700×84vh card
-  const modalCardRef            = useRef(null);
-  // Mobile: FLIP applied to an inner wrapper (NOT the fixed element itself —
-  //         applying transform to position:fixed directly can break iOS Safari)
-  const mobileInnerRef          = useRef(null);
+  const modalCardRef            = useRef(null);   // desktop card FLIP
+  const mobileInnerRef          = useRef(null);   // mobile content FLIP (NOT the fixed shell)
 
   useEffect(() => {
-    // Scrollbar-width compensation — prevents layout jitter on open/close
     const sbw = window.innerWidth - document.documentElement.clientWidth;
     if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
 
-    // ── FLIP helper: scale element down to click origin ──
+    // FLIP: scale both cards down to click origin before first paint
     function initFlip(el) {
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -76,7 +66,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     initFlip(modalCardRef.current);
     initFlip(mobileInnerRef.current);
 
-    // Double-rAF: let browser paint the initial scale(0.07) state, then animate in
     const t = requestAnimationFrame(() => {
       setVisible(true);
       requestAnimationFrame(() => {
@@ -95,13 +84,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       document.body.style.overflow     = '';
       document.body.style.paddingRight = '';
     };
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
     if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
 
-    // FLIP exit — shrink back toward origin
     const exit = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease';
     for (const r of [modalCardRef, mobileInnerRef]) {
       if (!r.current) continue;
@@ -225,46 +213,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     </button>
   );
 
-  // ── Mobile nav buttons (rendered via portal into document.body) ──────────
-  // Portal = completely outside all stacking contexts. z-index: 99999 beats
-  // every modal layer. This is the ONLY reliable fix for iOS Safari.
-  const mobileNavButtons = (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 99999,
-        paddingTop: 'max(14px, env(safe-area-inset-top))',
-        paddingLeft: '16px',
-        paddingRight: '16px',
-        paddingBottom: '14px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        pointerEvents: 'none',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(-12px)',
-        transition: closing
-          ? 'opacity 0.15s ease, transform 0.15s ease'
-          : 'opacity 0.30s ease 0.18s, transform 0.30s ease 0.18s',
-      }}
-    >
-      <button onClick={handleClose} style={mobileNavBtnStyle}>
-        <IconBack />
-      </button>
-      <button onClick={handleClose} style={mobileNavBtnStyle}>
-        <IconClose />
-      </button>
-    </div>
-  );
-
   return (
     <>
       {/* ═══════════════════════════════════════════════════════
-          DESKTOP — 700px × 84vh parallax modal
-          FLIP zoom from click origin via modalCardRef.
+          DESKTOP — 700px × 84vh parallax modal (z-9990)
+          Nav (z-9999) sits above it — this is intentional on
+          desktop and looks correct (card is padded 72px from top).
           ═══════════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
@@ -276,85 +230,67 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         }}
         onClick={handleClose}
       >
-        {/* JS controls opacity + transform — no inline state-driven values */}
         <div
           ref={modalCardRef}
           className="relative rounded-[24px] overflow-hidden w-[700px] max-w-[94vw]"
           style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Image layer */}
           <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '50%' }}>
             {svc.photo
               ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
               : <div className="w-full h-full bg-[#f5f0ec]" />
             }
           </div>
-
-          {/* Scroll container */}
-          <div
-            ref={desktopScrollRef}
-            className="absolute inset-0 overflow-y-auto z-10"
-            style={{ scrollbarWidth: 'none' }}
-          >
+          <div ref={desktopScrollRef} className="absolute inset-0 overflow-y-auto z-10" style={{ scrollbarWidth: 'none' }}>
             <div style={{ height: '43%' }} />
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62%' }}>
               <div className="mx-auto mt-3 w-9 h-1 rounded-full bg-black/10" />
               <div className="px-7 pt-5 pb-[84px]">{content}</div>
             </div>
           </div>
-
-          {/* CTA footer */}
-          <div
-            className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
-            style={{ background: '#fff', pointerEvents: 'none' }}
-          >
+          <div className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
+            style={{ background: '#fff', pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
-
-          {/* ← Back */}
-          <button
-            onClick={handleClose}
+          <button onClick={handleClose}
             className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}
-          >
+            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}>
             <IconBack dark />
           </button>
-
-          {/* × Close */}
-          <button
-            onClick={handleClose}
+          <button onClick={handleClose}
             className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}
-          >
+            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}>
             <IconClose dark />
           </button>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE backdrop — fades independently (z-9989)
-          Kept OUTSIDE the modal so the backdrop fade is decoupled
-          from the FLIP zoom of the modal content.
+          MOBILE backdrop — z-10000 so it covers the nav (z-9999)
+          Fades independently from the FLIP zoom.
           ═══════════════════════════════════════════════════════ */}
       <div
-        className="sm:hidden fixed inset-0 z-[9989]"
+        className="sm:hidden fixed inset-0 z-[10000]"
         style={{ background: visible ? 'rgba(0,0,0,0.50)' : 'rgba(0,0,0,0)', transition: fadeT }}
       />
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE modal content (z-9990)
-          The outer div is position:fixed — we do NOT put a CSS
-          transform on it (iOS Safari bug: transform breaks fixed
-          positioning). Instead the FLIP runs on the inner wrapper.
+          MOBILE modal — z-10001 (above nav + backdrop)
+          Outer shell: position:fixed, NO transform (iOS Safari
+          breaks fixed positioning when transform is applied here).
+          Inner wrapper (mobileInnerRef): does the FLIP scale.
+          Nav buttons: sibling of inner wrapper so they are NOT
+          scaled during the FLIP animation.
           ═══════════════════════════════════════════════════════ */}
-      <div className="sm:hidden fixed inset-0 z-[9990]">
-        {/* Inner wrapper — JS controls opacity + transform for FLIP */}
+      <div className="sm:hidden fixed inset-0 z-[10001]">
+
+        {/* ── FLIP inner wrapper ── */}
         <div
           ref={mobileInnerRef}
           style={{ width: '100%', height: '100%', position: 'relative' }}
         >
-          {/* Image — behind the scrolling card */}
+          {/* Image behind the scroll container */}
           <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
             {svc.photo
               ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
@@ -368,12 +304,8 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             className="absolute inset-0 z-10 overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            {/* Transparent spacer — tap to dismiss */}
             <div style={{ height: '44vh' }} onClick={handleClose} />
-
-            {/* White card */}
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
-              {/* Drag handle */}
               <div className="flex items-center justify-center pt-3.5 pb-1">
                 <div className="w-9 h-1 rounded-full bg-black/10" />
               </div>
@@ -381,23 +313,46 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             </div>
           </div>
 
-          {/* CTA pinned at bottom */}
+          {/* CTA */}
           <div
-            className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
-            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+            className="absolute bottom-0 left-0 right: 0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
+            style={{ right: 0, paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
           >
             {ctaButton}
           </div>
         </div>
-      </div>
 
-      {/* ═══════════════════════════════════════════════════════
-          MOBILE NAV BUTTONS — React portal into document.body
-          This is the ONLY approach that 100% escapes iOS Safari
-          stacking contexts. z-index: 99999, always on top.
-          ═══════════════════════════════════════════════════════ */}
-      {typeof window !== 'undefined' && window.innerWidth < 640
-        && createPortal(mobileNavButtons, document.body)}
+        {/* ── Nav buttons — sibling of FLIP wrapper, z-30 within the fixed shell ──
+            NOT inside mobileInnerRef so they stay at normal size during FLIP.
+            Dark frosted glass matching desktop style exactly. ── */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0,
+            zIndex: 30,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            paddingTop: 'max(12px, env(safe-area-inset-top))',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            paddingBottom: '10px',
+            pointerEvents: 'none',
+            opacity: visible ? 1 : 0,
+            transition: closing
+              ? 'opacity 0.15s ease'
+              : 'opacity 0.30s ease 0.18s',
+          }}
+        >
+          <button onClick={handleClose} style={{ ...darkPillStyle, pointerEvents: 'auto' }}>
+            <IconBack dark />
+          </button>
+          <button onClick={handleClose} style={{ ...darkPillStyle, pointerEvents: 'auto' }}>
+            <IconClose dark />
+          </button>
+        </div>
+
+      </div>
     </>
   );
 }
