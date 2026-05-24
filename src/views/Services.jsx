@@ -106,24 +106,63 @@ export default function ServicesPage() {
     setDetailService(svc);
   }, []);
 
-  // Instantly snap carousel to the nearest card on touchend — kills iOS momentum
-  // so the next card is tappable immediately after a swipe.
-  const makeSnapHandler = useCallback((scrollRef) => () => {
-    const el = scrollRef.current;
-    if (!el) return;
+  // ── Velocity-aware carousel snap ────────────────────────────────────────
+  // Records where the swipe started; on touchend uses velocity + direction
+  // to decide the target card. A quick flick (any speed ≥ 0.2 px/ms OR
+  // travel ≥ 28px) advances one card in the swipe direction. Slow/short
+  // drags fall back to nearest-card by position. scrollLeft is set directly
+  // (no smooth/behavior) so there is zero momentum tail — tap instantly.
+  const bridalTouchRef = useRef({});
+  const otherTouchRef  = useRef({});
+
+  const getSnapPoints = (el) => {
     const containerW = el.clientWidth;
-    const items = Array.from(el.querySelectorAll('[data-snap-card]'));
-    if (!items.length) return;
-    // For each card, compute the scrollLeft that centers it in the viewport
-    const snapPoints = items.map(item =>
+    return Array.from(el.querySelectorAll('[data-snap-card]')).map(item =>
       Math.max(0, item.offsetLeft - (containerW - item.offsetWidth) / 2)
     );
-    const current = el.scrollLeft;
-    const nearest = snapPoints.reduce((best, pt) =>
-      Math.abs(pt - current) < Math.abs(best - current) ? pt : best
-    , snapPoints[0]);
-    // Direct scrollLeft assignment = instant (no momentum tail)
-    el.scrollLeft = nearest;
+  };
+
+  const handleSnapStart = useCallback((scrollRef, touchRef) => (e) => {
+    touchRef.current = {
+      startX:     e.touches[0].clientX,
+      startScroll: scrollRef.current?.scrollLeft ?? 0,
+      startTime:  Date.now(),
+    };
+  }, []);
+
+  const handleSnapEnd = useCallback((scrollRef, touchRef) => (e) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { startX = 0, startScroll = 0, startTime = Date.now() } = touchRef.current;
+    const endX  = e.changedTouches?.[0]?.clientX ?? startX;
+    const dx    = endX - startX;                          // + = right, - = left
+    const dt    = Math.max(1, Date.now() - startTime);    // ms
+    const vel   = Math.abs(dx) / dt;                      // px/ms
+
+    const snapPoints = getSnapPoints(el);
+    if (!snapPoints.length) return;
+
+    // Which card were we on at the start of the touch?
+    const startIdx = snapPoints.reduce((best, pt, i) =>
+      Math.abs(pt - startScroll) < Math.abs(snapPoints[best] - startScroll) ? i : best
+    , 0);
+
+    let targetIdx;
+    const isSwipe = vel > 0.20 || Math.abs(dx) > 28;
+    if (isSwipe) {
+      // Go one card in swipe direction
+      targetIdx = dx < 0
+        ? Math.min(startIdx + 1, snapPoints.length - 1)   // swipe left  → next
+        : Math.max(startIdx - 1, 0);                       // swipe right → prev
+    } else {
+      // Slow short drag — nearest card by current position
+      const cur = el.scrollLeft;
+      targetIdx = snapPoints.reduce((best, pt, i) =>
+        Math.abs(pt - cur) < Math.abs(snapPoints[best] - cur) ? i : best
+      , 0);
+    }
+
+    el.scrollLeft = snapPoints[targetIdx]; // instant — no momentum tail
   }, []);
 
   const allBridalServices = SERVICE_DATA.filter(s => s.category === 'bridal');
@@ -420,7 +459,8 @@ export default function ServicesPage() {
                   ref={bridalScrollRef}
                   className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
                   style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
-                  onTouchEnd={makeSnapHandler(bridalScrollRef)}
+                  onTouchStart={handleSnapStart(bridalScrollRef, bridalTouchRef)}
+                  onTouchEnd={handleSnapEnd(bridalScrollRef, bridalTouchRef)}
                 >
                   {bridalServices.map((svc, idx) => (
                     <div data-snap-card key={svc.key}
@@ -470,7 +510,8 @@ export default function ServicesPage() {
                   ref={otherScrollRef}
                   className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
                   style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
-                  onTouchEnd={makeSnapHandler(otherScrollRef)}
+                  onTouchStart={handleSnapStart(otherScrollRef, otherTouchRef)}
+                  onTouchEnd={handleSnapEnd(otherScrollRef, otherTouchRef)}
                 >
                   {nonBridal.map((svc) => (
                     <div data-snap-card key={svc.key}
