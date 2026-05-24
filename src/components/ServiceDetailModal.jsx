@@ -10,41 +10,24 @@ function dedupeText(text, phrases) {
   return filtered.length ? filtered.join(' ').trim() : text;
 }
 
-// ── Shared button style ──────────────────────────────────────
-// Used in both light (white card) and dark (over-image) contexts.
-// `light` = on white background, `dark` = over photo (frosted glass)
-function NavBtn({ onClick, children, variant = 'light' }) {
-  const bg   = variant === 'dark'  ? 'rgba(0,0,0,0.38)' : '#f0ebe6';
-  const bkdr = variant === 'dark'  ? 'blur(6px)'        : 'none';
-  return (
-    <button
-      onClick={onClick}
-      className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
-      style={{ background: bg, backdropFilter: bkdr }}
-    >
-      {children}
-    </button>
-  );
-}
-
-const stroke = (v) => (v === 'dark' ? '#fff' : '#111');
-
-const IconBack = ({ v = 'dark' }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke={stroke(v)} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+// ── Icons ────────────────────────────────────────────────────
+const IconBack = ({ dark = false }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
     <polyline points="15 18 9 12 15 6" />
   </svg>
 );
-const IconClose = ({ v = 'dark' }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke={stroke(v)} strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
+const IconClose = ({ dark = false }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 
-export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal }) {
+export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal, originPoint }) {
   const [visible, setVisible]   = useState(false);
   const [closing, setClosing]   = useState(false);
   const mobileScrollRef         = useRef(null);
   const desktopScrollRef        = useRef(null);
+  const modalCardRef            = useRef(null);
 
   useEffect(() => {
     // Compensate for scrollbar width so page doesn't jitter when overflow is toggled
@@ -52,7 +35,29 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
 
-    const t = requestAnimationFrame(() => setVisible(true));
+    // Desktop FLIP: start scaled down at click origin, animate to full size
+    const card = modalCardRef.current;
+    if (card) {
+      const rect = card.getBoundingClientRect();
+      const ox = originPoint ? `${originPoint.x - rect.left}px` : '50%';
+      const oy = originPoint ? `${originPoint.y - rect.top}px` : '50%';
+      card.style.transformOrigin = `${ox} ${oy}`;
+      card.style.transition = 'none';
+      card.style.transform = 'scale(0.08)';
+      card.style.opacity = '0';
+    }
+
+    const t = requestAnimationFrame(() => {
+      setVisible(true);
+      if (card) {
+        requestAnimationFrame(() => {
+          card.style.transition = 'transform 0.52s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.30s ease';
+          card.style.transform = 'scale(1)';
+          card.style.opacity = '1';
+        });
+      }
+    });
+
     return () => {
       cancelAnimationFrame(t);
       document.body.style.overflow     = '';
@@ -63,9 +68,18 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const handleClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
     if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
+
+    // Desktop FLIP exit: shrink back toward click origin
+    const card = modalCardRef.current;
+    if (card) {
+      card.style.transition = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1), opacity 0.20s ease';
+      card.style.transform = 'scale(0.08)';
+      card.style.opacity = '0';
+    }
+
     setClosing(true);
     setVisible(false);
-    setTimeout(onClose, 240);
+    setTimeout(onClose, 300);
   };
 
   if (!svc) return null;
@@ -84,7 +98,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     setTimeout(() => {
       if (isLessons) onOpenClassModal?.();
       else onBook(svc);
-    }, 240);
+    }, 300);
   };
 
   const dupeFilters  = svc.title === 'Luxury Bridal Look' ? ['travel fee', '$200'] : [];
@@ -186,8 +200,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     <>
       {/* ═══════════════════════════════════════════════════════
           DESKTOP — large parallax modal (700px × 84vh)
-          Image fills top 50%. Card scrolls up over it.
-          ← back (top-left) and × close (top-right) over image.
+          FLIP zoom from click origin. JS controls transform/opacity.
           ═══════════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
@@ -199,15 +212,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         }}
         onClick={handleClose}
       >
+        {/* modalCardRef: JS controls opacity + transform for FLIP */}
         <div
+          ref={modalCardRef}
           className="relative rounded-[24px] overflow-hidden w-[700px] max-w-[94vw]"
           style={{
             height: '84vh',
-            opacity:   visible ? 1 : 0,
-            transform: visible ? 'translateY(0) scale(1)' : 'translateY(22px) scale(0.96)',
-            transition: closing
-              ? 'opacity 0.18s ease, transform 0.22s cubic-bezier(0.4,0,1,1)'
-              : 'opacity 0.28s ease, transform 0.38s cubic-bezier(0.32,0.72,0,1)',
             boxShadow: '0 32px 100px rgba(0,0,0,0.35)',
           }}
           onClick={e => e.stopPropagation()}
@@ -247,7 +257,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}
           >
-            <IconBack v="dark" />
+            <IconBack dark />
           </button>
 
           {/* × Close — top-right, dark frosted glass over image */}
@@ -256,15 +266,13 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}
           >
-            <IconClose v="dark" />
+            <IconClose dark />
           </button>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE — parallax bottom sheet
-          White card has its own header row with ← and × buttons.
-          No floating overlay buttons — 100% reliable on iOS Safari.
+          MOBILE — parallax bottom sheet (slide up from bottom)
           ═══════════════════════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 z-[9990]">
         {/* Backdrop */}
@@ -273,7 +281,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           style={{ background: visible ? 'rgba(0,0,0,0.52)' : 'rgba(0,0,0,0)', transition: fadeT }}
         />
 
-        {/* Image — fixed behind the scrolling card */}
+        {/* Image — behind the scrolling card */}
         <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
           {svc.photo
             ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
@@ -291,38 +299,14 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             transition: slideT,
           }}
         >
-          {/* Transparent spacer — tap to dismiss, shows image through */}
+          {/* Transparent spacer — tap to dismiss, reveals image */}
           <div style={{ height: '44vh' }} onClick={handleClose} />
 
           {/* White card */}
           <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
-
-            {/* ── Card header: ← back · drag pill · × close ── */}
-            <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-              {/* ← Back */}
-              <button
-                onClick={handleClose}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: '#f0ebe6' }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-
-              {/* Drag handle */}
+            {/* Drag handle only — nav buttons are in the fixed sibling below */}
+            <div className="flex items-center justify-center pt-3.5 pb-1">
               <div className="w-9 h-1 rounded-full bg-black/10" />
-
-              {/* × Close */}
-              <button
-                onClick={handleClose}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: '#f0ebe6' }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
             </div>
 
             {/* Content */}
@@ -342,6 +326,67 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         >
           <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
         </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          MOBILE FIXED NAV BUTTONS
+          Rendered as a fragment sibling — NOT inside the modal's
+          stacking context. Stays visible no matter how far you scroll.
+          ═══════════════════════════════════════════════════════ */}
+      <div
+        className="sm:hidden"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9991,
+          paddingTop: 'max(12px, env(safe-area-inset-top))',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          paddingBottom: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pointerEvents: 'none',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(-10px)',
+          transition: closing
+            ? 'opacity 0.16s ease, transform 0.16s ease'
+            : 'opacity 0.28s ease 0.12s, transform 0.28s ease 0.12s',
+        }}
+      >
+        {/* ← Back */}
+        <button
+          onClick={handleClose}
+          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90"
+          style={{
+            pointerEvents: 'auto',
+            background: 'rgba(255,255,255,0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            boxShadow: '0 2px 14px rgba(0,0,0,0.14)',
+          }}
+        >
+          <IconBack />
+        </button>
+
+        {/* × Close */}
+        <button
+          onClick={handleClose}
+          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90"
+          style={{
+            pointerEvents: 'auto',
+            background: 'rgba(255,255,255,0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            boxShadow: '0 2px 14px rgba(0,0,0,0.14)',
+          }}
+        >
+          <IconClose />
+        </button>
       </div>
     </>
   );

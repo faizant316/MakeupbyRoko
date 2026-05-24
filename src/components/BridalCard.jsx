@@ -6,7 +6,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
   return (
     <div
       className={`service-card h-full relative z-0 cursor-pointer ${AURA_CLASSES[idx] || ''}`}
-      onClick={() => onViewDetail && onViewDetail(svc)}
+      onClick={(e) => onViewDetail && onViewDetail(svc, e)}
       style={{ touchAction: 'manipulation' }}
     >
       <div className="group relative bg-white border-0 rounded-[var(--radius-lg)] overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.08)] active:scale-[0.985] transition-all duration-300 flex flex-col h-full">
