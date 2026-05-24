@@ -3,7 +3,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
     <div
       className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row h-full sm:h-[220px] cursor-pointer"
       style={{ touchAction: 'manipulation' }}
-      onClick={() => onViewDetail && onViewDetail(svc)}
+      onClick={(e) => onViewDetail && onViewDetail(svc, e)}
     >
       {/* Photo — top on mobile, right on desktop */}
       <div className="sm:hidden w-full h-[160px] overflow-hidden bg-[#f5f5f5] flex-shrink-0">

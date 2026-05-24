@@ -62,6 +62,7 @@ function mapService(svc) {
 export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState(null);
   const [detailService, setDetailService] = useState(null);
+  const [detailOrigin, setDetailOrigin] = useState(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeBridalId, setActiveBridalId] = useState(null); // null = show both
@@ -96,6 +97,11 @@ export default function ServicesPage() {
     setActiveCategory(key);
     setActiveBridalId(bridalId);
     setDropdownOpen(false);
+  }, []);
+
+  const handleViewDetail = useCallback((svc, e) => {
+    setDetailOrigin(e ? { x: e.clientX, y: e.clientY } : null);
+    setDetailService(svc);
   }, []);
 
   const allBridalServices = SERVICE_DATA.filter(s => s.category === 'bridal');
@@ -382,7 +388,7 @@ export default function ServicesPage() {
               {/* Mobile: horizontal snap scroll — Desktop: grid */}
               <div className="hidden lg:grid gap-5" style={{ gridTemplateColumns: bridalServices.length >= 3 ? 'repeat(3, 1fr)' : bridalServices.length === 2 ? 'repeat(2, 1fr)' : '1fr' }}>
                 {bridalServices.map((svc, idx) => (
-                  <BridalCard key={svc.key} svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={setDetailService} />
+                  <BridalCard key={svc.key} svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
                 ))}
               </div>
 
@@ -394,7 +400,7 @@ export default function ServicesPage() {
                 >
                   {bridalServices.map((svc, idx) => (
                     <div key={svc.key} className="snap-center flex-shrink-0 w-[82vw] max-w-[340px]">
-                      <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={setDetailService} />
+                      <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
                   {/* Peek spacer */}
@@ -428,7 +434,7 @@ export default function ServicesPage() {
               {/* Desktop: vertical stacked cards */}
               <div className="hidden sm:flex flex-col gap-4">
                 {nonBridal.map((svc) => (
-                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={setDetailService} />
+                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                 ))}
               </div>
 
@@ -440,7 +446,7 @@ export default function ServicesPage() {
                 >
                   {nonBridal.map((svc) => (
                     <div key={svc.key} className="snap-center flex-shrink-0 w-[82vw] max-w-[320px] self-stretch">
-                      <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={setDetailService} />
+                      <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
                   <div className="flex-shrink-0 w-4" />
@@ -482,9 +488,10 @@ export default function ServicesPage() {
       {detailService && (
         <ServiceDetailModal
           svc={detailService}
-          onClose={() => setDetailService(null)}
-          onBook={(svc) => { setDetailService(null); setSelectedService(svc); }}
-          onOpenClassModal={() => { setDetailService(null); setShowClassModal(true); }}
+          originPoint={detailOrigin}
+          onClose={() => { setDetailService(null); setDetailOrigin(null); }}
+          onBook={(svc) => { setDetailService(null); setDetailOrigin(null); setSelectedService(svc); }}
+          onOpenClassModal={() => { setDetailService(null); setDetailOrigin(null); setShowClassModal(true); }}
         />
       )}
 
