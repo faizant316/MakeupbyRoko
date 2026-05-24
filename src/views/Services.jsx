@@ -106,85 +106,94 @@ export default function ServicesPage() {
     setDetailService(svc);
   }, []);
 
-  // ── Velocity-aware carousel snap with smooth settle animation ───────────
-  // onTouchStart records start position/time.
-  // onTouchEnd decides the target card (velocity or distance threshold),
-  // then animates to it with a 220ms ease-out — fast enough to feel instant,
-  // smooth enough to not feel like a cut.
-  const bridalTouchRef = useRef({});
-  const otherTouchRef  = useRef({});
-  const bridalAnimRef  = useRef(null);
-  const otherAnimRef   = useRef(null);
+  // ── Butter-smooth imperative carousel snap ──────────────────────────────
+  // Uses non-passive touchmove with e.preventDefault() to fully own scroll
+  // position — no browser momentum, no CSS snap oscillation, just clean rAF.
+  useEffect(() => {
+    const setupSnap = (el) => {
+      if (!el) return () => {};
+      let startX = 0, startScroll = 0, startTime = 0;
+      let animId = null;
 
-  const getSnapPoints = (el) => {
-    const containerW = el.clientWidth;
-    return Array.from(el.querySelectorAll('[data-snap-card]')).map(item =>
-      Math.max(0, item.offsetLeft - (containerW - item.offsetWidth) / 2)
-    );
-  };
+      const getSnapPoints = () => {
+        const cw = el.clientWidth;
+        return Array.from(el.querySelectorAll('[data-snap-card]')).map(item =>
+          Math.max(0, item.offsetLeft - (cw - item.offsetWidth) / 2)
+        );
+      };
 
-  // Smooth scroll with ease-out cubic, ~220ms
-  const smoothSnap = (el, target, animRef) => {
-    if (animRef.current) cancelAnimationFrame(animRef.current);
-    const from = el.scrollLeft;
-    const dist = target - from;
-    if (Math.abs(dist) < 1) return;
-    const DURATION = 220;
-    const t0 = performance.now();
-    const step = (now) => {
-      const p = Math.min((now - t0) / DURATION, 1);
-      const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
-      el.scrollLeft = from + dist * ease;
-      if (p < 1) animRef.current = requestAnimationFrame(step);
-      else animRef.current = null;
+      const animateTo = (target) => {
+        if (animId) { cancelAnimationFrame(animId); animId = null; }
+        el.style.scrollSnapType = 'none';
+        const from = el.scrollLeft;
+        const dist = target - from;
+        if (Math.abs(dist) < 1) { el.style.scrollSnapType = ''; return; }
+        const DURATION = 300;
+        const t0 = performance.now();
+        const step = (now) => {
+          const p = Math.min((now - t0) / DURATION, 1);
+          const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+          el.scrollLeft = from + dist * ease;
+          if (p < 1) { animId = requestAnimationFrame(step); }
+          else { animId = null; el.style.scrollSnapType = ''; }
+        };
+        animId = requestAnimationFrame(step);
+      };
+
+      const onStart = (e) => {
+        if (animId) { cancelAnimationFrame(animId); animId = null; }
+        el.style.scrollSnapType = 'none'; // kill CSS snap during drag
+        startX = e.touches[0].clientX;
+        startScroll = el.scrollLeft;
+        startTime = performance.now();
+      };
+
+      const onMove = (e) => {
+        e.preventDefault(); // own scroll completely — no momentum, no snap fight
+        el.scrollLeft = startScroll - (e.touches[0].clientX - startX);
+      };
+
+      const onEnd = (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dt = Math.max(1, performance.now() - startTime);
+        const vel = Math.abs(dx) / dt; // px/ms
+
+        const pts = getSnapPoints();
+        if (!pts.length) return;
+
+        const startIdx = pts.reduce((best, pt, i) =>
+          Math.abs(pt - startScroll) < Math.abs(pts[best] - startScroll) ? i : best, 0);
+
+        let ti;
+        if (vel > 0.18 || Math.abs(dx) > 25) {
+          // Flick — snap to next/prev card
+          ti = dx < 0 ? Math.min(startIdx + 1, pts.length - 1) : Math.max(startIdx - 1, 0);
+        } else {
+          // Slow drag — snap to nearest
+          const cur = el.scrollLeft;
+          ti = pts.reduce((best, pt, i) =>
+            Math.abs(pt - cur) < Math.abs(pts[best] - cur) ? i : best, 0);
+        }
+
+        animateTo(pts[ti]);
+      };
+
+      el.addEventListener('touchstart', onStart, { passive: true });
+      el.addEventListener('touchmove',  onMove,  { passive: false }); // must be non-passive
+      el.addEventListener('touchend',   onEnd,   { passive: true });
+
+      return () => {
+        el.removeEventListener('touchstart', onStart);
+        el.removeEventListener('touchmove',  onMove);
+        el.removeEventListener('touchend',   onEnd);
+        if (animId) cancelAnimationFrame(animId);
+      };
     };
-    animRef.current = requestAnimationFrame(step);
-  };
 
-  const handleSnapStart = useCallback((scrollRef, touchRef, animRef) => (e) => {
-    // Cancel any in-progress animation so startScroll is accurate
-    if (animRef.current) {
-      cancelAnimationFrame(animRef.current);
-      animRef.current = null;
-    }
-    touchRef.current = {
-      startX:      e.touches[0].clientX,
-      startScroll: scrollRef.current?.scrollLeft ?? 0,
-      startTime:   Date.now(),
-    };
-  }, []);
-
-  const handleSnapEnd = useCallback((scrollRef, touchRef, animRef) => (e) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const { startX = 0, startScroll = 0, startTime = Date.now() } = touchRef.current;
-    const endX = e.changedTouches?.[0]?.clientX ?? startX;
-    const dx   = endX - startX;
-    const dt   = Math.max(1, Date.now() - startTime);
-    const vel  = Math.abs(dx) / dt; // px/ms
-
-    const snapPoints = getSnapPoints(el);
-    if (!snapPoints.length) return;
-
-    const startIdx = snapPoints.reduce((best, pt, i) =>
-      Math.abs(pt - startScroll) < Math.abs(snapPoints[best] - startScroll) ? i : best
-    , 0);
-
-    let targetIdx;
-    const isSwipe = vel > 0.20 || Math.abs(dx) > 28;
-    if (isSwipe) {
-      targetIdx = dx < 0
-        ? Math.min(startIdx + 1, snapPoints.length - 1)
-        : Math.max(startIdx - 1, 0);
-    } else {
-      const cur = el.scrollLeft;
-      targetIdx = snapPoints.reduce((best, pt, i) =>
-        Math.abs(pt - cur) < Math.abs(snapPoints[best] - cur) ? i : best
-      , 0);
-    }
-
-    smoothSnap(el, snapPoints[targetIdx], animRef);
-  }, []);
+    const c1 = setupSnap(bridalScrollRef.current);
+    const c2 = setupSnap(otherScrollRef.current);
+    return () => { c1(); c2(); };
+  }, [servicesLoading]); // re-attach after data loads and carousels mount
 
   const allBridalServices = SERVICE_DATA.filter(s => s.category === 'bridal');
 
@@ -480,8 +489,6 @@ export default function ServicesPage() {
                   ref={bridalScrollRef}
                   className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
                   style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
-                  onTouchStart={handleSnapStart(bridalScrollRef, bridalTouchRef, bridalAnimRef)}
-                  onTouchEnd={handleSnapEnd(bridalScrollRef, bridalTouchRef, bridalAnimRef)}
                 >
                   {bridalServices.map((svc, idx) => (
                     <div data-snap-card key={svc.key}
@@ -531,8 +538,6 @@ export default function ServicesPage() {
                   ref={otherScrollRef}
                   className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
                   style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
-                  onTouchStart={handleSnapStart(otherScrollRef, otherTouchRef, otherAnimRef)}
-                  onTouchEnd={handleSnapEnd(otherScrollRef, otherTouchRef, otherAnimRef)}
                 >
                   {nonBridal.map((svc) => (
                     <div data-snap-card key={svc.key}
