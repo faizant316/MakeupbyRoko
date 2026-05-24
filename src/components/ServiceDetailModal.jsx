@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 // Remove sentences that duplicate info already shown in a badge
 function dedupeText(text, phrases) {
@@ -12,50 +13,81 @@ function dedupeText(text, phrases) {
 
 // ── Icons ────────────────────────────────────────────────────
 const IconBack = ({ dark = false }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5"
+    strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
     <polyline points="15 18 9 12 15 6" />
   </svg>
 );
 const IconClose = ({ dark = false }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
+  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5"
+    strokeLinecap="round" width={14} height={14}>
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
+// Shared style for the floating nav buttons on mobile
+const mobileNavBtnStyle = {
+  pointerEvents: 'auto',
+  background: 'rgba(255,255,255,0.94)',
+  backdropFilter: 'blur(14px)',
+  WebkitBackdropFilter: 'blur(14px)',
+  border: '1px solid rgba(0,0,0,0.07)',
+  boxShadow: '0 3px 16px rgba(0,0,0,0.16)',
+  width: 42,
+  height: 42,
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  outline: 'none',
+  WebkitTapHighlightColor: 'transparent',
+};
 
 export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal, originPoint }) {
   const [visible, setVisible]   = useState(false);
   const [closing, setClosing]   = useState(false);
   const mobileScrollRef         = useRef(null);
   const desktopScrollRef        = useRef(null);
+  // Desktop: FLIP applied to the 700×84vh card
   const modalCardRef            = useRef(null);
+  // Mobile: FLIP applied to an inner wrapper (NOT the fixed element itself —
+  //         applying transform to position:fixed directly can break iOS Safari)
+  const mobileInnerRef          = useRef(null);
 
   useEffect(() => {
-    // Compensate for scrollbar width so page doesn't jitter when overflow is toggled
+    // Scrollbar-width compensation — prevents layout jitter on open/close
     const sbw = window.innerWidth - document.documentElement.clientWidth;
     if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
 
-    // Desktop FLIP: start scaled down at click origin, animate to full size
-    const card = modalCardRef.current;
-    if (card) {
-      const rect = card.getBoundingClientRect();
-      const ox = originPoint ? `${originPoint.x - rect.left}px` : '50%';
-      const oy = originPoint ? `${originPoint.y - rect.top}px` : '50%';
-      card.style.transformOrigin = `${ox} ${oy}`;
-      card.style.transition = 'none';
-      card.style.transform = 'scale(0.08)';
-      card.style.opacity = '0';
+    // ── FLIP helper: scale element down to click origin ──
+    function initFlip(el) {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const ox = originPoint != null ? `${originPoint.x - rect.left}px` : '50%';
+      const oy = originPoint != null ? `${originPoint.y - rect.top}px`  : '50%';
+      el.style.transformOrigin = `${ox} ${oy}`;
+      el.style.transition = 'none';
+      el.style.transform  = 'scale(0.07)';
+      el.style.opacity    = '0';
     }
 
+    initFlip(modalCardRef.current);
+    initFlip(mobileInnerRef.current);
+
+    // Double-rAF: let browser paint the initial scale(0.07) state, then animate in
     const t = requestAnimationFrame(() => {
       setVisible(true);
-      if (card) {
-        requestAnimationFrame(() => {
-          card.style.transition = 'transform 0.52s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.30s ease';
-          card.style.transform = 'scale(1)';
-          card.style.opacity = '1';
-        });
-      }
+      requestAnimationFrame(() => {
+        const enter = 'transform 0.52s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease';
+        for (const r of [modalCardRef, mobileInnerRef]) {
+          if (!r.current) continue;
+          r.current.style.transition = enter;
+          r.current.style.transform  = 'scale(1)';
+          r.current.style.opacity    = '1';
+        }
+      });
     });
 
     return () => {
@@ -63,18 +95,19 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       document.body.style.overflow     = '';
       document.body.style.paddingRight = '';
     };
-  }, []);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
     if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
 
-    // Desktop FLIP exit: shrink back toward click origin
-    const card = modalCardRef.current;
-    if (card) {
-      card.style.transition = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1), opacity 0.20s ease';
-      card.style.transform = 'scale(0.08)';
-      card.style.opacity = '0';
+    // FLIP exit — shrink back toward origin
+    const exit = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease';
+    for (const r of [modalCardRef, mobileInnerRef]) {
+      if (!r.current) continue;
+      r.current.style.transition = exit;
+      r.current.style.transform  = 'scale(0.07)';
+      r.current.style.opacity    = '0';
     }
 
     setClosing(true);
@@ -105,15 +138,11 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const descToShow   = dupeFilters.length ? dedupeText(svc.desc,           dupeFilters) : svc.desc;
   const expectToShow = dupeFilters.length ? dedupeText(svc.what_to_expect, dupeFilters) : svc.what_to_expect;
 
-  // Animation timing
-  const slideT = closing
-    ? 'transform 0.22s cubic-bezier(0.4, 0, 1, 1)'
-    : 'transform 0.40s cubic-bezier(0.32, 0.72, 0, 1)';
-  const fadeT  = closing
+  const fadeT = closing
     ? 'background 0.18s ease, backdrop-filter 0.18s ease'
     : 'background 0.30s ease, backdrop-filter 0.30s ease';
 
-  /* ── Reusable JSX fragments ─────────────────────────────── */
+  /* ── Shared content fragments ───────────────────────────── */
   const badges = (
     <>
       {svc.title === 'Luxury Bridal Look' && (
@@ -196,11 +225,46 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     </button>
   );
 
+  // ── Mobile nav buttons (rendered via portal into document.body) ──────────
+  // Portal = completely outside all stacking contexts. z-index: 99999 beats
+  // every modal layer. This is the ONLY reliable fix for iOS Safari.
+  const mobileNavButtons = (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 99999,
+        paddingTop: 'max(14px, env(safe-area-inset-top))',
+        paddingLeft: '16px',
+        paddingRight: '16px',
+        paddingBottom: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        pointerEvents: 'none',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(-12px)',
+        transition: closing
+          ? 'opacity 0.15s ease, transform 0.15s ease'
+          : 'opacity 0.30s ease 0.18s, transform 0.30s ease 0.18s',
+      }}
+    >
+      <button onClick={handleClose} style={mobileNavBtnStyle}>
+        <IconBack />
+      </button>
+      <button onClick={handleClose} style={mobileNavBtnStyle}>
+        <IconClose />
+      </button>
+    </div>
+  );
+
   return (
     <>
       {/* ═══════════════════════════════════════════════════════
-          DESKTOP — large parallax modal (700px × 84vh)
-          FLIP zoom from click origin. JS controls transform/opacity.
+          DESKTOP — 700px × 84vh parallax modal
+          FLIP zoom from click origin via modalCardRef.
           ═══════════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
@@ -212,14 +276,11 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         }}
         onClick={handleClose}
       >
-        {/* modalCardRef: JS controls opacity + transform for FLIP */}
+        {/* JS controls opacity + transform — no inline state-driven values */}
         <div
           ref={modalCardRef}
           className="relative rounded-[24px] overflow-hidden w-[700px] max-w-[94vw]"
-          style={{
-            height: '84vh',
-            boxShadow: '0 32px 100px rgba(0,0,0,0.35)',
-          }}
+          style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
           {/* Image layer */}
@@ -230,7 +291,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             }
           </div>
 
-          {/* Scroll container — card slides up over image */}
+          {/* Scroll container */}
           <div
             ref={desktopScrollRef}
             className="absolute inset-0 overflow-y-auto z-10"
@@ -251,7 +312,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
 
-          {/* ← Back — top-left, dark frosted glass over image */}
+          {/* ← Back */}
           <button
             onClick={handleClose}
             className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
@@ -260,7 +321,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <IconBack dark />
           </button>
 
-          {/* × Close — top-right, dark frosted glass over image */}
+          {/* × Close */}
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
@@ -272,122 +333,71 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE — parallax bottom sheet (slide up from bottom)
+          MOBILE backdrop — fades independently (z-9989)
+          Kept OUTSIDE the modal so the backdrop fade is decoupled
+          from the FLIP zoom of the modal content.
+          ═══════════════════════════════════════════════════════ */}
+      <div
+        className="sm:hidden fixed inset-0 z-[9989]"
+        style={{ background: visible ? 'rgba(0,0,0,0.50)' : 'rgba(0,0,0,0)', transition: fadeT }}
+      />
+
+      {/* ═══════════════════════════════════════════════════════
+          MOBILE modal content (z-9990)
+          The outer div is position:fixed — we do NOT put a CSS
+          transform on it (iOS Safari bug: transform breaks fixed
+          positioning). Instead the FLIP runs on the inner wrapper.
           ═══════════════════════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 z-[9990]">
-        {/* Backdrop */}
+        {/* Inner wrapper — JS controls opacity + transform for FLIP */}
         <div
-          className="absolute inset-0"
-          style={{ background: visible ? 'rgba(0,0,0,0.52)' : 'rgba(0,0,0,0)', transition: fadeT }}
-        />
-
-        {/* Image — behind the scrolling card */}
-        <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
-          {svc.photo
-            ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
-            : <div className="w-full h-full bg-[#f5f0ec]" />
-          }
-        </div>
-
-        {/* Scroll container — slides up from bottom */}
-        <div
-          ref={mobileScrollRef}
-          className="absolute inset-0 z-10 overflow-y-auto"
-          style={{
-            WebkitOverflowScrolling: 'touch',
-            transform: visible ? 'translateY(0)' : 'translateY(100%)',
-            transition: slideT,
-          }}
+          ref={mobileInnerRef}
+          style={{ width: '100%', height: '100%', position: 'relative' }}
         >
-          {/* Transparent spacer — tap to dismiss, reveals image */}
-          <div style={{ height: '44vh' }} onClick={handleClose} />
-
-          {/* White card */}
-          <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
-            {/* Drag handle only — nav buttons are in the fixed sibling below */}
-            <div className="flex items-center justify-center pt-3.5 pb-1">
-              <div className="w-9 h-1 rounded-full bg-black/10" />
-            </div>
-
-            {/* Content */}
-            <div className="px-5 pt-4 pb-24">{content}</div>
+          {/* Image — behind the scrolling card */}
+          <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
+            {svc.photo
+              ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
+              : <div className="w-full h-full bg-[#f5f0ec]" />
+            }
           </div>
-        </div>
 
-        {/* CTA — pinned at screen bottom, slides in with card */}
-        <div
-          className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
-          style={{
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
-            pointerEvents: 'none',
-            transform: visible ? 'translateY(0)' : 'translateY(100%)',
-            transition: slideT,
-          }}
-        >
-          <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
+          {/* Scroll container */}
+          <div
+            ref={mobileScrollRef}
+            className="absolute inset-0 z-10 overflow-y-auto"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {/* Transparent spacer — tap to dismiss */}
+            <div style={{ height: '44vh' }} onClick={handleClose} />
+
+            {/* White card */}
+            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
+              {/* Drag handle */}
+              <div className="flex items-center justify-center pt-3.5 pb-1">
+                <div className="w-9 h-1 rounded-full bg-black/10" />
+              </div>
+              <div className="px-5 pt-4 pb-24">{content}</div>
+            </div>
+          </div>
+
+          {/* CTA pinned at bottom */}
+          <div
+            className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+          >
+            {ctaButton}
+          </div>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE FIXED NAV BUTTONS
-          Rendered as a fragment sibling — NOT inside the modal's
-          stacking context. Stays visible no matter how far you scroll.
+          MOBILE NAV BUTTONS — React portal into document.body
+          This is the ONLY approach that 100% escapes iOS Safari
+          stacking contexts. z-index: 99999, always on top.
           ═══════════════════════════════════════════════════════ */}
-      <div
-        className="sm:hidden"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9991,
-          paddingTop: 'max(12px, env(safe-area-inset-top))',
-          paddingLeft: '16px',
-          paddingRight: '16px',
-          paddingBottom: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pointerEvents: 'none',
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(-10px)',
-          transition: closing
-            ? 'opacity 0.16s ease, transform 0.16s ease'
-            : 'opacity 0.28s ease 0.12s, transform 0.28s ease 0.12s',
-        }}
-      >
-        {/* ← Back */}
-        <button
-          onClick={handleClose}
-          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90"
-          style={{
-            pointerEvents: 'auto',
-            background: 'rgba(255,255,255,0.92)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            boxShadow: '0 2px 14px rgba(0,0,0,0.14)',
-          }}
-        >
-          <IconBack />
-        </button>
-
-        {/* × Close */}
-        <button
-          onClick={handleClose}
-          className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90"
-          style={{
-            pointerEvents: 'auto',
-            background: 'rgba(255,255,255,0.92)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            boxShadow: '0 2px 14px rgba(0,0,0,0.14)',
-          }}
-        >
-          <IconClose />
-        </button>
-      </div>
+      {typeof window !== 'undefined' && window.innerWidth < 640
+        && createPortal(mobileNavButtons, document.body)}
     </>
   );
 }
