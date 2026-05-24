@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -9,7 +9,7 @@ import BookingsList from '../components/admin/BookingsList';
 import BookingDetail from '../components/admin/BookingDetail';
 import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
-import AdminTabSwitcher from '../components/admin/AdminTabSwitcher';
+import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import CapacitySettings from '../components/admin/CapacitySettings';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
@@ -26,24 +26,13 @@ export default function Admin() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [userName, setUserName] = useState('');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [authGranted, setAuthGranted] = useState(false);
   const [authError, setAuthError] = useState(null);
   const queryClient = useQueryClient();
   const router = useRouter();
-  const mobileMenuRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        setMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   useEffect(() => {
     localStorage.setItem('admin-dark', darkMode);
@@ -250,152 +239,81 @@ export default function Admin() {
     );
   }
 
+  // Resolve active tab label for mobile header
+  const activeTabLabel = ADMIN_TABS.find(t => t.key === activeTab)?.label ?? '';
+
   return (
     <div
       className="min-h-screen transition-colors duration-300"
       style={{ background: dm ? '#1e1e24' : '#FAF8F6', color: dm ? '#e4e4e7' : '#111' }}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-50" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
-          <a href="/" className="font-serif text-lg tracking-[0.12em] uppercase whitespace-nowrap" style={{ color: dm ? '#e4e4e7' : '#111' }}>
-            Roqia Moshref
-          </a>
-
-          {/* Desktop nav */}
-          <div className="hidden sm:flex items-center gap-4">
-            <button
-              onClick={() => setDarkMode(d => !d)}
-              title={dm ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="relative w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-0.5 flex-shrink-0"
-              style={{ background: dm ? '#D4A0B0' : '#e2dbd5' }}
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-[100]"
+        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }}
+      >
+        <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+          {/* Branding + active section chip (mobile) */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <a
+              href="/"
+              className="font-serif text-lg tracking-[0.12em] uppercase whitespace-nowrap flex-shrink-0"
+              style={{ color: dm ? '#e4e4e7' : '#111' }}
             >
-              <div
-                className="w-5 h-5 rounded-full shadow-sm transition-transform duration-300 flex items-center justify-center"
-                style={{ background: dm ? '#1a1210' : '#fff', transform: dm ? 'translateX(20px)' : 'translateX(0px)' }}
-              >
-                {dm
-                  ? <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2" className="w-3 h-3"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                  : <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3 h-3"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                }
-              </div>
-            </button>
-            <button onClick={() => router.push('/')}
-              className="text-[0.7rem] font-medium tracking-[0.08em] uppercase transition-colors flex items-center gap-1.5 whitespace-nowrap"
-              style={{ color: dm ? '#71717a' : '#999' }}
-              onMouseEnter={e => e.currentTarget.style.color = dm ? '#D4A0B0' : '#555'}
-              onMouseLeave={e => e.currentTarget.style.color = dm ? '#71717a' : '#999'}
+              Roqia Moshref
+            </a>
+            {/* Active section pill — mobile only */}
+            <span
+              className="sm:hidden text-[0.55rem] tracking-[0.14em] uppercase font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0"
+              style={{ color: '#D4A0B0', background: dm ? 'rgba(212,160,176,0.1)' : 'rgba(212,160,176,0.08)' }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-              Back to Site
-            </button>
+              {activeTabLabel}
+            </span>
           </div>
 
-          {/* Mobile hamburger */}
-          <div className="sm:hidden relative" ref={mobileMenuRef}>
-            <button
-              onClick={() => setMobileMenuOpen(o => !o)}
-              className="w-11 h-11 flex items-center justify-center rounded-full transition-all"
-              style={{ background: mobileMenuOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent' }}
-            >
-              {mobileMenuOpen ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#F0EBE6' : '#111'} strokeWidth="2" strokeLinecap="round" className="w-4 h-4">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#F0EBE6' : '#111'} strokeWidth="2" strokeLinecap="round" className="w-5 h-5">
-                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-              )}
-            </button>
-
-            {mobileMenuOpen && (
-              <div
-                className="absolute right-0 top-11 w-56 z-50 overflow-hidden"
-                style={{
-                  background: dm ? '#27272a' : '#ffffff',
-                  border: `1px solid ${dm ? '#3f3f46' : '#ede8e3'}`,
-                  borderRadius: '16px',
-                  boxShadow: dm
-                    ? '0 20px 60px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4)'
-                    : '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)',
-                }}
-              >
-                {/* Dark mode row */}
-                <button
-                  onClick={() => setDarkMode(d => !d)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 transition-colors active:opacity-70"
-                  style={{ borderBottom: `1px solid ${dm ? '#3f3f46' : '#f0ebe6'}` }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#f5f0ec' }}>
-                      {dm
-                        ? <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2" className="w-3.5 h-3.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                        : <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="2" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                      }
-                    </div>
-                    <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#333' }}>
-                      {dm ? 'Light Mode' : 'Dark Mode'}
-                    </span>
-                  </div>
-                  <div className="relative w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors duration-300" style={{ background: dm ? '#D4A0B0' : '#ddd' }}>
-                    <div className="w-4 h-4 rounded-full shadow transition-transform duration-300"
-                      style={{ background: '#fff', transform: dm ? 'translateX(16px)' : 'translateX(0px)' }} />
-                  </div>
-                </button>
-
-                {/* Back to Site */}
-                <button
-                  onClick={() => { setMobileMenuOpen(false); router.push('/'); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors active:opacity-70"
-                  style={{ borderBottom: `1px solid ${dm ? '#3f3f46' : '#f0ebe6'}` }}
-                >
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#f5f0ec' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#A0785A'} strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-                  </div>
-                  <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#333' }}>Back to Site</span>
-                </button>
-
-                {/* Log Out */}
-                <button
-                  onClick={() => { setMobileMenuOpen(false); base44.auth.logout(); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors active:opacity-70"
-                >
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? 'rgba(239,68,68,0.15)' : '#fef2f2' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                  </div>
-                  <span className="text-[0.8rem] font-medium text-red-400">Log Out</span>
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Mobile hamburger — opens full-screen sidebar */}
+          <button
+            onClick={() => setMobileNavOpen(o => !o)}
+            className="sm:hidden w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90"
+            style={{ background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent' }}
+            aria-label="Open navigation"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#F0EBE6' : '#111'} strokeWidth="2" strokeLinecap="round" className="w-5 h-5">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {/* Page title + welcome + logout */}
-        <div className="flex items-start justify-between gap-4 mt-10 mb-6">
-          <div>
-            <h1 className="font-serif text-[2.25rem] leading-none tracking-[-0.01em]" style={{ color: dm ? '#e4e4e7' : '#111' }}>
-              {activeTab === 'bookings' ? 'Appointments' : activeTab === 'services' ? 'Services' : activeTab === 'classes' ? 'Class Sign-Ups' : activeTab === 'analytics' ? 'Analytics' : 'Reviews'}
-            </h1>
-            <p className="text-[0.8rem] mt-2 tracking-wide" style={{ color: dm ? '#71717a' : '#bbb' }}>
-              Welcome back, <span className="text-[#D4A0B0]">Roqia</span> ✦
-            </p>
-          </div>
-          <button onClick={() => base44.auth.logout()}
-            className="hidden sm:flex text-[0.65rem] font-medium tracking-[0.1em] uppercase transition-colors items-center gap-1.5 whitespace-nowrap mt-2 flex-shrink-0"
-            style={{ color: dm ? '#52525b' : '#ccc' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-            onMouseLeave={e => e.currentTarget.style.color = dm ? '#52525b' : '#ccc'}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-            Log Out
-          </button>
-        </div>
+      {/* ── Sidebar + Content ────────────────────────────────── */}
+      <div className="flex">
+        <AdminSidebar
+          activeTab={activeTab}
+          setActiveTab={(key) => { setActiveTab(key); setSelectedBooking(null); }}
+          mobileOpen={mobileNavOpen}
+          setMobileOpen={setMobileNavOpen}
+          darkMode={dm}
+          onDarkModeToggle={() => setDarkMode(d => !d)}
+          onBackToSite={() => router.push('/')}
+          onLogout={() => base44.auth.logout()}
+        />
 
-        {/* Tab switcher with sliding indicator */}
-        <AdminTabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} darkMode={dm} />
+        {/* Main content */}
+        <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 pb-16">
+          {/* Page title */}
+          <div className="flex items-end justify-between gap-4 mt-8 sm:mt-10 mb-6">
+            <div>
+              <h1
+                className="font-serif text-[2rem] sm:text-[2.25rem] leading-none tracking-[-0.01em]"
+                style={{ color: dm ? '#e4e4e7' : '#111' }}
+              >
+                {activeTabLabel}
+              </h1>
+              <p className="text-[0.78rem] mt-2 tracking-wide" style={{ color: dm ? '#71717a' : '#bbb' }}>
+                Welcome back, <span className="text-[#D4A0B0]">Roqia</span> ✦
+              </p>
+            </div>
+          </div>
 
         {activeTab === 'bookings' && !selectedBooking && (
           <>
@@ -453,7 +371,8 @@ export default function Admin() {
         {activeTab === 'analytics' && (
           <AnalyticsTab darkMode={dm} />
         )}
-      </div>
+        </div> {/* /main content */}
+      </div> {/* /flex row */}
     </div>
   );
 }
