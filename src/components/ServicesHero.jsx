@@ -38,18 +38,6 @@ export default function ServicesHero() {
   const mobileProgress = useMobileHeroProgress();
   const vh = useViewportHeight();
 
-  // ── Hero text entrance animation ─────────────────────────────────────────
-  // textReady fires at 400ms → triggers the fade-up transition.
-  // enterDone fires at 1000ms → removes the transition so scroll-opacity
-  // (1 - mobileProgress * 0.4) snaps instantly without lag while scrolling.
-  const [textReady, setTextReady] = useState(false);
-  const [enterDone, setEnterDone] = useState(false);
-  useEffect(() => {
-    const t1 = setTimeout(() => setTextReady(true),  400);
-    const t2 = setTimeout(() => setEnterDone(true), 1000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-
   const setupVideoLoop = (video) => {
     if (!video) return;
     video.load();
@@ -139,11 +127,7 @@ export default function ServicesHero() {
             flexDirection: 'column',
             justifyContent: 'flex-end',
             paddingBottom: 'calc(env(safe-area-inset-bottom) + 64px)',
-            opacity:   textReady ? (1 - mobileProgress * 0.4) : 0,
-            transform: textReady ? 'translateY(0px)' : 'translateY(16px)',
-            transition: (textReady && !enterDone)
-              ? 'opacity 0.55s ease-out, transform 0.55s ease-out'
-              : 'none',
+            opacity: 1 - mobileProgress * 0.4,
             WebkitFontSmoothing: 'antialiased',
             WebkitTextSizeAdjust: '100%',
             pointerEvents: 'none',
@@ -232,14 +216,7 @@ export default function ServicesHero() {
       >
 
         {/* LEFT PANEL */}
-        <div
-          className="relative z-10 flex flex-col justify-center px-[clamp(2rem,8vw,5rem)] py-16 w-[50%] min-h-[calc(100vh-var(--nav-h))] flex-shrink-0"
-          style={{
-            opacity:   textReady ? 1 : 0,
-            transform: textReady ? 'translateY(0px)' : 'translateY(16px)',
-            transition: 'opacity 0.55s ease-out, transform 0.55s ease-out',
-          }}
-        >
+        <div className="relative z-10 flex flex-col justify-center px-[clamp(2rem,8vw,5rem)] py-16 w-[50%] min-h-[calc(100vh-var(--nav-h))] flex-shrink-0">
           <h1
             className="font-serif"
             style={{
