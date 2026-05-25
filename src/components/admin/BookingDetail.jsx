@@ -147,9 +147,9 @@ function from24h(val) {
   return `${h12}:${mStr} ${ampm}`;
 }
 
-const CONSULT_COLOR = '#4A7FA5';
-const CONSULT_BG = 'rgba(74,127,165,0.07)';
-const CONSULT_BORDER = 'rgba(74,127,165,0.2)';
+const CONSULT_COLOR = '#8B5CF6';
+const CONSULT_BG = 'rgba(139,92,246,0.07)';
+const CONSULT_BORDER = 'rgba(139,92,246,0.2)';
 
 function parseConsultNotes(raw) {
   if (!raw) return { link: '', notes: '' };
@@ -262,7 +262,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#93b4cc' : CONSULT_COLOR }}>
+              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#c4b5fd' : CONSULT_COLOR }}>
                 {booking.consultation_type} · {booking.consultation_time}
               </p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>
@@ -282,7 +282,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
           </div>
           <button onClick={() => { setExpanded(true); setSent(false); }}
             className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase ml-3 flex-shrink-0"
-            style={{ color: dm ? '#93b4cc' : CONSULT_COLOR }}>
+            style={{ color: dm ? '#c4b5fd' : CONSULT_COLOR }}>
             Edit
           </button>
         </div>
@@ -298,7 +298,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#93b4cc' : CONSULT_COLOR }}>Schedule Consultation</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#c4b5fd' : CONSULT_COLOR }}>Schedule Consultation</p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Set date, time &amp; meeting type</p>
             </div>
           </div>
@@ -369,7 +369,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                   {meetLink && (
                     <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                       className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
-                      style={{ background: dm ? '#2a2a32' : '#f0f4f8', color: CONSULT_COLOR, border: `1px solid ${border}` }}>
+                      style={{ background: dm ? '#2a2a32' : '#f5f3ff', color: CONSULT_COLOR, border: `1px solid ${border}` }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                       New Link
                     </button>
