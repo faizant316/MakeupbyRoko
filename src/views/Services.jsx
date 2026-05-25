@@ -107,12 +107,14 @@ export default function ServicesPage() {
   }, []);
 
   // ── Butter-smooth imperative carousel snap ──────────────────────────────
-  // Uses non-passive touchmove with e.preventDefault() to fully own scroll
-  // position — no browser momentum, no CSS snap oscillation, just clean rAF.
+  // Direction-locked: only hijacks horizontal touches (vertical scrolls page normally).
+  // Spring physics on release inherits flick velocity for a natural throw-and-settle.
   useEffect(() => {
     const setupSnap = (el) => {
       if (!el) return () => {};
-      let startX = 0, startScroll = 0, startTime = 0;
+
+      let startX = 0, startY = 0, startScroll = 0, startTime = 0;
+      let dir = null;   // null=undecided | 'h'=horizontal | 'v'=vertical
       let animId = null;
 
       const getSnapPoints = () => {
@@ -122,41 +124,68 @@ export default function ServicesPage() {
         );
       };
 
-      const animateTo = (target) => {
+      // Spring physics: inherits release velocity so fast flicks glide,
+      // slow drags settle crisply. Tuned to be slightly underdamped (tiny
+      // natural settle, no visible bounce).
+      const springTo = (target, v0 = 0) => {
         if (animId) { cancelAnimationFrame(animId); animId = null; }
         el.style.scrollSnapType = 'none';
-        const from = el.scrollLeft;
-        const dist = target - from;
-        if (Math.abs(dist) < 1) { el.style.scrollSnapType = ''; return; }
-        const DURATION = 300;
-        const t0 = performance.now();
-        const step = (now) => {
-          const p = Math.min((now - t0) / DURATION, 1);
-          const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
-          el.scrollLeft = from + dist * ease;
-          if (p < 1) { animId = requestAnimationFrame(step); }
-          else { animId = null; el.style.scrollSnapType = ''; }
+
+        const K = 420;   // stiffness — higher = snappier
+        const B = 38;    // damping  — ~critical (2·√K), prevents oscillation
+        let pos = el.scrollLeft;
+        let vel = v0;    // px / second
+        let prev = performance.now();
+
+        const tick = (now) => {
+          const dt = Math.min((now - prev) / 1000, 0.05); // s, capped at 50 ms
+          prev = now;
+          vel  += (-K * (pos - target) - B * vel) * dt;
+          pos  += vel * dt;
+          el.scrollLeft = pos;
+
+          if (Math.abs(pos - target) < 0.6 && Math.abs(vel) < 10) {
+            el.scrollLeft = target;
+            el.style.scrollSnapType = '';
+            animId = null;
+          } else {
+            animId = requestAnimationFrame(tick);
+          }
         };
-        animId = requestAnimationFrame(step);
+        animId = requestAnimationFrame(tick);
       };
 
       const onStart = (e) => {
         if (animId) { cancelAnimationFrame(animId); animId = null; }
-        el.style.scrollSnapType = 'none'; // kill CSS snap during drag
-        startX = e.touches[0].clientX;
+        startX     = e.touches[0].clientX;
+        startY     = e.touches[0].clientY;
         startScroll = el.scrollLeft;
-        startTime = performance.now();
+        startTime  = performance.now();
+        dir        = null;
       };
 
       const onMove = (e) => {
-        e.preventDefault(); // own scroll completely — no momentum, no snap fight
-        el.scrollLeft = startScroll - (e.touches[0].clientX - startX);
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+
+        // Decide direction once we have 6 px of movement
+        if (dir === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+          dir = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+          if (dir === 'h') el.style.scrollSnapType = 'none';
+        }
+
+        if (dir === 'h') {
+          e.preventDefault();  // block page scroll only on horizontal
+          el.scrollLeft = startScroll - dx;
+        }
       };
 
       const onEnd = (e) => {
-        const dx = e.changedTouches[0].clientX - startX;
-        const dt = Math.max(1, performance.now() - startTime);
-        const vel = Math.abs(dx) / dt; // px/ms
+        if (dir !== 'h') return; // vertical drag — let page scroll as normal
+
+        const dx  = e.changedTouches[0].clientX - startX;
+        const dt  = Math.max(8, performance.now() - startTime);
+        const velPxMs = dx / dt; // px/ms, positive = finger moved right
 
         const pts = getSnapPoints();
         if (!pts.length) return;
@@ -165,28 +194,33 @@ export default function ServicesPage() {
           Math.abs(pt - startScroll) < Math.abs(pts[best] - startScroll) ? i : best, 0);
 
         let ti;
-        if (vel > 0.18 || Math.abs(dx) > 25) {
-          // Flick — snap to next/prev card
-          ti = dx < 0 ? Math.min(startIdx + 1, pts.length - 1) : Math.max(startIdx - 1, 0);
+        if (Math.abs(velPxMs) > 0.15 || Math.abs(dx) > 22) {
+          // Flick → advance one card in swipe direction
+          ti = velPxMs < 0
+            ? Math.min(startIdx + 1, pts.length - 1)   // swipe left  → next
+            : Math.max(startIdx - 1, 0);                // swipe right → prev
         } else {
-          // Slow drag — snap to nearest
+          // Slow drag → nearest card
           const cur = el.scrollLeft;
           ti = pts.reduce((best, pt, i) =>
             Math.abs(pt - cur) < Math.abs(pts[best] - cur) ? i : best, 0);
         }
 
-        animateTo(pts[ti]);
+        // Pass finger velocity to spring (flip sign: rightward finger = scrollLeft ↓)
+        const v0 = Math.max(-2400, Math.min(2400, -velPxMs * 1000));
+        springTo(pts[ti], v0);
       };
 
-      el.addEventListener('touchstart', onStart, { passive: true });
-      el.addEventListener('touchmove',  onMove,  { passive: false }); // must be non-passive
-      el.addEventListener('touchend',   onEnd,   { passive: true });
+      el.addEventListener('touchstart', onStart, { passive: true  });
+      el.addEventListener('touchmove',  onMove,  { passive: false }); // non-passive for preventDefault
+      el.addEventListener('touchend',   onEnd,   { passive: true  });
 
       return () => {
         el.removeEventListener('touchstart', onStart);
         el.removeEventListener('touchmove',  onMove);
         el.removeEventListener('touchend',   onEnd);
         if (animId) cancelAnimationFrame(animId);
+        el.style.scrollSnapType = '';
       };
     };
 
