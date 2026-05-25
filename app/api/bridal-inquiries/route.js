@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(req) {
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const supabase = createClient();
     const { searchParams } = new URL(req.url);

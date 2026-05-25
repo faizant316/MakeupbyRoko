@@ -3,15 +3,9 @@ import Stripe from 'stripe';
 import { Resend } from 'resend';
 import { createClient } from '../../../src/lib/supabase/server';
 
-const CLASS_CATALOG = {
-  private_basic_lesson: { title: 'Private Basic Makeup Lesson', duration: '1.5 hours', price: 300 },
-  virtual_lesson:       { title: 'Virtual Makeup Lesson',        duration: '2 hours',   price: 400 },
-  intermediate_lesson:  { title: 'Intermediate Makeup Lesson',   duration: '2.5 hours', price: 500 },
-  glam_class:           { title: 'Glam Makeup Class',            duration: '3 hours',   price: 600 },
-  masterclass:          { title: 'Makeup Masterclass',           duration: '4 hours · 2 days', price: 1500 },
-};
+import { CLASS_CATALOG, CLASS_KEYS } from '../../../src/lib/classCatalog';
 
-const CLASS_KEYS = Object.keys(CLASS_CATALOG);
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
 
 export async function POST(req) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -79,7 +73,7 @@ export async function POST(req) {
 
     await resend.emails.send({
       from: FROM,
-      to: ['makeupbyroko22@gmail.com'],
+      to: [ADMIN_EMAIL],
       subject: `💳 New Class Payment — ${reg.full_name} ($${totalPaid.toLocaleString()})`,
       html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
         <p><strong>${reg.full_name}</strong> paid <strong>$${totalPaid.toLocaleString()}</strong> for: ${bookedClasses.map(k => CLASS_CATALOG[k].title).join(', ')}</p>

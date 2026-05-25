@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../../src/lib/supabase/server';
+import { requireAdmin } from '../../../../src/lib/requireAdmin';
 
 export async function PATCH(req, { params }) {
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const supabase = createClient();
     const body = await req.json();
@@ -14,6 +17,8 @@ export async function PATCH(req, { params }) {
 }
 
 export async function DELETE(_req, { params }) {
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const supabase = createClient();
     const { error } = await supabase.from('day_capacities').delete().eq('id', params.id);
