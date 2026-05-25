@@ -106,48 +106,49 @@ export default function ServicesPage() {
     setDetailService(svc);
   }, []);
 
-  // ── Butter-smooth imperative carousel snap ──────────────────────────────
-  // Direction-locked: only hijacks horizontal touches (vertical scrolls page normally).
-  // Spring physics on release inherits flick velocity for a natural throw-and-settle.
+  // ── GPU-composited transform carousel ───────────────────────────────────
+  // Uses translateX on the track (GPU compositor thread, zero layout cost)
+  // instead of scrollLeft (main thread, forces reflow).
+  // Rolling velocity window captures throw speed at end of gesture.
+  // Rubber-band resistance at edges for premium native feel.
   useEffect(() => {
-    const setupSnap = (el) => {
-      if (!el) return () => {};
+    const setupSnap = (container) => {
+      if (!container) return () => {};
+      const track = container.querySelector('[data-snap-track]');
+      if (!track) return () => {};
 
-      let startX = 0, startY = 0, startScroll = 0, startTime = 0;
-      let dir = null;   // null=undecided | 'h'=horizontal | 'v'=vertical
+      let startX = 0, startY = 0, startOffset = 0;
+      let currentOffset = 0;
+      let dir = null;        // null | 'h' | 'v'
       let animId = null;
+      let touchHistory = []; // rolling velocity window
+
+      const setOffset = (x) => {
+        currentOffset = x;
+        track.style.transform = `translateX(${-x}px)`;
+      };
 
       const getSnapPoints = () => {
-        const cw = el.clientWidth;
-        return Array.from(el.querySelectorAll('[data-snap-card]')).map(item =>
-          Math.max(0, item.offsetLeft - (cw - item.offsetWidth) / 2)
+        const cw  = container.clientWidth;
+        const max = Math.max(0, track.scrollWidth - cw);
+        return Array.from(track.querySelectorAll('[data-snap-card]')).map(item =>
+          Math.max(0, Math.min(item.offsetLeft - (cw - item.offsetWidth) / 2, max))
         );
       };
 
-      // Spring physics: inherits release velocity so fast flicks glide,
-      // slow drags settle crisply. Tuned to be slightly underdamped (tiny
-      // natural settle, no visible bounce).
+      // Spring physics — GPU transform, velocity-aware, ~critically damped
       const springTo = (target, v0 = 0) => {
         if (animId) { cancelAnimationFrame(animId); animId = null; }
-        el.style.scrollSnapType = 'none';
-
-        const K = 420;   // stiffness — higher = snappier
-        const B = 38;    // damping  — ~critical (2·√K), prevents oscillation
-        let pos = el.scrollLeft;
-        let vel = v0;    // px / second
-        let prev = performance.now();
-
+        const K = 500, B = 44; // stiffness, damping (critical ≈ 2·√500 ≈ 44.7)
+        let pos = currentOffset, vel = v0, prev = performance.now();
         const tick = (now) => {
-          const dt = Math.min((now - prev) / 1000, 0.05); // s, capped at 50 ms
+          const dt = Math.min((now - prev) / 1000, 0.05);
           prev = now;
-          vel  += (-K * (pos - target) - B * vel) * dt;
-          pos  += vel * dt;
-          el.scrollLeft = pos;
-
-          if (Math.abs(pos - target) < 0.6 && Math.abs(vel) < 10) {
-            el.scrollLeft = target;
-            el.style.scrollSnapType = '';
-            animId = null;
+          vel += (-K * (pos - target) - B * vel) * dt;
+          pos += vel * dt;
+          setOffset(pos);
+          if (Math.abs(pos - target) < 0.25 && Math.abs(vel) < 4) {
+            setOffset(target); animId = null;
           } else {
             animId = requestAnimationFrame(tick);
           }
@@ -157,77 +158,93 @@ export default function ServicesPage() {
 
       const onStart = (e) => {
         if (animId) { cancelAnimationFrame(animId); animId = null; }
-        startX     = e.touches[0].clientX;
-        startY     = e.touches[0].clientY;
-        startScroll = el.scrollLeft;
-        startTime  = performance.now();
-        dir        = null;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startOffset = currentOffset;
+        dir = null;
+        touchHistory = [{ t: performance.now(), x: startX }];
       };
 
       const onMove = (e) => {
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
+        const touch = e.touches[0];
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
 
-        // Decide direction once we have 6 px of movement
-        if (dir === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        // Rolling 100 ms velocity window
+        const now = performance.now();
+        touchHistory.push({ t: now, x: touch.clientX });
+        while (touchHistory.length > 1 && now - touchHistory[0].t > 100) touchHistory.shift();
+
+        // Lock direction after 5 px
+        if (dir === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
           dir = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
-          if (dir === 'h') el.style.scrollSnapType = 'none';
         }
 
         if (dir === 'h') {
-          e.preventDefault();  // block page scroll only on horizontal
-          el.scrollLeft = startScroll - dx;
+          e.preventDefault();
+          const pts   = getSnapPoints();
+          const maxOff = pts.length ? pts[pts.length - 1] : 0;
+          const raw   = startOffset - dx;
+          // Rubber-band resistance past first/last card
+          const off = raw < 0
+            ? raw * 0.18
+            : raw > maxOff
+            ? maxOff + (raw - maxOff) * 0.18
+            : raw;
+          setOffset(off);
         }
       };
 
       const onEnd = (e) => {
-        if (dir !== 'h') return; // vertical drag — let page scroll as normal
+        if (dir !== 'h') return;
 
-        const dx  = e.changedTouches[0].clientX - startX;
-        const dt  = Math.max(8, performance.now() - startTime);
-        const velPxMs = dx / dt; // px/ms, positive = finger moved right
+        // End-of-gesture velocity from rolling window
+        const now = performance.now();
+        touchHistory.push({ t: now, x: e.changedTouches[0].clientX });
+        const oldest = touchHistory[0];
+        const velPxMs = touchHistory.length > 1
+          ? (touchHistory[touchHistory.length - 1].x - oldest.x) / Math.max(1, now - oldest.t)
+          : 0;
 
         const pts = getSnapPoints();
         if (!pts.length) return;
 
         const startIdx = pts.reduce((best, pt, i) =>
-          Math.abs(pt - startScroll) < Math.abs(pts[best] - startScroll) ? i : best, 0);
+          Math.abs(pt - startOffset) < Math.abs(pts[best] - startOffset) ? i : best, 0);
 
         let ti;
-        if (Math.abs(velPxMs) > 0.15 || Math.abs(dx) > 22) {
-          // Flick → advance one card in swipe direction
+        if (Math.abs(velPxMs) > 0.12 || Math.abs(currentOffset - startOffset) > 20) {
           ti = velPxMs < 0
-            ? Math.min(startIdx + 1, pts.length - 1)   // swipe left  → next
-            : Math.max(startIdx - 1, 0);                // swipe right → prev
+            ? Math.min(startIdx + 1, pts.length - 1)
+            : Math.max(startIdx - 1, 0);
         } else {
-          // Slow drag → nearest card
-          const cur = el.scrollLeft;
           ti = pts.reduce((best, pt, i) =>
-            Math.abs(pt - cur) < Math.abs(pts[best] - cur) ? i : best, 0);
+            Math.abs(pt - currentOffset) < Math.abs(pts[best] - currentOffset) ? i : best, 0);
         }
 
-        // Pass finger velocity to spring (flip sign: rightward finger = scrollLeft ↓)
-        const v0 = Math.max(-2400, Math.min(2400, -velPxMs * 1000));
+        // Flip sign: rightward finger = offset decreases
+        const v0 = Math.max(-3000, Math.min(3000, -velPxMs * 1000));
         springTo(pts[ti], v0);
       };
 
-      el.addEventListener('touchstart', onStart, { passive: true  });
-      el.addEventListener('touchmove',  onMove,  { passive: false }); // non-passive for preventDefault
-      el.addEventListener('touchend',   onEnd,   { passive: true  });
+      setOffset(0);
+      container.addEventListener('touchstart', onStart, { passive: true  });
+      container.addEventListener('touchmove',  onMove,  { passive: false });
+      container.addEventListener('touchend',   onEnd,   { passive: true  });
 
       return () => {
-        el.removeEventListener('touchstart', onStart);
-        el.removeEventListener('touchmove',  onMove);
-        el.removeEventListener('touchend',   onEnd);
+        container.removeEventListener('touchstart', onStart);
+        container.removeEventListener('touchmove',  onMove);
+        container.removeEventListener('touchend',   onEnd);
         if (animId) cancelAnimationFrame(animId);
-        el.style.scrollSnapType = '';
+        track.style.transform = '';
       };
     };
 
     const c1 = setupSnap(bridalScrollRef.current);
     const c2 = setupSnap(otherScrollRef.current);
     return () => { c1(); c2(); };
-  }, [servicesLoading]); // re-attach after data loads and carousels mount
+  }, [servicesLoading]);
 
   const allBridalServices = SERVICE_DATA.filter(s => s.category === 'bridal');
 
@@ -517,21 +534,24 @@ export default function ServicesPage() {
                 ))}
               </div>
 
-              {/* Mobile snap scroll */}
-              <div className="lg:hidden -mx-[clamp(1.25rem,5vw,3rem)]">
+              {/* Mobile snap scroll — GPU transform track */}
+              <div ref={bridalScrollRef} className="lg:hidden -mx-[clamp(1.25rem,5vw,3rem)] overflow-hidden">
                 <div
-                  ref={bridalScrollRef}
-                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
-                  style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
+                  data-snap-track
+                  className="flex gap-4 pb-4"
+                  style={{
+                    paddingLeft: 'clamp(1.25rem,5vw,3rem)',
+                    paddingRight: 'clamp(1.25rem,5vw,3rem)',
+                    willChange: 'transform',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                  }}
                 >
                   {bridalServices.map((svc, idx) => (
-                    <div data-snap-card key={svc.key}
-                      className="snap-center flex-shrink-0 w-[82vw] max-w-[340px]"
-                      style={{ scrollSnapStop: 'always' }}>
+                    <div data-snap-card key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[340px]">
                       <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
-                  {/* Peek spacer */}
                   <div className="flex-shrink-0 w-4" />
                 </div>
                 {bridalServices.length > 1 && (
@@ -566,17 +586,21 @@ export default function ServicesPage() {
                 ))}
               </div>
 
-              {/* Mobile: horizontal snap scroll */}
-              <div className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)]">
+              {/* Mobile: horizontal snap scroll — GPU transform track */}
+              <div ref={otherScrollRef} className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)] overflow-hidden">
                 <div
-                  ref={otherScrollRef}
-                  className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory px-[clamp(1.25rem,5vw,3rem)] pb-4"
-                  style={{ scrollbarWidth: 'none', overscrollBehaviorX: 'contain' }}
+                  data-snap-track
+                  className="flex items-stretch gap-4 pb-4"
+                  style={{
+                    paddingLeft: 'clamp(1.25rem,5vw,3rem)',
+                    paddingRight: 'clamp(1.25rem,5vw,3rem)',
+                    willChange: 'transform',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                  }}
                 >
                   {nonBridal.map((svc) => (
-                    <div data-snap-card key={svc.key}
-                      className="snap-center flex-shrink-0 w-[82vw] max-w-[320px] self-stretch"
-                      style={{ scrollSnapStop: 'always' }}>
+                    <div data-snap-card key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch">
                       <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
