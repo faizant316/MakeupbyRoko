@@ -54,13 +54,19 @@ export default function BookingsList({
 
   return (
     <div>
-      {/* Month label + Add Client */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="font-serif text-[1.35rem] font-light tracking-[-0.01em]" style={{ color: dm ? '#e4e4e7' : '#111' }}>
-          {selectedDate
-            ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-            : currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-        </p>
+      {/* Month heading + Add Client */}
+      <div className="flex items-center justify-between mb-6 pb-4"
+        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}>
+        <div>
+          <p className="text-[0.55rem] font-semibold tracking-[0.18em] uppercase mb-1"
+            style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Appointments</p>
+          <p className="font-serif text-[1.4rem] font-light tracking-[-0.01em]"
+            style={{ color: dm ? '#e4e4e7' : '#111' }}>
+            {selectedDate
+              ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              : currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+          </p>
+        </div>
         {onAddClient && (
           <button
             onClick={onAddClient}

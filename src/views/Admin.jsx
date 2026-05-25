@@ -357,7 +357,7 @@ export default function Admin() {
             {classRegs.length > 0 && (
               <button
                 onClick={() => { setActiveTab('classes'); setSelectedBooking(null); }}
-                className="w-full mb-5 flex items-center gap-4 px-5 py-3.5 rounded-2xl text-left transition-all group"
+                className="w-full mb-10 flex items-center gap-4 px-5 py-3.5 rounded-2xl text-left transition-all group"
                 style={{
                   background: dm ? '#27272a' : '#fff',
                   border: `1px solid ${dm ? '#3a3a48' : '#ede8e4'}`,
