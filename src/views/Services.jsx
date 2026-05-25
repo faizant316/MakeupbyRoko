@@ -125,7 +125,7 @@ export default function ServicesPage() {
 
       const setOffset = (x) => {
         currentOffset = x;
-        track.style.transform = `translateX(${-x}px)`;
+        track.style.transform = `translate3d(${-x}px,0,0)`;
       };
 
       const getSnapPoints = () => {
