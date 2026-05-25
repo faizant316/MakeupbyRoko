@@ -74,7 +74,7 @@ export default function AdminSidebar({
         style={{
           height: 'calc(100vh - 56px)',
           borderRight: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`,
-          background: dm ? '#1e1e24' : '#FAF8F6',
+          background: dm ? '#1e1e24' : '#fff',
         }}
       >
         {/* Nav items */}
