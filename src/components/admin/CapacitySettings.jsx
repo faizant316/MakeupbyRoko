@@ -131,14 +131,24 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
         )}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <input
-          type="date"
-          value={overrideDate}
-          min={today}
-          onChange={e => setOverrideDate(e.target.value)}
-          className="px-3 py-2 rounded-xl text-[0.78rem] outline-none transition-all"
-          style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, color: dm ? '#e4e4e7' : '#111', background: dm ? '#1e1e24' : '#fff' }}
-        />
+        <div className="relative flex items-center">
+          <input
+            type="date"
+            value={overrideDate}
+            min={today}
+            onChange={e => setOverrideDate(e.target.value)}
+            className="px-3 py-2 rounded-xl text-[0.78rem] outline-none transition-all"
+            style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, color: dm ? '#e4e4e7' : '#111', background: dm ? '#1e1e24' : '#fff', paddingRight: overrideDate ? '28px' : undefined }}
+          />
+          {overrideDate && (
+            <button
+              onClick={() => setOverrideDate('')}
+              className="absolute right-2 flex items-center justify-center w-4 h-4 rounded-full transition-all"
+              style={{ background: dm ? '#52525b' : '#ddd', color: dm ? '#d4d4d8' : '#666', fontSize: '9px', lineHeight: 1 }}
+              title="Clear date"
+            >✕</button>
+          )}
+        </div>
         <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
           <button onClick={() => setOverrideCap(Math.max(1, overrideCap - 1))}
             className="w-9 h-9 flex items-center justify-center transition-colors text-lg"
