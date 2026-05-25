@@ -400,22 +400,17 @@ export default function Admin() {
                 </div>
                 {/* Just Signed Up — recent registrations (last 24 hrs) */}
                 {recentClassRegs.length > 0 && (
-                  <div className="w-full mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe5'}` }}>
-                    <p className="text-[0.55rem] font-semibold tracking-[0.15em] uppercase mb-2"
-                      style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Just Signed Up</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {recentClassRegs.slice(0, 6).map(r => (
-                        <span key={r.id} className="text-[0.65rem] font-semibold px-2.5 py-0.5 rounded-full"
-                          style={{ background: 'rgba(212,160,176,0.1)', color: '#D4A0B0', border: '1px solid rgba(212,160,176,0.25)' }}>
-                          {r.full_name?.split(' ')[0] || 'New'}
-                        </span>
-                      ))}
-                      {recentClassRegs.length > 6 && (
-                        <span className="text-[0.6rem]" style={{ color: dm ? '#52525b' : '#c5bdb5', alignSelf: 'center' }}>
-                          +{recentClassRegs.length - 6} more
-                        </span>
-                      )}
-                    </div>
+                  <div className="w-full mt-3.5 pt-3.5 flex items-center gap-2.5"
+                    style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe5'}` }}>
+                    <span className="text-[0.55rem] font-semibold tracking-[0.15em] uppercase"
+                      style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Just Signed Up</span>
+                    <span className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full"
+                      style={{ background: 'rgba(212,160,176,0.12)', color: '#D4A0B0' }}>
+                      +{recentClassRegs.length}
+                    </span>
+                    <span className="text-[0.65rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+                      — tap to view
+                    </span>
                   </div>
                 )}
               </button>
@@ -470,20 +465,18 @@ export default function Admin() {
 
         {activeTab === 'classes' && (
           <>
-            <div className="flex items-center gap-3 mb-6">
-              <button
-                onClick={() => { setActiveTab('bookings'); setSelectedBooking(null); }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-medium transition-all"
-                style={{ background: dm ? '#2e2e38' : '#f5f0ec', color: dm ? '#a1a1aa' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}
-                onMouseEnter={e => { e.currentTarget.style.color = dm ? '#e4e4e7' : '#111'; e.currentTarget.style.borderColor = dm ? '#52525b' : '#111'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#888'; e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#e8e2dc'; }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
-                Back to Appointments
-              </button>
-            </div>
+            <button
+              onClick={() => { setActiveTab('bookings'); setSelectedBooking(null); }}
+              className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.1em] uppercase transition-colors mb-6"
+              style={{ color: '#D4A0B0' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#b8849a'}
+              onMouseLeave={e => e.currentTarget.style.color = '#D4A0B0'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+              </svg>
+              Back to Appointments
+            </button>
             <ClassRegistrationsList darkMode={dm} autoExpandId={autoExpandClassRegId} />
           </>
         )}
