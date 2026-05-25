@@ -18,7 +18,7 @@ const CONSULT_COLOR = '#4A7FA5';
 export default function BookingsList({
   bookings, classRegs = [], loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
-  allBookings, consultationsOnDate = [], darkMode: dm, onAddClient
+  allBookings, consultationsOnDate = [], darkMode: dm, onAddClient, onOpenClassReg
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
@@ -183,10 +183,13 @@ export default function BookingsList({
                   };
                   const classes = Object.keys(CLASS_NAMES).filter(k => r[k]).map(k => CLASS_NAMES[k]).join(', ');
                   return (
-                    <div
+                    <button
                       key={r.id}
-                      className="flex items-center gap-4 w-full text-left px-5 py-4"
+                      onClick={() => onOpenClassReg && onOpenClassReg(r)}
+                      className="flex items-center gap-4 w-full text-left px-5 py-4 transition-colors group"
                       style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(160,120,90,0.08)'}` }}
+                      onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.15)' }}>
                         <span style={{ fontSize: '0.9rem' }}>💄</span>
@@ -195,12 +198,15 @@ export default function BookingsList({
                         <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{r.full_name}</p>
                         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#b5a99a' }}>
                           {classes || 'Makeup Class'}
-                          <span className="ml-1.5 text-[0.6rem] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(212,160,176,0.15)', color: '#A0607A' }}>
+                          <span className="ml-1.5 text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(212,160,176,0.15)', color: '#A0607A' }}>
                             Class Sign-Up
                           </span>
                         </p>
                       </div>
-                    </div>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                      </svg>
+                    </button>
                   );
                 })
               }
