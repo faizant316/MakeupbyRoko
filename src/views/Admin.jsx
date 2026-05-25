@@ -255,7 +255,7 @@ export default function Admin() {
   return (
     <div
       className="min-h-screen transition-colors duration-300"
-      style={{ background: dm ? '#1e1e24' : '#FAF8F6', color: dm ? '#e4e4e7' : '#111' }}
+      style={{ background: dm ? '#1e1e24' : '#fff', color: dm ? '#e4e4e7' : '#111' }}
     >
       {/* ── Header ──────────────────────────────────────────── */}
       <div
