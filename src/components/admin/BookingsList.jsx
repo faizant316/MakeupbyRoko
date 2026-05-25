@@ -16,7 +16,7 @@ function isBridalBooking(booking) {
 const CONSULT_COLOR = '#4A7FA5';
 
 export default function BookingsList({
-  bookings, loading, search, setSearch, statusFilter, setStatusFilter,
+  bookings, classRegs = [], loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], darkMode: dm, onAddClient
 }) {
@@ -32,6 +32,10 @@ export default function BookingsList({
   const now = Date.now();
   const recentBookings = (allBookings || [])
     .filter(b => b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+  const recentClassRegs = classRegs
+    .filter(r => r.created_date && (now - new Date(r.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   // Sort chronologically (earliest date first)
@@ -72,7 +76,7 @@ export default function BookingsList({
       </div>
 
       {/* Recent Bookings — last 24 hours, collapsible */}
-      {recentBookings.length > 0 && (
+      {(recentBookings.length > 0 || recentClassRegs.length > 0) && (
         <div className="mb-7 overflow-hidden rounded-2xl" style={{ border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`, boxShadow: '0 2px 20px rgba(160,120,90,0.07)' }}>
           {/* Header — clickable toggle */}
           <button
@@ -85,7 +89,7 @@ export default function BookingsList({
               <span className="text-[0.6rem] font-bold tracking-[0.18em] uppercase" style={{ color: dm ? '#c47a92' : '#A0607A' }}>Just Booked</span>
               <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.3)', color: dm ? '#c47a92' : '#A0607A' }}>
-                {recentBookings.length}
+                {recentBookings.length + recentClassRegs.length}
               </span>
               <span className="text-[0.58rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>last 24 hrs</span>
             </div>
@@ -165,6 +169,40 @@ export default function BookingsList({
                     </svg>
                   </button>
                 ))
+              }
+              {/* Recent class sign-ups */}
+              {recentClassRegs
+                .filter(r => !recentSearch || [r.full_name, r.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase())))
+                .map((r) => {
+                  const CLASS_NAMES = {
+                    private_basic_lesson: 'Private Basic Lesson',
+                    virtual_lesson: 'Virtual Lesson',
+                    intermediate_lesson: 'Intermediate Lesson',
+                    glam_class: 'Glam Class',
+                    masterclass: 'Masterclass',
+                  };
+                  const classes = Object.keys(CLASS_NAMES).filter(k => r[k]).map(k => CLASS_NAMES[k]).join(', ');
+                  return (
+                    <div
+                      key={r.id}
+                      className="flex items-center gap-4 w-full text-left px-5 py-4"
+                      style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(160,120,90,0.08)'}` }}
+                    >
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.15)' }}>
+                        <span style={{ fontSize: '0.9rem' }}>💄</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{r.full_name}</p>
+                        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#b5a99a' }}>
+                          {classes || 'Makeup Class'}
+                          <span className="ml-1.5 text-[0.6rem] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(212,160,176,0.15)', color: '#A0607A' }}>
+                            Class Sign-Up
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
               }
               {recentSearch && recentBookings.filter(b => [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase()))).length === 0 && (
                 <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>No results for "{recentSearch}"</div>

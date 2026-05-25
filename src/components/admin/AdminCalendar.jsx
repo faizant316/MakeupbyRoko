@@ -29,7 +29,7 @@ const STATUS_COLORS_DM = {
   cancelled: '#991B1B',
 };
 
-function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
+function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${year}-${pad(month + 1)}-${pad(day)}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
   const isToday = key === todayKey;
@@ -39,6 +39,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
   const activeStatuses = statuses.filter(s => s !== 'cancelled');
   const hasBookings = activeStatuses.length > 0;
   const hasConsultation = (consultationDateMap[key] || []).length > 0;
+  const hasClassReg = (classRegDateMap[key] || []).length > 0;
   const confirmedStatuses = confirmedDateMap[key] || [];
   const count = confirmedStatuses.length;
   const isFull = count >= effectiveCap;
@@ -89,7 +90,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
       ) : (
         <>
           <span className={`text-[0.875rem] font-${isSel || isToday ? 'bold' : 'medium'} ${isToday && dm ? 'text-indigo-200' : isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : isBlocked && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{day}</span>
-          {(hasBookings || hasConsultation) && (
+          {(hasBookings || hasConsultation || hasClassReg) && (
             <div className="flex gap-[3px] items-center">
               {isFull ? (
                 <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
@@ -103,6 +104,10 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
                     <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
                       style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#4A7FA5' }} />
                   )}
+                  {hasClassReg && (
+                    <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
+                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
+                  )}
                   {hasBookings && <span className={`text-[0.5rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
                 </>
               )}
@@ -114,7 +119,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
   );
 }
 
-function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
+function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
   const isToday = key === todayKey;
@@ -124,6 +129,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   const activeStatuses = statuses.filter(s => s !== 'cancelled');
   const hasBookings = activeStatuses.length > 0;
   const hasConsultation = (consultationDateMap[key] || []).length > 0;
+  const hasClassReg = (classRegDateMap[key] || []).length > 0;
   const confirmedStatuses = confirmedDateMap[key] || [];
   const count = confirmedStatuses.length;
   const isFull = count >= effectiveCap;
@@ -169,7 +175,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
       <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
       {isBlocked ? (
         <span className={`text-[0.65rem] ${dm ? 'text-red-400/70' : 'text-red-400'}`}>✕</span>
-      ) : (hasBookings || hasConsultation) ? (
+      ) : (hasBookings || hasConsultation || hasClassReg) ? (
         <div className="flex gap-[3px] items-center">
           {isFull ? (
             <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
@@ -183,6 +189,10 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
                 <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
                   style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
               )}
+              {hasClassReg && (
+                <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
+                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
+              )}
               {hasBookings && <span className={`text-[0.5rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
             </>
           )}
@@ -192,7 +202,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   );
 }
 
-export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth, selectedDate, setSelectedDate, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm }) {
+export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm }) {
   const [view, setView] = useState('month');
   const [blockPopup, setBlockPopup] = useState(null);
   const queryClient = useQueryClient();
@@ -243,13 +253,21 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
     consultationDateMap[b.consultation_date].push(b.name || 'Client');
   });
 
+  // Class registration dates — pink dots
+  const classRegDateMap = {};
+  classRegs.forEach(r => {
+    if (!r.appointment_date) return;
+    if (!classRegDateMap[r.appointment_date]) classRegDateMap[r.appointment_date] = [];
+    classRegDateMap[r.appointment_date].push(r.full_name || 'Client');
+  });
+
   const goToToday = () => { setCurrentMonth(new Date()); setSelectedDate(todayKey); };
   const handleSingleClick = (key) => setSelectedDate(key === selectedDate ? null : key);
   const handleDoubleClick = (key) => setBlockPopup({ date: key });
   const handleUnblock = (id) => unblockMutation.mutate(id);
 
   const sharedCellProps = {
-    todayKey, selectedDate, dateMap, confirmedDateMap, consultationDateMap, blockedSet, blockedMap, maxPerDay, dayCapacityMap, dm,
+    todayKey, selectedDate, dateMap, confirmedDateMap, consultationDateMap, classRegDateMap, blockedSet, blockedMap, maxPerDay, dayCapacityMap, dm,
     onSingleClick: handleSingleClick,
     onDoubleClick: handleDoubleClick,
     onUnblock: handleUnblock,
@@ -337,6 +355,7 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
     const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const dayBookings = bookings.filter(b => b.date === key).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    const dayClassRegs = classRegs.filter(r => r.appointment_date === key).sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || ''));
     const isBlocked = blockedSet.has(key);
     const prevDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() - 1); setCurrentMonth(nd); };
     const nextDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() + 1); setCurrentMonth(nd); };
@@ -372,18 +391,30 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
           </div>
         )}
 
-        {dayBookings.length === 0 ? (
+        {dayBookings.length === 0 && dayClassRegs.length === 0 ? (
           <div className="text-center py-10 text-[0.85rem] text-[#c5bdb5]">No appointments this day</div>
         ) : (
           <div className="flex flex-col gap-2">
             {dayBookings.map(b => (
-              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF8F6] border border-[#f0ebe6]">
+              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: dm ? '#27272a' : '#FAF8F6', borderColor: dm ? '#3a3a48' : '#f0ebe6' }}>
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
-                <span className="text-[0.8rem] font-semibold text-[#111] w-20">{b.time || '—'}</span>
-                <span className="text-[0.8rem] text-[#555] flex-1">{b.name}</span>
-                <span className="text-[0.7rem] text-[#A0785A] font-medium">{b.service}</span>
+                <span className="text-[0.8rem] font-semibold w-20 flex-shrink-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.time || '—'}</span>
+                <span className="text-[0.8rem] flex-1 truncate" style={{ color: dm ? '#a1a1aa' : '#555' }}>{b.name}</span>
+                <span className="text-[0.7rem] font-medium" style={{ color: '#A0785A' }}>{b.service}</span>
               </div>
             ))}
+            {dayClassRegs.map(r => {
+              const cls = ['private_basic_lesson','virtual_lesson','intermediate_lesson','glam_class','masterclass'].filter(k => r[k]);
+              const label = cls.length ? cls[0].replace(/_/g, ' ') : 'Makeup Class';
+              return (
+                <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: dm ? '#27272a' : '#FDF5F8', borderColor: dm ? '#4a3a48' : '#f0d8e4' }}>
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#D4A0B0' }} />
+                  <span className="text-[0.8rem] font-semibold w-20 flex-shrink-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{r.appointment_time || '—'}</span>
+                  <span className="text-[0.8rem] flex-1 truncate" style={{ color: dm ? '#a1a1aa' : '#555' }}>{r.full_name}</span>
+                  <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(212,160,176,0.15)', color: '#A0607A' }}>💄 {label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </>
@@ -430,6 +461,9 @@ export default function AdminCalendar({ bookings, currentMonth, setCurrentMonth,
           ))}
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#4A7FA5' }} /> Consultation
+          </span>
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#D4A0B0' }} /> Makeup Class
           </span>
         </div>
       </div>
