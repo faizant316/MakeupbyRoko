@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
+const ADMIN_URL = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupbyroko.com'}/admin`;
 // Override all recipient addresses during testing. Remove this env var when going live.
 const TEST_TO = process.env.RESEND_TEST_EMAIL;
 
@@ -273,7 +274,7 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
     ${card(`
       <p style="font-size:13px;color:#6E6058;margin:0 0 14px;">Please reach out within 24–48 hours to confirm their class schedule.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
     `)}
   `);
@@ -293,7 +294,7 @@ export function adminBookingEmail({ name, service, date, email, phone, bookingTy
     `)}
     ${card(`
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
     `)}
   `);
@@ -330,7 +331,7 @@ export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDa
     ${card(`
       <p style="font-size:13px;color:#6E6058;margin:0 0 14px;">Reach out within <strong>24–48 hours</strong> to confirm and schedule their consultation.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
     `)}
   `);
@@ -410,7 +411,7 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
     </div>
     ${card(`
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-        <a href="https://makeupby-roko.vercel.app/admin" style="display:inline-block;background:#111;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#111;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
     `)}
   `);

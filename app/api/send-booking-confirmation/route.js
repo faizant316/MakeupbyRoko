@@ -7,7 +7,7 @@ import {
   adminBridalEmail,
 } from '../../../src/lib/email';
 
-const ADMIN_EMAIL = 'makeupbyroko22@gmail.com';
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
 
 export async function POST(req) {
   try {

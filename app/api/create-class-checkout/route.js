@@ -2,14 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '../../../src/lib/supabase/server';
 
-// Server-side source of truth — prices never come from the client
-const CLASS_CATALOG = {
-  private_basic_lesson: { title: 'Private Basic Makeup Lesson', duration: '1.5 hours', price: 300 },
-  virtual_lesson:       { title: 'Virtual Makeup Lesson',        duration: '2 hours',   price: 400 },
-  intermediate_lesson:  { title: 'Intermediate Makeup Lesson',   duration: '2.5 hours', price: 500 },
-  glam_class:           { title: 'Glam Makeup Class',            duration: '3 hours',   price: 600 },
-  masterclass:          { title: 'Makeup Masterclass',           duration: '4 hours · 2 days', price: 1500 },
-};
+import { CLASS_CATALOG } from '../../../src/lib/classCatalog';
 
 export async function POST(req) {
   try {

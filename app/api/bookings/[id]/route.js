@@ -3,6 +3,8 @@ import { createClient } from '../../../../src/lib/supabase/server';
 import { requireAdmin } from '../../../../src/lib/requireAdmin';
 
 export async function GET(_req, { params }) {
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const supabase = createClient();
     const { data, error } = await supabase.from('bookings').select('*').eq('id', params.id).single();
