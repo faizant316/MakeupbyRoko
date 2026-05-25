@@ -78,8 +78,8 @@ export default function Admin() {
 
   const { data: classRegs = [] } = useQuery({
     queryKey: ['class-registrations-summary'],
-    queryFn: () => base44.entities.ClassRegistration.list('-created_date', 100),
-    staleTime: 60000,
+    queryFn: () => base44.entities.ClassRegistration.list('-created_date', 200),
+    staleTime: 30000,
   });
   const newClassRegsCount = classRegs.filter(r => r.status === 'new' || !r.status).length;
 
@@ -347,13 +347,13 @@ export default function Admin() {
           <>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-5 mb-8">
               <AdminStats today={todayCount} pending={pendingCount} confirmed={confirmedCount} completed={completedCount} darkMode={dm} onFilterClick={(filter) => { setStatusFilter(filter); setTimeout(() => document.getElementById('bookings-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} />
-              <AdminCalendar bookings={bookings} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
+              <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
             </div>
             <div className="mb-6">
               <CapacitySettings selectedDate={selectedDate} darkMode={dm} />
             </div>
             <div id="bookings-list">
-              <BookingsList bookings={filtered} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} consultationsOnDate={consultationsOnDate} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
+              <BookingsList bookings={filtered} classRegs={classRegs} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} consultationsOnDate={consultationsOnDate} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
             </div>
             {/* Class registrations quick preview */}
             {classRegs.length > 0 && (
@@ -430,7 +430,23 @@ export default function Admin() {
         )}
 
         {activeTab === 'classes' && (
-          <ClassRegistrationsList darkMode={dm} />
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => { setActiveTab('bookings'); setSelectedBooking(null); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[0.75rem] font-medium transition-all"
+                style={{ background: dm ? '#2e2e38' : '#f5f0ec', color: dm ? '#a1a1aa' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}
+                onMouseEnter={e => { e.currentTarget.style.color = dm ? '#e4e4e7' : '#111'; e.currentTarget.style.borderColor = dm ? '#52525b' : '#111'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#888'; e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#e8e2dc'; }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back to Appointments
+              </button>
+            </div>
+            <ClassRegistrationsList darkMode={dm} />
+          </>
         )}
 
         {activeTab === 'analytics' && (
