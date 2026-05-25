@@ -1,12 +1,12 @@
 export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewDetail }) {
   return (
     <div
-      className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row h-full sm:h-[220px] cursor-pointer"
+      className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row h-full sm:h-[260px] cursor-pointer"
       style={{ touchAction: 'manipulation' }}
       onClick={(e) => onViewDetail && onViewDetail(svc, e)}
     >
       {/* Photo — top on mobile, right on desktop */}
-      <div className="sm:hidden w-full h-[160px] overflow-hidden bg-[#f5f5f5] flex-shrink-0">
+      <div className="sm:hidden w-full h-[220px] overflow-hidden bg-[#f5f5f5] flex-shrink-0">
         <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
           className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
           style={{ objectPosition: 'center 35%' }} />

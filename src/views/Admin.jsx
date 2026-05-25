@@ -76,6 +76,13 @@ export default function Admin() {
     queryFn: () => base44.entities.Review.list('-created_date', 200),
   });
 
+  const { data: classRegs = [] } = useQuery({
+    queryKey: ['class-registrations-summary'],
+    queryFn: () => base44.entities.ClassRegistration.list('-created_date', 100),
+    staleTime: 60000,
+  });
+  const newClassRegsCount = classRegs.filter(r => r.status === 'new' || !r.status).length;
+
   const updateBookingMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Booking.update(id, data),
     onSuccess: (_, variables) => {
@@ -271,16 +278,37 @@ export default function Admin() {
             </span>
           </div>
 
-          {/* Mobile hamburger — opens full-screen sidebar */}
+          {/* Mobile hamburger — animates to × when open */}
           <button
             onClick={() => setMobileNavOpen(o => !o)}
             className="sm:hidden w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90"
             style={{ background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent' }}
-            aria-label="Open navigation"
+            aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#F0EBE6' : '#111'} strokeWidth="2" strokeLinecap="round" className="w-5 h-5">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
+            <div className="relative w-5 h-5 flex items-center justify-center">
+              {/* Top line */}
+              <span style={{
+                position: 'absolute', display: 'block', width: '18px', height: '1.5px',
+                background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
+                transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s',
+                transform: mobileNavOpen ? 'translateY(0) rotate(45deg)' : 'translateY(-5px)',
+                opacity: 1,
+              }} />
+              {/* Middle line */}
+              <span style={{
+                position: 'absolute', display: 'block', width: '18px', height: '1.5px',
+                background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
+                transition: 'opacity 0.15s',
+                opacity: mobileNavOpen ? 0 : 1,
+              }} />
+              {/* Bottom line */}
+              <span style={{
+                position: 'absolute', display: 'block', width: '18px', height: '1.5px',
+                background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
+                transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                transform: mobileNavOpen ? 'translateY(0) rotate(-45deg)' : 'translateY(5px)',
+              }} />
+            </div>
           </button>
         </div>
       </div>
@@ -327,6 +355,43 @@ export default function Admin() {
             <div id="bookings-list">
               <BookingsList bookings={filtered} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} consultationsOnDate={consultationsOnDate} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
             </div>
+            {/* Class registrations quick preview */}
+            {classRegs.length > 0 && (
+              <div
+                className="mt-6 rounded-2xl p-5 cursor-pointer transition-all"
+                style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ede8e4'}` }}
+                onClick={() => { setActiveTab('classes'); setSelectedBooking(null); }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,160,176,0.1)' }}>
+                      <span style={{ fontSize: '0.9rem' }}>💄</span>
+                    </div>
+                    <div>
+                      <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
+                      <p className="text-[0.62rem]" style={{ color: dm ? '#52525b' : '#bbb' }}>{classRegs.length} total · click to manage</p>
+                    </div>
+                  </div>
+                  {newClassRegsCount > 0 && (
+                    <span className="text-[0.6rem] font-bold px-2 py-1 rounded-lg" style={{ background: '#D4A0B0', color: '#fff' }}>
+                      {newClassRegsCount} new
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-4 flex-wrap">
+                  {[
+                    { label: 'New', count: classRegs.filter(r => r.status === 'new' || !r.status).length, color: '#b45309' },
+                    { label: 'Enrolled', count: classRegs.filter(r => r.status === 'enrolled').length, color: '#15803d' },
+                    { label: 'Deposit Paid', count: classRegs.filter(r => r.payment_status === 'deposit_paid' || r.payment_status === 'paid_in_full').length, color: '#15803d' },
+                  ].map(({ label, count, color }) => (
+                    <div key={label}>
+                      <p className="text-[0.7rem] font-bold" style={{ color }}>{count}</p>
+                      <p className="text-[0.58rem] uppercase tracking-[0.1em]" style={{ color: dm ? '#52525b' : '#bbb' }}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {showAddClient && (
               <AddClientModal
                 onSave={(newBooking) => {
