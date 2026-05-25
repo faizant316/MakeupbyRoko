@@ -55,7 +55,7 @@ const STORAGE_KEY = 'roko_class_checkout';
 export default function ClassCheckoutFlow({ onClose }) {
   const [step, setStep] = useState('select');
   const [selected, setSelected] = useState([]);
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', additional_notes: '' });
+  const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', additional_notes: '' });
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
@@ -113,7 +113,7 @@ export default function ClassCheckoutFlow({ onClose }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: form.full_name,
+          full_name: `${form.first_name} ${form.last_name}`.trim(),
           email: form.email,
           phone: form.phone,
           additional_notes: form.additional_notes,
@@ -126,7 +126,7 @@ export default function ClassCheckoutFlow({ onClose }) {
 
       if (data.url) {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-          full_name: form.full_name,
+          full_name: `${form.first_name} ${form.last_name}`.trim(),
           email: form.email,
           selectedClasses: selectedClasses.map(c => ({ name: c.title, duration: c.duration, price: c.price })),
           totalPaid: totalFull,
