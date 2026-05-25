@@ -219,7 +219,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onBack, autoExpan
         </div>
 
         {/* Cards — 2-column grid; expanded card spans full width */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ alignItems: 'start' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3" style={{ alignItems: 'start' }}>
           {registrations.map(reg => {
             const selectedClasses = Object.entries(CLASS_LABELS).filter(([key]) => reg[key]);
             const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
