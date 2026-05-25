@@ -54,14 +54,9 @@ export default function BookingsList({
 
   return (
     <div>
-      {/* Add Client + header row */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
-          {selectedDate
-            ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
-            : monthLabel}
-        </p>
-        {onAddClient && (
+      {/* Add Client button */}
+      {onAddClient && (
+        <div className="flex justify-end mb-5">
           <button
             onClick={onAddClient}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
@@ -72,8 +67,8 @@ export default function BookingsList({
             </svg>
             Add Client
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Recent Bookings — last 24 hours, collapsible */}
       {(recentBookings.length > 0 || recentClassRegs.length > 0) && (
