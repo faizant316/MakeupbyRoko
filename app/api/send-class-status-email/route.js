@@ -51,6 +51,31 @@ function depositPaidEmail({ name, amount }) {
 </div></body></html>`;
 }
 
+function paidInFullEmail({ name, amount }) {
+  const firstName = name?.split(' ')[0] || 'there';
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
+<div style="max-width:500px;margin:0 auto;padding:32px 20px;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <p style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Roqia Moshref · Makeup Artistry</p>
+    <h1 style="font-family:Georgia,serif;font-size:28px;font-weight:300;color:#111;margin:0;">Payment Complete ✓</h1>
+  </div>
+  <div style="background:#FAFAF9;border-radius:14px;padding:20px;border:1px solid #EDE6DF;margin-bottom:16px;">
+    <p style="font-size:15px;color:#333;margin:0 0 12px;">Hi ${firstName},</p>
+    <p style="font-size:14px;color:#555;line-height:1.7;margin:0 0 12px;">
+      Your full payment${amount ? ` of <strong>$${amount}</strong>` : ''} has been received — you're all set! 🎊
+    </p>
+    <p style="font-size:14px;color:#555;line-height:1.7;margin:0;">
+      Roqia will be in touch soon with any final class details. We can't wait to see you!
+    </p>
+  </div>
+  <div style="text-align:center;padding:16px 0 8px;">
+    <p style="font-family:Georgia,serif;font-style:italic;font-size:18px;color:#A0785A;margin:0 0 4px;">Xoxo, Roko 💋</p>
+    <p style="font-size:11px;color:#B8A8A0;margin:0;">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+  </div>
+</div></body></html>`;
+}
+
 export async function POST(req) {
   try {
     const { type, to, name, amount } = await req.json();
@@ -67,6 +92,12 @@ export async function POST(req) {
         to,
         subject: 'Deposit received — your spot is secured ✓',
         html: depositPaidEmail({ name, amount }),
+      });
+    } else if (type === 'paid_in_full') {
+      await sendEmail({
+        to,
+        subject: 'Payment complete — see you in class! ✓',
+        html: paidInFullEmail({ name, amount }),
       });
     }
 

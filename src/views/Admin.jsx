@@ -28,6 +28,7 @@ export default function Admin() {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [authGranted, setAuthGranted] = useState(false);
   const [authError, setAuthError] = useState(null);
@@ -352,46 +353,64 @@ export default function Admin() {
             <div className="mb-6">
               <CapacitySettings selectedDate={selectedDate} darkMode={dm} />
             </div>
-            <div id="bookings-list">
-              <BookingsList bookings={filtered} classRegs={classRegs} loading={loadingBookings} search={search} setSearch={setSearch} statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusCounts={statusCounts} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onSelect={setSelectedBooking} currentMonth={currentMonth} allBookings={bookings} consultationsOnDate={consultationsOnDate} darkMode={dm} onAddClient={() => setShowAddClient(true)} />
-            </div>
-            {/* Class registrations quick preview */}
+            {/* Class Sign-Ups quick access — sits above bookings list */}
             {classRegs.length > 0 && (
-              <div
-                className="mt-6 rounded-2xl p-5 cursor-pointer transition-all"
-                style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ede8e4'}` }}
+              <button
                 onClick={() => { setActiveTab('classes'); setSelectedBooking(null); }}
+                className="w-full mb-5 flex items-center gap-4 px-5 py-3.5 rounded-2xl text-left transition-all group"
+                style={{
+                  background: dm ? '#27272a' : '#fff',
+                  border: `1px solid ${dm ? '#3a3a48' : '#ede8e4'}`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.5)'; e.currentTarget.style.background = dm ? '#2e2a2e' : '#FDF8F6'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ede8e4'; e.currentTarget.style.background = dm ? '#27272a' : '#fff'; }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,160,176,0.1)' }}>
-                      <span style={{ fontSize: '0.9rem' }}>💄</span>
-                    </div>
-                    <div>
-                      <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
-                      <p className="text-[0.62rem]" style={{ color: dm ? '#52525b' : '#bbb' }}>{classRegs.length} total · click to manage</p>
-                    </div>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
+                  <span style={{ fontSize: '1rem' }}>💄</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                      { label: 'Pending',   count: classRegs.filter(r => (r.status || 'pending') === 'pending').length,   color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+                      { label: 'Confirmed', count: classRegs.filter(r => r.status === 'confirmed').length,                 color: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
+                      { label: 'Enrolled',  count: classRegs.filter(r => r.status === 'enrolled').length,                  color: '#22C55E', bg: 'rgba(34,197,94,0.1)'  },
+                    ].map(({ label, count, color, bg }) => count > 0 && (
+                      <span key={label} className="text-[0.6rem] font-semibold px-2.5 py-0.5 rounded-full"
+                        style={{ background: bg, color }}>
+                        {count} {label}
+                      </span>
+                    ))}
                   </div>
-                  {newClassRegsCount > 0 && (
-                    <span className="text-[0.6rem] font-bold px-2 py-1 rounded-lg" style={{ background: '#D4A0B0', color: '#fff' }}>
-                      {newClassRegsCount} new
-                    </span>
-                  )}
                 </div>
-                <div className="flex gap-4 flex-wrap">
-                  {[
-                    { label: 'New', count: classRegs.filter(r => r.status === 'new' || !r.status).length, color: '#b45309' },
-                    { label: 'Enrolled', count: classRegs.filter(r => r.status === 'enrolled').length, color: '#15803d' },
-                    { label: 'Deposit Paid', count: classRegs.filter(r => r.payment_status === 'deposit_paid' || r.payment_status === 'paid_in_full').length, color: '#15803d' },
-                  ].map(({ label, count, color }) => (
-                    <div key={label}>
-                      <p className="text-[0.7rem] font-bold" style={{ color }}>{count}</p>
-                      <p className="text-[0.58rem] uppercase tracking-[0.1em]" style={{ color: dm ? '#52525b' : '#bbb' }}>{label}</p>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-1.5 flex-shrink-0" style={{ color: dm ? '#71717a' : '#bbb' }}>
+                  <span className="text-[0.65rem] font-medium group-hover:text-[#D4A0B0] transition-colors"
+                    style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+                    {classRegs.length} total
+                  </span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className="w-3.5 h-3.5 transition-colors group-hover:stroke-[#D4A0B0]">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                  </svg>
                 </div>
-              </div>
+              </button>
             )}
+            <div id="bookings-list">
+              <BookingsList
+                bookings={filtered} classRegs={classRegs} loading={loadingBookings}
+                search={search} setSearch={setSearch} statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter} statusCounts={statusCounts}
+                selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+                onSelect={setSelectedBooking} currentMonth={currentMonth}
+                allBookings={bookings} consultationsOnDate={consultationsOnDate}
+                darkMode={dm} onAddClient={() => setShowAddClient(true)}
+                onOpenClassReg={(r) => {
+                  setAutoExpandClassRegId(r.id);
+                  setActiveTab('classes');
+                  setSelectedBooking(null);
+                }}
+              />
+            </div>
             {showAddClient && (
               <AddClientModal
                 onSave={(newBooking) => {
@@ -445,7 +464,7 @@ export default function Admin() {
                 Back to Appointments
               </button>
             </div>
-            <ClassRegistrationsList darkMode={dm} />
+            <ClassRegistrationsList darkMode={dm} autoExpandId={autoExpandClassRegId} />
           </>
         )}
 

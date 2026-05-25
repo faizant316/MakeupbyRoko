@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -35,18 +35,23 @@ const PAYMENT_META = {
 function ClassStatusBadge({ status }) {
   const s = CLASS_STATUS_STYLES[status] || CLASS_STATUS_STYLES.pending;
   return (
-    <span className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-lg flex-shrink-0"
+    <span className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0"
       style={{ background: s.bg, color: s.text }}>
       {s.label}
     </span>
   );
 }
 
-export default function ClassRegistrationsList({ darkMode: dm, onBack }) {
+export default function ClassRegistrationsList({ darkMode: dm, onBack, autoExpandId }) {
   const queryClient = useQueryClient();
-  const [expandedId, setExpandedId] = useState(null);
+  const [expandedId, setExpandedId] = useState(autoExpandId ?? null);
   const [editDate, setEditDate] = useState({});   // { [id]: 'YYYY-MM-DD' }
   const [editTime, setEditTime] = useState({});   // { [id]: 'HH:MM' }
+
+  // Auto-expand when autoExpandId changes (e.g. navigated from Just Booked)
+  useEffect(() => {
+    if (autoExpandId) setExpandedId(autoExpandId);
+  }, [autoExpandId]);
 
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ['class-registrations'],
@@ -67,12 +72,17 @@ export default function ClassRegistrationsList({ darkMode: dm, onBack }) {
           body: JSON.stringify({ type: 'enrolled', to: reg.email, name: reg.full_name }),
         }).catch(console.error);
       }
-      if (data.payment_status === 'deposit_paid') {
+      if (data.payment_status === 'deposit_paid' || data.payment_status === 'paid_in_full') {
         const totalPrice = Object.keys(CLASS_PRICES).filter(k => reg[k]).reduce((s, k) => s + CLASS_PRICES[k], 0);
         fetch('/api/send-class-status-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'deposit_paid', to: reg.email, name: reg.full_name, amount: Math.round(totalPrice / 2) }),
+          body: JSON.stringify({
+            type: data.payment_status,
+            to: reg.email,
+            name: reg.full_name,
+            amount: data.payment_status === 'deposit_paid' ? Math.round(totalPrice / 2) : totalPrice,
+          }),
         }).catch(console.error);
       }
     },
@@ -88,8 +98,14 @@ export default function ClassRegistrationsList({ darkMode: dm, onBack }) {
 
   const changeStatus = (reg, newStatus) => {
     const s = CLASS_STATUS_STYLES[newStatus];
-    if (!window.confirm(`Change status to "${s?.label || newStatus}"?`)) return;
+    if (!window.confirm(`Change enrollment status to "${s?.label || newStatus}"?`)) return;
     updateMutation.mutate({ id: reg.id, data: { status: newStatus } });
+  };
+
+  const changePaymentStatus = (reg, newPaymentStatus) => {
+    const meta = PAYMENT_META[newPaymentStatus];
+    if (!window.confirm(`Change payment status to "${meta?.label || newPaymentStatus}"?`)) return;
+    updateMutation.mutate({ id: reg.id, data: { payment_status: newPaymentStatus } });
   };
 
   const saveDateTime = (reg) => {
@@ -209,7 +225,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onBack }) {
 
               {/* Contact buttons */}
               <div className="flex items-center gap-2 pt-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
-                <span className="text-[0.6rem] font-medium px-2 py-1 rounded" style={{ background: pm.bg, color: pm.color }}>{pm.label}</span>
+                <span className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase px-3 py-1 rounded-full" style={{ background: pm.bg, color: pm.color }}>{pm.label}</span>
                 {reg.email && (
                   <a href={`mailto:${reg.email}?subject=Makeup Class with Roko`}
                     onClick={e => e.stopPropagation()}
@@ -299,7 +315,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onBack }) {
                       <button
                         key={s}
                         onClick={() => changeStatus(reg, s)}
-                        className="py-2 px-3 rounded-lg text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
+                        className="py-2 px-3 rounded-full text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
                         style={currentStatus === s
                           ? { background: meta.bg, color: meta.text, boxShadow: `0 0 0 2px ${meta.bg}40` }
                           : { background: dm ? '#2e2e38' : '#f5f1ee', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
@@ -320,8 +336,8 @@ export default function ClassRegistrationsList({ darkMode: dm, onBack }) {
                     {Object.entries(PAYMENT_META).map(([s, meta]) => (
                       <button
                         key={s}
-                        onClick={() => updateMutation.mutate({ id: reg.id, data: { payment_status: s } })}
-                        className="py-2 px-3 rounded-lg text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
+                        onClick={() => changePaymentStatus(reg, s)}
+                        className="py-2 px-3 rounded-full text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
                         style={(reg.payment_status || 'pending') === s
                           ? { background: meta.bg, color: meta.color, border: `1px solid ${meta.color}30`, boxShadow: `0 0 0 2px ${meta.color}20` }
                           : { background: dm ? '#2e2e38' : '#f5f1ee', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
