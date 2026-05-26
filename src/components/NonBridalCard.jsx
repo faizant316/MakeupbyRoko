@@ -62,7 +62,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <button
             onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
             type="button"
-            className="mt-4 sm:mt-0 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
+            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
             style={{ touchAction: 'manipulation' }}
           >
             View Available Classes →
@@ -71,7 +71,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <button
             onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
             type="button"
-            className="mt-4 sm:mt-0 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
+            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
             style={{ touchAction: 'manipulation' }}
           >
             Select & Book →
