@@ -743,17 +743,27 @@ export default function BookingModal({ service: initialService, onClose }) {
             <div className="max-w-[520px] mx-auto flex flex-col gap-4">
 
               {/* Header */}
-              <div className="text-center py-2">
-                <div className="w-11 h-11 rounded-full bg-[#F7EEF2] flex items-center justify-center mx-auto mb-3">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-4.5 h-4.5">
+              <div className="text-center py-2 flex flex-col items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#F7EEF2] flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-4 h-4">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Booking Request Received</p>
-                <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
-                  Request <em className="italic text-[#C4849A]">Received!</em>
-                </h3>
-                <p className="font-serif italic text-[#A0785A] text-[0.9rem]">Can't wait to glam you up ✦</p>
+                <div>
+                  <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Booking Request Received</p>
+                  <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
+                    Request <em className="italic text-[#C4849A]">Received!</em>
+                  </h3>
+                  <p className="font-serif italic text-[#A0785A] text-[0.9rem]">Can't wait to glam you up ✦</p>
+                </div>
+                {formData.email && (
+                  <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    Receipt sent to {formData.email}
+                  </div>
+                )}
               </div>
 
               {/* Booking summary */}

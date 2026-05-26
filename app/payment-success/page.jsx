@@ -55,7 +55,7 @@ export default function PaymentSuccessPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAF7F4' }}>
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-[#D4A0B0] border-t-transparent rounded-full animate-spin" />
           <p className="text-[0.85rem] text-[#A0785A]">Confirming your payment…</p>
@@ -66,7 +66,7 @@ export default function PaymentSuccessPage() {
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#FAF7F4' }}>
+      <div className="min-h-screen flex items-center justify-center px-6 bg-white">
         <div className="text-center max-w-sm">
           <h2 className="font-serif text-2xl text-[#111] mb-3">Invalid Link</h2>
           <p className="text-[0.85rem] text-gray-400 mb-6">This confirmation link is not valid or has already been used.</p>
@@ -77,7 +77,7 @@ export default function PaymentSuccessPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAF7F4' }}>
+    <div className="min-h-screen bg-white">
       {/* Nav bar */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-[#EDE6DF]">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -190,7 +190,7 @@ export default function PaymentSuccessPage() {
         <div className="pb-10">
           <Link href="/"
             className="w-full py-4 rounded-2xl text-[0.82rem] font-medium flex items-center justify-center transition-all"
-            style={{ background: '#2C1A14', color: '#fff', boxShadow: '0 4px 20px rgba(44,26,20,0.15)' }}>
+            style={{ background: '#111', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
             Back to Makeup by Roko →
           </Link>
         </div>
