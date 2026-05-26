@@ -134,7 +134,7 @@ export default function Testimonials() {
           </div>
 
           {/* Right — Leave a Review */}
-          <div className="bg-[#FAF8F6] rounded-2xl p-8 border border-[#f0ebe6]">
+          <div className="bg-white rounded-xl p-8 border border-[#EDD8E0]/60 shadow-[0_8px_40px_rgba(212,160,176,0.12),_0_1px_6px_rgba(0,0,0,0.04)]">
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[#D4A0B0] text-sm">✦</span>
@@ -200,7 +200,7 @@ export default function Testimonials() {
           </div>
 
           {/* Review form */}
-          <div className="w-full bg-[#FAF8F6] rounded-2xl p-6 border border-[#f0ebe6] relative z-10 pointer-events-auto">
+          <div className="w-full bg-white rounded-xl p-6 border border-[#EDD8E0]/60 shadow-[0_8px_40px_rgba(212,160,176,0.12),_0_1px_6px_rgba(0,0,0,0.04)] relative z-10 pointer-events-auto">
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[#D4A0B0] text-sm">✦</span>
