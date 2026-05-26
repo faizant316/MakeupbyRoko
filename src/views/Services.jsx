@@ -318,17 +318,30 @@ export default function ServicesPage() {
                 Each service is tailored to you — from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
 
-              {/* Filter pills */}
-              <div className="flex flex-wrap gap-2">
+              {/* Filter — editorial underline tabs */}
+              <div className="flex items-center gap-7 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.key}
                     onClick={() => handleCategorySelect(cat.key)}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[0.68rem] font-medium tracking-[0.03em] transition-all duration-200 ${
-                      activeCategory === cat.key
-                        ? 'bg-[#111] text-white border border-[#111]'
-                        : 'border border-[#e8e2dc] text-[#888] hover:border-[#D4A0B0] hover:text-[#D4A0B0]'
-                    }`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: activeCategory === cat.key ? '1px solid #111' : '1px solid transparent',
+                      padding: '0 0 5px 0',
+                      fontSize: '0.68rem',
+                      fontFamily: 'var(--font-sans)',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: activeCategory === cat.key ? '#111' : '#bbb',
+                      fontWeight: activeCategory === cat.key ? 500 : 400,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      transition: 'color 0.2s, border-color 0.2s',
+                    }}
+                    onMouseEnter={e => { if (activeCategory !== cat.key) e.currentTarget.style.color = '#888'; }}
+                    onMouseLeave={e => { if (activeCategory !== cat.key) e.currentTarget.style.color = '#bbb'; }}
                   >
                     {cat.label}
                   </button>

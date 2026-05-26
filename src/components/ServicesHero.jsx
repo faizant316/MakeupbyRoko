@@ -189,23 +189,22 @@ export default function ServicesHero() {
               pointerEvents: 'auto',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.45rem',
               marginBottom: '1.25rem',
-              padding: '0.75rem 1.5rem',
-              background: '#D4A0B0',
-              color: '#fff',
-              borderRadius: '3px',
-              fontSize: '0.75rem',
+              padding: '0.55rem 1.1rem',
+              border: '1px solid rgba(255,255,255,0.22)',
+              color: 'rgba(255,255,255,0.7)',
+              borderRadius: '2px',
+              fontSize: '0.65rem',
               fontFamily: 'var(--font-sans)',
-              fontWeight: 500,
-              letterSpacing: '0.08em',
+              fontWeight: 400,
+              letterSpacing: '0.1em',
               textTransform: 'uppercase',
               textDecoration: 'none',
-              transition: 'background 0.2s',
             }}
           >
-            Book a Service
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '13px', height: '13px' }}>
+            View Services
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: '11px', height: '11px' }}>
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
