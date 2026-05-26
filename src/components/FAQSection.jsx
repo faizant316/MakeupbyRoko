@@ -39,7 +39,7 @@ export default function FAQSection() {
   const [open, setOpen] = useState(null);
 
   return (
-    <section className="bg-transparent py-[clamp(2.5rem,5vw,4rem)]">
+    <section className="bg-[#FAF8F6] py-[clamp(2.5rem,5vw,4rem)]">
       <div className="max-w-[760px] mx-auto px-[clamp(1.25rem,5vw,3rem)]">
 
         {/* Header */}
