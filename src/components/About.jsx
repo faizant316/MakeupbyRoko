@@ -2,49 +2,100 @@ export default function About() {
   return (
     <section className="border-b border-[#f0ebe6] px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]">
       <div className="max-w-[1200px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-20 items-center">
 
           {/* Photo */}
-          <div className="relative">
-            <div className="aspect-[3/4] overflow-hidden rounded-xl bg-[#f5f0eb]">
-              <img
-                src="/roqia.jpg"
-                alt="Roqia Moshref"
-                loading="lazy"
-                className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700"
-                onError={(e) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=85&auto=format&fit=crop';
-                }}
-              />
-            </div>
+          <div className="overflow-hidden rounded-xl bg-[#f5f0eb]" style={{ aspectRatio: '3/4' }}>
+            <img
+              src="/roko_pic.png"
+              alt="Roqia Moshref"
+              loading="lazy"
+              className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700"
+            />
           </div>
 
           {/* Content */}
-          <div>
-            {/* Label */}
-            <div className="flex items-center gap-2.5 mb-5">
-              <span className="w-6 h-px bg-[#D4A0B0]" />
-              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#D4A0B0' }}>
-                About Roqia
-              </span>
-            </div>
+          <div className="flex flex-col">
 
+            {/* Label — no dash */}
+            <span style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.55rem',
+              fontWeight: 700,
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: '#D4A0B0',
+              marginBottom: '1.1rem',
+              display: 'block',
+            }}>
+              About Roqia
+            </span>
+
+            {/* Heading — no dash */}
             <h2
               className="font-serif"
-              style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)', fontWeight: 300, color: '#111', lineHeight: 1.1, letterSpacing: '-0.01em', marginBottom: '1.25rem' }}
+              style={{
+                fontSize: 'clamp(1.75rem, 3.5vw, 2.6rem)',
+                fontWeight: 300,
+                color: '#111',
+                lineHeight: 1.15,
+                letterSpacing: '-0.01em',
+                marginBottom: '1.5rem',
+              }}
             >
-              Makeup is more than a service —{' '}
-              <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>it's a transformation.</em>
+              Makeup is more than a service.{' '}
+              <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>It's a transformation.</em>
             </h2>
 
+            {/* Bio — adapted from her IG caption */}
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#888', lineHeight: 1.85, marginBottom: '1rem' }}>
-              Hi, I'm Roqia — a professional makeup artist with 17+ years of experience. Whether I'm crafting a breathtaking bridal look, a bold editorial, or a polished everyday glow, every client gets my full attention and care.
+              I'm Roko. I picked up my first makeup brush at 12, did my first bridal look at 14 — she trusted the teenage me — and I've been in love with this art for 17 years since. Makeup isn't just my career, it's my calm place.
             </p>
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#888', lineHeight: 1.85 }}>
-              Based in Mountain House, California and available for destination bookings nationwide. I work with a limited number of clients each month to ensure every look is truly bespoke.
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#888', lineHeight: 1.85, marginBottom: '2rem' }}>
+              Nothing brings me more peace than making a woman feel truly stunning. Every client gets my full attention, my very best work, and someone genuinely in their corner — from the trial all the way to the big day.
             </p>
-          </div>
 
+            {/* Instagram CTA */}
+            <a
+              href="https://www.instagram.com/makeupbyroko_/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 group w-fit"
+              style={{ textDecoration: 'none' }}
+            >
+              <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] flex-shrink-0">
+                <defs>
+                  <linearGradient id="ig-about" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#feda75"/>
+                    <stop offset="25%" stopColor="#fa7e1e"/>
+                    <stop offset="50%" stopColor="#d62976"/>
+                    <stop offset="75%" stopColor="#962fbf"/>
+                    <stop offset="100%" stopColor="#4f5bd5"/>
+                  </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="url(#ig-about)" strokeWidth="1.8"/>
+                <circle cx="12" cy="12" r="4" fill="none" stroke="url(#ig-about)" strokeWidth="1.8"/>
+                <circle cx="17.5" cy="6.5" r="1.1" fill="url(#ig-about)"/>
+              </svg>
+              <span
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#999',
+                  transition: 'color 0.2s',
+                }}
+                className="group-hover:text-[#111]"
+              >
+                View my work on Instagram
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1.5" className="w-3 h-3 group-hover:stroke-[#111] transition-all group-hover:translate-x-0.5">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+
+          </div>
         </div>
       </div>
     </section>
