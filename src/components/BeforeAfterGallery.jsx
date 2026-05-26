@@ -133,7 +133,7 @@ export default function BeforeAfterGallery() {
   const [selected, setSelected] = useState(null);
 
   return (
-    <section id="before-after" className="bg-[#0D0B0C]">
+    <section id="before-after" className="bg-[#F5F5F5]">
       <div className="px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]">
         <div className="max-w-[1200px] mx-auto">
 
@@ -141,7 +141,7 @@ export default function BeforeAfterGallery() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
             <div>
               <span className="label block mb-1" style={{ color: '#D4A0B0' }}>Transformations</span>
-              <h2 className="font-serif" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 300, color: '#F5F0EB', lineHeight: 1.1 }}>
+              <h2 className="font-serif" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 300, color: '#111', lineHeight: 1.1 }}>
                 Before <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>&</em> After
               </h2>
             </div>
@@ -149,7 +149,7 @@ export default function BeforeAfterGallery() {
               href="https://www.instagram.com/makeupbyroko_/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-[0.7rem] font-medium tracking-[0.08em] uppercase text-[#666] hover:text-[#D4A0B0] transition-colors"
+              className="inline-flex items-center gap-2 text-[0.7rem] font-medium tracking-[0.08em] uppercase text-[#999] hover:text-[#D4A0B0] transition-colors"
             >
               See more on Instagram
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
