@@ -172,7 +172,7 @@ export default function ServicesHero() {
           </a>
 
           {/* Location & travel */}
-          <p className="mb-3" style={{ fontSize: '0.72rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.5)' }}>
+          <p className="mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.85)' }}>
             Bay Area, California &nbsp;·&nbsp; Traveling Artist
           </p>
 
@@ -256,7 +256,7 @@ export default function ServicesHero() {
           </a>
 
           {/* Location & travel */}
-          <p className="mb-5" style={{ fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.45)' }}>
+          <p className="mb-5" style={{ fontSize: '1rem', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.85)' }}>
             Bay Area, California &nbsp;·&nbsp; Traveling Artist
           </p>
 
