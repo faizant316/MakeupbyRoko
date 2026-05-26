@@ -171,6 +171,11 @@ export default function ServicesHero() {
             </span>
           </a>
 
+          {/* Location & travel */}
+          <p className="mb-3" style={{ fontSize: '0.72rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.5)' }}>
+            Bay Area, California &nbsp;·&nbsp; Traveling Artist
+          </p>
+
           {/* Brief text */}
           <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '360px', marginBottom: '0.75rem' }}>
             Every service is crafted for you — from your everyday glow to your wedding day.
@@ -249,6 +254,11 @@ export default function ServicesHero() {
               @makeupbyroko_
             </span>
           </a>
+
+          {/* Location & travel */}
+          <p className="mb-5" style={{ fontSize: '0.8rem', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.45)' }}>
+            Bay Area, California &nbsp;·&nbsp; Traveling Artist
+          </p>
 
           <div style={{ width: '40px', height: '1px', background: 'rgba(255,255,255,0.12)', marginBottom: '1.5rem' }} />
 

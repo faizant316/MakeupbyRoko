@@ -522,8 +522,9 @@ export default function ServicesPage() {
             <div className="flex flex-col gap-5">
               {/* Section label */}
               <div className="flex items-center gap-3">
-                <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0]">Bridal Services</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/20 to-transparent" />
+                <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
+                <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#D4A0B0]">Bridal Services</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
               </div>
 
               {/* Mobile: horizontal snap scroll — Desktop: grid */}
@@ -573,8 +574,9 @@ export default function ServicesPage() {
           {!servicesLoading && nonBridal.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999]">Other Services</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#eee] to-transparent" />
+                <div className="w-[3px] h-[14px] rounded-full bg-[#555] flex-shrink-0" />
+                <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#555]">Other Services</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-[#bbb]/40 to-transparent" />
               </div>
 
               {/* Desktop: vertical stacked cards */}

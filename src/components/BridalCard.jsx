@@ -29,8 +29,6 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
               <span className="text-[#ddd]">·</span>
               <span className="text-[0.68rem] text-[#999]">{svc.deposit}</span>
             </div>
-            <p className="text-[0.78rem] text-[#999] leading-[1.65] mb-2.5 line-clamp-2">{svc.desc}</p>
-
             <div className="flex flex-col gap-1.5 mb-3">
               {svc.title === 'Luxury Bridal Look' && (
                 <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-[#FDF5F0] border border-[#f5e0d4] text-[0.68rem] text-[#A0785A]">
