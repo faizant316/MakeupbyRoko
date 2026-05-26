@@ -177,12 +177,42 @@ export default function ServicesHero() {
           </p>
 
           {/* Brief text */}
-          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '360px', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '360px', marginBottom: '1.25rem' }}>
             Every service is crafted for you — from your everyday glow to your wedding day.
           </p>
 
+          {/* CTA ghost button — same position as desktop */}
+          <a
+            href="#services-grid"
+            onClick={(e) => { e.preventDefault(); document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' }); }}
+            style={{
+              pointerEvents: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.5rem',
+              padding: '0.75rem 1.4rem',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: 'rgba(255,255,255,0.75)',
+              borderRadius: '1px',
+              fontSize: '0.72rem',
+              fontFamily: 'var(--font-sans)',
+              fontWeight: 400,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              width: 'fit-content',
+              transition: 'border-color 0.25s, color 0.25s',
+            }}
+          >
+            Book a Service
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: '12px', height: '12px' }}>
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+
           {/* Stats row */}
-          <div className="flex gap-6 mb-6">
+          <div className="flex gap-6">
             {STATS.map(([num, label]) => (
               <div key={label}>
                 <div className="font-serif" style={{ fontSize: '1.3rem', color: '#fff', lineHeight: 1, fontWeight: 300 }}>{num}</div>
@@ -190,20 +220,6 @@ export default function ServicesHero() {
               </div>
             ))}
           </div>
-
-          {/* CTA — centered rule treatment */}
-          <a
-            href="#services-grid"
-            onClick={(e) => { e.preventDefault(); document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' }); }}
-            className="flex items-center gap-3"
-            style={{ pointerEvents: 'auto', textDecoration: 'none' }}
-          >
-            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(212,160,176,0.35))' }} />
-            <span style={{ fontSize: '0.58rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#D4A0B0', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
-              Book a Service
-            </span>
-            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(212,160,176,0.35))' }} />
-          </a>
         </div>
       </div>
 
