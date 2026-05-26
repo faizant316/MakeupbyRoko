@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const STATS = [['17+', 'Years'], ['1000+', 'Clients'], ['100%', 'Bespoke']];
+const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
 const VIDEO_URL = 'https://videos.pexels.com/video-files/35088452/14864542_1080_1920_25fps.mp4';
 const POSTER_URL = 'https://images.pexels.com/videos/35088452/pexels-photo-35088452.jpeg';
@@ -177,9 +177,38 @@ export default function ServicesHero() {
           </p>
 
           {/* Brief text */}
-          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '360px', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '360px', marginBottom: '1rem' }}>
             Every service is crafted for you — from your everyday glow to your wedding day.
           </p>
+
+          {/* Primary CTA */}
+          <a
+            href="#services-grid"
+            onClick={(e) => { e.preventDefault(); document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' }); }}
+            style={{
+              pointerEvents: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.25rem',
+              padding: '0.75rem 1.5rem',
+              background: '#D4A0B0',
+              color: '#fff',
+              borderRadius: '3px',
+              fontSize: '0.75rem',
+              fontFamily: 'var(--font-sans)',
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              transition: 'background 0.2s',
+            }}
+          >
+            Book a Service
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '13px', height: '13px' }}>
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
 
           {/* Stats row */}
           <div className="flex gap-6 mb-4">

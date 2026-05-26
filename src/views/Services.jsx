@@ -14,6 +14,7 @@ import FAQSection from '../components/FAQSection';
 import BridalCard from '../components/BridalCard';
 import NonBridalCard from '../components/NonBridalCard';
 import BridalComparison from '../components/BridalComparison';
+import About from '../components/About';
 import MakeupClassModal from '../components/MakeupClassModal';
 import ServiceDetailModal from '../components/ServiceDetailModal';
 
@@ -65,9 +66,6 @@ export default function ServicesPage() {
   const [detailOrigin, setDetailOrigin] = useState(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [activeBridalId, setActiveBridalId] = useState(null); // null = show both
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef      = useRef(null);
   const bridalScrollRef  = useRef(null);
   const otherScrollRef   = useRef(null);
 
@@ -84,21 +82,8 @@ export default function ServicesPage() {
 
   const SERVICE_DATA = serviceEntities.map(mapService);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  const handleCategorySelect = useCallback((key, bridalId = null) => {
+  const handleCategorySelect = useCallback((key) => {
     setActiveCategory(key);
-    setActiveBridalId(bridalId);
-    setDropdownOpen(false);
   }, []);
 
   const handleViewDetail = useCallback((svc, e) => {
@@ -246,8 +231,6 @@ export default function ServicesPage() {
     return () => { c1(); c2(); };
   }, [servicesLoading]);
 
-  const allBridalServices = SERVICE_DATA.filter(s => s.category === 'bridal');
-
   // Compute filtered list before any effects that depend on it
   const filtered = activeCategory === 'all'
     ? SERVICE_DATA
@@ -260,9 +243,7 @@ export default function ServicesPage() {
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
 
-  const bridalServices = activeBridalId
-    ? filtered.filter(s => s.category === 'bridal' && s.key === activeBridalId)
-    : sortedBridal(filtered.filter(s => s.category === 'bridal'));
+  const bridalServices = sortedBridal(filtered.filter(s => s.category === 'bridal'));
   const nonBridal = filtered.filter(s => s.category !== 'bridal');
 
 
@@ -312,6 +293,9 @@ export default function ServicesPage() {
         }}
       >
 
+      {/* About — who is Roqia */}
+      <About />
+
       {/* Services Grid */}
       <div id="services-grid" className="px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]">
         <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
@@ -334,154 +318,21 @@ export default function ServicesPage() {
                 Each service is tailored to you — from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
 
-              {/* Filter — editorial minimal trigger */}
-              <div ref={dropdownRef} className="relative inline-block">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="group select-none"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: 0,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease-out',
-                    fontSize: '0.7rem',
-                    fontWeight: 400,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: dropdownOpen ? '#111' : '#C4889A',
-                    borderBottom: `1px solid ${dropdownOpen ? '#111' : 'rgba(196,136,154,0.5)'}`,
-                    paddingBottom: '2px',
-                  }}
-                  onMouseEnter={e => {
-                    if (!dropdownOpen) {
-                      e.currentTarget.style.color = '#111';
-                      e.currentTarget.style.borderBottomColor = '#111';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!dropdownOpen) {
-                      e.currentTarget.style.color = '#C4889A';
-                      e.currentTarget.style.borderBottomColor = 'rgba(196,136,154,0.5)';
-                    }
-                  }}
-                >
-                  <span>{activeBridalId
-                    ? allBridalServices.find(b => b.key === activeBridalId)?.title || 'Bridal'
-                    : CATEGORIES.find(c => c.key === activeCategory)?.label}</span>
-                  <svg
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      transition: 'transform 0.2s ease-out',
-                      transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                      flexShrink: 0,
-                      marginLeft: '2px',
-                    }}
+              {/* Filter pills */}
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.key}
+                    onClick={() => handleCategorySelect(cat.key)}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[0.68rem] font-medium tracking-[0.03em] transition-all duration-200 ${
+                      activeCategory === cat.key
+                        ? 'bg-[#111] text-white border border-[#111]'
+                        : 'border border-[#e8e2dc] text-[#888] hover:border-[#D4A0B0] hover:text-[#D4A0B0]'
+                    }`}
                   >
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-
-                {dropdownOpen && (
-                  <div
-                    className="absolute left-0 top-full z-50"
-                    style={{
-                      width: '300px',
-                      marginTop: '0.6rem',
-                      background: '#FEFDFB',
-                      backdropFilter: 'blur(40px)',
-                      borderRadius: '14px',
-                      border: '1px solid rgba(212,160,176,0.25)',
-                      boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06)',
-                      animation: 'fadeSlideDown 0.2s cubic-bezier(0.16,1,0.3,1)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {/* Dropdown content */}
-                    <div style={{ padding: '14px 0' }}>
-                      {/* All Services */}
-                      <button
-                        onClick={() => handleCategorySelect('all', null)}
-                        className="w-full flex items-center gap-3.5 text-left transition-all duration-100"
-                        style={{
-                          padding: '10px 18px',
-                          background: activeCategory === 'all' && !activeBridalId ? 'rgba(212,160,176,0.08)' : 'transparent',
-                        }}
-                        onMouseEnter={e => { if (!(activeCategory === 'all' && !activeBridalId)) e.currentTarget.style.background = 'rgba(212,160,176,0.04)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = activeCategory === 'all' && !activeBridalId ? 'rgba(212,160,176,0.08)' : 'transparent'; }}
-                      >
-                        <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>✦</span>
-                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: activeCategory === 'all' && !activeBridalId ? 400 : 300, color: '#2a2520', flex: 1, letterSpacing: '0.02em' }}>All Services</span>
-                      </button>
-
-                      {/* Bridal group header + items */}
-                      <div style={{ paddingTop: '10px', marginTop: '10px', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-                        <div style={{ padding: '6px 18px 8px 18px' }}>
-                          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.48rem', fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#D4A0B0', margin: 0, opacity: 0.6 }}>Bridal</p>
-                        </div>
-
-                        {allBridalServices.map((bsvc, i) => (
-                          <button
-                            key={bsvc.key}
-                            onClick={() => handleCategorySelect('bridal', bsvc.key)}
-                            className="w-full text-left transition-all duration-100"
-                            style={{
-                              padding: '10px 18px',
-                              background: activeBridalId === bsvc.key ? 'rgba(212,160,176,0.08)' : 'transparent',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                            }}
-                            onMouseEnter={e => { if (activeBridalId !== bsvc.key) e.currentTarget.style.background = 'rgba(212,160,176,0.04)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = activeBridalId === bsvc.key ? 'rgba(212,160,176,0.08)' : 'transparent'; }}
-                          >
-                            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: activeBridalId === bsvc.key ? 400 : 300, color: '#2a2520', margin: 0, letterSpacing: '0.01em' }}>{bsvc.title}</p>
-                            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.62rem', color: '#a89a8e', margin: 0 }}>{bsvc.price} · {bsvc.duration}</p>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Other Services group */}
-                      <div style={{ paddingTop: '10px', marginTop: '10px', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-                        <div style={{ padding: '6px 18px 8px 18px' }}>
-                          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.48rem', fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', margin: 0, opacity: 0.6 }}>Other</p>
-                        </div>
-
-                        {[
-                          { key: 'event', label: 'Non-Bridal Makeup', icon: '✨', price: '$400', duration: '1.5 hrs' },
-                          { key: 'creative', label: 'Photoshoot Makeup', icon: '📸', price: '$600', duration: '1 hr 45 min' },
-                          { key: 'lessons', label: 'Makeup Courses', icon: '💄', price: 'See Classes', duration: 'Varies' },
-                        ].map(cat => {
-                          const isActive = activeCategory === cat.key && !activeBridalId;
-                          return (
-                            <button
-                              key={cat.key}
-                              onClick={() => handleCategorySelect(cat.key, null)}
-                              className="w-full text-left transition-all duration-100"
-                              style={{
-                                padding: '10px 18px',
-                                background: isActive ? 'rgba(212,160,176,0.08)' : 'transparent',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '4px',
-                              }}
-                              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(212,160,176,0.04)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = isActive ? 'rgba(212,160,176,0.08)' : 'transparent'; }}
-                            >
-                              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: isActive ? 400 : 300, color: '#2a2520', margin: 0, letterSpacing: '0.01em' }}>{cat.label}</p>
-                              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.62rem', color: '#a89a8e', margin: 0 }}>{cat.price} · {cat.duration}</p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    {cat.label}
+                  </button>
+                ))}
               </div>
             </div>
 
