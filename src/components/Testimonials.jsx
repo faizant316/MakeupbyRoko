@@ -61,7 +61,7 @@ export default function Testimonials() {
   const current = REVIEWS[activeIndex];
 
   return (
-    <section id="reviews" className="bg-white py-[clamp(4rem,8vw,7rem)] overflow-hidden">
+    <section id="reviews" className="bg-transparent py-[clamp(4rem,8vw,7rem)] overflow-hidden">
       <div className="max-w-[1200px] mx-auto px-[clamp(1.25rem,5vw,3rem)]">
 
         {/* Header */}

@@ -133,7 +133,7 @@ export default function BeforeAfterGallery() {
   const [selected, setSelected] = useState(null);
 
   return (
-    <section id="before-after" className="bg-[#FAF8F6]">
+    <section id="before-after" className="bg-transparent">
       <div className="px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]">
         <div className="max-w-[1200px] mx-auto">
 
