@@ -744,15 +744,15 @@ export default function BookingModal({ service: initialService, onClose }) {
 
               {/* Header */}
               <div className="text-center py-2 flex flex-col items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#F7EEF2] flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-4 h-4">
+                <div className="w-11 h-11 rounded-full bg-[#F7EEF2] flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-5 h-5">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
                 <div>
                   <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Booking Request Received</p>
                   <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
-                    Request <em className="italic text-[#C4849A]">Received!</em>
+                    Hey {formData.fname}, <em className="italic text-[#C4849A]">Request Received!</em>
                   </h3>
                   <p className="font-serif italic text-[#A0785A] text-[0.9rem]">Can't wait to glam you up ✦</p>
                 </div>
