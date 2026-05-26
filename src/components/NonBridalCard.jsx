@@ -22,9 +22,20 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
             <span className="text-[0.75rem] text-[#999]">{svc.duration}</span>
             {svc.deposit && <><span className="text-[#ccc]">·</span><span className="text-[0.72rem] text-[#999]">{svc.deposit}</span></>}
           </div>
-          {svc.desc && (
-            <p className="text-[0.75rem] text-[#aaa] leading-[1.55] line-clamp-2 mb-2">{svc.desc}</p>
-          )}
+          {svc.includes?.length > 0 ? (
+            <ul className="flex flex-col gap-1 mb-2.5">
+              {svc.includes.slice(0, 2).map((item) => (
+                <li key={item} className="flex items-start gap-2 text-[0.72rem] text-[#999]">
+                  <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
+                </li>
+              ))}
+              {svc.includes.length > 2 && (
+                <li className="text-[0.68rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 2} more — tap to see all</li>
+              )}
+            </ul>
+          ) : svc.desc ? (
+            <p className="text-[0.72rem] text-[#aaa] leading-[1.55] line-clamp-1 mb-2">{svc.desc}</p>
+          ) : null}
           <div className="flex flex-col gap-1.5 mt-0.5">
             {(svc.category === 'event' || svc.category === 'creative') && (
               <div className="flex items-center gap-1.5 text-[0.68rem] text-[#A0785A]">
