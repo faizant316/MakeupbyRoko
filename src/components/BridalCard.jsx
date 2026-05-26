@@ -29,27 +29,27 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
               <span className="text-[#ddd]">·</span>
               <span className="text-[0.68rem] text-[#999]">{svc.deposit}</span>
             </div>
-            <div className="flex flex-col gap-1.5 mb-3">
+            <div className="flex flex-col gap-2 mb-3">
               {svc.title === 'Luxury Bridal Look' && (
-                <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-[#FDF5F0] border border-[#f5e0d4] text-[0.68rem] text-[#A0785A]">
-                  <span className="flex-shrink-0 mt-px">🚗</span>
+                <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055]">
+                  <span className="text-[#C4849A] text-[0.6rem] mt-px flex-shrink-0">✦</span>
                   <span><strong>$200+ travel fee</strong> automatically added for services not held at the studio</span>
                 </div>
               )}
               {svc.title === 'Full Day Service' && (
-                <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-[#FDF5F0] border border-[#f5e0d4] text-[0.68rem] text-[#A0785A]">
-                  <span className="flex-shrink-0 mt-px">📋</span>
+                <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055]">
+                  <span className="text-[#C4849A] text-[0.6rem] mt-px flex-shrink-0">✦</span>
                   <span>Required for: bridal switch, location over <strong>1 hr from studio</strong>, or start time <strong>before 7 AM</strong></span>
                 </div>
               )}
               {svc.title === 'Bridal Trial' && (
                 <>
-                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#F5F0FD] border border-[#e0d4f5] text-[0.68rem] text-[#7A5AA0]">
-                    <span className="flex-shrink-0 mt-px">🎨</span>
+                  <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055]">
+                    <span className="text-[#C4849A] text-[0.6rem] mt-px flex-shrink-0">✦</span>
                     <span><strong>Test your look before the big day</strong> — no surprises on your wedding day</span>
                   </div>
-                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#FDF9F7] border border-[#f0ebe6] text-[0.68rem] text-[#A0785A]">
-                    <span className="flex-shrink-0 mt-px">📅</span>
+                  <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-lg bg-[#F8F4F6] border-l-2 border-[#D4A0B0]/50 text-[0.68rem] text-[#8C6070]">
+                    <span className="text-[#D4A0B0] text-[0.6rem] mt-px flex-shrink-0">✦</span>
                     <span>Recommended <strong>1–3 months before</strong> your wedding date</span>
                   </div>
                 </>
