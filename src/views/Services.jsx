@@ -305,7 +305,7 @@ export default function ServicesPage() {
         style={{
           position: 'relative',
           zIndex: 10,
-          background: '#fff',
+          background: 'linear-gradient(to bottom, #ffffff 0%, #ffffff 18%, #fef4f7 45%, #f8e4ec 100%)',
           borderRadius: '24px 24px 0 0',
           boxShadow: '0 -8px 60px rgba(0,0,0,0.35)',
           minHeight: '100vh',
