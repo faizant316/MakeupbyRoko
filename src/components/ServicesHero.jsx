@@ -181,36 +181,8 @@ export default function ServicesHero() {
             Every service is crafted for you — from your everyday glow to your wedding day.
           </p>
 
-          {/* Primary CTA */}
-          <a
-            href="#services-grid"
-            onClick={(e) => { e.preventDefault(); document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' }); }}
-            style={{
-              pointerEvents: 'auto',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              marginBottom: '1.25rem',
-              padding: '0.55rem 1.1rem',
-              border: '1px solid rgba(255,255,255,0.22)',
-              color: 'rgba(255,255,255,0.7)',
-              borderRadius: '2px',
-              fontSize: '0.65rem',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 400,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-            }}
-          >
-            View Services
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: '11px', height: '11px' }}>
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </a>
-
           {/* Stats row */}
-          <div className="flex gap-6 mb-4">
+          <div className="flex gap-6 mb-6">
             {STATS.map(([num, label]) => (
               <div key={label}>
                 <div className="font-serif" style={{ fontSize: '1.3rem', color: '#fff', lineHeight: 1, fontWeight: 300 }}>{num}</div>
@@ -219,17 +191,19 @@ export default function ServicesHero() {
             ))}
           </div>
 
-          {/* Scroll indicator */}
-          <button
-            onClick={handleScrollDown}
-            className="flex flex-col items-center gap-1.5 mx-auto"
-            style={{ color: 'rgba(255,255,255,0.6)', textShadow: '0 0 12px rgba(212,160,176,0.5), 0 0 24px rgba(200,170,210,0.3)', pointerEvents: 'auto' }}
+          {/* CTA — centered rule treatment */}
+          <a
+            href="#services-grid"
+            onClick={(e) => { e.preventDefault(); document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' }); }}
+            className="flex items-center gap-3"
+            style={{ pointerEvents: 'auto', textDecoration: 'none' }}
           >
-            <span style={{ fontSize: '0.6rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Explore Services</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(212,160,176,0.35))' }} />
+            <span style={{ fontSize: '0.58rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#D4A0B0', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}>
+              Book a Service
+            </span>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(212,160,176,0.35))' }} />
+          </a>
         </div>
       </div>
 
