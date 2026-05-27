@@ -273,7 +273,7 @@ export default function BookingModal({ service: initialService, onClose }) {
           animation: 'slideUpSheet 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
           boxShadow: window.innerWidth >= 640 ? 'inset 0 0 200px rgba(212,140,170,0.12), inset 100px 0 200px rgba(212,140,170,0.08), inset -100px 0 200px rgba(180,140,220,0.08), 0 -1px 0 rgba(212,160,176,0.35)' : undefined,
           marginTop: '52px',
-          height: window.innerWidth >= 640 ? 'calc(100vh - 52px)' : 'calc(100dvh - 52px)',
+          height: 'calc(100% - 52px)',
         }}
       >
         {/* Header */}
@@ -295,7 +295,7 @@ export default function BookingModal({ service: initialService, onClose }) {
             <span className="text-[#D4A0B0] text-xs flex-shrink-0">✦</span>
             <div className="min-w-0">
               <span className="font-serif text-[1.05rem] tracking-tight text-[#111] block leading-tight truncate">
-                {service.category === 'bridal' ? 'Bridal Inquiry' : step === 'done' ? 'Request Sent!' : `Book — ${service.title}`}
+                {service.category === 'bridal' ? 'Bridal Inquiry' : step === 'done' ? 'Request Sent!' : `Book: ${service.title}`}
               </span>
               {service.category !== 'bridal' && step !== 'done' && service.duration && (
                 <span className="text-[0.6rem] text-[#c5bdb5] tracking-wide block">{service.duration}</span>
