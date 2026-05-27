@@ -242,10 +242,25 @@ export default function BookingModal({ service: initialService, onClose }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Lock background scroll when modal is open
+  // Lock background scroll when modal is open.
+  // iOS Safari ignores overflow:hidden on body — position:fixed is the
+  // only reliable cross-browser fix. We capture scrollY first so we can
+  // restore the exact scroll position when the modal closes.
   useEffect(() => {
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   const scrollRef = useRef(null);
