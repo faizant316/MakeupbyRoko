@@ -20,17 +20,18 @@ const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-ba
 const labelClass = "block text-[0.6rem] font-semibold tracking-[0.14em] text-[#999] uppercase mb-1.5";
 
 function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isPast = day.date < today;
   const isTooSoon = day.date < minDate;
   const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
   const key = dateKey(year, month, day.d);
   const isSel = selectedDate === key;
-  const isBlocked = blockedSet?.has(key);
+  const isBlocked = !isPast && blockedSet?.has(key);
   const bookingCount = bookedDateMap?.[key] || 0;
   const isFull = bookingCount >= maxPerDay;
   const isPartial = bookingCount > 0 && !isFull;
   const unavailable = isTooSoon || !isAvail || isBlocked || isFull;
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
   const isToday = day.date.getTime() === today.getTime();
 
   return (
@@ -236,7 +237,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
             <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
               Hey {firstName}, you're on <em className="italic text-[#C4849A]">the list!</em>
             </h3>
-            <p className="font-serif italic text-[#A0785A] text-[0.9rem]">I can't wait to be part of your big day 💍</p>
+            <p className="font-serif italic text-[#A0785A] text-[0.9rem]">I can't wait to be part of your big day.</p>
           </div>
           {email && (
             <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
@@ -258,7 +259,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
               Your bridal inquiry has been received. I'll be in touch within <strong className="text-[#2C1A14]">24–48 hours</strong> to confirm everything and schedule your consultation.
             </p>
             <div className="mt-3 px-3 py-2.5 bg-[#F7F3F0] rounded-lg border-l-2 border-[#D4A0B0]">
-              <p className="text-[0.72rem] text-[#A0785A] font-medium">💌 Full deposit details sent to your email.</p>
+              <p className="text-[0.72rem] text-[#A0785A] font-medium">Full deposit details sent to your email.</p>
             </div>
           </div>
         </div>
@@ -270,13 +271,22 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
           </div>
           <div className="px-5 pb-4 pt-2 flex flex-col gap-2.5">
             {[
-              { icon: '📸', text: <>A photo <strong>with makeup on</strong> and one <strong>without makeup</strong></> },
-              { icon: '💡', text: <>Any <strong>inspiration photos</strong> for your bridal look</> },
-              { icon: '👗', text: <>Photos of your <strong>gown / outfit(s)</strong></> },
+              {
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+                text: <>A photo <strong>with makeup on</strong> and one <strong>without makeup</strong></>
+              },
+              {
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+                text: <>Any <strong>inspiration photos</strong> for your bridal look</>
+              },
+              {
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+                text: <>Photos of your <strong>gown / outfit(s)</strong></>
+              },
             ].map(({ icon, text }, i) => (
               <div key={i} className="flex items-start gap-2.5 text-[0.78rem] text-[#444]">
-                <span className="flex-shrink-0 mt-0.5">{icon}</span>
-                <span>{text}</span>
+                <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-md bg-[#D4A0B0]/10 flex items-center justify-center">{icon}</span>
+                <span className="mt-0.5">{text}</span>
               </div>
             ))}
           </div>
@@ -314,7 +324,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
 
         {/* Sign off */}
         <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-5 text-center">
-          <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko 💋</p>
+          <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko</p>
           <p className="text-[0.7rem] text-[#B8A8A0]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
         </div>
 
@@ -665,19 +675,58 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           {/* 30-day notice */}
           <div className="bg-[#FDF9F7] border border-[#f0ebe6] rounded-lg px-4 py-2.5 relative z-10">
             <p className="text-[0.72rem] text-[#A0785A]">
-              📅 Bridal bookings must be at least <strong>2 weeks in advance</strong>. Earliest: <strong>{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+              Bridal bookings must be at least <strong>2 weeks in advance</strong>. Earliest: <strong>{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
             </p>
           </div>
 
           {/* Calendar */}
           <div className="relative z-10">
-            <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-100">
               <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl">‹</button>
               <span className="font-serif text-[1.2rem] text-[#111] tracking-tight">{monthName}</span>
               <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl">›</button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1.5 text-center mb-3">
+            {/* Month availability summary */}
+            {(() => {
+              const _today = new Date(); _today.setHours(0, 0, 0, 0);
+              let openCount = 0, fillingCount = 0, fullCount = 0;
+              calDays.forEach(day => {
+                if (!day) return;
+                if (day.date < _today) return;
+                const isTooSoon = day.date < minDate;
+                const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
+                if (!isAvail) return;
+                const key = dateKey(year, month, day.d);
+                if (blockedSet?.has(key)) return;
+                const count = bookedDateMap?.[key] || 0;
+                if (count >= DEFAULT_MAX) fullCount++;
+                else if (count > 0) fillingCount++;
+                else openCount++;
+              });
+              if (openCount + fillingCount + fullCount === 0) return null;
+              return (
+                <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
+                  {openCount > 0 && (
+                    <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />{openCount} open
+                    </span>
+                  )}
+                  {fillingCount > 0 && (
+                    <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(240,194,122,0.15)', color: '#92400e' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block" />{fillingCount} filling
+                    </span>
+                  )}
+                  {fullCount > 0 && (
+                    <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#b91c1c' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{fullCount} full
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div className="grid grid-cols-7 gap-1.5 text-center mt-4 mb-3">
               {['SU','MO','TU','WE','TH','FR','SA'].map((d, i) => (
                 <div key={i} className="text-[0.6rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
               ))}
@@ -925,7 +974,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
           <div>
             <label className={labelClass}>Is this an out-of-state event?</label>
-            <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">📍 Local = California &nbsp;·&nbsp; ✈️ Out of state = outside CA</p>
+            <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
             <div className="flex gap-3 mt-1">
               {['No', 'Yes'].map(opt => (
                 <button
@@ -938,7 +987,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                       : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
                   }`}
                 >
-                  {opt === 'Yes' ? '✈️  Yes, out of state' : '📍  No, local event'}
+                  {opt === 'Yes' ? 'Yes, out of state' : 'No, local event'}
                 </button>
               ))}
             </div>
