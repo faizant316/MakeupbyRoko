@@ -19,17 +19,18 @@ function getMinBookingDate() {
 }
 
 function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isPast = day.date < today;
   const isTooSoon = day.date < minDate;
   const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
   const key = dateKey(year, month, day.d);
   const isSel = selectedDate === key;
-  const isBlocked = blockedSet?.has(key);
+  const isBlocked = !isPast && blockedSet?.has(key);
   const bookingCount = bookedDateMap?.[key] || 0;
   const isFull = bookingCount >= maxPerDay;
   const isPartial = bookingCount > 0 && !isFull;
   const unavailable = isTooSoon || !isAvail || isBlocked || isFull;
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
   const isToday = day.date.getTime() === today.getTime();
 
   return (
@@ -400,7 +401,7 @@ export default function BookingModal({ service: initialService, onClose }) {
               {/* 30-day notice */}
               <div className="bg-[#FDF9F7] border border-[#f0ebe6] rounded-lg px-4 py-2.5 mb-3 relative z-10">
                 <p className="text-[0.72rem] text-[#A0785A]">
-                  📅 Bookings must be made at least <strong>30 days in advance</strong>. Earliest available: <strong>{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                  Bookings must be made at least <strong>30 days in advance</strong>. Earliest available: <strong>{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
                 </p>
               </div>
 
@@ -587,7 +588,9 @@ export default function BookingModal({ service: initialService, onClose }) {
                   </div>
                   {isEarlyArrival && (
                     <div className="mt-2.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 flex items-start gap-2.5">
-                      <span className="text-amber-500 text-sm flex-shrink-0 mt-0.5">⏰</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
                       <div>
                         <p className="text-[0.72rem] font-semibold text-amber-700">Early Arrival Surcharge — +$100</p>
                         <p className="text-[0.68rem] text-amber-600 mt-0.5">Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.</p>
@@ -606,7 +609,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                     className={inputClass}
                   />
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                    💡 This is just your preference — Roko will do her best to have you ready by this time. Your actual appointment time will be confirmed separately.
+                    This is your preference — Roko will do her best to have you ready by this time. Your actual appointment time will be confirmed separately.
                   </p>
                 </div>
 
@@ -614,7 +617,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                 <div className="mt-4">
                   <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Do you need Roko to travel to you?</label>
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mb-2 leading-[1.6]">
-                    🏠 By default, all appointments are held at Roko's studio. Select "Yes" only if you need her to come to your location.
+                    By default, all appointments are held at Roko's studio. Select "Yes" only if you need her to come to your location.
                   </p>
                   <div className="flex gap-3 mt-1">
                     {[{ label: 'Yes', value: true }, { label: 'No', value: false }].map(opt => (
@@ -635,7 +638,9 @@ export default function BookingModal({ service: initialService, onClose }) {
                   </div>
                   {formData.travel_requested === true && (
                     <div className="mt-2.5 bg-[#FDF9F7] border border-[#f0ebe6] rounded-lg px-3 py-2.5 flex items-start gap-2.5">
-                      <span className="text-[#A0785A] text-sm flex-shrink-0 mt-0.5">✈️</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                      </svg>
                       <div>
                         <p className="text-[0.72rem] font-semibold text-[#A0785A]">Travel — Bridal Pricing Applies ($750+)</p>
                         <p className="text-[0.68rem] text-[#b5a99a] mt-0.5">For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.</p>
@@ -841,7 +846,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[0.95rem] font-serif font-light text-[#2C1A14]">Ruqia Moshref</p>
-                      <p className="text-[0.75rem] text-[#9E8E84] mt-0.5">📞 510-491-6497</p>
+                      <p className="text-[0.75rem] text-[#9E8E84] mt-0.5">510-491-6497</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[0.68rem] text-[#9E8E84]">Deposit amount</p>
@@ -854,7 +859,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </p>
                   </div>
                   <p className="text-[0.68rem] text-[#B8A8A0] text-center">
-                    💵 Remaining balance due in <strong className="text-[#6E6058]">cash</strong> on appointment day
+                    Remaining balance due in <strong className="text-[#6E6058]">cash</strong> on appointment day
                   </p>
                 </div>
               </div>
@@ -874,7 +879,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
               {/* Sign off */}
               <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-5 text-center">
-                <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko 💋</p>
+                <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko</p>
                 <p className="text-[0.7rem] text-[#B8A8A0]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
               </div>
 
