@@ -19,13 +19,11 @@ function useMobileHeroProgress() {
 }
 
 function useViewportHeight() {
-  const [vh, setVh] = useState(() => window.innerHeight);
-  useEffect(() => {
-    const update = () => setVh(window.innerHeight);
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+  // Capture once at mount — do NOT update on resize.
+  // iOS Safari increases window.innerHeight when its toolbar collapses during
+  // scroll, causing the hero text to visually jump downward. Locking to the
+  // initial value (equivalent to 100svh) keeps the layout perfectly stable.
+  const [vh] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 812));
   return vh;
 }
 
@@ -115,14 +113,10 @@ export default function ServicesHero() {
           }} />
         </div>
 
-        {/* Text content — FIXED outside scaling, only fades */}
+        {/* Text content — overlaid on video, not affected by scaling */}
         <div
-          className="absolute px-6 z-10"
+          className="absolute inset-0 px-6 z-10"
           style={{
-            top: `var(--nav-h)`,
-            left: 0,
-            right: 0,
-            height: `calc(${vh}px - var(--nav-h))`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',

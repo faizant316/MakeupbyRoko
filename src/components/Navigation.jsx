@@ -47,6 +47,7 @@ export default function Navigation({ onCloseModal }) {
 
   const navItems = [
     { label: 'Home', href: '#', sub: 'Back to top' },
+    { label: 'About', href: '#about', sub: "Roko's story" },
     { label: 'Services', href: '#services-grid', sub: 'Browse offerings' },
     { label: 'Transformations', href: '#before-after', sub: 'Before & after' },
     { label: 'Reviews', href: '#reviews', sub: 'Client love' },

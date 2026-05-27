@@ -20,6 +20,7 @@ export default function About() {
 
   return (
     <section
+      id="about"
       ref={sectionRef}
       className="border-b border-[#f0ebe6] px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]"
     >
@@ -80,8 +81,8 @@ export default function About() {
                 marginBottom: '1.5rem',
               }}
             >
-              Makeup is more than a service.{' '}
-              <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>It's a transformation.</em>
+              Making every woman feel genuinely{' '}
+              <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>stunning.</em>
             </h2>
 
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
