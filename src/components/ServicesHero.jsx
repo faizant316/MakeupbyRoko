@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
-const VIDEO_URL = 'https://videos.pexels.com/video-files/35088452/14864542_1080_1920_25fps.mp4';
-const POSTER_URL = 'https://images.pexels.com/videos/35088452/pexels-photo-35088452.jpeg';
+const VIDEO_URL = '/hero.mp4';
+const POSTER_URL = '';
 
 function useMobileHeroProgress() {
   const [progress, setProgress] = useState(0);
