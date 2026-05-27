@@ -193,7 +193,7 @@ export default function Booking() {
             <div className="bg-[var(--bg)] border border-[var(--border)] rounded-[var(--radius-lg)] p-7 shadow-[var(--shadow)]">
               <div className="text-[0.875rem] font-medium mb-5 text-[var(--text)]">
                 {selectedDate
-                  ? `Available times — ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`
+                  ? `Available times for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`
                   : 'Select a date to view available times'}
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -295,12 +295,12 @@ export default function Booking() {
                         className="w-full px-4 py-3 border border-[var(--border)] rounded-[var(--radius)] text-[0.9375rem] focus:border-[var(--accent)] outline-none transition-colors"
                       >
                         <option value="">Select a service…</option>
-                        <option value="Bridal Package — from $400">💍 Bridal Package — from $400</option>
-                        <option value="Full Glam — from $250">✨ Full Glam — from $250</option>
-                        <option value="Editorial / Shoot — from $300">📸 Editorial / Shoot — from $300</option>
-                        <option value="Natural Everyday — from $150">🌿 Natural Everyday — from $150</option>
-                        <option value="Special Occasion — from $200">🎉 Special Occasion — from $200</option>
-                        <option value="Makeup Lesson — $180 / 90 min">🎨 Makeup Lesson — $180 / 90 min</option>
+                        <option value="Bridal Package (from $400)">💍 Bridal Package (from $400)</option>
+                        <option value="Full Glam (from $250)">✨ Full Glam (from $250)</option>
+                        <option value="Editorial / Shoot (from $300)">📸 Editorial / Shoot (from $300)</option>
+                        <option value="Natural Everyday (from $150)">🌿 Natural Everyday (from $150)</option>
+                        <option value="Special Occasion (from $200)">🎉 Special Occasion (from $200)</option>
+                        <option value="Makeup Lesson ($180 / 90 min)">🎨 Makeup Lesson ($180 / 90 min)</option>
                       </select>
                     </div>
 

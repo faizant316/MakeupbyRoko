@@ -314,8 +314,8 @@ export default function ServicesPage() {
               <h2 className="font-serif" style={{ fontSize: 'clamp(2.4rem, 5.5vw, 3.8rem)', fontWeight: 300, color: '#111', lineHeight: 1.0, letterSpacing: '-0.015em', marginBottom: '0.65rem' }}>
                 What I <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>Offer</em>
               </h2>
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.82rem', color: '#b0a89e', lineHeight: 1.75, maxWidth: '400px', margin: '0 0 1.25rem' }}>
-                Each service is tailored to you — from everyday glam to your wedding day. Limited bookings taken each month.
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.82rem', color: '#7a7068', lineHeight: 1.75, maxWidth: '400px', margin: '0 0 1.25rem' }}>
+                Each service is tailored to you, from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
 
               {/* Filter — editorial underline tabs */}
@@ -328,7 +328,7 @@ export default function ServicesPage() {
                       background: 'none',
                       border: 'none',
                       borderBottom: activeCategory === cat.key ? '1px solid #111' : '1px solid transparent',
-                      padding: '0 0 5px 0',
+                      padding: '10px 0 6px 0',
                       fontSize: '0.68rem',
                       fontFamily: 'var(--font-sans)',
                       letterSpacing: '0.1em',
@@ -339,6 +339,9 @@ export default function ServicesPage() {
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       transition: 'color 0.2s, border-color 0.2s',
+                      minHeight: '44px',
+                      display: 'flex',
+                      alignItems: 'flex-end',
                     }}
                     onMouseEnter={e => { if (activeCategory !== cat.key) e.currentTarget.style.color = '#888'; }}
                     onMouseLeave={e => { if (activeCategory !== cat.key) e.currentTarget.style.color = '#bbb'; }}

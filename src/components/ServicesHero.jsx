@@ -178,7 +178,7 @@ export default function ServicesHero() {
 
           {/* Brief text */}
           <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: '360px', marginBottom: '1.25rem' }}>
-            Every service is crafted for you — from your everyday glow to your wedding day.
+            Every service is crafted for you, from your everyday glow to your wedding day.
           </p>
 
           {/* CTA ghost button — same position as desktop */}
@@ -281,7 +281,7 @@ export default function ServicesHero() {
           <div style={{ width: '40px', height: '1px', background: 'rgba(255,255,255,0.12)', marginBottom: '1.5rem' }} />
 
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.9, maxWidth: '500px', marginBottom: '1.5rem' }}>
-            Every service is crafted for you — from your everyday glow to your wedding day. Roqia works with a limited number of clients to ensure the highest level of care.
+            Every service is crafted for you, from your everyday glow to your wedding day. Roqia works with a limited number of clients to ensure the highest level of care.
           </p>
 
           <a

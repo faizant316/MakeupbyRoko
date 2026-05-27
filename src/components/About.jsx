@@ -84,10 +84,10 @@ export default function About() {
               <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>It's a transformation.</em>
             </h2>
 
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#888', lineHeight: 1.85, marginBottom: '1rem' }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
               I'm Roko. I picked up my first makeup brush at 12, did my first bridal look at 14 (she trusted the teenage me), and I've been in love with this art for 17 years since. Makeup isn't just my career, it's my calm place.
             </p>
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#888', lineHeight: 1.85, marginBottom: '2rem' }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '2rem' }}>
               Nothing brings me more peace than making a woman feel truly stunning. Every client gets my full attention, my very best work, and someone genuinely in their corner from the trial all the way to the big day.
             </p>
 

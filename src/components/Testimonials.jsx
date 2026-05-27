@@ -77,8 +77,8 @@ export default function Testimonials() {
           >
             Straight from <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>Their</em> Texts
           </h2>
-          <p className="text-[0.85rem] text-[#999] max-w-[420px] mx-auto leading-[1.7]">
-            Real messages from real clients — nothing speaks louder than love in the inbox.
+          <p className="text-[0.85rem] text-[#6d6460] max-w-[420px] mx-auto leading-[1.7]">
+            Real messages from real clients. Nothing speaks louder than love in the inbox.
           </p>
         </div>
 

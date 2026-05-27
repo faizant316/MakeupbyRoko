@@ -25,9 +25,9 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
             <div className="flex items-center gap-2 mb-2.5 flex-wrap">
               <span className="font-serif text-lg text-[#111]">{svc.price}</span>
               <span className="text-[#ddd]">·</span>
-              <span className="text-[0.75rem] text-[#888]">{svc.duration}</span>
+              <span className="text-[0.75rem] text-[#7a7068]">{svc.duration}</span>
               <span className="text-[#ddd]">·</span>
-              <span className="text-[0.68rem] text-[#999]">{svc.deposit}</span>
+              <span className="text-[0.68rem] text-[#7a7068]">{svc.deposit}</span>
             </div>
             <div className="flex flex-col gap-2 mb-3">
               {svc.title === 'Luxury Bridal Look' && (
@@ -43,7 +43,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
               {svc.title === 'Bridal Trial' && (
                 <>
                   <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055]">
-                    <strong>Test your look before the big day</strong> — no surprises on your wedding day
+                    <strong>Test your look before the big day.</strong> No surprises on your wedding day.
                   </div>
                   <div className="px-3.5 py-2.5 rounded-lg bg-[#F8F4F6] border-l-2 border-[#D4A0B0]/50 text-[0.68rem] text-[#8C6070]">
                     Recommended <strong>1–3 months before</strong> your wedding date
@@ -54,12 +54,12 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
 
             <ul className="flex flex-col gap-1 mb-4">
               {svc.includes.slice(0, 3).map((item) => (
-                <li key={item} className="flex items-start gap-2 text-[0.75rem] text-[#999]">
+                <li key={item} className="flex items-start gap-2 text-[0.75rem] text-[#6d6460]">
                   <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
                 </li>
               ))}
               {svc.includes.length > 3 && (
-                <li className="text-[0.72rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 3} more — tap to see all</li>
+                <li className="text-[0.72rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 3} more (tap to see all)</li>
               )}
             </ul>
           </div>
