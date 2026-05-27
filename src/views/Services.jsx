@@ -91,145 +91,11 @@ export default function ServicesPage() {
     setDetailService(svc);
   }, []);
 
-  // ── GPU-composited transform carousel ───────────────────────────────────
-  // Uses translateX on the track (GPU compositor thread, zero layout cost)
-  // instead of scrollLeft (main thread, forces reflow).
-  // Rolling velocity window captures throw speed at end of gesture.
-  // Rubber-band resistance at edges for premium native feel.
+  // Reset carousel scroll position when category changes
   useEffect(() => {
-    const setupSnap = (container) => {
-      if (!container) return () => {};
-      const track = container.querySelector('[data-snap-track]');
-      if (!track) return () => {};
-
-      let startX = 0, startY = 0, startOffset = 0;
-      let currentOffset = 0;
-      let dir = null;        // null | 'h' | 'v'
-      let animId = null;
-      let touchHistory = []; // rolling velocity window
-
-      const setOffset = (x) => {
-        currentOffset = x;
-        track.style.transform = `translate3d(${-x}px,0,0)`;
-      };
-
-      const getSnapPoints = () => {
-        const cw  = container.clientWidth;
-        const max = Math.max(0, track.scrollWidth - cw);
-        return Array.from(track.querySelectorAll('[data-snap-card]')).map(item =>
-          Math.max(0, Math.min(item.offsetLeft - (cw - item.offsetWidth) / 2, max))
-        );
-      };
-
-      // Spring physics — GPU transform, velocity-aware, ~critically damped
-      const springTo = (target, v0 = 0) => {
-        if (animId) { cancelAnimationFrame(animId); animId = null; }
-        const K = 500, B = 44; // stiffness, damping (critical ≈ 2·√500 ≈ 44.7)
-        let pos = currentOffset, vel = v0, prev = performance.now();
-        const tick = (now) => {
-          const dt = Math.min((now - prev) / 1000, 0.05);
-          prev = now;
-          vel += (-K * (pos - target) - B * vel) * dt;
-          pos += vel * dt;
-          setOffset(pos);
-          if (Math.abs(pos - target) < 0.25 && Math.abs(vel) < 4) {
-            setOffset(target); animId = null;
-          } else {
-            animId = requestAnimationFrame(tick);
-          }
-        };
-        animId = requestAnimationFrame(tick);
-      };
-
-      const onStart = (e) => {
-        if (animId) { cancelAnimationFrame(animId); animId = null; }
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        startOffset = currentOffset;
-        dir = null;
-        touchHistory = [{ t: performance.now(), x: startX }];
-      };
-
-      const onMove = (e) => {
-        const touch = e.touches[0];
-        const dx = touch.clientX - startX;
-        const dy = touch.clientY - startY;
-
-        // Rolling 100 ms velocity window
-        const now = performance.now();
-        touchHistory.push({ t: now, x: touch.clientX });
-        while (touchHistory.length > 1 && now - touchHistory[0].t > 100) touchHistory.shift();
-
-        // Lock direction after 5 px
-        if (dir === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-          dir = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
-        }
-
-        if (dir === 'h') {
-          e.preventDefault();
-          const pts   = getSnapPoints();
-          const maxOff = pts.length ? pts[pts.length - 1] : 0;
-          const raw   = startOffset - dx;
-          // Rubber-band resistance past first/last card
-          const off = raw < 0
-            ? raw * 0.18
-            : raw > maxOff
-            ? maxOff + (raw - maxOff) * 0.18
-            : raw;
-          setOffset(off);
-        }
-      };
-
-      const onEnd = (e) => {
-        if (dir !== 'h') return;
-
-        // End-of-gesture velocity from rolling window
-        const now = performance.now();
-        touchHistory.push({ t: now, x: e.changedTouches[0].clientX });
-        const oldest = touchHistory[0];
-        const velPxMs = touchHistory.length > 1
-          ? (touchHistory[touchHistory.length - 1].x - oldest.x) / Math.max(1, now - oldest.t)
-          : 0;
-
-        const pts = getSnapPoints();
-        if (!pts.length) return;
-
-        const startIdx = pts.reduce((best, pt, i) =>
-          Math.abs(pt - startOffset) < Math.abs(pts[best] - startOffset) ? i : best, 0);
-
-        let ti;
-        if (Math.abs(velPxMs) > 0.12 || Math.abs(currentOffset - startOffset) > 20) {
-          ti = velPxMs < 0
-            ? Math.min(startIdx + 1, pts.length - 1)
-            : Math.max(startIdx - 1, 0);
-        } else {
-          ti = pts.reduce((best, pt, i) =>
-            Math.abs(pt - currentOffset) < Math.abs(pts[best] - currentOffset) ? i : best, 0);
-        }
-
-        // Flip sign: rightward finger = offset decreases
-        const v0 = Math.max(-3000, Math.min(3000, -velPxMs * 1000));
-        springTo(pts[ti], v0);
-      };
-
-      setOffset(0);
-      container.addEventListener('touchstart', onStart, { passive: true  });
-      container.addEventListener('touchmove',  onMove,  { passive: false });
-      container.addEventListener('touchend',   onEnd,   { passive: true  });
-
-      return () => {
-        container.removeEventListener('touchstart', onStart);
-        container.removeEventListener('touchmove',  onMove);
-        container.removeEventListener('touchend',   onEnd);
-        if (animId) cancelAnimationFrame(animId);
-        track.style.transform = '';
-      };
-    };
-
-    const c1 = setupSnap(bridalScrollRef.current);
-    const c2 = setupSnap(otherScrollRef.current);
-    return () => { c1(); c2(); };
-  }, [servicesLoading]);
+    if (bridalScrollRef.current) bridalScrollRef.current.scrollLeft = 0;
+    if (otherScrollRef.current)  otherScrollRef.current.scrollLeft  = 0;
+  }, [activeCategory]);
 
   // Compute filtered list before any effects that depend on it
   const filtered = activeCategory === 'all'
@@ -401,28 +267,35 @@ export default function ServicesPage() {
                 ))}
               </div>
 
-              {/* Mobile snap scroll — GPU transform track */}
-              <div ref={bridalScrollRef} className="lg:hidden -mx-[clamp(1.25rem,5vw,3rem)] overflow-hidden">
+              {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
+              <div
+                ref={bridalScrollRef}
+                className="lg:hidden -mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
+                style={{
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  scrollSnapType: 'x mandatory',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
                 <div
-                  data-snap-track
                   className="flex gap-4 pb-4"
                   style={{
                     paddingLeft: 'clamp(1.25rem,5vw,3rem)',
                     paddingRight: 'clamp(1.25rem,5vw,3rem)',
-                    willChange: 'transform',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
                   }}
                 >
                   {bridalServices.map((svc, idx) => (
-                    <div data-snap-card key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[340px]">
+                    <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[340px]" style={{ scrollSnapAlign: 'start' }}>
                       <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
                   <div className="flex-shrink-0 w-4" />
                 </div>
                 {bridalServices.length > 1 && (
-                  <div className="flex justify-center gap-1.5 mt-1">
+                  <div className="flex justify-center gap-1.5 mt-3 pb-1">
                     {bridalServices.map((_, i) => (
                       <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]/40" />
                     ))}
@@ -453,28 +326,35 @@ export default function ServicesPage() {
                 ))}
               </div>
 
-              {/* Mobile: horizontal snap scroll — GPU transform track */}
-              <div ref={otherScrollRef} className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)] overflow-hidden">
+              {/* Mobile: native CSS scroll-snap */}
+              <div
+                ref={otherScrollRef}
+                className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
+                style={{
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  scrollSnapType: 'x mandatory',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
                 <div
-                  data-snap-track
                   className="flex items-stretch gap-4 pb-4"
                   style={{
                     paddingLeft: 'clamp(1.25rem,5vw,3rem)',
                     paddingRight: 'clamp(1.25rem,5vw,3rem)',
-                    willChange: 'transform',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
                   }}
                 >
                   {nonBridal.map((svc) => (
-                    <div data-snap-card key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch">
+                    <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch" style={{ scrollSnapAlign: 'start' }}>
                       <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
                   <div className="flex-shrink-0 w-4" />
                 </div>
                 {nonBridal.length > 1 && (
-                  <div className="flex justify-center gap-1.5 mt-1">
+                  <div className="flex justify-center gap-1.5 mt-3 pb-1">
                     {nonBridal.map((_, i) => (
                       <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]/40" />
                     ))}
