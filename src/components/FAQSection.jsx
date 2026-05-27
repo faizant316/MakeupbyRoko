@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: 'Do you offer touch-up kits?',
-    a: 'Yes — bridal clients receive a professional touch-up kit to keep throughout the day. For other services, Roko can recommend the best products to maintain your look.',
+    a: 'Yes. Bridal clients receive a professional touch-up kit to keep throughout the day. For other services, Roko can recommend the best products to maintain your look.',
   },
   {
     q: 'What should I do to prepare for my appointment?',
@@ -86,7 +86,7 @@ export default function FAQSection() {
                   }}
                 >
                   <div style={{ overflow: 'hidden' }}>
-                    <p className="text-[0.83rem] text-[#888] leading-[1.8] pb-5 pr-10">
+                    <p className="text-[0.83rem] text-[#666] leading-[1.8] pb-5 pr-10">
                       {faq.a}
                     </p>
                   </div>

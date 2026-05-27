@@ -149,7 +149,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         <div className="flex flex-col gap-2 mb-4">
           <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#F5F0FD] border border-[#e0d4f5] text-[0.72rem] text-[#7A5AA0]">
             <span className="flex-shrink-0">🎨</span>
-            <span><strong>Test your look before the big day</strong> — no surprises on your wedding day</span>
+            <span><strong>Test your look before the big day.</strong> No surprises on your wedding day.</span>
           </div>
           <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[#FDF9F7] border border-[#f0ebe6] text-[0.72rem] text-[#A0785A]">
             <span className="flex-shrink-0">📅</span>

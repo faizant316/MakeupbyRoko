@@ -19,34 +19,34 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[0.85rem] font-medium text-[#111]">{svc.price}</span>
             <span className="text-[#ccc]">·</span>
-            <span className="text-[0.75rem] text-[#999]">{svc.duration}</span>
-            {svc.deposit && <><span className="text-[#ccc]">·</span><span className="text-[0.72rem] text-[#999]">{svc.deposit}</span></>}
+            <span className="text-[0.75rem] text-[#7a7068]">{svc.duration}</span>
+            {svc.deposit && <><span className="text-[#ccc]">·</span><span className="text-[0.72rem] text-[#7a7068]">{svc.deposit}</span></>}
           </div>
           {svc.includes?.length > 0 ? (
             <ul className="flex flex-col gap-1 mb-2.5">
               {svc.includes.slice(0, 2).map((item) => (
-                <li key={item} className="flex items-start gap-2 text-[0.72rem] text-[#999]">
+                <li key={item} className="flex items-start gap-2 text-[0.72rem] text-[#6d6460]">
                   <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
                 </li>
               ))}
               {svc.includes.length > 2 && (
-                <li className="text-[0.68rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 2} more — tap to see all</li>
+                <li className="text-[0.68rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 2} more (tap to see all)</li>
               )}
             </ul>
           ) : svc.desc ? (
-            <p className="text-[0.72rem] text-[#aaa] leading-[1.55] line-clamp-1 mb-2">{svc.desc}</p>
+            <p className="text-[0.72rem] text-[#6d6460] leading-[1.55] line-clamp-1 mb-2">{svc.desc}</p>
           ) : null}
           <div className="flex flex-col gap-1.5 mt-0.5">
             {(svc.category === 'event' || svc.category === 'creative') && (
               <div className="flex items-center gap-1.5 text-[0.68rem] text-[#A0785A]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
-                <span>Studio only — Mountain House, CA</span>
+                <span>Studio only · Mountain House, CA</span>
               </div>
             )}
             {svc.category === 'event' && (
               <div className="flex items-center gap-1.5 text-[0.68rem] text-[#A0785A]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
-                <span>Must be booked within <strong>1 month</strong> of the event — bookings made earlier are subject to bridal pricing</span>
+                <span>Must be booked within <strong>1 month</strong> of the event (bookings made earlier are subject to bridal pricing)</span>
               </div>
             )}
             {svc.category === 'lessons' && (

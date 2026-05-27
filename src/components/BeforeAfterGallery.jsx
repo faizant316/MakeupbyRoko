@@ -6,7 +6,7 @@ const TRANSFORMATIONS = [
     image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/93fa7f670_image.png',
     type: 'side-by-side',
     label: 'Bridal',
-    description: 'A full bridal transformation — soft glam with flawless skin, defined brows, and lashes that last all day. This look was created for a South Asian wedding ceremony.',
+    description: 'A full bridal transformation: soft glam with flawless skin, defined brows, and lashes that last all day. This look was created for a South Asian wedding ceremony.',
   },
   {
     id: 3,
@@ -20,7 +20,7 @@ const TRANSFORMATIONS = [
     image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/53e63ae52_IMG_1205.jpg',
     type: 'portrait',
     label: 'Bridal',
-    description: 'A timeless bridal look built around the bride\'s natural features — enhanced, not covered. Skin-first approach with a satin finish and soft smoky eye.',
+    description: 'A timeless bridal look built around the bride\'s natural features (enhanced, not covered). Skin-first approach with a satin finish and soft smoky eye.',
   },
   {
     id: 5,
@@ -34,7 +34,7 @@ const TRANSFORMATIONS = [
     image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/1acef1b83_IMG_1203.jpg',
     type: 'portrait',
     label: 'Full Glam',
-    description: 'A bold, editorial full glam look — striking liner, voluminous lashes, and a flawless base that pops on camera and in person.',
+    description: 'A bold, editorial full glam look. Striking liner, voluminous lashes, and a flawless base that pops on camera and in person.',
   },
   {
     id: 7,
