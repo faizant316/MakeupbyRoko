@@ -12,7 +12,7 @@ export default function Footer() {
               <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener" className="w-9 h-9 rounded-full border border-[rgba(255,255,255,0.15)] flex items-center justify-center hover:border-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.05)] transition-all">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" style={{width:'16px',height:'16px',color:'rgba(255,255,255,0.6)'}}><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
               </a>
-              <a href="https://www.tiktok.com/@makeupbyroko_" target="_blank" rel="noopener" className="w-9 h-9 rounded-full border border-[rgba(255,255,255,0.15)] flex items-center justify-center hover:border-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.05)] transition-all">
+              <a href="https://www.tiktok.com/@makeupbyroko" target="_blank" rel="noopener" className="w-9 h-9 rounded-full border border-[rgba(255,255,255,0.15)] flex items-center justify-center hover:border-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.05)] transition-all">
                 <svg viewBox="0 0 24 24" fill="currentColor" style={{width:'16px',height:'16px',color:'rgba(255,255,255,0.6)'}}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>
               </a>
               <a href="https://www.pinterest.com/makeupbyroko/" target="_blank" rel="noopener" className="w-9 h-9 rounded-full border border-[rgba(255,255,255,0.15)] flex items-center justify-center hover:border-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.05)] transition-all">
@@ -36,6 +36,7 @@ export default function Footer() {
             <p className="text-[0.6875rem] font-medium letter-spacing-[0.12em] text-[rgba(255,255,255,0.35)] uppercase mb-5">Get in Touch</p>
             <ul className="flex flex-col gap-3">
               <li><a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener" className="text-[0.875rem] text-[rgba(255,255,255,0.55)] hover:text-white transition-colors">Instagram DM</a></li>
+              <li><a href="https://www.tiktok.com/@makeupbyroko" target="_blank" rel="noopener" className="text-[0.875rem] text-[rgba(255,255,255,0.55)] hover:text-white transition-colors">TikTok</a></li>
               <li><a href="mailto:hello@roqiamoshref.com" className="text-[0.875rem] text-[rgba(255,255,255,0.55)] hover:text-white transition-colors">hello@roqiamoshref.com</a></li>
               <li><a href="#book" className="text-[0.875rem] text-[rgba(255,255,255,0.55)] hover:text-white transition-colors">Request a Quote</a></li>
               <li><a href="#faq" className="text-[0.875rem] text-[rgba(255,255,255,0.55)] hover:text-white transition-colors">Common Questions</a></li>
