@@ -12,6 +12,7 @@ import ServicesList from '../components/admin/ServicesList';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import CapacitySettings from '../components/admin/CapacitySettings';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
+import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
 import AddClientModal from '../components/admin/AddClientModal';
 
@@ -29,6 +30,7 @@ export default function Admin() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
+  const [selectedClassReg, setSelectedClassReg] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [authGranted, setAuthGranted] = useState(false);
   const [authError, setAuthError] = useState(null);
@@ -320,7 +322,7 @@ export default function Admin() {
       <div className="flex">
         <AdminSidebar
           activeTab={activeTab}
-          setActiveTab={(key) => { setActiveTab(key); setSelectedBooking(null); }}
+          setActiveTab={(key) => { setActiveTab(key); setSelectedBooking(null); setSelectedClassReg(null); }}
           mobileOpen={mobileNavOpen}
           setMobileOpen={setMobileNavOpen}
           darkMode={dm}
@@ -463,10 +465,10 @@ export default function Admin() {
             darkMode={dm} />
         )}
 
-        {activeTab === 'classes' && (
+        {activeTab === 'classes' && !selectedClassReg && (
           <>
             <button
-              onClick={() => { setActiveTab('bookings'); setSelectedBooking(null); }}
+              onClick={() => { setActiveTab('bookings'); setSelectedBooking(null); setSelectedClassReg(null); }}
               className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.1em] uppercase transition-colors mb-6"
               style={{ color: '#D4A0B0' }}
               onMouseEnter={e => e.currentTarget.style.color = '#b8849a'}
@@ -477,8 +479,20 @@ export default function Admin() {
               </svg>
               Back to Appointments
             </button>
-            <ClassRegistrationsList darkMode={dm} autoExpandId={autoExpandClassRegId} />
+            <ClassRegistrationsList
+              darkMode={dm}
+              onSelect={setSelectedClassReg}
+              autoExpandId={autoExpandClassRegId}
+            />
           </>
+        )}
+
+        {activeTab === 'classes' && selectedClassReg && (
+          <ClassRegistrationDetail
+            reg={selectedClassReg}
+            onBack={() => setSelectedClassReg(null)}
+            darkMode={dm}
+          />
         )}
 
         {activeTab === 'analytics' && (
