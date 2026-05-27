@@ -113,10 +113,14 @@ export default function ServicesHero() {
           }} />
         </div>
 
-        {/* Text content — overlaid on video, not affected by scaling */}
+        {/* Text content — outside scaling container, position matches original */}
         <div
-          className="absolute inset-0 px-6 z-10"
+          className="absolute px-6 z-10"
           style={{
+            top: 'var(--nav-h)',
+            left: 0,
+            right: 0,
+            height: `calc(${vh}px - var(--nav-h))`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
