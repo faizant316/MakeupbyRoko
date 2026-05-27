@@ -36,22 +36,12 @@ export default function ServicesHero() {
   const mobileProgress = useMobileHeroProgress();
   const vh = useViewportHeight();
 
-  const setupVideoLoop = (video) => {
-    if (!video) return;
-    video.load();
-    video.currentTime = 1;
-    video.play().catch(() => {});
-    const handleTimeUpdate = () => {
-      if (video.currentTime >= 10) {
-        video.currentTime = 0;
-      }
-    };
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-  };
-
-  useEffect(() => setupVideoLoop(videoRef.current), []);
-  useEffect(() => setupVideoLoop(desktopVideoRef.current), []);
+  useEffect(() => {
+    [videoRef.current, desktopVideoRef.current].forEach(v => {
+      if (!v) return;
+      v.play().catch(() => {});
+    });
+  }, []);
 
   // Track scroll for mobile fade effect
   useEffect(() => {
@@ -93,7 +83,9 @@ export default function ServicesHero() {
             poster={POSTER_URL}
             autoPlay
             muted
+            loop
             playsInline
+            preload="auto"
             className="absolute inset-0 w-full h-full object-cover"
             style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)', display: mobileVideoFailed ? 'none' : 'block' }}
             onError={() => setMobileVideoFailed(true)}
@@ -323,7 +315,9 @@ export default function ServicesHero() {
             poster={POSTER_URL}
             autoPlay
             muted
+            loop
             playsInline
+            preload="auto"
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%',
               objectFit: 'cover', objectPosition: 'center',
