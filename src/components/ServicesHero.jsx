@@ -27,8 +27,73 @@ function useViewportHeight() {
   return vh;
 }
 
+// Two-video swap loop — the only reliable way to get a seamless loop on iOS Safari.
+// While video A is playing, video B sits loaded at t=0. When A has ~1.5s left,
+// B starts playing and fades in. A is paused and reset. They alternate forever.
+function MobileVideoLoop({ src, videoStyle, onError }) {
+  const refA = useRef(null);
+  const refB = useRef(null);
+  const activeRef = useRef('A');
+  const swapping = useRef(false);
+  const [front, setFront] = useState('A');
+
+  useEffect(() => {
+    const HANDOFF = 1.5;
+    const vA = refA.current;
+    const vB = refB.current;
+    if (!vA || !vB) return;
+
+    vA.play().catch(() => {});
+
+    const doSwap = () => {
+      if (swapping.current) return;
+      swapping.current = true;
+      const isA = activeRef.current === 'A';
+      const next = isA ? vB : vA;
+      const nextKey = isA ? 'B' : 'A';
+      next.currentTime = 0;
+      next.play().catch(() => {});
+      setFront(nextKey);
+      setTimeout(() => {
+        const prev = isA ? vA : vB;
+        prev.pause();
+        prev.currentTime = 0;
+        activeRef.current = nextKey;
+        swapping.current = false;
+      }, (HANDOFF + 0.6) * 1000);
+    };
+
+    const onTime = (e) => {
+      const active = activeRef.current === 'A' ? vA : vB;
+      if (e.target !== active || swapping.current || !e.target.duration) return;
+      if (e.target.currentTime >= e.target.duration - HANDOFF) doSwap();
+    };
+
+    vA.addEventListener('timeupdate', onTime);
+    vB.addEventListener('timeupdate', onTime);
+    return () => {
+      vA.removeEventListener('timeupdate', onTime);
+      vB.removeEventListener('timeupdate', onTime);
+    };
+  }, []);
+
+  const base = {
+    position: 'absolute', inset: 0, width: '100%', height: '100%',
+    objectFit: 'cover', transition: 'opacity 0.5s ease',
+    ...videoStyle,
+  };
+
+  return (
+    <>
+      <video ref={refA} src={src} muted playsInline preload="auto" autoPlay
+        style={{ ...base, opacity: front === 'A' ? 1 : 0 }} onError={onError} />
+      <video ref={refB} src={src} muted playsInline preload="auto"
+        style={{ ...base, opacity: front === 'B' ? 1 : 0 }} />
+    </>
+  );
+}
+
 export default function ServicesHero() {
-  const videoRef = useRef(null);
   const desktopVideoRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileVideoFailed, setMobileVideoFailed] = useState(false);
@@ -36,24 +101,8 @@ export default function ServicesHero() {
   const mobileProgress = useMobileHeroProgress();
   const vh = useViewportHeight();
 
-  // Desktop: native loop is frame-perfect on Chrome/Safari desktop
   useEffect(() => {
     desktopVideoRef.current?.play().catch(() => {});
-  }, []);
-
-  // Mobile (iOS Safari): native loop shows a black frame — manually seek back
-  // ~0.5s before the end so iOS has time to buffer the start
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.play().catch(() => {});
-    const onTimeUpdate = () => {
-      if (v.duration && v.currentTime >= v.duration - 0.5) {
-        v.currentTime = 0;
-      }
-    };
-    v.addEventListener('timeupdate', onTimeUpdate);
-    return () => v.removeEventListener('timeupdate', onTimeUpdate);
   }, []);
 
   // Track scroll for mobile fade effect
@@ -87,22 +136,14 @@ export default function ServicesHero() {
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
-          {mobileVideoFailed && (
-            <img src={POSTER_URL} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }} />
-          )}
-          <video
-            ref={videoRef}
-            src={VIDEO_URL}
-            poster={POSTER_URL}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)', display: mobileVideoFailed ? 'none' : 'block' }}
-            onError={() => setMobileVideoFailed(true)}
-          />
+          {mobileVideoFailed
+            ? <img src={POSTER_URL} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }} />
+            : <MobileVideoLoop
+                src={VIDEO_URL}
+                videoStyle={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }}
+                onError={() => setMobileVideoFailed(true)}
+              />
+          }
 
           {/* Pink tint */}
           <div className="absolute inset-0" style={{
