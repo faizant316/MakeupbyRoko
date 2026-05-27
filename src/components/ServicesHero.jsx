@@ -36,11 +36,24 @@ export default function ServicesHero() {
   const mobileProgress = useMobileHeroProgress();
   const vh = useViewportHeight();
 
+  // Desktop: native loop is frame-perfect on Chrome/Safari desktop
   useEffect(() => {
-    [videoRef.current, desktopVideoRef.current].forEach(v => {
-      if (!v) return;
-      v.play().catch(() => {});
-    });
+    desktopVideoRef.current?.play().catch(() => {});
+  }, []);
+
+  // Mobile (iOS Safari): native loop shows a black frame — manually seek back
+  // ~0.5s before the end so iOS has time to buffer the start
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.play().catch(() => {});
+    const onTimeUpdate = () => {
+      if (v.duration && v.currentTime >= v.duration - 0.5) {
+        v.currentTime = 0;
+      }
+    };
+    v.addEventListener('timeupdate', onTimeUpdate);
+    return () => v.removeEventListener('timeupdate', onTimeUpdate);
   }, []);
 
   // Track scroll for mobile fade effect
