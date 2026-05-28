@@ -15,6 +15,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const [overrideDate, setOverrideDate] = useState('');
   const [overrideCap, setOverrideCap] = useState(4);
   const [overrideSaved, setOverrideSaved] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // Calendar date click always loads into the override form (and pre-fills capacity if override exists)
   useEffect(() => {
@@ -26,18 +27,19 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
-  // Click outside the card to exit edit mode
+  // Click outside the card to exit edit mode and dismiss any pending delete confirmation
   useEffect(() => {
-    if (!overrideDate) return;
+    if (!overrideDate && !confirmDeleteId) return;
     function handleOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setOverrideDate('');
         setOverrideCap(4);
+        setConfirmDeleteId(null);
       }
     }
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
-  }, [overrideDate]);
+  }, [overrideDate, confirmDeleteId]);
 
   const { data: settings = [] } = useQuery({
     queryKey: ['app-settings'],
@@ -222,13 +224,30 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
                   <span className="px-2 py-0.5 bg-[#D4A0B0]/15 text-[#D4A0B0] text-[0.65rem] font-bold rounded-md">{o.capacity} spots</span>
                   {isActive && <span className="text-[0.6rem] font-medium" style={{ color: '#D4A0B0' }}>editing</span>}
                 </div>
-                <button onClick={e => { e.stopPropagation(); deleteOverrideMutation.mutate(o.id); }}
-                  className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-400 transition-colors" style={{ color: dm ? '#52525b' : '#ccc' }}
-                  title="Delete override">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                  </svg>
-                </button>
+                {confirmDeleteId === o.id ? (
+                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                    <span className="text-[0.65rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#666' }}>Remove?</span>
+                    <button
+                      onClick={e => { e.stopPropagation(); deleteOverrideMutation.mutate(o.id); setConfirmDeleteId(null); }}
+                      className="px-2 py-1 rounded-lg text-[0.65rem] font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors">
+                      Yes
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                      className="px-2 py-1 rounded-lg text-[0.65rem] font-medium transition-colors"
+                      style={{ color: dm ? '#71717a' : '#999', background: dm ? '#2e2e38' : '#f3f4f6' }}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={e => { e.stopPropagation(); setConfirmDeleteId(o.id); }}
+                    className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-400 transition-colors" style={{ color: dm ? '#52525b' : '#ccc' }}
+                    title="Delete override">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                  </button>
+                )}
               </div>
             );})}
 
