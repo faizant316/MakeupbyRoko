@@ -587,13 +587,13 @@ export default function BookingModal({ service: initialService, onClose }) {
                     ))}
                   </div>
                   {isEarlyArrival && (
-                    <div className="mt-2.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 flex items-start gap-2.5">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
+                    <div className="mt-2.5 bg-white border border-[#E2C4D2] rounded-xl px-3 py-2.5 flex items-start gap-2.5">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                       </svg>
                       <div>
-                        <p className="text-[0.72rem] font-semibold text-amber-700">Early Arrival Surcharge — +$100</p>
-                        <p className="text-[0.68rem] text-amber-600 mt-0.5">Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.</p>
+                        <p className="text-[0.72rem] font-semibold text-[#B0708A]">Early Arrival Surcharge — +$100</p>
+                        <p className="text-[0.68rem] text-[#C090A8] mt-0.5">Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.</p>
                       </div>
                     </div>
                   )}
@@ -637,63 +637,14 @@ export default function BookingModal({ service: initialService, onClose }) {
                     ))}
                   </div>
                   {formData.travel_requested === true && (
-                    <div className="mt-2.5 bg-[#FDF9F7] border border-[#f0ebe6] rounded-lg px-3 py-2.5 flex items-start gap-2.5">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#A0785A" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
+                    <div className="mt-2.5 bg-white border border-[#E2C4D2] rounded-xl px-3 py-2.5 flex items-start gap-2.5">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
                         <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                       </svg>
                       <div>
-                        <p className="text-[0.72rem] font-semibold text-[#A0785A]">Travel — Bridal Pricing Applies ($750+)</p>
-                        <p className="text-[0.68rem] text-[#b5a99a] mt-0.5">For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.</p>
+                        <p className="text-[0.72rem] font-semibold text-[#B0708A]">Travel — Bridal Pricing Applies ($750+)</p>
+                        <p className="text-[0.68rem] text-[#C090A8] mt-0.5">For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.</p>
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Service Dropdown */}
-                <div ref={serviceDropdownRef} className="relative">
-                  <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Service</label>
-                  <button
-                    type="button"
-                    onClick={() => setServiceDropdownOpen(!serviceDropdownOpen)}
-                    className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-[0.85rem] bg-transparent text-[#111] cursor-pointer text-left flex items-center justify-between hover:border-[#D4A0B0] transition-all rounded-none outline-none"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-[#D4A0B0] text-[0.7rem]">✦</span>
-                      {service.title} — <span className="text-gray-400">{service.price}</span>
-                    </span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${serviceDropdownOpen ? 'rotate-180' : ''}`}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </button>
-                  {serviceDropdownOpen && (
-                    <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-gray-200 py-2 z-50"
-                      style={{ animation: 'fadeSlideDown 0.15s ease-out' }}>
-                      {ALL_SERVICES.map(s => (
-                        <button
-                          key={s.key}
-                          type="button"
-                          onClick={() => { setService({ ...service, ...s }); setServiceDropdownOpen(false); }}
-                          className={`w-full flex items-center justify-between px-4 py-3 text-left text-[0.8rem] transition-colors duration-150 ${
-                            service.key === s.key
-                              ? 'bg-[#D4A0B0]/8 text-[#111] font-medium'
-                              : 'text-[#777] hover:bg-gray-50 hover:text-[#444]'
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span className={`text-[0.65rem] ${service.key === s.key ? 'text-[#D4A0B0]' : 'text-[#ddd]'}`}>✦</span>
-                            {s.title}
-                          </span>
-                          <span className="flex items-center gap-2.5">
-                            <span className="text-[0.75rem] text-gray-400">{s.price}</span>
-                            {service.key === s.key && (
-                              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-3.5 h-3.5">
-                                <polyline points="20 6 9 17 4 12"/>
-                              </svg>
-                            )}
-                          </span>
-                        </button>
-                      ))}
                     </div>
                   )}
                 </div>
