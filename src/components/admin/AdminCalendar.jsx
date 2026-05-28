@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DateBlockPopup from './DateBlockPopup';
 
@@ -212,7 +212,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates'],
-    queryFn: () => base44.entities.BlockedDate.list(),
+    queryFn: () => api.entities.BlockedDate.list(),
   });
 
   const blockedMap = {};
@@ -220,12 +220,12 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   const blockedSet = new Set(Object.keys(blockedMap));
 
   const blockMutation = useMutation({
-    mutationFn: ({ date, reason }) => base44.entities.BlockedDate.create({ date, reason }),
+    mutationFn: ({ date, reason }) => api.entities.BlockedDate.create({ date, reason }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['blocked-dates'] }); setBlockPopup(null); },
   });
 
   const unblockMutation = useMutation({
-    mutationFn: (id) => base44.entities.BlockedDate.delete(id),
+    mutationFn: (id) => api.entities.BlockedDate.delete(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['blocked-dates'] }); setBlockPopup(null); },
   });
 

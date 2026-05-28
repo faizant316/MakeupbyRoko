@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useEffect } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SETTING_KEY = 'max_bookings_per_day';
@@ -22,13 +22,13 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
 
   const { data: settings = [] } = useQuery({
     queryKey: ['app-settings'],
-    queryFn: () => base44.entities.AppSettings.filter({ key: SETTING_KEY }),
+    queryFn: () => api.entities.AppSettings.filter({ key: SETTING_KEY }),
     staleTime: 30000,
   });
 
   const { data: dayOverrides = [] } = useQuery({
     queryKey: ['day-capacities'],
-    queryFn: () => base44.entities.DayCapacity.list('-date', 60),
+    queryFn: () => api.entities.DayCapacity.list('-date', 60),
     staleTime: 30000,
   });
 
@@ -39,8 +39,8 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
 
   const saveDefaultMutation = useMutation({
     mutationFn: async (val) => {
-      if (existing) await base44.entities.AppSettings.update(existing.id, { value: String(val) });
-      else await base44.entities.AppSettings.create({ key: SETTING_KEY, value: String(val) });
+      if (existing) await api.entities.AppSettings.update(existing.id, { value: String(val) });
+      else await api.entities.AppSettings.create({ key: SETTING_KEY, value: String(val) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app-settings'] });
@@ -53,8 +53,8 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const addOverrideMutation = useMutation({
     mutationFn: async ({ date, capacity }) => {
       const existing = dayOverrides.find(d => d.date === date);
-      if (existing) await base44.entities.DayCapacity.update(existing.id, { capacity });
-      else await base44.entities.DayCapacity.create({ date, capacity });
+      if (existing) await api.entities.DayCapacity.update(existing.id, { capacity });
+      else await api.entities.DayCapacity.create({ date, capacity });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['day-capacities'] });
@@ -66,7 +66,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   });
 
   const deleteOverrideMutation = useMutation({
-    mutationFn: (id) => base44.entities.DayCapacity.delete(id),
+    mutationFn: (id) => api.entities.DayCapacity.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['day-capacities'] }),
   });
 

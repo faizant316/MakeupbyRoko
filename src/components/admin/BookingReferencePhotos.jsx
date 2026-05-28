@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState } from 'react';
+import { api } from '@/api/apiClient';
 
 export default function BookingReferencePhotos({ booking, onUpdateBooking, dm }) {
   const photos = booking.reference_photos || [];
@@ -12,10 +12,10 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
     setUploading(true);
     try {
       const uploaded = await Promise.all(
-        files.map(file => base44.integrations.Core.UploadFile({ file }).then(r => r.file_url))
+        files.map(file => api.integrations.Core.UploadFile({ file }).then(r => r.file_url))
       );
       const updated = [...photos, ...uploaded];
-      await base44.entities.Booking.update(booking.id, { reference_photos: updated });
+      await api.entities.Booking.update(booking.id, { reference_photos: updated });
       onUpdateBooking({ reference_photos: updated });
     } finally {
       setUploading(false);
@@ -25,7 +25,7 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
 
   const handleDelete = async (idx) => {
     const updated = photos.filter((_, i) => i !== idx);
-    await base44.entities.Booking.update(booking.id, { reference_photos: updated });
+    await api.entities.Booking.update(booking.id, { reference_photos: updated });
     onUpdateBooking({ reference_photos: updated });
     if (lightbox === idx) setLightbox(null);
   };

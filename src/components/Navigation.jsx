@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { base44 } from '@/api/apiClient';
+import { api } from '@/api/apiClient';
 
 export default function Navigation({ onCloseModal }) {
   const [scrolled, setScrolled] = useState(false);
@@ -9,7 +9,7 @@ export default function Navigation({ onCloseModal }) {
   const router = useRouter();
 
   useEffect(() => {
-    base44.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
+    api.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
   }, []);
 
   useEffect(() => {

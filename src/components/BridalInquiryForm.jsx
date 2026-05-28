@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import CustomSelect from './CustomSelect';
 import FullDayIncludes from './FullDayIncludes';
@@ -457,15 +457,15 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
   const { data: bridalService } = useQuery({
     queryKey: ['bridal-service'],
     queryFn: async () => {
-      const services = await base44.entities.Service.filter({ category: 'bridal', is_active: true }, 'sort_order', 1);
+      const services = await api.entities.Service.filter({ category: 'bridal', is_active: true }, 'sort_order', 1);
       return services[0] || null;
     },
     enabled: !passedService,
   });
 
-  const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => base44.entities.BlockedDate.list(), initialData: [] });
-  const { data: existingBookings = [] } = useQuery({ queryKey: ['existing-bookings-calendar'], queryFn: () => base44.entities.Booking.list('-date', 200), initialData: [], staleTime: 30000 });
-  const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => base44.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
+  const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => api.entities.BlockedDate.list(), initialData: [] });
+  const { data: existingBookings = [] } = useQuery({ queryKey: ['existing-bookings-calendar'], queryFn: () => api.entities.Booking.list('-date', 200), initialData: [], staleTime: 30000 });
+  const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
 
   const blockedSet = new Set(blockedDates.map(b => b.date));
 

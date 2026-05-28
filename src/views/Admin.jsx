@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import AdminStats from '../components/admin/AdminStats';
@@ -42,7 +42,7 @@ export default function Admin() {
   }, [darkMode]);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
+    api.auth.me().then(u => {
       if (u.full_name) setUserName(u.full_name.split(' ')[0]);
       setAuthGranted(true);
       setAuthChecked(true);
@@ -55,19 +55,19 @@ export default function Admin() {
 
   const { data: bookings = [], isLoading: loadingBookings } = useQuery({
     queryKey: ['admin-bookings'],
-    queryFn: () => base44.entities.Booking.list('-created_date', 200),
+    queryFn: () => api.entities.Booking.list('-created_date', 200),
   });
 
   const { data: capacitySettings = [] } = useQuery({
     queryKey: ['booking-capacity'],
-    queryFn: () => base44.entities.AppSettings.filter({ key: 'max_bookings_per_day' }),
+    queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }),
     staleTime: 30000,
   });
   const maxPerDay = capacitySettings[0] ? parseInt(capacitySettings[0].value, 10) : DEFAULT_CAP;
 
   const { data: dayCapacities = [] } = useQuery({
     queryKey: ['day-capacities'],
-    queryFn: () => base44.entities.DayCapacity.list('-date', 200),
+    queryFn: () => api.entities.DayCapacity.list('-date', 200),
     staleTime: 30000,
   });
   // Build a map: date -> capacity override
@@ -76,12 +76,12 @@ export default function Admin() {
 
   const { data: reviews = [], isLoading: loadingReviews } = useQuery({
     queryKey: ['admin-reviews'],
-    queryFn: () => base44.entities.Review.list('-created_date', 200),
+    queryFn: () => api.entities.Review.list('-created_date', 200),
   });
 
   const { data: classRegs = [] } = useQuery({
     queryKey: ['class-registrations-summary'],
-    queryFn: () => base44.entities.ClassRegistration.list('-created_date', 200),
+    queryFn: () => api.entities.ClassRegistration.list('-created_date', 200),
     staleTime: 30000,
   });
   const newClassRegsCount = classRegs.filter(r => r.status === 'new' || !r.status).length;
@@ -89,7 +89,7 @@ export default function Admin() {
   const recentClassRegs = classRegs.filter(r => r.created_date && r.created_date > oneDayAgo);
 
   const updateBookingMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Booking.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Booking.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       // Update the selected booking in-place so the detail view reflects the change
@@ -100,7 +100,7 @@ export default function Admin() {
   });
 
   const deleteBookingMutation = useMutation({
-    mutationFn: (id) => base44.entities.Booking.delete(id),
+    mutationFn: (id) => api.entities.Booking.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       setSelectedBooking(null);
@@ -108,12 +108,12 @@ export default function Admin() {
   });
 
   const updateReviewMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Review.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Review.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-reviews'] }),
   });
 
   const deleteReviewMutation = useMutation({
-    mutationFn: (id) => base44.entities.Review.delete(id),
+    mutationFn: (id) => api.entities.Review.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-reviews'] }),
   });
 
@@ -163,7 +163,7 @@ export default function Admin() {
           </div>
 
           <button
-            onClick={() => base44.auth.logout()}
+            onClick={() => api.auth.logout()}
             className="px-8 py-3 rounded-lg font-medium tracking-[0.08em] uppercase transition-all"
             style={{
               background: '#ef4444',
@@ -231,7 +231,7 @@ export default function Admin() {
 
           {/* Logout button for testing */}
           <button
-            onClick={() => base44.auth.logout()}
+            onClick={() => api.auth.logout()}
             className="text-[0.65rem] tracking-[0.1em] uppercase transition-colors mt-6"
             style={{ color: 'rgba(212,160,176,0.6)' }}
             onMouseEnter={e => e.currentTarget.style.color = '#D4A0B0'}
@@ -328,7 +328,7 @@ export default function Admin() {
           darkMode={dm}
           onDarkModeToggle={() => setDarkMode(d => !d)}
           onBackToSite={() => router.push('/')}
-          onLogout={() => base44.auth.logout()}
+          onLogout={() => api.auth.logout()}
         />
 
         {/* Main content */}

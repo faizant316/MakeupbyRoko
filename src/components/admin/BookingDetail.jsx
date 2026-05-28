@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useEffect } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
@@ -456,7 +456,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [mapsKey, setMapsKey] = useState('');
 
   useEffect(() => {
-    base44.functions.invoke('getMapKey', {}).then(res => setMapsKey(res.data?.key || '')).catch(() => {});
+    api.functions.invoke('getMapKey', {}).then(res => setMapsKey(res.data?.key || '')).catch(() => {});
   }, []);
 
   const showToast = (msg, color) => {
@@ -524,7 +524,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const { data: bridalInquiry } = useQuery({
     queryKey: ['bridal-inquiry', booking.email],
     queryFn: async () => {
-      const results = await base44.entities.BridalInquiry.filter({ email: booking.email }, '-created_date', 1);
+      const results = await api.entities.BridalInquiry.filter({ email: booking.email }, '-created_date', 1);
       return results[0] || null;
     },
     enabled: isBridal && !!booking.email,

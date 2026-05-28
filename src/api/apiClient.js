@@ -1,4 +1,4 @@
-/**
+﻿/**
  * API client — wraps all Supabase/backend calls used across components.
  */
 
@@ -35,7 +35,7 @@ const makeEntity = (path) => ({
   delete: (id) => apiFetch(`/api/${path}/${id}`, { method: 'DELETE' }),
 });
 
-export const base44 = {
+export const api = {
   entities: {
     Booking: makeEntity('bookings'),
     BridalInquiry: makeEntity('bridal-inquiries'),

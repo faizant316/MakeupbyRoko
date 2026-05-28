@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useEffect } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 
 const CLASS_LABELS = {
@@ -41,7 +41,7 @@ function normalizePaymentStatus(raw) {
 export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExpandId }) {
   const { data: registrations = [], isLoading } = useQuery({
     queryKey: ['class-registrations'],
-    queryFn: () => base44.entities.ClassRegistration.list('-created_date', 100),
+    queryFn: () => api.entities.ClassRegistration.list('-created_date', 100),
   });
 
   // Auto-navigate to a registration when autoExpandId is provided (e.g. from "Just Signed Up")

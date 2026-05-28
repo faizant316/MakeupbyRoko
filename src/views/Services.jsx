@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { base44 } from '@/api/apiClient';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -72,7 +72,7 @@ export default function ServicesPage() {
   const { data: serviceEntities = [], isLoading: servicesLoading, isError: servicesError } = useQuery({
     queryKey: ['public-services'],
     queryFn: async () => {
-      const all = await base44.entities.Service.list('sort_order', 50);
+      const all = await api.entities.Service.list('sort_order', 50);
       return all.filter(s => s.is_active !== false);
     },
     staleTime: 30000,

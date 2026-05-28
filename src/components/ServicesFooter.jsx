@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import InfoModal from './InfoModal';
-import { base44 } from '@/api/apiClient';
+import { api } from '@/api/apiClient';
 
 export default function ServicesFooter() {
   const currentYear = new Date().getFullYear();
@@ -10,7 +10,7 @@ export default function ServicesFooter() {
   const router = useRouter();
 
   useEffect(() => {
-    base44.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
+    api.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
   }, []);
 
   return (
