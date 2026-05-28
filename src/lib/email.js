@@ -18,6 +18,7 @@ function base(content) {
 </div>
 ${content}
 <div style="text-align:center;padding:20px 0 8px;">
+  <p style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#C4849A;margin:0 0 5px;">With love, Roko</p>
   <p style="font-size:11px;color:#999999;margin:0;">makeupbyroko22@gmail.com · @makeupbyroko_</p>
 </div>
 </div></body></html>`;
