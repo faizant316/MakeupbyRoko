@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -7,6 +7,7 @@ const DEFAULT_CAP = 3;
 
 export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const queryClient = useQueryClient();
+  const containerRef = useRef(null);
   const [defaultValue, setDefaultValue] = useState(DEFAULT_CAP);
   const [savedDefault, setSavedDefault] = useState(false);
 
@@ -15,10 +16,28 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const [overrideCap, setOverrideCap] = useState(4);
   const [overrideSaved, setOverrideSaved] = useState(false);
 
-  // Sync with selected calendar date (only if not currently editing an override)
+  // Calendar date click always loads into the override form (and pre-fills capacity if override exists)
   useEffect(() => {
-    if (selectedDate && !overrideDate) setOverrideDate(selectedDate);
+    if (!selectedDate) return;
+    setOverrideDate(selectedDate);
+    const match = dayOverrides.find(o => o.date === selectedDate);
+    if (match) setOverrideCap(match.capacity);
+    else setOverrideCap(4);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
+
+  // Click outside the card to exit edit mode
+  useEffect(() => {
+    if (!overrideDate) return;
+    function handleOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOverrideDate('');
+        setOverrideCap(4);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [overrideDate]);
 
   const { data: settings = [] } = useQuery({
     queryKey: ['app-settings'],
@@ -76,7 +95,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const isEditingExisting = overrideDate && futureOverrides.some(o => o.date === overrideDate);
 
   return (
-    <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+    <div ref={containerRef} className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
       <div className="flex items-center gap-2 mb-4">
         <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -204,7 +223,12 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
                   {isActive && <span className="text-[0.6rem] font-medium" style={{ color: '#D4A0B0' }}>editing</span>}
                 </div>
                 <button onClick={e => { e.stopPropagation(); deleteOverrideMutation.mutate(o.id); }}
-                  className="hover:text-red-400 transition-colors text-[0.75rem] px-2" style={{ color: dm ? '#52525b' : '#ccc' }}>✕</button>
+                  className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-400 transition-colors" style={{ color: dm ? '#52525b' : '#ccc' }}
+                  title="Delete override">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                </button>
               </div>
             );})}
 
