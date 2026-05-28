@@ -48,10 +48,10 @@ export default function BookingCard({ booking, onClick, darkMode: dm }) {
           </div>
         )}
       </div>
-      <span className="text-[0.75rem] font-semibold block mb-3" style={{ color: dm ? '#D4A0B0' : '#A0785A' }}>{booking.service}</span>
+      <span className="text-[0.75rem] font-semibold block mb-3" style={{ color: dm ? '#D4A0B0' : '#888' }}>{booking.service}</span>
 
       {/* Contact buttons */}
-      <div className="flex items-center gap-2 pt-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+      <div className="flex items-center gap-2 pt-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
         {booking.email && (
           <a href={`mailto:${booking.email}?subject=Appointment%20with%20Roko%20—%20${encodeURIComponent(booking.service || '')}`}
             onClick={e => e.stopPropagation()}
