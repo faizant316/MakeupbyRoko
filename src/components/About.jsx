@@ -1,5 +1,39 @@
 import { useEffect, useRef, useState } from 'react';
 
+const WORDS = ['stunning', 'radiant', 'flawless', 'glowing', 'beautiful'];
+
+function TypewriterWord({ started }) {
+  const [idx, setIdx] = useState(0);
+  const [text, setText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!started) return;
+    const word = WORDS[idx];
+    let timer;
+    if (!deleting) {
+      if (text.length < word.length) {
+        timer = setTimeout(() => setText(word.slice(0, text.length + 1)), 58);
+      } else {
+        timer = setTimeout(() => setDeleting(true), 1350);
+      }
+    } else {
+      if (text.length > 0) {
+        timer = setTimeout(() => setText(t => t.slice(0, -1)), 36);
+      } else {
+        timer = setTimeout(() => { setIdx(i => (i + 1) % WORDS.length); setDeleting(false); }, 200);
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [text, deleting, idx, started]);
+
+  return (
+    <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>
+      {text || ' '}
+    </em>
+  );
+}
+
 export default function About() {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -81,7 +115,7 @@ export default function About() {
               }}
             >
               Making every woman feel genuinely{' '}
-              <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>stunning.</em>
+              <TypewriterWord started={visible} />.
             </h2>
 
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
