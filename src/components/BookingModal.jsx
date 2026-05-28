@@ -721,17 +721,17 @@ export default function BookingModal({ service: initialService, onClose }) {
 
               {/* Header */}
               <div className="text-center py-2 flex flex-col items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-[#F7EEF2] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-full bg-[#FDF0F5] flex items-center justify-center">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-5 h-5">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
                 <div>
                   <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Booking Request Received</p>
-                  <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
+                  <h3 className="font-serif text-[1.9rem] font-light text-[#111111] mb-1 leading-tight">
                     Hey {formData.fname}, <em className="italic text-[#C4849A]">Request Received!</em>
                   </h3>
-                  <p className="font-serif italic text-[#A0785A] text-[0.9rem]">Can't wait to glam you up ✦</p>
+                  <p className="font-serif italic text-[#888888] text-[0.9rem]">Can't wait to glam you up ✦</p>
                 </div>
                 {formData.email && (
                   <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
@@ -744,79 +744,79 @@ export default function BookingModal({ service: initialService, onClose }) {
               </div>
 
               {/* Booking summary */}
-              <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+              <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
                 <div className="px-5 pt-4 pb-1">
                   <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Booking Summary</p>
                 </div>
                 <div className="px-5 pb-2">
-                  <div className="flex justify-between py-3 border-b border-[#F5EFE9]">
-                    <span className="text-[0.78rem] text-[#9E8E84]">Service</span>
-                    <span className="text-[0.82rem] font-semibold text-[#2C1A14]">{service.title}</span>
+                  <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                    <span className="text-[0.78rem] text-[#888888]">Service</span>
+                    <span className="text-[0.82rem] font-semibold text-[#111111]">{service.title}</span>
                   </div>
-                  <div className="flex justify-between py-3 border-b border-[#F5EFE9]">
-                    <span className="text-[0.78rem] text-[#9E8E84]">Base Price</span>
-                    <span className="text-[0.82rem] font-semibold text-[#2C1A14]">{formData.travel_requested === true ? '$750+' : service.price}</span>
+                  <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                    <span className="text-[0.78rem] text-[#888888]">Base Price</span>
+                    <span className="text-[0.82rem] font-semibold text-[#111111]">{formData.travel_requested === true ? '$750+' : service.price}</span>
                   </div>
                   {formData.travel_requested === true && (
-                    <div className="flex justify-between py-3 border-b border-[#F5EFE9]">
-                      <span className="text-[0.78rem] text-[#A0785A]">Travel fee (bridal pricing)</span>
-                      <span className="text-[0.78rem] font-semibold text-[#A0785A]">$750+</span>
+                    <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                      <span className="text-[0.78rem] text-[#888888]">Travel fee (bridal pricing)</span>
+                      <span className="text-[0.78rem] font-semibold text-[#888888]">$750+</span>
                     </div>
                   )}
                   {isEarlyArrival && (
-                    <div className="flex justify-between py-3 border-b border-[#F5EFE9]">
-                      <span className="text-[0.78rem] text-amber-700">Early arrival (before 7 AM)</span>
-                      <span className="text-[0.78rem] font-semibold text-amber-700">+ $100</span>
+                    <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                      <span className="text-[0.78rem] text-[#C4849A]">Early arrival (before 7 AM)</span>
+                      <span className="text-[0.78rem] font-semibold text-[#C4849A]">+ $100</span>
                     </div>
                   )}
                   {(isEarlyArrival || formData.travel_requested === true) && (
-                    <div className="flex justify-between py-3 border-b border-[#F5EFE9] bg-gray-50 -mx-5 px-5">
-                      <span className="text-[0.78rem] font-semibold text-[#2C1A14]">Estimated Total</span>
-                      <span className="text-[0.82rem] font-bold text-[#2C1A14]">
+                    <div className="flex justify-between py-3 border-b border-[#F5E8EF] bg-[#FDF8FA] -mx-5 px-5">
+                      <span className="text-[0.78rem] font-semibold text-[#111111]">Estimated Total</span>
+                      <span className="text-[0.82rem] font-bold text-[#111111]">
                         {formData.travel_requested === true && isEarlyArrival ? '$850+' : formData.travel_requested === true ? '$750+' : `${service.price} + $100`}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between py-3 border-b border-[#F5EFE9]">
-                    <span className="text-[0.78rem] text-[#9E8E84]">Requested Date</span>
-                    <span className="text-[0.82rem] font-semibold text-[#2C1A14]">
+                  <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                    <span className="text-[0.78rem] text-[#888888]">Requested Date</span>
+                    <span className="text-[0.82rem] font-semibold text-[#111111]">
                       {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                   </div>
                   <div className="flex justify-between py-3">
-                    <span className="text-[0.78rem] text-[#9E8E84]">Confirmation sent to</span>
-                    <span className="text-[0.78rem] text-[#A0785A] truncate ml-4 text-right">{formData.email}</span>
+                    <span className="text-[0.78rem] text-[#888888]">Confirmation sent to</span>
+                    <span className="text-[0.78rem] text-[#888888] truncate ml-4 text-right">{formData.email}</span>
                   </div>
                 </div>
-                <div className="mx-5 mb-4 px-3.5 py-2.5 bg-[#FDF7F4] rounded-xl border-l-[3px] border-[#D4A0B0]">
-                  <p className="text-[0.72rem] text-[#A0785A] leading-relaxed">Roko will confirm your appointment time within 24–48 hours</p>
+                <div className="mx-5 mb-4 px-3.5 py-2.5 bg-[#FDF8FA] rounded-xl border-l-[3px] border-[#E8C4D0]">
+                  <p className="text-[0.72rem] text-[#888888] leading-relaxed">Roko will confirm your appointment time within 24–48 hours</p>
                 </div>
               </div>
 
               {/* Zelle deposit */}
-              <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
-                <div className="px-5 pt-4 pb-3 border-b border-[#F5EFE9]">
+              <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
+                <div className="px-5 pt-4 pb-3 border-b border-[#F5E8EF]">
                   <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-0.5">Send Your Zelle Deposit</p>
-                  <p className="text-[0.72rem] text-[#9E8E84]">Send your deposit to lock in your date</p>
+                  <p className="text-[0.72rem] text-[#888888]">Send your deposit to lock in your date</p>
                 </div>
                 <div className="px-5 py-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[0.95rem] font-serif font-light text-[#2C1A14]">Ruqia Moshref</p>
-                      <p className="text-[0.75rem] text-[#9E8E84] mt-0.5">510-491-6497</p>
+                      <p className="text-[0.95rem] font-serif font-light text-[#111111]">Ruqia Moshref</p>
+                      <p className="text-[0.75rem] text-[#888888] mt-0.5">510-491-6497</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[0.68rem] text-[#9E8E84]">Deposit amount</p>
-                      <p className="text-[1rem] font-semibold text-[#2C1A14]">{service.deposit || 'See deposit'}</p>
+                      <p className="text-[0.68rem] text-[#888888]">Deposit amount</p>
+                      <p className="text-[1rem] font-semibold text-[#111111]">{service.deposit || 'See deposit'}</p>
                     </div>
                   </div>
-                  <div className="bg-[#FDF7F4] rounded-xl px-4 py-3 border border-[#EDE6DF]">
-                    <p className="text-[0.72rem] text-[#6E6058] leading-relaxed">
-                      Include your <strong className="text-[#2C1A14]">name</strong> + <strong className="text-[#2C1A14]">appointment date</strong> in the Zelle note
+                  <div className="bg-[#FDF8FA] rounded-xl px-4 py-3 border border-[#F0E0E9]">
+                    <p className="text-[0.72rem] text-[#444444] leading-relaxed">
+                      Include your <strong className="text-[#111111]">name</strong> + <strong className="text-[#111111]">appointment date</strong> in the Zelle note
                     </p>
                   </div>
-                  <p className="text-[0.68rem] text-[#B8A8A0] text-center">
-                    Remaining balance due in <strong className="text-[#6E6058]">cash</strong> on appointment day
+                  <p className="text-[0.68rem] text-[#999999] text-center">
+                    Remaining balance due in <strong className="text-[#444444]">cash</strong> on appointment day
                   </p>
                 </div>
               </div>
@@ -827,22 +827,22 @@ export default function BookingModal({ service: initialService, onClose }) {
               )}
 
               {/* What's next */}
-              <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-4">
+              <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4">
                 <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-2">What's Next</p>
-                <p className="text-[0.82rem] text-[#6E6058] leading-[1.75]">
-                  Send your Zelle deposit to secure your date. Roko will reach out within <strong className="text-[#2C1A14]">24–48 hours</strong> to confirm your appointment time.
+                <p className="text-[0.82rem] text-[#444444] leading-[1.75]">
+                  Send your Zelle deposit to secure your date. Roko will reach out within <strong className="text-[#111111]">24–48 hours</strong> to confirm your appointment time.
                 </p>
               </div>
 
               {/* Sign off */}
-              <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-5 text-center">
-                <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko</p>
-                <p className="text-[0.7rem] text-[#B8A8A0]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+              <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
+                <p className="font-serif italic text-[#C4849A] text-[1.1rem] mb-1">With love, Roko</p>
+                <p className="text-[0.7rem] text-[#999999]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
               </div>
 
               <div className="flex justify-center pb-2">
                 <button onClick={onClose}
-                  className="px-8 py-3 rounded-xl border border-[#EDE6DF] text-[0.8rem] font-medium text-[#9E8E84] hover:border-[#2C1A14] hover:text-[#2C1A14] transition-all">
+                  className="px-8 py-3 rounded-xl border border-[#F0E0E9] text-[0.8rem] font-medium text-[#888888] hover:border-[#111111] hover:text-[#111111] transition-all">
                   Close
                 </button>
               </div>
