@@ -464,18 +464,12 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
   });
 
   const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => api.entities.BlockedDate.list(), initialData: [] });
-  const { data: existingBookings = [] } = useQuery({ queryKey: ['existing-bookings-calendar'], queryFn: () => api.entities.Booking.list('-date', 200), initialData: [], staleTime: 30000 });
+  // Confirmed booking counts per date — public endpoint, no auth required
+  const { data: bookedDateMap = {} } = useQuery({ queryKey: ['booking-counts'], queryFn: () => fetch('/api/booking-counts').then(r => r.json()), initialData: {}, staleTime: 30000 });
   const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
   const { data: dayCapacities = [] } = useQuery({ queryKey: ['day-capacities'], queryFn: () => api.entities.DayCapacity.list('-date', 200), staleTime: 30000 });
 
   const blockedSet = new Set(blockedDates.map(b => b.date));
-
-  // Only confirmed bookings count as a taken slot (pending/completed/cancelled do not block dates)
-  const bookedDateMap = {};
-  existingBookings.forEach(b => {
-    if (!b.date || b.status !== 'confirmed') return;
-    bookedDateMap[b.date] = (bookedDateMap[b.date] || 0) + 1;
-  });
   const DEFAULT_MAX = capacitySettings[0] ? parseInt(capacitySettings[0].value, 10) : 3;
   const dayCapacityMap = {};
   dayCapacities.forEach(d => { dayCapacityMap[d.date] = d.capacity; });

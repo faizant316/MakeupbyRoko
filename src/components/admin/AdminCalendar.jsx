@@ -64,7 +64,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
     <button
       onClick={() => { if (!isBlocked) onSingleClick(key); }}
       onDoubleClick={(e) => { e.preventDefault(); if (isBlocked) onUnblock(blockedMap[key]?.id); else onDoubleClick(key); }}
-      title={isBlocked ? 'Double-click to unblock' : isFull ? `Fully booked (${count} appointments)` : isFillingUp ? `${spotsLeft} spot${spotsLeft > 1 ? 's' : ''} left` : 'Click to select · Double-click to block'}
+      title={isBlocked ? 'Double-click to unblock' : 'Click to select · Double-click to block'}
       className={`relative h-10 sm:h-14 w-full min-w-0 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all duration-150 select-none group ${
         isBlocked
           ? dm ? '' : 'bg-red-50 border border-red-200 hover:bg-red-100'
