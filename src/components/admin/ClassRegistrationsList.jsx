@@ -26,9 +26,9 @@ const ENROLLMENT_STYLES = {
 };
 
 const PAYMENT_META = {
-  unpaid:   { label: 'Unpaid',   color: '#b45309', bg: 'rgba(245,158,11,0.1)'  },
-  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(34,197,94,0.1)'   },
-  refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'   },
+  unpaid:   { label: 'Unpaid',   color: '#C4849A', bg: 'rgba(212,160,176,0.14)' },
+  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(34,197,94,0.1)'    },
+  refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'    },
 };
 
 function normalizePaymentStatus(raw) {
@@ -54,14 +54,14 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   }, [autoExpandId, registrations.length]);
 
   const cardBg     = dm ? '#1e1e24' : '#fff';
-  const cardBorder = dm ? '#3a3a48' : '#e8e2dc';
+  const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
   const textMain   = dm ? '#F0EBE6' : '#111';
   const textMuted  = dm ? '#71717a' : '#999';
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-[#e8e2dc] border-t-[#A0785A] rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#e5e5e5] border-t-[#D4A0B0] rounded-full animate-spin" />
       </div>
     );
   }
@@ -69,10 +69,10 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   if (registrations.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="font-serif text-[1.1rem] mb-2" style={{ color: dm ? '#71717a' : '#b5a99a' }}>
+        <p className="font-serif text-[1.1rem] mb-2" style={{ color: dm ? '#71717a' : '#999' }}>
           No class registrations yet
         </p>
-        <p className="text-[0.75rem]" style={{ color: dm ? '#52525b' : '#d4c8c0' }}>
+        <p className="text-[0.75rem]" style={{ color: dm ? '#52525b' : '#ccc' }}>
           Registrations from the website will appear here
         </p>
       </div>
@@ -83,7 +83,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     <div>
       {/* Summary row */}
       <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <p className="text-[0.65rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#71717a' : '#b5a99a' }}>
+        <p className="text-[0.65rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#71717a' : '#999' }}>
           {registrations.length} registration{registrations.length !== 1 ? 's' : ''}
         </p>
         {Object.entries(ENROLLMENT_STYLES).map(([s, meta]) => {
@@ -177,7 +177,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
               </div>
 
               {/* Class names */}
-              <p className="text-[0.72rem] font-semibold mb-2.5" style={{ color: dm ? '#D4A0B0' : '#A0785A' }}>
+              <p className="text-[0.72rem] font-semibold mb-2.5" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
                 {selectedClasses.length > 0
                   ? selectedClasses.map(([, l]) => l).join(' · ')
                   : 'No classes selected'}
@@ -191,7 +191,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
               {/* Footer: payment badge + quick contact */}
               <div
                 className="flex items-center gap-2 pt-2.5"
-                style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}
+                style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}
               >
                 <span
                   className="text-[0.58rem] font-semibold tracking-[0.08em] uppercase px-2.5 py-0.5 rounded-full"
