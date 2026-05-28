@@ -302,10 +302,10 @@ export function adminBookingEmail({ name, service, date, email, phone, bookingTy
 
 export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, eventLocation, eventStartTime, venueAccessTime, numPeopleGlam, outOfState }) {
   return base(`
-    <div style="background:linear-gradient(135deg,#FDF0F5,#F7D8E5);border-radius:14px;padding:20px;margin-bottom:10px;text-align:center;">
+    <div style="background:#C4849A;border-radius:14px;padding:20px;margin-bottom:10px;text-align:center;">
       <p style="font-size:28px;margin:0 0 8px;">💍</p>
-      <h2 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#111111;margin:0 0 4px;">New Bridal Inquiry</h2>
-      <p style="font-size:13px;color:#444444;margin:0;"><strong>${firstName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
+      <h2 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#ffffff;margin:0 0 4px;">New Bridal Inquiry</h2>
+      <p style="font-size:13px;color:rgba(255,255,255,0.85);margin:0;"><strong>${firstName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
     </div>
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
@@ -325,7 +325,7 @@ export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDa
         ${eventStartTime ? row('Event Starts', eventStartTime) : ''}
         ${venueAccessTime ? row('Venue Access', venueAccessTime) : ''}
         ${numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : ''}
-        ${outOfState !== undefined ? row('Out of State', outOfState ? '✈️ Yes' : '📍 No — Local') : ''}
+        ${outOfState !== undefined ? row('Out of State', outOfState ? 'Yes' : 'No, local') : ''}
       </table>
     </div>
     ${card(`
