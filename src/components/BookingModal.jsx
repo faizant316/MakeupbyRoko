@@ -38,9 +38,8 @@ function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick
       title={
         isBlocked ? 'Blocked'
         : isFull ? 'Fully booked'
-        : isPartial ? `${maxPerDay - bookingCount} spot${maxPerDay - bookingCount > 1 ? 's' : ''} left`
         : unavailable ? 'Unavailable'
-        : 'Available'
+        : undefined
       }
       className={`w-full aspect-square max-w-[2.75rem] flex flex-col items-center justify-center text-[0.875rem] transition-all relative rounded-none ${
         isBlocked
@@ -108,10 +107,10 @@ export default function BookingModal({ service: initialService, onClose }) {
     staleTime: 30000,
   });
 
-  // Build a map: date -> count of all active bookings (pending + confirmed + completed all take a slot)
+  // Only confirmed bookings count as a taken slot (pending/completed/cancelled do not block dates)
   const bookedDateMap = {};
   existingBookings.forEach(b => {
-    if (!b.date || b.status === 'cancelled') return;
+    if (!b.date || b.status !== 'confirmed') return;
     bookedDateMap[b.date] = (bookedDateMap[b.date] || 0) + 1;
   });
 
