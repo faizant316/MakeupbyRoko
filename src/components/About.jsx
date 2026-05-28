@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const WORDS = ['stunning', 'radiant', 'flawless', 'glowing', 'beautiful'];
+const WORDS = ['stunning', 'beautiful', 'flawless'];
 
 function TypewriterWord({ started }) {
   const [idx, setIdx] = useState(0);
@@ -13,24 +13,39 @@ function TypewriterWord({ started }) {
     let timer;
     if (!deleting) {
       if (text.length < word.length) {
-        timer = setTimeout(() => setText(word.slice(0, text.length + 1)), 58);
+        timer = setTimeout(() => setText(word.slice(0, text.length + 1)), 85);
       } else {
-        timer = setTimeout(() => setDeleting(true), 1350);
+        timer = setTimeout(() => setDeleting(true), 1600);
       }
     } else {
       if (text.length > 0) {
-        timer = setTimeout(() => setText(t => t.slice(0, -1)), 36);
+        timer = setTimeout(() => setText(t => t.slice(0, -1)), 70);
       } else {
-        timer = setTimeout(() => { setIdx(i => (i + 1) % WORDS.length); setDeleting(false); }, 200);
+        timer = setTimeout(() => { setIdx(i => (i + 1) % WORDS.length); setDeleting(false); }, 320);
       }
     }
     return () => clearTimeout(timer);
   }, [text, deleting, idx, started]);
 
   return (
-    <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>
-      {text || ' '}
-    </em>
+    <>
+      <style>{`
+        @keyframes tw-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .tw-cursor {
+          display: inline-block;
+          width: 1.5px;
+          height: 0.82em;
+          background: #D4A0B0;
+          margin-left: 2px;
+          margin-right: 1px;
+          vertical-align: text-bottom;
+          animation: tw-blink 0.9s step-end infinite;
+        }
+      `}</style>
+      <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>{text}</em>
+      <span className="tw-cursor" />
+      <span style={{ color: '#D4A0B0' }}>.</span>
+    </>
   );
 }
 
@@ -60,7 +75,7 @@ export default function About() {
     >
       <div className="max-w-[1200px] mx-auto">
 
-        {/* Section label — above everything */}
+        {/* Section label */}
         <div
           className="flex items-center gap-2.5 mb-8"
           style={{
@@ -115,7 +130,7 @@ export default function About() {
               }}
             >
               Making every woman feel genuinely{' '}
-              <TypewriterWord started={visible} />.
+              <TypewriterWord started={visible} />
             </h2>
 
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
