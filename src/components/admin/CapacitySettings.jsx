@@ -15,9 +15,9 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const [overrideCap, setOverrideCap] = useState(4);
   const [overrideSaved, setOverrideSaved] = useState(false);
 
-  // Sync with selected calendar date
+  // Sync with selected calendar date (only if not currently editing an override)
   useEffect(() => {
-    if (selectedDate) setOverrideDate(selectedDate);
+    if (selectedDate && !overrideDate) setOverrideDate(selectedDate);
   }, [selectedDate]);
 
   const { data: settings = [] } = useQuery({
@@ -73,6 +73,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   // Only show future overrides
   const today = new Date().toISOString().split('T')[0];
   const futureOverrides = dayOverrides.filter(o => o.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const isEditingExisting = overrideDate && futureOverrides.some(o => o.date === overrideDate);
 
   return (
     <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
@@ -120,13 +121,20 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
 
       {/* Per-day override */}
       <div className="flex items-center gap-2 mb-3">
-        <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Set Override for a Specific Date</p>
-        {selectedDate && (
+        <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+          {isEditingExisting ? 'Edit Override' : 'Set Override for a Specific Date'}
+        </p>
+        {isEditingExisting && (
+          <span className="px-2.5 py-1 text-[0.6rem] font-semibold rounded-md tracking-wide" style={{ background: '#D4A0B0', color: '#fff' }}>
+            {new Date(overrideDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+        )}
+        {selectedDate && !isEditingExisting && (
           <span className="px-2.5 py-1 bg-[#111] text-white text-[0.6rem] font-semibold rounded-md tracking-wide">
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
         )}
-        {!selectedDate && (
+        {!selectedDate && !overrideDate && (
           <span className="text-[0.65rem] italic" style={{ color: dm ? '#52525b' : '#bbb' }}>← click a date on the calendar</span>
         )}
       </div>
@@ -168,7 +176,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
           className={`px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all ${
             !overrideDate ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#D4A0B0] text-white hover:bg-[#c990a2] shadow-sm'
           }`}>
-          {overrideSaved ? '✓ Saved' : '+ Set Override'}
+          {overrideSaved ? '✓ Saved' : isEditingExisting ? 'Update Override' : '+ Set Override'}
         </button>
       </div>
 
@@ -177,19 +185,29 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
         <div className="mt-4">
           <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: dm ? '#52525b' : '#bbb' }}>Active Overrides</p>
           <div className="flex flex-col gap-1.5">
-            {futureOverrides.map(o => (
-              <div key={o.id} className="flex items-center justify-between px-3 py-2 rounded-xl"
-                style={{ background: dm ? '#1e1e24' : '#FDF9F7', border: `1px solid ${dm ? '#3a3a48' : '#f0e8e0'}` }}>
+            {futureOverrides.map(o => {
+              const isActive = overrideDate === o.date;
+              return (
+              <div key={o.id}
+                onClick={() => { setOverrideDate(o.date); setOverrideCap(o.capacity); }}
+                className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all"
+                style={{
+                  background: isActive ? (dm ? '#2e2030' : '#FDF0F7') : (dm ? '#1e1e24' : '#FDF9F7'),
+                  border: `1px solid ${isActive ? '#D4A0B0' : (dm ? '#3a3a48' : '#f0e8e0')}`,
+                  boxShadow: isActive ? '0 0 0 1px #D4A0B0' : 'none',
+                }}>
                 <div className="flex items-center gap-3">
                   <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#111' }}>
                     {new Date(o.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                   <span className="px-2 py-0.5 bg-[#D4A0B0]/15 text-[#D4A0B0] text-[0.65rem] font-bold rounded-md">{o.capacity} spots</span>
+                  {isActive && <span className="text-[0.6rem] font-medium" style={{ color: '#D4A0B0' }}>editing</span>}
                 </div>
-                <button onClick={() => deleteOverrideMutation.mutate(o.id)}
+                <button onClick={e => { e.stopPropagation(); deleteOverrideMutation.mutate(o.id); }}
                   className="hover:text-red-400 transition-colors text-[0.75rem] px-2" style={{ color: dm ? '#52525b' : '#ccc' }}>✕</button>
               </div>
-            ))}
+            );})}
+
           </div>
         </div>
       )}
