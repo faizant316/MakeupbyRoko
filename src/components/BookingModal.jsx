@@ -99,19 +99,12 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   const blockedSet = new Set(blockedDates.map(b => b.date));
 
-  // Fetch existing bookings to show booked/busy dates
-  const { data: existingBookings = [] } = useQuery({
-    queryKey: ['existing-bookings-calendar'],
-    queryFn: () => api.entities.Booking.list('-date', 200),
-    initialData: [],
+  // Confirmed booking counts per date — public endpoint, no auth required
+  const { data: bookedDateMap = {} } = useQuery({
+    queryKey: ['booking-counts'],
+    queryFn: () => fetch('/api/booking-counts').then(r => r.json()),
+    initialData: {},
     staleTime: 30000,
-  });
-
-  // Only confirmed bookings count as a taken slot (pending/completed/cancelled do not block dates)
-  const bookedDateMap = {};
-  existingBookings.forEach(b => {
-    if (!b.date || b.status !== 'confirmed') return;
-    bookedDateMap[b.date] = (bookedDateMap[b.date] || 0) + 1;
   });
 
   // Fetch dynamic capacity setting
