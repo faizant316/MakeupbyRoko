@@ -53,25 +53,38 @@ function FAQItem({ item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border-b border-[#f0ebe6] last:border-b-0">
+    <div>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-start justify-between gap-4 py-3.5 text-left group"
+        className="w-full flex items-center justify-between gap-4 py-3.5 text-left group"
       >
-        <span className="text-[0.82rem] text-[#333] font-medium leading-snug group-hover:text-[#111] transition-colors">
+        <span className={`text-[0.82rem] font-medium leading-snug transition-colors duration-200 ${open ? 'text-[#111]' : 'text-[#444] group-hover:text-[#111]'}`}>
           {item.q}
         </span>
-        <span className={`flex-shrink-0 w-5 h-5 rounded-full border border-[#e8e2dc] flex items-center justify-center text-[#bbb] text-[0.7rem] transition-all duration-200 ${open ? 'bg-[#111] border-[#111] text-white rotate-45' : 'group-hover:border-[#D4A0B0] group-hover:text-[#D4A0B0]'}`}>
-          +
+        <span className={`flex-shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-200 ${
+          open
+            ? 'bg-[#111] border-[#111] text-white'
+            : 'border-[#ddd] text-[#999] group-hover:border-[#D4A0B0] group-hover:text-[#D4A0B0]'
+        }`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`w-3 h-3 transition-transform duration-300 ${open ? 'rotate-45' : ''}`}>
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
         </span>
       </button>
       <div
-        className={`overflow-hidden transition-all duration-250 ease-in-out ${open ? 'max-h-[300px] opacity-100 pb-4' : 'max-h-0 opacity-0'}`}
+        style={{
+          display: 'grid',
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease',
+          opacity: open ? 1 : 0,
+        }}
       >
-        <p className="text-[0.78rem] text-[#888] leading-[1.7] pl-0 pr-6 whitespace-pre-line">
-          {item.a}
-        </p>
+        <div style={{ overflow: 'hidden' }}>
+          <p className="text-[0.78rem] text-[#666] leading-[1.8] pb-4 pr-6 whitespace-pre-line">
+            {item.a}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -84,7 +97,7 @@ export default function ServiceFAQ({ service }) {
   return (
     <div>
       <h4 className="font-serif text-[1rem] text-[#111] mb-3">Common Questions</h4>
-      <div className="bg-[#FDFBF9] rounded-xl border border-[#f0ebe6] px-5">
+      <div className="bg-[#F5F5F5] rounded-xl px-5 divide-y divide-[#EEE8E2]">
         {faqs.map((item, idx) => (
           <FAQItem key={idx} item={item} />
         ))}

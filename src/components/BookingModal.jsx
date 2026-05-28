@@ -399,9 +399,9 @@ export default function BookingModal({ service: initialService, onClose }) {
               </div>
 
               {/* 30-day notice */}
-              <div className="bg-[#FDF9F7] border border-[#f0ebe6] rounded-lg px-4 py-2.5 mb-3 relative z-10">
-                <p className="text-[0.72rem] text-[#A0785A]">
-                  Bookings must be made at least <strong>30 days in advance</strong>. Earliest available: <strong>{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+              <div className="bg-white border border-[#E2C4D2] rounded-xl px-4 py-2.5 mb-3 relative z-10">
+                <p className="text-[0.72rem] text-[#888]">
+                  Bookings must be made at least <strong className="text-[#555]">30 days in advance</strong>. Earliest available: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
                 </p>
               </div>
 
@@ -660,29 +660,33 @@ export default function BookingModal({ service: initialService, onClose }) {
 
                 <div className="mt-auto pt-2">
                   {(isEarlyArrival || formData.travel_requested === true) && (
-                    <div className="mb-3 flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
-                      <span className="text-[0.72rem] text-gray-500">Base price</span>
-                      <span className="text-[0.72rem] text-gray-700 font-medium">
-                        {formData.travel_requested === true ? '$750+' : service.price}
-                      </span>
-                    </div>
-                  )}
-                  {formData.travel_requested === true && (
-                    <div className="mb-3 flex items-center justify-between px-3 py-2 bg-[#FDF9F7] rounded-lg border border-[#f0ebe6]">
-                      <span className="text-[0.72rem] text-[#A0785A]">Travel fee (bridal pricing)</span>
-                      <span className="text-[0.72rem] text-[#A0785A] font-semibold">$750+</span>
-                    </div>
-                  )}
-                  {isEarlyArrival && (
-                    <div className="mb-3 flex items-center justify-between px-3 py-2 bg-amber-50 rounded-lg border border-amber-100">
-                      <span className="text-[0.72rem] text-amber-700">Early arrival fee (before 7 AM)</span>
-                      <span className="text-[0.72rem] text-amber-700 font-semibold">+ $100</span>
-                    </div>
-                  )}
-                  {isEarlyArrival && formData.travel_requested === true && (
-                    <div className="mb-3 flex items-center justify-between px-3 py-2 bg-gray-100 rounded-lg border border-gray-200">
-                      <span className="text-[0.72rem] text-gray-600 font-semibold">Estimated Total</span>
-                      <span className="text-[0.72rem] text-gray-800 font-bold">$850+</span>
+                    <div className="mb-3 rounded-xl border border-[#E2C4D2] overflow-hidden">
+                      {isEarlyArrival && !formData.travel_requested && (
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#EDD5E2]">
+                          <span className="text-[0.72rem] text-gray-500">Base price</span>
+                          <span className="text-[0.72rem] text-gray-600 font-medium">{service.price}</span>
+                        </div>
+                      )}
+                      {formData.travel_requested === true && (
+                        <div className={`flex items-center justify-between px-4 py-2.5 bg-[#FBF4F7]${isEarlyArrival ? ' border-b border-[#EDD5E2]' : ''}`}>
+                          <span className="text-[0.72rem] text-[#B0708A]">Bridal pricing applies (travel)</span>
+                          <span className="text-[0.72rem] text-[#B0708A] font-semibold">$750+</span>
+                        </div>
+                      )}
+                      {isEarlyArrival && (
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-[#FBF4F7] border-b border-[#EDD5E2]">
+                          <span className="text-[0.72rem] text-[#B0708A]">Early arrival fee</span>
+                          <span className="text-[0.72rem] text-[#B0708A] font-semibold">+ $100</span>
+                        </div>
+                      )}
+                      {isEarlyArrival && (
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-white">
+                          <span className="text-[0.72rem] text-[#111] font-semibold">Estimated Total</span>
+                          <span className="text-[0.72rem] text-[#111] font-bold">
+                            {formData.travel_requested ? '$850+' : `${service.price} + $100`}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                   <button type="submit"
