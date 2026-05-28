@@ -993,7 +993,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             </div>
 
             {form.out_of_state === true && (
-              <div className="mt-3 bg-[#FDF9F7] border border-[#f0ebe6] rounded-xl p-4 flex flex-col gap-2">
+              <div className="mt-3 bg-white border border-[#E2C4D2] rounded-xl p-4 flex flex-col gap-2">
                 <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-0.5">Out-of-State Requirements</p>
                 <p className="text-[0.75rem] text-[#555] leading-[1.7]">
                   Roko loves destination events! For out-of-state bookings, the following are required and must be covered by the client:
@@ -1012,7 +1012,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                     <span><strong>Add-on person fee</strong> — Roko does not travel alone</span>
                   </li>
                 </ul>
-                <div className="mt-2 pt-2.5 border-t border-[#f0ebe6]">
+                <div className="mt-2 pt-2.5 border-t border-[#EDD5E2]">
                   <p className="text-[0.72rem] text-[#999]">
                     For pricing & details on out-of-state bookings, email us at{' '}
                     <a href="mailto:makeupbyroko22@gmail.com" className="text-[#D4A0B0] hover:underline font-medium">makeupbyroko22@gmail.com</a>
