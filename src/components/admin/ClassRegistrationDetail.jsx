@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -26,9 +26,9 @@ const ENROLLMENT_STATUSES = {
 };
 
 const PAYMENT_META = {
-  unpaid:   { label: 'Unpaid',   color: '#b45309', bg: 'rgba(245,158,11,0.1)'  },
-  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(34,197,94,0.1)'   },
-  refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'   },
+  unpaid:   { label: 'Unpaid',   color: '#C4849A', bg: 'rgba(212,160,176,0.14)' },
+  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(34,197,94,0.1)'    },
+  refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'    },
 };
 
 function normalizePaymentStatus(raw) {
@@ -48,7 +48,7 @@ function ConfirmModal({ modal, onCancel, onConfirm, dm }) {
     >
       <div
         className="rounded-xl shadow-2xl p-7 max-w-[340px] w-full text-center"
-        style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}
+        style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}
         onClick={e => e.stopPropagation()}
       >
         <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
@@ -60,7 +60,7 @@ function ConfirmModal({ modal, onCancel, onConfirm, dm }) {
         <div className="flex gap-3 justify-center">
           <button onClick={onCancel}
             className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
-            style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}>
+            style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
             Never Mind
           </button>
           <button onClick={onConfirm}
@@ -80,12 +80,25 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const [editDate, setEditDate] = useState(reg.appointment_date || '');
   const [editTime, setEditTime] = useState(reg.appointment_time || '');
   const [confirmModal, setConfirmModal] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimer = useRef(null);
+
+  const showToast = (msg, color) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message: msg, color });
+    setToastVisible(true);
+    toastTimer.current = setTimeout(() => {
+      setToastVisible(false);
+      setTimeout(() => setToast(null), 500);
+    }, 1800);
+  };
 
   const cardBg    = dm ? '#26262e' : '#fff';
-  const cardBorder = dm ? '#3a3a48' : '#e8e2dc';
+  const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
   const textMain  = dm ? '#e4e4e7' : '#111';
-  const textMuted = dm ? '#71717a' : '#b5a99a';
-  const sectionBg = dm ? '#1e1e24' : '#FAF8F6';
+  const textMuted = dm ? '#71717a' : '#999';
+  const sectionBg = dm ? '#1e1e24' : '#fafafa';
 
   const updateMutation = useMutation({
     mutationFn: (data) => api.entities.ClassRegistration.update(reg.id, data),
@@ -140,7 +153,11 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       color: meta.bg,
       icon: newStatus === 'cancelled' ? '✕' : '✓',
       confirmLabel: newStatus === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update',
-      onConfirm: () => updateMutation.mutate({ status: newStatus }),
+      onConfirm: () => {
+        updateMutation.mutate({ status: newStatus });
+        const msgs = { pending: 'Marked as pending', confirmed: 'Enrollment confirmed', enrolled: 'Enrolled', cancelled: 'Enrollment cancelled' };
+        showToast(msgs[newStatus] || `Marked as ${meta.label}`, meta.bg);
+      },
     });
   };
 
@@ -152,7 +169,10 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       color: meta.color,
       icon: '✓',
       confirmLabel: 'Yes, Update',
-      onConfirm: () => updateMutation.mutate({ payment_status: newStatus }),
+      onConfirm: () => {
+        updateMutation.mutate({ payment_status: newStatus });
+        showToast(`Payment ${meta.label.toLowerCase()}`, meta.color);
+      },
     });
   };
 
@@ -196,7 +216,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             <h2 className="font-serif text-[1.7rem] font-light tracking-[-0.01em] mb-1.5" style={{ color: textMain }}>
               {reg.full_name || 'Unknown'}
             </h2>
-            <p className="text-[0.8rem]" style={{ color: dm ? '#D4A0B0' : '#A0785A' }}>
+            <p className="text-[0.8rem]" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
               {selectedClasses.map(([, l]) => l).join(' · ') || 'No class selected'}
             </p>
           </div>
@@ -251,7 +271,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
               >
                 {paymentMeta.label}
               </span>
-              <span className="font-serif text-[1.1rem]" style={{ color: dm ? '#D4A0B0' : '#A0785A' }}>
+              <span className="font-serif text-[1.1rem]" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
                 ${totalPrice.toLocaleString()}
               </span>
             </div>
@@ -313,7 +333,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 className="py-2.5 px-3 rounded-xl text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
                 style={enrollmentStatus === s
                   ? { background: meta.bg, color: meta.text, boxShadow: `0 0 0 2px ${meta.bg}40` }
-                  : { background: dm ? '#2e2e38' : '#f5f1ee', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
+                  : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
                 }
               >
                 {meta.label}
@@ -333,7 +353,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 className="py-2.5 px-3 rounded-xl text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
                 style={paymentStatus === s
                   ? { background: meta.bg, color: meta.color, border: `1px solid ${meta.color}30`, boxShadow: `0 0 0 2px ${meta.color}20` }
-                  : { background: dm ? '#2e2e38' : '#f5f1ee', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
+                  : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
                 }
               >
                 {meta.label}
@@ -371,6 +391,36 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
         onCancel={() => setConfirmModal(null)}
         onConfirm={() => { confirmModal?.onConfirm(); setConfirmModal(null); }}
       />
+
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
+          style={{
+            transition: 'opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.56,0.64,1)',
+            opacity: toastVisible ? 1 : 0,
+            transform: `translateX(-50%) translateY(${toastVisible ? '0px' : '-16px'})`,
+          }}
+        >
+          <div
+            className="flex items-center gap-3 rounded-2xl"
+            style={{
+              background: '#fff',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
+              border: `1.5px solid ${toast.color}28`,
+              padding: '12px 20px',
+              minWidth: '220px',
+              maxWidth: '360px',
+            }}
+          >
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: `${toast.color}18` }}>
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: toast.color }} />
+            </div>
+            <p className="text-[0.8rem] font-semibold text-[#111] leading-snug whitespace-nowrap">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </>
   );
 }
