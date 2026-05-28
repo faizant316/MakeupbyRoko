@@ -40,9 +40,8 @@ function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, block
       title={
         isBlocked ? 'Blocked'
         : isFull ? 'Fully booked'
-        : isPartial ? `${maxPerDay - bookingCount} spot${maxPerDay - bookingCount > 1 ? 's' : ''} left`
         : unavailable ? 'Unavailable'
-        : 'Available'
+        : undefined
       }
       className={`w-full aspect-square max-w-[2.75rem] flex flex-col items-center justify-center text-[0.875rem] transition-all relative rounded-none ${
         isBlocked ? 'text-red-300 cursor-not-allowed line-through decoration-red-300'
@@ -467,15 +466,20 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
   const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => api.entities.BlockedDate.list(), initialData: [] });
   const { data: existingBookings = [] } = useQuery({ queryKey: ['existing-bookings-calendar'], queryFn: () => api.entities.Booking.list('-date', 200), initialData: [], staleTime: 30000 });
   const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
+  const { data: dayCapacities = [] } = useQuery({ queryKey: ['day-capacities'], queryFn: () => api.entities.DayCapacity.list('-date', 200), staleTime: 30000 });
 
   const blockedSet = new Set(blockedDates.map(b => b.date));
 
+  // Only confirmed bookings count as a taken slot (pending/completed/cancelled do not block dates)
   const bookedDateMap = {};
   existingBookings.forEach(b => {
-    if (!b.date || b.status === 'cancelled') return;
+    if (!b.date || b.status !== 'confirmed') return;
     bookedDateMap[b.date] = (bookedDateMap[b.date] || 0) + 1;
   });
   const DEFAULT_MAX = capacitySettings[0] ? parseInt(capacitySettings[0].value, 10) : 3;
+  const dayCapacityMap = {};
+  dayCapacities.forEach(d => { dayCapacityMap[d.date] = d.capacity; });
+  const getMaxForDay = (key) => dayCapacityMap[key] ?? DEFAULT_MAX;
 
   const activeService = passedService || bridalService;
   const isFullDay = /full.?day/i.test(activeService?.title || '');
@@ -518,7 +522,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     if (!isAvail) return;
     const key = dateKey(year, month, day.d);
     if (blockedSet.has(key)) return;
-    if ((bookedDateMap[key] || 0) >= DEFAULT_MAX) return;
+    if ((bookedDateMap[key] || 0) >= getMaxForDay(key)) return;
     setSelectedDate(key);
   };
 
@@ -701,7 +705,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                 const key = dateKey(year, month, day.d);
                 if (blockedSet?.has(key)) return;
                 const count = bookedDateMap?.[key] || 0;
-                if (count >= DEFAULT_MAX) fullCount++;
+                if (count >= getMaxForDay(key)) fullCount++;
                 else if (count > 0) fillingCount++;
                 else openCount++;
               });
@@ -736,7 +740,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             <div className="grid grid-cols-7 gap-1.5 text-center">
               {calDays.map((day, idx) => !day
                 ? <div key={`e-${idx}`} className="w-11 h-11" />
-                : <CalDay key={dateKey(year, month, day.d)} day={day} year={year} month={month} minDate={minDate} selectedDate={selectedDate} handleDayClick={handleDayClick} blockedSet={blockedSet} bookedDateMap={bookedDateMap} maxPerDay={DEFAULT_MAX} />
+                : <CalDay key={dateKey(year, month, day.d)} day={day} year={year} month={month} minDate={minDate} selectedDate={selectedDate} handleDayClick={handleDayClick} blockedSet={blockedSet} bookedDateMap={bookedDateMap} maxPerDay={getMaxForDay(dateKey(year, month, day.d))} />
               )}
             </div>
 
