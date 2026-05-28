@@ -80,6 +80,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const [editDate, setEditDate] = useState(reg.appointment_date || '');
   const [editTime, setEditTime] = useState(reg.appointment_time || '');
   const [confirmModal, setConfirmModal] = useState(null);
+  const [dateSaveState, setDateSaveState] = useState(null);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimer = useRef(null);
@@ -314,11 +315,34 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             </div>
           </div>
           <button
-            onClick={() => updateMutation.mutate({ appointment_date: editDate, appointment_time: editTime })}
-            className="px-4 py-2 rounded-lg text-[0.72rem] font-semibold transition-opacity hover:opacity-80"
-            style={{ background: '#111', color: '#fff' }}
+            disabled={dateSaveState === 'saving'}
+            onClick={() => {
+              setDateSaveState('saving');
+              updateMutation.mutate(
+                { appointment_date: editDate, appointment_time: editTime },
+                {
+                  onSuccess: () => {
+                    setDateSaveState('saved');
+                    setTimeout(() => setDateSaveState(null), 2200);
+                  },
+                  onError: () => setDateSaveState(null),
+                }
+              );
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[0.72rem] font-semibold transition-all"
+            style={{
+              background: dateSaveState === 'saved' ? '#22C55E' : '#111',
+              color: '#fff',
+              opacity: dateSaveState === 'saving' ? 0.65 : 1,
+              transform: dateSaveState === 'saved' ? 'scale(1.02)' : 'scale(1)',
+            }}
           >
-            Save Date & Time
+            {dateSaveState === 'saved' ? (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Saved
+              </>
+            ) : dateSaveState === 'saving' ? 'Saving...' : 'Save Date & Time'}
           </button>
         </div>
 
