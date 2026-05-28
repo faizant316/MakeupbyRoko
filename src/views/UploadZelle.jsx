@@ -241,8 +241,8 @@ export default function UploadZelle() {
                     {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="text-[#D4A0B0] hover:underline font-medium">@makeupbyroko_</a>
                   </p>
                 </div>
-                <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-4 text-center">
-                  <p className="font-serif italic text-[#A0785A] text-[1.05rem]">Xoxo, Roko 💋</p>
+                <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4 text-center">
+                  <p className="font-serif italic text-[#C4849A] text-[1.05rem]">With love, Roko</p>
                 </div>
               </div>
             </div>

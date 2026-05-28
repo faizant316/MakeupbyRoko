@@ -324,9 +324,9 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
         </div>
 
         {/* Sign off */}
-        <div className="bg-white rounded-2xl border border-[#EDE6DF] px-5 py-5 text-center">
-          <p className="font-serif italic text-[#A0785A] text-[1.1rem] mb-1">Xoxo, Roko</p>
-          <p className="text-[0.7rem] text-[#B8A8A0]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+        <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
+          <p className="font-serif italic text-[#C4849A] text-[1.1rem] mb-1">With love, Roko</p>
+          <p className="text-[0.7rem] text-[#999999]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
         </div>
 
         <div className="pb-4">

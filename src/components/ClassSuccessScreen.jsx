@@ -95,8 +95,8 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
 
         {/* Contact / sign off */}
         <div className="text-center py-2">
-          <p className="font-serif italic text-[1.1rem] text-[#A0785A] mb-1">Xoxo, Roko 💄</p>
-          <p className="text-[0.68rem] text-gray-400">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+          <p className="font-serif italic text-[1.1rem] text-[#C4849A] mb-1">With love, Roko</p>
+          <p className="text-[0.68rem] text-[#999999]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
         </div>
 
         <div className="pb-8">
