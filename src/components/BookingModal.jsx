@@ -399,7 +399,7 @@ export default function BookingModal({ service: initialService, onClose }) {
               </div>
 
               {/* 30-day notice */}
-              <div className="bg-white border border-[#E2C4D2] rounded-xl px-4 py-2.5 mb-3 relative z-10">
+              <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 mb-3 relative z-10">
                 <p className="text-[0.72rem] text-[#888]">
                   Bookings must be made at least <strong className="text-[#555]">30 days in advance</strong>. Earliest available: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
                 </p>

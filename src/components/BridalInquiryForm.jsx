@@ -673,9 +673,9 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           </div>
 
           {/* 30-day notice */}
-          <div className="bg-[#FDF9F7] border border-[#f0ebe6] rounded-lg px-4 py-2.5 relative z-10">
-            <p className="text-[0.72rem] text-[#A0785A]">
-              Bridal bookings must be at least <strong>2 weeks in advance</strong>. Earliest: <strong>{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+          <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
+            <p className="text-[0.72rem] text-[#888]">
+              Bridal bookings must be at least <strong className="text-[#555]">2 weeks in advance</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
             </p>
           </div>
 
