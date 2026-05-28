@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useEffect, useRef } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import BridalInquiryForm from './BridalInquiryForm';
 import ServiceFAQ from './ServiceFAQ';
@@ -94,7 +94,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates'],
-    queryFn: () => base44.entities.BlockedDate.list(),
+    queryFn: () => api.entities.BlockedDate.list(),
     initialData: [],
   });
 
@@ -103,7 +103,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Fetch existing bookings to show booked/busy dates
   const { data: existingBookings = [] } = useQuery({
     queryKey: ['existing-bookings-calendar'],
-    queryFn: () => base44.entities.Booking.list('-date', 200),
+    queryFn: () => api.entities.Booking.list('-date', 200),
     initialData: [],
     staleTime: 30000,
   });
@@ -118,7 +118,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Fetch dynamic capacity setting
   const { data: capacitySettings = [] } = useQuery({
     queryKey: ['booking-capacity'],
-    queryFn: () => base44.entities.AppSettings.filter({ key: 'max_bookings_per_day' }),
+    queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }),
     staleTime: 30000,
   });
   const DEFAULT_MAX = capacitySettings[0] ? parseInt(capacitySettings[0].value, 10) : 3;
@@ -126,7 +126,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Per-day capacity overrides
   const { data: dayCapacities = [] } = useQuery({
     queryKey: ['day-capacities'],
-    queryFn: () => base44.entities.DayCapacity.list('-date', 200),
+    queryFn: () => api.entities.DayCapacity.list('-date', 200),
     staleTime: 30000,
   });
   const dayCapacityMap = {};
@@ -138,7 +138,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   const { data: serviceEntities = [] } = useQuery({
     queryKey: ['public-services-modal'],
-    queryFn: () => base44.entities.Service.filter({ is_active: true }, 'sort_order', 50),
+    queryFn: () => api.entities.Service.filter({ is_active: true }, 'sort_order', 50),
   });
 
   // Build dropdown list from entity data (exclude bridal — bridal uses inquiry form)
@@ -192,7 +192,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     const readyByNote = formData.ready_by_time ? ` | Ready by: ${formData.ready_by_time}` : '';
     const travelNote = formData.travel_requested === true ? ' | ✈️ Travel requested — bridal pricing ($750+) applies' : '';
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const newBooking = await base44.entities.Booking.create({
+    const newBooking = await api.entities.Booking.create({
       name: `${formData.fname} ${formData.lname}`,
       email: formData.email,
       phone: formData.phone,
@@ -213,7 +213,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     const hasTravelFee = formData.travel_requested === true;
 
     try {
-      await base44.functions.invoke('sendBookingConfirmation', {
+      await api.functions.invoke('sendBookingConfirmation', {
         bookingType: 'nonbridal',
         to: formData.email,
         firstName: formData.fname,

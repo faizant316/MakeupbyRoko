@@ -25,7 +25,7 @@ const SECTIONS = [
   },
   {
     title: 'Third-Party Services',
-    body: `This website uses third-party services for operations including email delivery (Resend) and website hosting (Base44). These services may process your data as necessary to provide their functions. We encourage you to review their respective privacy policies.`
+    body: `This website uses third-party services for operations including email delivery (Resend) and website hosting (Vercel). These services may process your data as necessary to provide their functions. We encourage you to review their respective privacy policies.`
   },
   {
     title: 'Your Rights',

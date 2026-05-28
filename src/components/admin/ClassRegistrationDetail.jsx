@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState } from 'react';
+import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const CLASS_LABELS = {
@@ -88,7 +88,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const sectionBg = dm ? '#1e1e24' : '#FAF8F6';
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClassRegistration.update(reg.id, data),
+    mutationFn: (data) => api.entities.ClassRegistration.update(reg.id, data),
     onSuccess: (_, data) => {
       setReg(prev => ({ ...prev, ...data }));
       queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
@@ -104,7 +104,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.ClassRegistration.delete(reg.id),
+    mutationFn: () => api.entities.ClassRegistration.delete(reg.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });

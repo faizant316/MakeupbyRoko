@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+import { api } from '@/api/apiClient';
 
 function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice }) {
   return (

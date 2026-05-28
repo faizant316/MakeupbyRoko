@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useRef, useEffect } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 
 const inputClass = "w-full px-4 py-3 border border-gray-200 rounded-lg text-[0.85rem] focus:border-[#D4A0B0] focus:ring-2 focus:ring-[#D4A0B0]/10 outline-none transition-all bg-white text-[#111] placeholder:text-gray-400";
@@ -59,14 +59,14 @@ export default function LeaveReviewForm() {
 
   const { data: serviceEntities = [] } = useQuery({
     queryKey: ['public-services-review'],
-    queryFn: () => base44.entities.Service.filter({ is_active: true }, 'sort_order', 50),
+    queryFn: () => api.entities.Service.filter({ is_active: true }, 'sort_order', 50),
   });
 
   const SERVICES = serviceEntities.map(s => ({ label: s.title, value: s.title }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await base44.entities.Review.create({ ...form, status: 'pending' });
+    await api.entities.Review.create({ ...form, status: 'pending' });
     setSubmitted(true);
   };
 

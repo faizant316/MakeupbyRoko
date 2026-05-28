@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useEffect } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 
 const AVAILABLE_DAYS = [1, 2, 3, 4, 5, 6];
@@ -20,7 +20,7 @@ export default function Booking() {
   // Fetch existing bookings for real-time availability
   const { data: bookings = [] } = useQuery({
     queryKey: ['bookings-home'],
-    queryFn: () => base44.entities.Booking.list(),
+    queryFn: () => api.entities.Booking.list(),
     initialData: [],
   });
 
@@ -91,7 +91,7 @@ export default function Booking() {
     }
 
     try {
-      await base44.entities.Booking.create({
+      await api.entities.Booking.create({
         name: `${formData.fname} ${formData.lname}`,
         email: formData.email,
         phone: formData.phone,

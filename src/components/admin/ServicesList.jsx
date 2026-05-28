@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState } from 'react';
+import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ServiceFormModal from './ServiceFormModal';
 
@@ -13,7 +13,7 @@ export default function ServicesList({ darkMode: dm }) {
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['admin-services'],
-    queryFn: () => base44.entities.Service.list('sort_order', 50),
+    queryFn: () => api.entities.Service.list('sort_order', 50),
   });
 
   const invalidateAll = () => {
@@ -26,17 +26,17 @@ export default function ServicesList({ darkMode: dm }) {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Service.create(data),
+    mutationFn: (data) => api.entities.Service.create(data),
     onSuccess: () => { invalidateAll(); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Service.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Service.update(id, data),
     onSuccess: () => { invalidateAll(); setEditingService(null); },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Service.delete(id),
+    mutationFn: (id) => api.entities.Service.delete(id),
     onSuccess: () => { invalidateAll(); setDeleteConfirm(null); },
   });
 

@@ -3,7 +3,6 @@ const nextConfig = {
   images: {
     domains: [
       'xrmzdxogbwcbyeiarhux.supabase.co',
-      'media.base44.com',
     ],
   },
 };

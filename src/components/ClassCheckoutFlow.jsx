@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { base44 } from '@/api/apiClient';
+﻿import { useState, useEffect } from 'react';
+import { api } from '@/api/apiClient';
 import ClassSelector from './class-checkout/ClassSelector';
 import ClassCart from './class-checkout/ClassCart';
 import ClassContactForm from './class-checkout/ClassContactForm';
