@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import CustomSelect from './CustomSelect';
 import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
+import ServiceFAQ from './ServiceFAQ';
 
 const AVAILABLE_DAYS = [1, 2, 3, 4, 5, 6];
 const pad = (n) => String(n).padStart(2, '0');
@@ -1034,6 +1035,13 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           </div>
         </div>
       </div>
+
+      {/* FAQ Section */}
+      {activeService && (
+        <div className="px-6 lg:px-8 py-6 border-t border-gray-100">
+          <ServiceFAQ service={activeService} />
+        </div>
+      )}
     </form>
   );
 }

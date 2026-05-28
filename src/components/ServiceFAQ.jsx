@@ -38,12 +38,24 @@ const LESSON_FAQ = [
   ...GENERAL_FAQ.slice(0, 3),
 ];
 
+const BRIDAL_TRIAL_FAQ = [
+  { q: "What is included in the bridal trial?", a: "The bridal trial is a full makeup run-through at the studio. You'll receive the same quality application as your wedding day so you can see exactly how your look will come together and request any changes before the big day." },
+  { q: "When should I schedule my bridal trial?", a: "Ideally 1 to 3 months before your wedding date. This gives enough time to review your look, make adjustments, and feel completely confident going into your wedding day." },
+  { q: "What should I bring to my trial?", a: "Bring inspiration photos (close-up makeup shots and full-face references), photos of your gown and accessories, and any skin concerns or allergies noted in advance. Come with clean, moisturized skin and no heavy makeup on." },
+  { q: "Can I make changes after the trial?", a: "Absolutely. The trial is specifically designed for that. Bring notes and any updated inspiration photos and all adjustments will be applied on your wedding day." },
+  { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
+  ...GENERAL_FAQ.slice(1, 5),
+];
+
 function getFAQs(service) {
   const category = service?.category || '';
   const key = service?.key || '';
   const title = (service?.title || '').toLowerCase();
 
-  if (key === 'bridal' || category === 'bridal') return BRIDAL_FAQ;
+  if (key === 'bridal' || category === 'bridal') {
+    if (title.includes('trial')) return BRIDAL_TRIAL_FAQ;
+    return BRIDAL_FAQ;
+  }
   if (category === 'lessons' || title.includes('course') || title.includes('lesson')) return LESSON_FAQ;
   if (category === 'creative' || title.includes('photoshoot') || title.includes('shoot')) return SHOOT_FAQ;
   return EVENT_FAQ;

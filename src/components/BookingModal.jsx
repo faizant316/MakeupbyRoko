@@ -10,11 +10,11 @@ const AVAILABLE_DAYS = [1, 2, 3, 4, 5, 6];
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
-// Minimum booking date is 30 days from now
+// Minimum booking date is 2 weeks from now
 function getMinBookingDate() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 30);
+  d.setDate(d.getDate() + 14);
   return d;
 }
 
@@ -255,12 +255,14 @@ export default function BookingModal({ service: initialService, onClose }) {
     document.body.style.right = '0';
     document.body.style.overflow = 'hidden';
     return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.left = '';
       document.body.style.right = '';
       document.body.style.overflow = '';
       window.scrollTo(0, scrollY);
+      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
     };
   }, []);
 
@@ -401,7 +403,7 @@ export default function BookingModal({ service: initialService, onClose }) {
               {/* 30-day notice */}
               <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 mb-3 relative z-10">
                 <p className="text-[0.72rem] text-[#888]">
-                  Bookings must be made at least <strong className="text-[#555]">30 days in advance</strong>. Earliest available: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                  Bookings must be made at least <strong className="text-[#555]">2 weeks in advance</strong>. Earliest available: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
                 </p>
               </div>
 
