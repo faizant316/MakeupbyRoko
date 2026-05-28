@@ -47,7 +47,6 @@ export default function About() {
           <div
             className="overflow-hidden rounded-xl bg-[#f5f0eb]"
             style={{
-              aspectRatio: '3/4',
               opacity: visible ? 1 : 0,
               transform: visible ? 'translateY(0)' : 'translateY(28px)',
               transition: 'opacity 0.7s ease-out 0.1s, transform 0.7s ease-out 0.1s',
@@ -57,7 +56,7 @@ export default function About() {
               src="/roko_pic.png"
               alt="Roqia Moshref"
               loading="lazy"
-              className="w-full h-full object-cover object-center hover:scale-[1.02] transition-transform duration-700"
+              className="w-full h-auto block hover:scale-[1.02] transition-transform duration-700"
             />
           </div>
 
