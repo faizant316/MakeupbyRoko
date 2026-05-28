@@ -316,18 +316,15 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           </div>
           <button
             disabled={dateSaveState === 'saving'}
-            onClick={() => {
+            onClick={async () => {
               setDateSaveState('saving');
-              updateMutation.mutate(
-                { appointment_date: editDate, appointment_time: editTime },
-                {
-                  onSuccess: () => {
-                    setDateSaveState('saved');
-                    setTimeout(() => setDateSaveState(null), 2200);
-                  },
-                  onError: () => setDateSaveState(null),
-                }
-              );
+              try {
+                await updateMutation.mutateAsync({ appointment_date: editDate, appointment_time: editTime });
+                setDateSaveState('saved');
+                setTimeout(() => setDateSaveState(null), 2200);
+              } catch {
+                setDateSaveState(null);
+              }
             }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[0.72rem] font-semibold transition-all"
             style={{
