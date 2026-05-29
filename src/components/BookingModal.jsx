@@ -102,9 +102,9 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Confirmed booking counts per date — public endpoint, no auth required
   const { data: bookedDateMap = {} } = useQuery({
     queryKey: ['booking-counts'],
-    queryFn: () => fetch('/api/booking-counts').then(r => r.json()),
-    initialData: {},
-    staleTime: 30000,
+    queryFn: () => fetch('/api/booking-counts').then(r => { if (!r.ok) throw new Error('fetch failed'); return r.json(); }).catch(() => ({})),
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch dynamic capacity setting

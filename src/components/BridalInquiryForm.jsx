@@ -465,7 +465,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
   const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => api.entities.BlockedDate.list(), initialData: [] });
   // Confirmed booking counts per date — public endpoint, no auth required
-  const { data: bookedDateMap = {} } = useQuery({ queryKey: ['booking-counts'], queryFn: () => fetch('/api/booking-counts').then(r => r.json()), initialData: {}, staleTime: 30000 });
+  const { data: bookedDateMap = {} } = useQuery({ queryKey: ['booking-counts'], queryFn: () => fetch('/api/booking-counts').then(r => { if (!r.ok) throw new Error('fetch failed'); return r.json(); }).catch(() => ({})), refetchOnMount: true, refetchOnWindowFocus: false });
   const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
   const { data: dayCapacities = [] } = useQuery({ queryKey: ['day-capacities'], queryFn: () => api.entities.DayCapacity.list('-date', 200), staleTime: 30000 });
 
