@@ -18,7 +18,7 @@ export async function GET() {
     });
 
     return NextResponse.json(counts, {
-      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30' },
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (err) {
     console.error('GET /api/booking-counts:', err);
