@@ -1,6 +1,17 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
+
+function useBookingCounts() {
+  const [counts, setCounts] = useState(null);
+  useEffect(() => {
+    fetch('/api/booking-counts')
+      .then(r => r.ok ? r.json() : {})
+      .then(setCounts)
+      .catch(() => setCounts({}));
+  }, []);
+  return counts;
+}
 import BridalInquiryForm from './BridalInquiryForm';
 import ServiceFAQ from './ServiceFAQ';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
@@ -99,13 +110,8 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   const blockedSet = new Set(blockedDates.map(b => b.date));
 
-  // Confirmed booking counts per date — public endpoint, no auth required
-  const { data: bookedDateMap = {} } = useQuery({
-    queryKey: ['booking-counts'],
-    queryFn: () => fetch('/api/booking-counts').then(r => { if (!r.ok) throw new Error('fetch failed'); return r.json(); }).catch(() => ({})),
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
-  });
+  const rawCounts = useBookingCounts();
+  const bookedDateMap = rawCounts ?? {};
 
   // Fetch dynamic capacity setting
   const { data: capacitySettings = [] } = useQuery({
