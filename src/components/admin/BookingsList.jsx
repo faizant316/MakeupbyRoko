@@ -14,11 +14,20 @@ function isBridalBooking(booking) {
 }
 
 const CONSULT_COLOR = '#5BB0CC';
+const LESSON_COLOR = '#D4A0B0';
+
+const CLASS_LABELS = {
+  private_basic_lesson: 'Basic Makeup Lesson',
+  masterclass: 'Advanced Makeup Lesson',
+  virtual_lesson: 'Virtual Makeup Lesson',
+  intermediate_lesson: 'Intermediate Makeup Lesson',
+  glam_class: 'Glam Makeup Class',
+};
 
 export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
-  allBookings, consultationsOnDate = [], darkMode: dm, onAddClient
+  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
@@ -315,6 +324,88 @@ export default function BookingsList({
           </div>
         );
       })()}
+
+      {/* Makeup Lessons on selected date */}
+      {selectedDate && lessonsOnDate.length > 0 && (
+        <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(212,160,176,0.3)` }}>
+          {/* Header */}
+          <div className="flex items-center gap-2.5 px-4 py-3"
+            style={{ background: 'rgba(212,160,176,0.08)', borderBottom: '1px solid rgba(212,160,176,0.18)' }}>
+            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.18)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-3 h-3">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: LESSON_COLOR }}>
+              Makeup Lessons
+            </span>
+            <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(212,160,176,0.15)', color: LESSON_COLOR }}>
+              {lessonsOnDate.length}
+            </span>
+          </div>
+
+          {/* Items */}
+          {lessonsOnDate.map((r, i) => {
+            const classList = Object.keys(CLASS_LABELS).filter(k => r[k]);
+            const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Lesson';
+            const zoomMatch = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/);
+            const isZoom = r.consultation_type === 'Zoom';
+            const isPhone = r.consultation_type === 'Phone';
+            return (
+              <div
+                key={r.id}
+                className="w-full flex items-center gap-4 px-4 py-3.5"
+                style={{
+                  background: dm ? '#1e1e24' : '#fff',
+                  borderBottom: i < lessonsOnDate.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#ebebeb'}` : 'none',
+                }}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
+                  {isZoom ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
+                      <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 11.7 19.79 19.79 0 0 1 1 3.07 2 2 0 0 1 2.11 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+                    {r.full_name || 'Client'}
+                  </p>
+                  <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                    {isPhone ? 'Phone / FaceTime' : (r.consultation_type || 'Zoom')} · {r.appointment_time || ''} · {classLabel}
+                  </p>
+                </div>
+                {isZoom && zoomMatch ? (
+                  <a
+                    href={zoomMatch[1]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
+                    style={{ background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                      <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                    </svg>
+                    Join
+                  </a>
+                ) : isPhone && r.phone ? (
+                  <a
+                    href={`tel:${r.phone}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
+                    style={{ background: 'rgba(212,160,176,0.1)', color: LESSON_COLOR, border: '1px solid rgba(212,160,176,0.25)' }}
+                  >
+                    {r.phone}
+                  </a>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Content */}
       {loading ? (

@@ -130,6 +130,11 @@ export default function Admin() {
     ? bookings.filter(b => b.consultation_date === selectedDate)
     : [];
 
+  // Makeup class lessons scheduled on the selected date
+  const lessonsOnDate = selectedDate
+    ? classRegs.filter(r => r.appointment_date === selectedDate)
+    : [];
+
   const today = new Date().toISOString().split('T')[0];
   const todayCount = bookings.filter(b => b.date === today).length;
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
@@ -425,7 +430,7 @@ export default function Admin() {
                 setStatusFilter={setStatusFilter} statusCounts={statusCounts}
                 selectedDate={selectedDate} setSelectedDate={setSelectedDate}
                 onSelect={setSelectedBooking} currentMonth={currentMonth}
-                allBookings={bookings} consultationsOnDate={consultationsOnDate}
+                allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
                 darkMode={dm} onAddClient={() => setShowAddClient(true)}
               />
             </div>
