@@ -5,8 +5,8 @@ import {
   Zap, BarChart2, ChevronRight,
 } from 'lucide-react';
 
-// ─── GA4 deep links (account a394174771 · property p536969013) ───────────────
-const GA = 'https://analytics.google.com/analytics/web/#/a394174771p536969013';
+// ─── GA4 deep links (property p536969013) ────────────────────────────────────
+const GA = 'https://analytics.google.com/analytics/web/#/p536969013';
 const R  = `${GA}/reports`;
 
 // ─── Section data ────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ const OVERVIEW = [
     label: 'Total Visitors',
     desc:  'Everyone who landed on your site',
     sub:   'View users, new users & growth over time',
-    link:  `${R}/user-acquisition`,
+    link:  `${R}/user-acquisition-overview`,
   },
   {
     icon: Activity,  accent: '#22C55E',
@@ -38,7 +38,7 @@ const OVERVIEW = [
     label: 'New vs Returning',
     desc:  'Are past clients coming back?',
     sub:   'Retention & loyalty tracked over 8 weeks',
-    link:  `${R}/retention-overview`,
+    link:  `${R}/lifecycle-retention-overview`,
   },
 ];
 
@@ -79,7 +79,7 @@ const AUDIENCE = [
     label: 'Location',
     desc:  'Cities & states that visit most',
     sub:   'Spot destination wedding leads outside California',
-    link:  `${R}/user-demographics-detail`,
+    link:  `${R}/user-demographic-detail`,
   },
   {
     icon: Smartphone, accent: '#3B82F6',
@@ -122,11 +122,11 @@ const CONTENT = [
 ];
 
 const TIPS = [
-  { text: "Watch for traffic spikes after you post on Instagram — that's your content-to-client pipeline working.", link: `${R}/acquisition-traffic-acquisition` },
-  { text: "80%+ of your visitors are likely on iPhone. Check Devices to confirm mobile is rendering correctly.",    link: `${R}/tech-overview`                  },
-  { text: "Cities outside California in Location often signal destination wedding or travel-ready clients.",        link: `${R}/user-demographics-detail`       },
-  { text: "High drop-off on a specific page means it needs work. Check Top Pages to see where people leave.",      link: `${R}/engagement-pages-and-screens`   },
-  { text: "20%+ returning visitors means your brand is sticky — people remember you and come back.",               link: `${R}/retention-overview`             },
+  { text: "Watch for traffic spikes after you post on Instagram — that's your content-to-client pipeline working.", link: `${R}/acquisition-traffic-acquisition`  },
+  { text: "80%+ of your visitors are likely on iPhone. Check Devices to confirm mobile is rendering correctly.",    link: `${R}/tech-overview`                   },
+  { text: "Cities outside California in Location often signal destination wedding or travel-ready clients.",        link: `${R}/user-demographic-detail`         },
+  { text: "High drop-off on a specific page means it needs work. Check Top Pages to see where people leave.",      link: `${R}/engagement-pages-and-screens`    },
+  { text: "20%+ returning visitors means your brand is sticky — people remember you and come back.",               link: `${R}/lifecycle-retention-overview`    },
 ];
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
       {/* ── Hero CTA ──────────────────────────────────────────── */}
       <a
-        href={`${R}/intelligenthome`}
+        href={`${GA}/reports/intelligenthome`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-between rounded-2xl px-5 py-5 transition-all active:scale-[0.98]"
