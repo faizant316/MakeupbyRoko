@@ -4,6 +4,7 @@ const TABS = [
   { key: 'reviews', label: 'Reviews', icon: '⭐' },
   { key: 'classes', label: 'Class Sign-Ups', icon: '💄' },
   { key: 'analytics', label: 'Analytics', icon: '📊' },
+  { key: 'revenue',   label: 'Revenue',    icon: '💰' },
 ];
 
 export default function AdminTabSwitcher({ activeTab, setActiveTab, darkMode: dm }) {

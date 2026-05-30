@@ -7,6 +7,7 @@ export const ADMIN_TABS = [
   { key: 'reviews',    label: 'Reviews',      sub: 'Approve & manage'         },
   { key: 'classes',    label: 'Class Sign-Ups', sub: 'Registrations'          },
   { key: 'analytics',  label: 'Analytics',    sub: 'Insights & trends'        },
+  { key: 'revenue',    label: 'Revenue',      sub: 'Revenue & booking stats'  },
 ];
 
 export default function AdminSidebar({
