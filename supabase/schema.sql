@@ -117,7 +117,10 @@ create table if not exists class_registrations (
   additional_notes text,
   status text default 'new' check (status in ('new','contacted','enrolled','declined')),
   payment_status text default 'pending' check (payment_status in ('pending','deposit_paid','paid_in_full','refunded')),
-  stripe_session_id text
+  stripe_session_id text,
+  appointment_date date,
+  appointment_time text,
+  consultation_type text check (consultation_type in ('zoom', 'phone'))
 );
 
 -- ============================================================

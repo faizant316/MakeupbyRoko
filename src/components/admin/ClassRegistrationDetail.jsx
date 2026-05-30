@@ -79,6 +79,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const [reg, setReg] = useState(initialReg);
   const [editDate, setEditDate] = useState(reg.appointment_date || '');
   const [editTime, setEditTime] = useState(reg.appointment_time || '');
+  const [editConsultType, setEditConsultType] = useState(reg.consultation_type || '');
   const [confirmModal, setConfirmModal] = useState(null);
   const [dateSaveState, setDateSaveState] = useState(null);
   const [toast, setToast] = useState(null);
@@ -239,6 +240,22 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 {reg.appointment_time && (
                   <p className="text-[0.82rem] mt-0.5" style={{ color: textMuted }}>{reg.appointment_time}</p>
                 )}
+                {reg.consultation_type && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    {reg.consultation_type === 'zoom' ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3" style={{ color: '#2D8CFF' }}>
+                        <path d="M15 10l4.553-2.07A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3" style={{ color: '#22C55E' }}>
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.12 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+                      </svg>
+                    )}
+                    <span className="text-[0.7rem] font-medium" style={{ color: textMuted }}>
+                      {reg.consultation_type === 'zoom' ? 'Zoom' : 'Phone / FaceTime'}
+                    </span>
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-[0.82rem] italic" style={{ color: dm ? '#52525b' : '#ccc' }}>Not scheduled yet</p>
@@ -291,7 +308,54 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
 
         {/* Schedule */}
         <div className="mb-8">
-          <SectionLabel>Schedule Appointment</SectionLabel>
+          <SectionLabel>Schedule Consultation</SectionLabel>
+
+          {/* Consultation type */}
+          <div className="mb-4">
+            <label className="block text-[0.6rem] font-medium mb-2" style={{ color: textMuted }}>Consultation Type</label>
+            <div className="flex gap-2">
+              {[
+                {
+                  value: 'zoom',
+                  label: 'Zoom',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+                      <path d="M15 10l4.553-2.07A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                    </svg>
+                  ),
+                  activeColor: '#2D8CFF',
+                },
+                {
+                  value: 'phone',
+                  label: 'Phone / FaceTime',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.12 2.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+                    </svg>
+                  ),
+                  activeColor: '#22C55E',
+                },
+              ].map(({ value, label, icon, activeColor }) => {
+                const active = editConsultType === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setEditConsultType(active ? '' : value)}
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-full text-[0.72rem] font-medium transition-all"
+                    style={active
+                      ? { background: activeColor + '18', color: activeColor, border: `1.5px solid ${activeColor}55` }
+                      : { background: sectionBg, color: textMuted, border: `1px solid ${cardBorder}` }
+                    }
+                  >
+                    <span style={{ color: active ? activeColor : textMuted }}>{icon}</span>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="block text-[0.6rem] font-medium mb-1.5" style={{ color: textMuted }}>Date</label>
@@ -319,7 +383,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             onClick={async () => {
               setDateSaveState('saving');
               try {
-                await updateMutation.mutateAsync({ appointment_date: editDate, appointment_time: editTime });
+                await updateMutation.mutateAsync({ appointment_date: editDate, appointment_time: editTime, consultation_type: editConsultType || null });
                 setDateSaveState('saved');
                 setTimeout(() => setDateSaveState(null), 2200);
               } catch {
