@@ -348,7 +348,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
             <div>
               <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
               <div className="flex gap-2">
-                {['Zoom', 'Phone', 'In-Person'].map(key => (
+                {['Zoom', 'Phone'].map(key => (
                   <button key={key} type="button" onClick={() => set('type', key)}
                     className="flex-1 py-3 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
                     style={form.type === key
