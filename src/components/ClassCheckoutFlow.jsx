@@ -8,43 +8,19 @@ import ClassSuccessScreen from './ClassSuccessScreen';
 const CLASSES = [
   {
     key: 'private_basic_lesson',
-    title: 'Private Basic Makeup Lesson',
-    duration: '1.5 hours',
+    title: 'Basic Makeup Lesson',
+    duration: '2 hours',
     price: 300,
     deposit: 150,
-    description: 'This personalized lesson is designed for beginners and focuses on the fundamentals of makeup. You will learn essential skincare and foundation application techniques, including concealer matching, basic eye makeup (eyeshadow, eyeliner, and brush technique), and tips for a natural glam look.',
-  },
-  {
-    key: 'virtual_lesson',
-    title: 'Virtual Makeup Lesson',
-    duration: '2 hours',
-    price: 400,
-    deposit: 200,
-    description: "My virtual makeup lessons are perfect for individuals who prefer to learn from the comfort of their own homes. These one-on-one online sessions provide personalized guidance and are ideal for those unable to meet in person. You'll receive step-by-step instructions through platforms like Zoom or WhatsApp.",
-  },
-  {
-    key: 'intermediate_lesson',
-    title: 'Intermediate Makeup Lesson',
-    duration: '2.5 hours',
-    price: 500,
-    deposit: 250,
-    description: 'The intermediate class is ideal for individuals with some previous makeup experience. This session dives deeper into makeup artistry with techniques like eyebrow mapping, contouring, and highlighting. You will also learn advanced eye makeup techniques, including smokey eyes and bold lip applications.',
-  },
-  {
-    key: 'glam_class',
-    title: 'Glam Makeup Class',
-    duration: '3 hours',
-    price: 600,
-    deposit: 300,
-    description: "This class is specifically designed for those who want to perfect bold, glamorous evening looks. You'll learn to create flawless skin finishes with contouring, as well as advanced eye makeup techniques such as cut creases and glitter applications. Includes false lash application and perfect lip art.",
+    description: 'A personalized one-on-one lesson perfect for beginners and anyone wanting to improve their everyday makeup routine. You will learn skincare prep, foundation and concealer application, basic eye makeup, and how to create a natural glam look that works for you.',
   },
   {
     key: 'masterclass',
-    title: 'Makeup Masterclass',
+    title: 'Advanced Makeup Lesson',
     duration: '4 hours · 2 days',
     price: 1500,
     deposit: 750,
-    description: 'This comprehensive masterclass is designed for individuals looking to elevate their makeup skills to a professional level. Participants will master a range of techniques, including full coverage foundation application, contouring, eyebrow mapping, and professional client communication strategies.',
+    description: 'A deep dive into professional makeup artistry for those ready to take their skills to the next level. Covers advanced contouring and highlighting, complex eye techniques like cut creases and smokey eyes, color theory, and the tools and habits of a working makeup artist.',
   },
 ];
 
