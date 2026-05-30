@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
 import { createClient } from '../../../src/lib/supabase/server';
-import { sendEmail, consultationScheduledEmail, adminConsultationEmail } from '../../../src/lib/email';
+import { sendEmail, lessonScheduledEmail, adminLessonEmail } from '../../../src/lib/email';
 
 export async function POST(req) {
   try {
@@ -33,27 +33,27 @@ export async function POST(req) {
     await sendEmail({
       to: clientEmail,
       subject: `Your makeup lesson is scheduled — ${dateFormatted} at ${lessonTime}`,
-      html: consultationScheduledEmail({
+      html: lessonScheduledEmail({
         firstName,
-        serviceName: className,
-        consultationDate: dateFormatted,
-        consultationTime: lessonTime,
-        consultationType: meetingType,
+        className,
+        lessonDate: dateFormatted,
+        lessonTime,
+        meetingType,
         zoomLink: meetingType === 'Zoom' ? zoomLink : '',
-        consultationNotes: notes,
+        notes,
       }),
     });
 
     const adminEmail = process.env.ADMIN_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
       to: adminEmail,
-      subject: `📋 Lesson Scheduled — ${clientName} · ${dateFormatted} at ${lessonTime}`,
-      html: adminConsultationEmail({
-        clientName, clientEmail, serviceName: className,
-        consultationDate: dateFormatted, consultationTime: lessonTime,
-        consultationType: meetingType,
+      subject: `💄 Lesson Scheduled — ${clientName} · ${dateFormatted} at ${lessonTime}`,
+      html: adminLessonEmail({
+        clientName, clientEmail, className,
+        lessonDate: dateFormatted, lessonTime,
+        meetingType,
         zoomLink: meetingType === 'Zoom' ? zoomLink : '',
-        consultationNotes: notes,
+        notes,
       }),
     }).catch(console.error);
 

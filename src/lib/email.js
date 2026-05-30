@@ -408,3 +408,73 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
     `)}
   `);
 }
+
+export function lessonScheduledEmail({ firstName, className, lessonDate, lessonTime, meetingType, zoomLink, notes }) {
+  return base(`
+    ${card(`
+      <div style="text-align:center;margin-bottom:14px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#FDF0F5,#F7D8E5);margin:0 auto 12px;line-height:48px;text-align:center;font-size:22px;">💄</div>
+        <h1 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#111111;margin:0 0 4px;">Makeup Lesson <em style="color:#C4849A;">Scheduled!</em></h1>
+        <p style="font-family:Georgia,serif;font-style:italic;font-size:13px;color:#888888;margin:0;">So excited to teach you ✦</p>
+      </div>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;">Hey <strong>${firstName}</strong>! Your <strong>${className}</strong> has been scheduled. Here are your details:</p>
+    `)}
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:2px solid #E8C4D0;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Lesson Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Date', `<strong>${lessonDate}</strong>`)}
+        ${row('Time', `<strong>${lessonTime}</strong>`)}
+        ${row('Format', `<strong>${meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType}</strong>`)}
+        ${notes ? row('Notes', notes) : ''}
+      </table>
+      ${zoomLink ? `
+      <div style="margin-top:14px;padding:14px;background:#FDF0F5;border-radius:12px;border:1px solid #E8C4D0;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Your Zoom Link</p>
+        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+          <a href="${zoomLink}" style="display:inline-block;background:#111111;color:#ffffff;padding:13px 32px;border-radius:50px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:0.04em;">Join Zoom Call</a>
+        </td></tr></table>
+        <p style="font-size:11px;color:#999999;text-align:center;margin:10px 0 0;word-break:break-all;">${zoomLink}</p>
+      </div>` : ''}
+    </div>
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">To Prepare</p>
+      ${step(1, 'Come with a clean face', 'No makeup or light moisturizer only — we\'re starting fresh')}
+      ${step(2, 'Bring your current makeup bag', 'We\'ll go through your products and build from what you have')}
+      ${step(3, 'Have your inspiration ready', 'Save looks you love so we can break down the techniques together')}
+      ${step(4, 'Come with questions', 'No question is too basic — this lesson is all about you')}
+    `)}
+  `);
+}
+
+export function adminLessonEmail({ clientName, clientEmail, className, lessonDate, lessonTime, meetingType, zoomLink, notes }) {
+  return base(`
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Admin Copy — Lesson Scheduled</p>
+      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">💄 Makeup Lesson Scheduled</h2>
+      <p style="font-size:13px;color:#444444;margin:0;">Lesson confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${className}</strong>.</p>
+    `)}
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Name', clientName || 'N/A')}
+        ${row('Email', clientEmail || 'N/A')}
+        ${row('Class', className || 'N/A')}
+      </table>
+    </div>
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Lesson Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Date', `<strong>${lessonDate}</strong>`)}
+        ${row('Time', `<strong>${lessonTime}</strong>`)}
+        ${row('Format', meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType)}
+        ${zoomLink ? row('Zoom Link', `<a href="${zoomLink}" style="color:#C4849A;word-break:break-all;">${zoomLink}</a>`) : ''}
+        ${notes ? row('Notes', notes) : ''}
+      </table>
+    </div>
+    ${card(`
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#111;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
+    `)}
+  `);
+}
