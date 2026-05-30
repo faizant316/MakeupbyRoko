@@ -14,6 +14,7 @@ import CapacitySettings from '../components/admin/CapacitySettings';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
+import RevenueTab from '../components/admin/RevenueTab';
 import AddClientModal from '../components/admin/AddClientModal';
 
 const DEFAULT_CAP = 3;
@@ -497,6 +498,10 @@ export default function Admin() {
 
         {activeTab === 'analytics' && (
           <AnalyticsTab darkMode={dm} />
+        )}
+
+        {activeTab === 'revenue' && (
+          <RevenueTab darkMode={dm} />
         )}
         </div> {/* /main content */}
       </div> {/* /flex row */}
