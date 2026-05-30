@@ -6,6 +6,44 @@ import {
 } from 'recharts';
 import { DollarSign, TrendingUp, Users, BookOpen } from 'lucide-react';
 
+const DEMO_DATA = {
+  summary: {
+    totalRevenue: 52800,
+    thisMonthRevenue: 8400,
+    lastMonthRevenue: 7200,
+    totalBookings: 187,
+    thisMonthBookings: 28,
+    lastMonthBookings: 24,
+    paidClassSignups: 18,
+    completedBookings: 143,
+  },
+  monthlyTrend: [
+    { shortLabel: 'Dec', revenue: 4200, bookings: 18 },
+    { shortLabel: 'Jan', revenue: 5800, bookings: 22 },
+    { shortLabel: 'Feb', revenue: 7100, bookings: 26 },
+    { shortLabel: 'Mar', revenue: 6400, bookings: 24 },
+    { shortLabel: 'Apr', revenue: 8200, bookings: 31 },
+    { shortLabel: 'May', revenue: 8400, bookings: 28 },
+  ],
+  classByType: [
+    { key: 'private_basic_lesson',  title: 'Basic Makeup Lesson',        price: 300,  count: 12, revenue: 3600 },
+    { key: 'masterclass',           title: 'Advanced Makeup Lesson',      price: 1500, count: 4,  revenue: 6000 },
+    { key: 'virtual_lesson',        title: 'Virtual Makeup Lesson',       price: 400,  count: 0,  revenue: 0    },
+    { key: 'intermediate_lesson',   title: 'Intermediate Makeup Lesson',  price: 500,  count: 0,  revenue: 0    },
+    { key: 'glam_class',            title: 'Glam Makeup Class',           price: 600,  count: 2,  revenue: 1200 },
+  ],
+  topServices: [
+    { name: 'Bridal Glam',          count: 24, completed: 22 },
+    { name: 'Event Makeup',         count: 19, completed: 17 },
+    { name: 'Glamour Makeup',       count: 15, completed: 14 },
+    { name: 'Basic Makeup Lesson',  count: 8,  completed: 8  },
+    { name: 'Editorial Look',       count: 5,  completed: 4  },
+    { name: 'Advanced Lesson',      count: 4,  completed: 4  },
+    { name: 'Airbrush Makeup',      count: 3,  completed: 3  },
+    { name: 'Special Occasion',     count: 2,  completed: 2  },
+  ],
+};
+
 function pctDelta(current, previous) {
   if (!previous || previous === 0) return null;
   return Math.round(((current - previous) / previous) * 100);
@@ -76,6 +114,7 @@ export default function RevenueTab({ darkMode: dm }) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin/revenue')
@@ -107,7 +146,8 @@ export default function RevenueTab({ darkMode: dm }) {
     );
   }
 
-  const { summary = {}, monthlyTrend = [], classByType = [], topServices = [] } = data || {};
+  const active = demoMode ? DEMO_DATA : (data || {});
+  const { summary = {}, monthlyTrend = [], classByType = [], topServices = [] } = active;
   const revDelta  = pctDelta(summary.thisMonthRevenue,  summary.lastMonthRevenue);
   const bookDelta = pctDelta(summary.thisMonthBookings, summary.lastMonthBookings);
   const maxCount  = topServices[0]?.count || 1;
@@ -116,14 +156,35 @@ export default function RevenueTab({ darkMode: dm }) {
     <div className="flex flex-col gap-6">
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div>
-        <p className="text-[0.57rem] font-semibold tracking-[0.18em] uppercase mb-0.5" style={{ color: '#D4A0B0' }}>
-          Revenue & Insights
-        </p>
-        <h2 className="text-[1.1rem] font-serif font-light" style={{ color: text }}>Business Analytics</h2>
-        <p className="text-[0.67rem] mt-0.5" style={{ color: muted }}>
-          Class revenue via Stripe · Appointment booking trends
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[0.57rem] font-semibold tracking-[0.18em] uppercase mb-0.5" style={{ color: '#D4A0B0' }}>
+            Revenue & Insights
+          </p>
+          <h2 className="text-[1.1rem] font-serif font-light" style={{ color: text }}>Business Analytics</h2>
+          <p className="text-[0.67rem] mt-0.5" style={{ color: muted }}>
+            Class revenue via Stripe · Appointment booking trends
+          </p>
+        </div>
+        <button
+          onClick={() => setDemoMode(v => !v)}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full mt-1 transition-all"
+          style={{
+            background: demoMode ? 'rgba(212,160,176,0.15)' : dm ? '#2e2e38' : '#f5f0ec',
+            border: `1px solid ${demoMode ? 'rgba(212,160,176,0.35)' : dm ? '#3a3a48' : '#e4ddd7'}`,
+          }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{ background: demoMode ? '#D4A0B0' : dm ? '#52525b' : '#ccc' }}
+          />
+          <span
+            className="text-[0.58rem] font-semibold tracking-[0.08em] uppercase"
+            style={{ color: demoMode ? '#D4A0B0' : muted }}
+          >
+            {demoMode ? 'Sample Data' : 'Live Data'}
+          </span>
+        </button>
       </div>
 
       {/* ── Stats Grid ─────────────────────────────────────────── */}
