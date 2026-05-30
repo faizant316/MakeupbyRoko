@@ -24,7 +24,7 @@ function parseNotes(raw) {
   return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
 }
 
-function LessonScheduler({ reg, onUpdateReg, dm, className }) {
+function LessonScheduler({ reg, onUpdateReg, dm, className, phone }) {
   const hasLesson = !!reg.appointment_date;
   const parsed = parseNotes(reg.lesson_notes);
   const [expanded, setExpanded] = useState(false);
@@ -89,6 +89,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className }) {
           registrationId: reg.id,
           clientEmail: reg.email,
           clientName: reg.full_name,
+          clientPhone: phone || reg.phone || '',
           className,
           lessonDate: form.date,
           lessonTime: form.time,
@@ -99,7 +100,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className }) {
       });
       if (!res.ok) throw new Error('Failed');
       const storedNotes = [form.type === 'Zoom' && meetLink ? `Link: ${meetLink}` : null, form.notes || null].filter(Boolean).join('\n');
-      onUpdateReg({ appointment_date: form.date, appointment_time: form.time, consultation_type: form.type, lesson_notes: storedNotes });
+      onUpdateReg({ appointment_date: form.date, appointment_time: form.time, consultation_type: form.type, lesson_notes: storedNotes, status: 'enrolled' });
       setSent(true);
       setExpanded(false);
     } catch {
@@ -280,7 +281,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className }) {
                 <div className="w-4 h-4 rounded-full flex items-center justify-center bg-green-500">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <p className="text-[0.75rem] font-medium text-green-600">Lesson scheduled — client notified.</p>
+                <p className="text-[0.75rem] font-medium text-green-600">Enrolled and notified.</p>
               </div>
             )}
           </div>
@@ -392,13 +393,6 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       setReg(prev => ({ ...prev, ...data }));
       queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
-      if (data.status === 'enrolled') {
-        fetch('/api/send-class-status-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'enrolled', to: reg.email, name: reg.full_name }),
-        }).catch(console.error);
-      }
     },
   });
 
@@ -581,6 +575,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
         <LessonScheduler
           reg={reg}
           className={selectedClasses.map(([, l]) => l).join(' · ') || 'Makeup Lesson'}
+          phone={reg.phone}
           dm={dm}
           onUpdateReg={(data) => {
             setReg(prev => ({ ...prev, ...data }));

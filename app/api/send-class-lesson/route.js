@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
 import { createClient } from '../../../src/lib/supabase/server';
-import { sendEmail, lessonScheduledEmail, adminLessonEmail } from '../../../src/lib/email';
+import { sendEmail, enrolledLessonEmail, adminLessonEmail } from '../../../src/lib/email';
 
 export async function POST(req) {
   try {
@@ -9,7 +9,7 @@ export async function POST(req) {
     if (authError) return authError;
 
     const supabase = createClient();
-    const { registrationId, clientEmail, clientName, className, lessonDate, lessonTime, meetingType, zoomLink, notes } = await req.json();
+    const { registrationId, clientEmail, clientName, clientPhone, className, lessonDate, lessonTime, meetingType, zoomLink, notes } = await req.json();
 
     if (!registrationId || !clientEmail || !lessonDate || !lessonTime) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -22,7 +22,7 @@ export async function POST(req) {
 
     const { error: dbErr } = await supabase
       .from('class_registrations')
-      .update({ appointment_date: lessonDate, appointment_time: lessonTime, consultation_type: meetingType, lesson_notes: storedNotes })
+      .update({ appointment_date: lessonDate, appointment_time: lessonTime, consultation_type: meetingType, lesson_notes: storedNotes, status: 'enrolled' })
       .eq('id', registrationId);
 
     if (dbErr) throw dbErr;
@@ -32,14 +32,15 @@ export async function POST(req) {
 
     await sendEmail({
       to: clientEmail,
-      subject: `Your makeup lesson is scheduled: ${dateFormatted} at ${lessonTime}`,
-      html: lessonScheduledEmail({
+      subject: `You're enrolled! Your ${className} is scheduled`,
+      html: enrolledLessonEmail({
         firstName,
         className,
         lessonDate: dateFormatted,
         lessonTime,
         meetingType,
         zoomLink: meetingType === 'Zoom' ? zoomLink : '',
+        clientPhone,
         notes,
       }),
     });
