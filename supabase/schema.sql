@@ -120,7 +120,8 @@ create table if not exists class_registrations (
   stripe_session_id text,
   appointment_date date,
   appointment_time text,
-  consultation_type text check (consultation_type in ('zoom', 'phone'))
+  consultation_type text check (consultation_type in ('Zoom', 'Phone')),
+  lesson_notes text
 );
 
 -- ============================================================
