@@ -24,7 +24,7 @@ function parseNotes(raw) {
   return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
 }
 
-function LessonScheduler({ reg, onUpdateReg, dm, className, phone }) {
+function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) {
   const hasLesson = !!reg.appointment_date;
   const parsed = parseNotes(reg.lesson_notes);
   const [expanded, setExpanded] = useState(false);
@@ -78,8 +78,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone }) {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const handleSend = async () => {
-    if (!form.date || !form.time) { alert('Please select a date and time.'); return; }
+  const doSend = async () => {
     setSaving(true);
     try {
       const res = await fetch('/api/send-class-lesson', {
@@ -108,6 +107,18 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSend = () => {
+    if (!form.date || !form.time) { alert('Please select a date and time.'); return; }
+    confirmFn({
+      title: 'Confirm & Notify Client?',
+      body: `This will enroll ${reg.full_name || 'the client'} and send them their lesson details.`,
+      color: LESSON_COLOR,
+      icon: '✓',
+      confirmLabel: 'Yes, Send',
+      onConfirm: doSend,
+    });
   };
 
   const lessonDate = reg.appointment_date
@@ -254,7 +265,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone }) {
             {/* Notes */}
             <div>
               <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>— optional</span>
+                Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
@@ -421,26 +432,6 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const confirm = ({ title, body, color, icon, confirmLabel, onConfirm }) =>
     setConfirmModal({ title, body, color, icon, confirmLabel, onConfirm });
 
-  const changeEnrollment = (newStatus) => {
-    const meta = ENROLLMENT_STATUSES[newStatus];
-    confirm({
-      title: newStatus === 'cancelled' ? 'Cancel this enrollment?' : `Mark as ${meta.label}?`,
-      body: newStatus === 'enrolled'
-        ? 'A confirmation email will be sent to the client.'
-        : newStatus === 'cancelled'
-        ? 'This will cancel their enrollment.'
-        : 'This will update their enrollment status.',
-      color: meta.bg,
-      icon: newStatus === 'cancelled' ? '✕' : '✓',
-      confirmLabel: newStatus === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update',
-      onConfirm: () => {
-        updateMutation.mutate({ status: newStatus });
-        const msgs = { pending: 'Marked as pending', confirmed: 'Enrollment confirmed', enrolled: 'Enrolled', cancelled: 'Enrollment cancelled' };
-        showToast(msgs[newStatus] || `Marked as ${meta.label}`, meta.bg);
-      },
-    });
-  };
-
   const changePayment = (newStatus) => {
     const meta = PAYMENT_META[newStatus];
     confirm({
@@ -577,31 +568,12 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           className={selectedClasses.map(([, l]) => l).join(' · ') || 'Makeup Lesson'}
           phone={reg.phone}
           dm={dm}
+          confirmFn={confirm}
           onUpdateReg={(data) => {
             setReg(prev => ({ ...prev, ...data }));
             queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
           }}
         />
-
-        {/* Enrollment Status */}
-        <div className="mb-8">
-          <SectionLabel>Enrollment Status</SectionLabel>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {Object.entries(ENROLLMENT_STATUSES).map(([s, meta]) => (
-              <button
-                key={s}
-                onClick={() => changeEnrollment(s)}
-                className="py-2.5 px-3 rounded-xl text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
-                style={enrollmentStatus === s
-                  ? { background: meta.bg, color: meta.text, boxShadow: `0 0 0 2px ${meta.bg}40` }
-                  : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
-                }
-              >
-                {meta.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Payment Status */}
         <div className="mb-8">
