@@ -8,25 +8,22 @@ export async function POST(req) {
     const formData = await req.formData();
     const file = formData.get('file');
     const token = formData.get('token');
-    const bookingId = formData.get('bookingId');
 
     if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
 
     const validationError = validateImageFile(file);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
-    // Validate token against database
-    let recordId = bookingId;
+    // Always resolve record via token — never trust a client-supplied ID
+    let recordId = null;
     let table = 'bookings';
 
-    if (!recordId) {
-      const { data: booking } = await supabase.from('bookings').select('id').eq('upload_token', token).maybeSingle();
-      if (booking) {
-        recordId = booking.id;
-      } else {
-        const { data: bridal } = await supabase.from('bridal_inquiries').select('id').eq('upload_token', token).maybeSingle();
-        if (bridal) { recordId = bridal.id; table = 'bridal_inquiries'; }
-      }
+    const { data: booking } = await supabase.from('bookings').select('id').eq('upload_token', token).maybeSingle();
+    if (booking) {
+      recordId = booking.id;
+    } else {
+      const { data: bridal } = await supabase.from('bridal_inquiries').select('id').eq('upload_token', token).maybeSingle();
+      if (bridal) { recordId = bridal.id; table = 'bridal_inquiries'; }
     }
 
     if (!recordId) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 404 });

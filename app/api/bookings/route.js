@@ -21,20 +21,25 @@ export async function GET() {
   }
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(req) {
   try {
     const supabase = createClient();
     const body = await req.json();
+
+    const { name, email, phone, service, date, time, notes, status, reference_photos } = body;
+    if (!name || !email || !service) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
+
     const upload_token = body.upload_token || uuidv4();
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert({ ...body, upload_token })
-      .select()
-      .single();
+    const insert = { name, email, phone, service, date, time, notes, status, reference_photos, upload_token };
+
+    const { data, error } = await supabase.from('bookings').insert(insert).select().single();
     if (error) throw error;
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });
   } catch (err) {
     console.error('POST /api/bookings:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 });
   }
 }
