@@ -32,7 +32,7 @@ export async function POST(req) {
 
     await sendEmail({
       to: clientEmail,
-      subject: `Your makeup lesson is scheduled — ${dateFormatted} at ${lessonTime}`,
+      subject: `Your makeup lesson is scheduled: ${dateFormatted} at ${lessonTime}`,
       html: lessonScheduledEmail({
         firstName,
         className,
@@ -47,7 +47,7 @@ export async function POST(req) {
     const adminEmail = process.env.ADMIN_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
       to: adminEmail,
-      subject: `💄 Lesson Scheduled — ${clientName} · ${dateFormatted} at ${lessonTime}`,
+      subject: `💄 Lesson Scheduled: ${clientName} · ${dateFormatted} at ${lessonTime}`,
       html: adminLessonEmail({
         clientName, clientEmail, className,
         lessonDate: dateFormatted, lessonTime,

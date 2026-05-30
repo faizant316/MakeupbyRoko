@@ -438,10 +438,10 @@ export function lessonScheduledEmail({ firstName, className, lessonDate, lessonT
     </div>
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">To Prepare</p>
-      ${step(1, 'Come with a clean face', 'No makeup or light moisturizer only — we\'re starting fresh')}
-      ${step(2, 'Bring your current makeup bag', 'We\'ll go through your products and build from what you have')}
+      ${step(1, 'Come with a clean face', 'No makeup or light moisturizer only. We are starting fresh!')}
+      ${step(2, 'Bring your current makeup bag', 'We will go through your products and build from what you have')}
       ${step(3, 'Have your inspiration ready', 'Save looks you love so we can break down the techniques together')}
-      ${step(4, 'Come with questions', 'No question is too basic — this lesson is all about you')}
+      ${step(4, 'Come with questions', 'No question is too basic. This lesson is all about you!')}
     `)}
   `);
 }
