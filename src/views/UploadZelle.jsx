@@ -126,7 +126,6 @@ export default function UploadZelle() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
       formData.append('token', token);
-      if (bookingId) formData.append('bookingId', bookingId);
       const res = await fetch('/api/zelle-upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
