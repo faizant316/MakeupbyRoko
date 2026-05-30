@@ -404,8 +404,9 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
               </div>
             ))}
             {dayClassRegs.map(r => {
-              const cls = ['private_basic_lesson','virtual_lesson','intermediate_lesson','glam_class','masterclass'].filter(k => r[k]);
-              const label = cls.length ? cls[0].replace(/_/g, ' ') : 'Makeup Class';
+              const cls = ['private_basic_lesson','masterclass','virtual_lesson','intermediate_lesson','glam_class'].filter(k => r[k]);
+              const CLASS_NAMES = { private_basic_lesson: 'Basic Lesson', masterclass: 'Advanced Lesson', virtual_lesson: 'Virtual Lesson', intermediate_lesson: 'Intermediate Lesson', glam_class: 'Glam Class' };
+              const label = cls.length ? CLASS_NAMES[cls[0]] : 'Makeup Class';
               return (
                 <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: dm ? '#27272a' : '#FDF5F8', borderColor: dm ? '#4a3a48' : '#f0d8e4' }}>
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#D4A0B0' }} />

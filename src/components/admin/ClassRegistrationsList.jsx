@@ -3,19 +3,19 @@ import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 
 const CLASS_LABELS = {
-  private_basic_lesson: 'Private Basic Makeup Lesson',
+  private_basic_lesson: 'Basic Makeup Lesson',
+  masterclass: 'Advanced Makeup Lesson',
   virtual_lesson: 'Virtual Makeup Lesson',
   intermediate_lesson: 'Intermediate Makeup Lesson',
   glam_class: 'Glam Makeup Class',
-  masterclass: 'Makeup Masterclass',
 };
 
 const CLASS_PRICES = {
   private_basic_lesson: 300,
+  masterclass: 1500,
   virtual_lesson: 400,
   intermediate_lesson: 500,
   glam_class: 600,
-  masterclass: 1500,
 };
 
 const ENROLLMENT_STYLES = {
