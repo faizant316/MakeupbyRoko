@@ -1,23 +1,24 @@
 import { NextResponse } from 'next/server';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { OAuth2Client } from 'google-auth-library';
 import { requireAdmin } from '../../../../src/lib/requireAdmin';
 
 const PROPERTY = `properties/${process.env.GA4_PROPERTY_ID || '536969013'}`;
 
 function makeClient() {
-  return new BetaAnalyticsDataClient({
-    credentials: {
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    },
-  });
+  const auth = new OAuth2Client(
+    process.env.GOOGLE_OAUTH_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+  );
+  auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  return new BetaAnalyticsDataClient({ authClient: auth });
 }
 
 export async function GET() {
   const { authError } = await requireAdmin();
   if (authError) return authError;
 
-  if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+  if (!process.env.GOOGLE_OAUTH_CLIENT_ID || !process.env.GOOGLE_OAUTH_CLIENT_SECRET || !process.env.GOOGLE_REFRESH_TOKEN) {
     return NextResponse.json({ notConfigured: true });
   }
 
