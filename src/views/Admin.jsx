@@ -32,8 +32,8 @@ export default function Admin() {
   const [showAddClient, setShowAddClient] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [authGranted, setAuthGranted] = useState(false);
+  const [authChecked, setAuthChecked] = useState(true);   // DEV: bypassed
+  const [authGranted, setAuthGranted] = useState(true);   // DEV: bypassed
   const [authError, setAuthError] = useState(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -42,17 +42,18 @@ export default function Admin() {
     localStorage.setItem('admin-dark', darkMode);
   }, [darkMode]);
 
-  useEffect(() => {
-    api.auth.me().then(u => {
-      if (u.full_name) setUserName(u.full_name.split(' ')[0]);
-      setAuthGranted(true);
-      setAuthChecked(true);
-    }).catch(() => {
-      setAuthChecked(true);
-      router.push('/login');
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // DEV MODE: auth bypassed — re-enable by uncommenting below and reverting useState defaults above
+  // useEffect(() => {
+  //   api.auth.me().then(u => {
+  //     if (u.full_name) setUserName(u.full_name.split(' ')[0]);
+  //     setAuthGranted(true);
+  //     setAuthChecked(true);
+  //   }).catch(() => {
+  //     setAuthChecked(true);
+  //     router.push('/login');
+  //   });
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   const { data: bookings = [], isLoading: loadingBookings } = useQuery({
     queryKey: ['admin-bookings'],

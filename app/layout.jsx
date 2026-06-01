@@ -1,6 +1,7 @@
 import Script from 'next/script';
 import './globals.css';
 import Providers from './providers';
+import DevSwitcher from './DevSwitcher';
 
 const GA_ID = 'G-HE25CGQHH4';
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <Providers>{children}</Providers>
+        <DevSwitcher />
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
         <Script id="ga-init" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
