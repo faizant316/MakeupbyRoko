@@ -1,135 +1,51 @@
 'use client';
+import { useState, useEffect } from 'react';
 import {
-  ExternalLink, Users, Activity, Clock, RefreshCw,
-  MapPin, Smartphone, Globe, FileText, MousePointer,
-  Zap, BarChart2, ChevronRight,
+  Users, Activity, Clock, RefreshCw,
+  Smartphone, FileText, BarChart2, ExternalLink, Zap, Monitor,
 } from 'lucide-react';
 
-// ─── GA4 deep links (property p536969013) ────────────────────────────────────
 const GA = 'https://analytics.google.com/analytics/web/#/p536969013';
-const R  = `${GA}/reports`;
 
-// ─── Section data ────────────────────────────────────────────────────────────
+const fmt    = n  => n == null ? '--' : n >= 10000 ? `${(n / 1000).toFixed(0)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+const fmtDur = s  => !s ? '--' : s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`;
+const pct    = (a, b) => b ? `${Math.round(a / b * 100)}%` : '0%';
 
-const OVERVIEW = [
-  {
-    icon: Users,     accent: '#3B82F6',
-    label: 'Total Visitors',
-    desc:  'Everyone who landed on your site',
-    sub:   'View users, new users & growth over time',
-    link:  `${R}/user-acquisition-overview`,
-  },
-  {
-    icon: Activity,  accent: '#22C55E',
-    label: 'Sessions',
-    desc:  'Total browsing sessions started',
-    sub:   'Same person visiting twice counts twice',
-    link:  `${R}/engagement-overview`,
-  },
-  {
-    icon: Clock,     accent: '#F59E0B',
-    label: 'Avg Time on Site',
-    desc:  'How long people actually stay',
-    sub:   'Avg engagement time per session',
-    link:  `${R}/engagement-overview`,
-  },
-  {
-    icon: RefreshCw, accent: '#D4A0B0',
-    label: 'New vs Returning',
-    desc:  'Are past clients coming back?',
-    sub:   'Retention & loyalty tracked over 8 weeks',
-    link:  `${R}/lifecycle-retention-overview`,
-  },
-];
+const CHANNEL_MAP = {
+  'Organic Search': { label: 'Google Search',  dot: '#4285F4', letter: 'G' },
+  'Organic Social': { label: 'Social Media',   dot: '#E1306C', letter: '◈' },
+  'Direct':         { label: 'Direct',         dot: '#8B5CF6', letter: '↗' },
+  'Referral':       { label: 'Referral Links', dot: '#10B981', letter: '⋯' },
+  'Email':          { label: 'Email',          dot: '#F59E0B', letter: '@' },
+  'Paid Search':    { label: 'Paid Search',    dot: '#EF4444', letter: '$' },
+  'Unassigned':     { label: 'Other',          dot: '#6B7280', letter: '·' },
+};
 
-const TRAFFIC = [
-  {
-    dot: '#4285F4', letter: 'G',
-    label: 'Organic Search',
-    sub:   'Found you through Google',
-    tip:   'Best signal your SEO & Google Business profile is working.',
-    link:  `${R}/acquisition-traffic-acquisition`,
-  },
-  {
-    dot: '#E1306C', letter: '◈',
-    label: 'Social Media',
-    sub:   'Instagram, TikTok, Pinterest',
-    tip:   'Tracks your content-to-client pipeline from every post.',
-    link:  `${R}/acquisition-traffic-acquisition`,
-  },
-  {
-    dot: '#8B5CF6', letter: '↗',
-    label: 'Direct',
-    sub:   'Typed your URL or used a bookmark',
-    tip:   'Usually loyal, repeat, or word-of-mouth clients.',
-    link:  `${R}/acquisition-traffic-acquisition`,
-  },
-  {
-    dot: '#10B981', letter: '⋯',
-    label: 'Referral Links',
-    sub:   'Other websites linking to you',
-    tip:   'Vendor sites, wedding directories, or local blogs.',
-    link:  `${R}/acquisition-traffic-acquisition`,
-  },
-];
+const COUNTRY_FLAG = {
+  'United States':        '🇺🇸',
+  'Canada':               '🇨🇦',
+  'United Kingdom':       '🇬🇧',
+  'Australia':            '🇦🇺',
+  'Germany':              '🇩🇪',
+  'France':               '🇫🇷',
+  'Mexico':               '🇲🇽',
+  'India':                '🇮🇳',
+  'Brazil':               '🇧🇷',
+  'United Arab Emirates': '🇦🇪',
+  'Saudi Arabia':         '🇸🇦',
+  'Pakistan':             '🇵🇰',
+  'Philippines':          '🇵🇭',
+  'Netherlands':          '🇳🇱',
+  'Spain':                '🇪🇸',
+  'Italy':                '🇮🇹',
+};
 
-const AUDIENCE = [
-  {
-    icon: MapPin,     accent: '#F59E0B',
-    label: 'Location',
-    desc:  'Cities & states that visit most',
-    sub:   'Spot destination wedding leads outside California',
-    link:  `${R}/user-demographic-detail`,
-  },
-  {
-    icon: Smartphone, accent: '#3B82F6',
-    label: 'Devices',
-    desc:  'iPhone vs Android vs Desktop breakdown',
-    sub:   'Confirms why mobile design is the priority',
-    link:  `${R}/tech-overview`,
-  },
-  {
-    icon: Globe,      accent: '#D4A0B0',
-    label: 'Demographics',
-    desc:  'Age range & gender of your visitors',
-    sub:   'Know exactly who is looking at your work',
-    link:  `${R}/user-demographics-overview`,
-  },
-];
-
-const CONTENT = [
-  {
-    icon: FileText,     accent: '#22C55E', live: false,
-    label: 'Top Pages',
-    desc:  'Which pages people view most',
-    sub:   'See if Services, Gallery, or Booking ranks highest',
-    link:  `${R}/engagement-pages-and-screens`,
-  },
-  {
-    icon: MousePointer, accent: '#8B5CF6', live: false,
-    label: 'Events & Clicks',
-    desc:  'What visitors do before they book',
-    sub:   'Button clicks, form views, booking taps',
-    link:  `${R}/engagement-events`,
-  },
-  {
-    icon: Zap,          accent: '#EF4444', live: true,
-    label: 'Realtime',
-    desc:  "Who's on your site right now",
-    sub:   'Active visitors in the last 30 minutes',
-    link:  `${GA}/realtime`,
-  },
-];
-
-const TIPS = [
-  { text: "Watch for traffic spikes after you post on Instagram — that's your content-to-client pipeline working.", link: `${R}/acquisition-traffic-acquisition`  },
-  { text: "80%+ of your visitors are likely on iPhone. Check Devices to confirm mobile is rendering correctly.",    link: `${R}/tech-overview`                   },
-  { text: "Cities outside California in Location often signal destination wedding or travel-ready clients.",        link: `${R}/user-demographic-detail`         },
-  { text: "High drop-off on a specific page means it needs work. Check Top Pages to see where people leave.",      link: `${R}/engagement-pages-and-screens`    },
-  { text: "20%+ returning visitors means your brand is sticky — people remember you and come back.",               link: `${R}/lifecycle-retention-overview`    },
-];
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
+function Skel({ dm, h = 16, className = '' }) {
+  return (
+    <div className={`rounded-lg animate-pulse ${className}`}
+      style={{ height: h, background: dm ? '#2e2e38' : '#f0ebe7' }} />
+  );
+}
 
 function SectionHead({ label, dm }) {
   return (
@@ -140,200 +56,289 @@ function SectionHead({ label, dm }) {
   );
 }
 
-function OverviewCard({ icon: Icon, accent, label, desc, sub, link, dm }) {
+function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm }) {
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#ede8e3';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
-    <a href={link} target="_blank" rel="noopener noreferrer"
-      className="flex flex-col gap-3 rounded-2xl p-4 transition-all active:scale-[0.97] group"
-      style={{ background: bg, border: `1px solid ${bd}`, textDecoration: 'none' }}>
-      <div className="flex items-center justify-between">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: `${accent}18` }}>
-          <Icon size={15} color={accent} strokeWidth={1.5} />
-        </div>
-        <ExternalLink size={11} strokeWidth={1.5} style={{ color: dm ? '#3a3a48' : '#e0d8d4' }} />
+    <div className="flex flex-col gap-2.5 rounded-2xl p-4"
+      style={{ background: bg, border: `1px solid ${bd}` }}>
+      <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+        style={{ background: `${accent}18` }}>
+        <Icon size={14} color={accent} strokeWidth={1.5} />
       </div>
+      {loading
+        ? <Skel dm={dm} h={28} className="w-2/3" />
+        : <p className="text-[1.6rem] font-bold leading-none tabular-nums" style={{ color: tx }}>{value}</p>
+      }
       <div>
-        <p className="text-[0.82rem] font-semibold leading-tight mb-1" style={{ color: tx }}>{label}</p>
-        <p className="text-[0.67rem] leading-snug" style={{ color: mu }}>{desc}</p>
+        <p className="text-[0.72rem] font-semibold" style={{ color: tx }}>{label}</p>
+        <p className="text-[0.6rem] mt-0.5 leading-snug" style={{ color: mu }}>{sub}</p>
       </div>
-      <p className="text-[0.6rem] font-medium pt-2.5"
-        style={{ color: accent, borderTop: `1px solid ${dm ? '#2e2e38' : '#f5f0ec'}` }}>
-        {sub}
-      </p>
-    </a>
+    </div>
   );
 }
 
-function TrafficRow({ dot, letter, label, sub, tip, link, dm }) {
+export default function AnalyticsTab({ darkMode: dm }) {
+  const [data,    setData]    = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err,     setErr]     = useState(null);
+
+  useEffect(() => {
+    fetch('/api/admin/analytics')
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(e => { setErr(e.message); setLoading(false); });
+  }, []);
+
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#ede8e3';
+  const sb = dm ? '#1e1e24' : '#FAF8F6';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   const di = dm ? '#52525b' : '#c5bdb5';
-  return (
-    <a href={link} target="_blank" rel="noopener noreferrer"
-      className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] group"
-      style={{ background: bg, border: `1px solid ${bd}`, textDecoration: 'none' }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-white text-[0.82rem]"
-        style={{ background: dot }}>
-        {letter}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[0.78rem] font-semibold leading-tight" style={{ color: tx }}>{label}</p>
-        <p className="text-[0.65rem] mt-0.5" style={{ color: mu }}>{sub}</p>
-        <p className="text-[0.6rem] mt-1 leading-snug" style={{ color: di }}>{tip}</p>
-      </div>
-      <ChevronRight size={13} strokeWidth={1.5} className="flex-shrink-0" style={{ color: dm ? '#3a3a48' : '#ddd' }} />
-    </a>
-  );
-}
 
-function AudienceRow({ icon: Icon, accent, label, desc, sub, link, dm }) {
-  const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
-  const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
-  return (
-    <a href={link} target="_blank" rel="noopener noreferrer"
-      className="flex items-start gap-3.5 rounded-2xl px-4 py-4 transition-all active:scale-[0.98] group"
-      style={{ background: bg, border: `1px solid ${bd}`, textDecoration: 'none' }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ background: `${accent}18` }}>
-        <Icon size={15} color={accent} strokeWidth={1.5} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[0.78rem] font-semibold leading-tight" style={{ color: tx }}>{label}</p>
-        <p className="text-[0.65rem] mt-0.5" style={{ color: mu }}>{desc}</p>
-        <p className="text-[0.6rem] mt-1.5 font-medium" style={{ color: accent }}>{sub}</p>
-      </div>
-      <ChevronRight size={13} strokeWidth={1.5} className="flex-shrink-0 mt-1" style={{ color: dm ? '#3a3a48' : '#ddd' }} />
-    </a>
-  );
-}
-
-function ContentRow({ icon: Icon, accent, label, desc, sub, link, live, dm }) {
-  const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
-  const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
-  return (
-    <a href={link} target="_blank" rel="noopener noreferrer"
-      className="flex items-center gap-3.5 rounded-2xl px-4 py-4 transition-all active:scale-[0.98] group"
-      style={{ background: bg, border: `1px solid ${bd}`, textDecoration: 'none' }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: `${accent}18` }}>
-        <Icon size={15} color={accent} strokeWidth={1.5} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <p className="text-[0.78rem] font-semibold leading-tight" style={{ color: tx }}>{label}</p>
-          {live && (
-            <span className="flex items-center gap-1 flex-shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[0.52rem] font-bold text-red-500 uppercase tracking-[0.1em]">Live</span>
-            </span>
-          )}
+  if (!loading && data?.notConfigured) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4 text-center px-6">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+          style={{ background: 'rgba(212,160,176,0.1)', border: '1px solid rgba(212,160,176,0.2)' }}>
+          <BarChart2 size={22} color="#D4A0B0" strokeWidth={1.5} />
         </div>
-        <p className="text-[0.65rem]" style={{ color: mu }}>{desc}</p>
-        <p className="text-[0.6rem] mt-1 font-medium" style={{ color: accent }}>{sub}</p>
+        <div>
+          <p className="text-[0.95rem] font-semibold mb-1.5" style={{ color: tx }}>
+            Connect Google Analytics
+          </p>
+          <p className="text-[0.72rem] leading-relaxed" style={{ color: mu }}>
+            Add GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, and GA4_PROPERTY_ID to your environment variables to see live data here.
+          </p>
+        </div>
       </div>
-      <ChevronRight size={13} strokeWidth={1.5} className="flex-shrink-0" style={{ color: dm ? '#3a3a48' : '#ddd' }} />
-    </a>
-  );
-}
+    );
+  }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+  if (!loading && err) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+        <p className="text-[0.85rem] font-semibold" style={{ color: tx }}>Failed to load analytics</p>
+        <p className="text-[0.7rem]" style={{ color: mu }}>{err}</p>
+      </div>
+    );
+  }
 
-export default function AnalyticsTab({ darkMode: dm }) {
-  const mu = dm ? '#71717a' : '#999';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
-  const bg = dm ? '#26262e' : '#fff';
-  const sb = dm ? '#1e1e24' : '#FAF8F6';
+  const ov                = data?.overview;
+  const totalTrafficSess  = (data?.traffic   || []).reduce((s, c) => s + c.sessions, 0);
+  const totalDeviceUsers  = (data?.devices   || []).reduce((s, d) => s + d.users,    0);
 
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-6">
 
-      {/* ── Hero CTA ──────────────────────────────────────────── */}
-      <a
-        href={`${GA}/reports/intelligenthome`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-between rounded-2xl px-5 py-5 transition-all active:scale-[0.98]"
-        style={{
-          background: 'linear-gradient(135deg, #1a1014 0%, #2a1820 100%)',
-          border: '1px solid rgba(212,160,176,0.2)',
-          boxShadow: '0 4px 24px rgba(212,160,176,0.08)',
-          textDecoration: 'none',
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(212,160,176,0.15)', border: '1px solid rgba(212,160,176,0.25)' }}>
-            <BarChart2 size={18} color="#D4A0B0" strokeWidth={1.5} />
-          </div>
-          <div>
-            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Google Analytics</p>
-            <p className="text-[0.95rem] font-serif text-white font-light leading-tight">Open Full Dashboard</p>
-            <p className="text-[0.65rem] text-white/40 mt-0.5">Real-time traffic data · Makeup by Roko</p>
-          </div>
+      {/* Realtime banner */}
+      <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5"
+        style={{ background: dm ? '#1a1118' : '#fff5f7', border: '1px solid rgba(212,160,176,0.25)' }}>
+        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+        <div className="flex-1">
+          {loading
+            ? <Skel dm={dm} h={14} className="w-48" />
+            : <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#f4d4dc' : '#8b3a52' }}>
+                {data?.realtimeUsers ?? 0} {data?.realtimeUsers === 1 ? 'person' : 'people'} on your site right now
+              </p>
+          }
         </div>
-        <ExternalLink size={15} color="rgba(212,160,176,0.6)" strokeWidth={1.5} />
-      </a>
+        <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-red-500 flex-shrink-0">Live</span>
+      </div>
 
-      {/* ── Audience Overview ──────────────────────────────────── */}
+      {/* Audience Overview */}
       <div>
-        <SectionHead label="Audience Overview" dm={dm} />
+        <SectionHead label="Audience Overview — Last 30 Days" dm={dm} />
         <div className="grid grid-cols-2 gap-3">
-          {OVERVIEW.map(c => <OverviewCard key={c.label} {...c} dm={dm} />)}
+          <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Active users"           loading={loading} dm={dm} />
+          <MetricCard icon={Activity}  accent="#22C55E" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total sessions"         loading={loading} dm={dm} />
+          <MetricCard icon={Clock}     accent="#F59E0B" label="Avg Time"  value={fmtDur(ov?.avgSessionDuration)}                    sub="Per session"            loading={loading} dm={dm} />
+          <MetricCard icon={RefreshCw} accent="#D4A0B0" label="New Users" value={ov ? pct(ov.newUsers, ov.activeUsers) : '--'}      sub="First-time visitors"    loading={loading} dm={dm} />
         </div>
       </div>
 
-      {/* ── Traffic Sources ────────────────────────────────────── */}
+      {/* Traffic sources */}
       <div>
         <SectionHead label="Where Traffic Comes From" dm={dm} />
-        <div className="flex flex-col gap-2.5">
-          {TRAFFIC.map(c => <TrafficRow key={c.label} {...c} dm={dm} />)}
+        <div className="rounded-2xl overflow-hidden" style={{ background: bg, border: `1px solid ${bd}` }}>
+          {loading
+            ? [1, 2, 3, 4].map(i => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5"
+                  style={{ borderBottom: i < 4 ? `1px solid ${bd}` : 'none' }}>
+                  <Skel dm={dm} h={36} className="w-9 flex-shrink-0 rounded-xl" />
+                  <div className="flex-1 flex flex-col gap-2">
+                    <Skel dm={dm} h={11} className="w-28" />
+                    <Skel dm={dm} h={6} className="w-full rounded-full" />
+                  </div>
+                  <Skel dm={dm} h={14} className="w-8 flex-shrink-0" />
+                </div>
+              ))
+            : (data?.traffic || []).length === 0
+              ? <p className="px-4 py-6 text-center text-[0.72rem]" style={{ color: mu }}>No traffic data yet</p>
+              : (data?.traffic || []).map((ch, i, arr) => {
+                  const m   = CHANNEL_MAP[ch.channel] || { label: ch.channel, dot: '#6B7280', letter: '?' };
+                  const bar = totalTrafficSess ? (ch.sessions / totalTrafficSess) * 100 : 0;
+                  return (
+                    <div key={ch.channel} className="flex items-center gap-3 px-4 py-3.5"
+                      style={{ borderBottom: i < arr.length - 1 ? `1px solid ${bd}` : 'none' }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-white text-[0.78rem]"
+                        style={{ background: m.dot }}>
+                        {m.letter}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[0.75rem] font-semibold mb-1.5" style={{ color: tx }}>{m.label}</p>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f0ebe7' }}>
+                          <div className="h-full rounded-full" style={{ width: `${bar}%`, background: m.dot }} />
+                        </div>
+                      </div>
+                      <p className="text-[0.78rem] font-bold tabular-nums flex-shrink-0 ml-2" style={{ color: tx }}>
+                        {fmt(ch.sessions)}
+                      </p>
+                    </div>
+                  );
+                })
+          }
         </div>
       </div>
 
-      {/* ── Audience Breakdown ────────────────────────────────── */}
+      {/* Top pages */}
       <div>
-        <SectionHead label="Audience Breakdown" dm={dm} />
-        <div className="flex flex-col gap-2.5">
-          {AUDIENCE.map(c => <AudienceRow key={c.label} {...c} dm={dm} />)}
+        <SectionHead label="Top Pages" dm={dm} />
+        <div className="rounded-2xl overflow-hidden" style={{ background: bg, border: `1px solid ${bd}` }}>
+          {loading
+            ? [1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3"
+                  style={{ borderBottom: i < 5 ? `1px solid ${bd}` : 'none' }}>
+                  <Skel dm={dm} h={11} className="w-4 flex-shrink-0" />
+                  <Skel dm={dm} h={11} className="flex-1" />
+                  <Skel dm={dm} h={11} className="w-10 flex-shrink-0" />
+                </div>
+              ))
+            : (data?.topPages || []).length === 0
+              ? <p className="px-4 py-6 text-center text-[0.72rem]" style={{ color: mu }}>No page data yet</p>
+              : (data?.topPages || []).map((p, i, arr) => (
+                  <div key={p.path} className="flex items-center gap-3 px-4 py-3"
+                    style={{ borderBottom: i < arr.length - 1 ? `1px solid ${bd}` : 'none' }}>
+                    <span className="text-[0.62rem] font-bold w-4 text-right flex-shrink-0 tabular-nums" style={{ color: di }}>
+                      {i + 1}
+                    </span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <FileText size={10} strokeWidth={1.5} style={{ color: mu, flexShrink: 0 }} />
+                      <p className="text-[0.73rem] truncate" style={{ color: tx }}>
+                        {p.path === '/' ? 'Home' : p.path}
+                      </p>
+                    </div>
+                    <p className="text-[0.73rem] font-semibold tabular-nums flex-shrink-0" style={{ color: tx }}>
+                      {fmt(p.views)}
+                    </p>
+                  </div>
+                ))
+          }
         </div>
       </div>
 
-      {/* ── Content & Behavior ────────────────────────────────── */}
-      <div>
-        <SectionHead label="Content & Behavior" dm={dm} />
-        <div className="flex flex-col gap-2.5">
-          {CONTENT.map(c => <ContentRow key={c.label} {...c} dm={dm} />)}
+      {/* Devices + Locations */}
+      <div className="grid grid-cols-2 gap-3">
+
+        {/* Devices */}
+        <div>
+          <SectionHead label="Devices" dm={dm} />
+          <div className="rounded-2xl p-4 h-full flex flex-col gap-3.5" style={{ background: bg, border: `1px solid ${bd}` }}>
+            {loading
+              ? [1, 2, 3].map(i => (
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <Skel dm={dm} h={10} className="w-20" />
+                    <Skel dm={dm} h={5} className="w-full rounded-full" />
+                  </div>
+                ))
+              : (data?.devices || []).map(d => {
+                  const p    = totalDeviceUsers ? Math.round(d.users / totalDeviceUsers * 100) : 0;
+                  const Ico  = d.device === 'mobile' ? Smartphone : d.device === 'tablet' ? FileText : Monitor;
+                  return (
+                    <div key={d.device} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Ico size={10} strokeWidth={1.5} style={{ color: mu }} />
+                          <p className="text-[0.65rem] font-medium capitalize" style={{ color: tx }}>{d.device}</p>
+                        </div>
+                        <p className="text-[0.65rem] font-bold tabular-nums" style={{ color: tx }}>{p}%</p>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f0ebe7' }}>
+                        <div className="h-full rounded-full" style={{ width: `${p}%`, background: '#D4A0B0' }} />
+                      </div>
+                    </div>
+                  );
+                })
+            }
+          </div>
         </div>
+
+        {/* Locations */}
+        <div>
+          <SectionHead label="Top Locations" dm={dm} />
+          <div className="rounded-2xl p-4 flex flex-col gap-2.5" style={{ background: bg, border: `1px solid ${bd}` }}>
+            {loading
+              ? [1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skel dm={dm} h={14} className="w-5 flex-shrink-0" />
+                    <Skel dm={dm} h={11} className="flex-1" />
+                    <Skel dm={dm} h={11} className="w-8 flex-shrink-0" />
+                  </div>
+                ))
+              : (data?.locations || []).map(loc => (
+                  <div key={loc.country} className="flex items-center gap-2">
+                    <span className="text-base leading-none flex-shrink-0">
+                      {COUNTRY_FLAG[loc.country] || '🌍'}
+                    </span>
+                    <p className="text-[0.67rem] flex-1 truncate" style={{ color: tx }}>{loc.country}</p>
+                    <p className="text-[0.67rem] font-bold tabular-nums flex-shrink-0" style={{ color: tx }}>{fmt(loc.users)}</p>
+                  </div>
+                ))
+            }
+          </div>
+        </div>
+
       </div>
 
-      {/* ── What to Watch ─────────────────────────────────────── */}
-      <div className="rounded-2xl p-5" style={{ background: bg, border: `1px solid ${bd}` }}>
-        <p className="text-[0.57rem] font-semibold tracking-[0.16em] uppercase mb-4" style={{ color: mu }}>
-          What to Watch
-        </p>
-        <div className="flex flex-col gap-3.5">
-          {TIPS.map(({ text, link }) => (
-            <a key={text} href={link} target="_blank" rel="noopener noreferrer"
-              className="flex items-start gap-3 group" style={{ textDecoration: 'none' }}>
-              <span className="w-1.5 h-1.5 rounded-full mt-[0.42rem] flex-shrink-0" style={{ background: '#D4A0B0' }} />
-              <p className="text-[0.75rem] leading-relaxed group-hover:opacity-70 transition-opacity"
-                style={{ color: dm ? '#a1a1aa' : '#555' }}>{text}</p>
-            </a>
-          ))}
+      {/* Page views total */}
+      {!loading && ov && (
+        <div className="flex items-center justify-between rounded-2xl px-5 py-4"
+          style={{ background: bg, border: `1px solid ${bd}` }}>
+          <div>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-0.5" style={{ color: mu }}>Total Page Views</p>
+            <p className="text-[1.5rem] font-bold tabular-nums leading-none" style={{ color: tx }}>{fmt(ov.pageViews)}</p>
+            <p className="text-[0.62rem] mt-0.5" style={{ color: mu }}>last 30 days</p>
+          </div>
+          <Zap size={28} strokeWidth={1} color={dm ? '#3a3a48' : '#e8e0db'} />
         </div>
-      </div>
+      )}
 
-      {/* ── GA ID badge ───────────────────────────────────────── */}
+      {/* Open GA4 */}
+      <a href={`${GA}/reports/intelligenthome`} target="_blank" rel="noopener noreferrer"
+        className="flex items-center justify-between rounded-2xl px-5 py-4 transition-all active:scale-[0.98]"
+        style={{
+          background:    'linear-gradient(135deg, #1a1014 0%, #2a1820 100%)',
+          border:        '1px solid rgba(212,160,176,0.2)',
+          boxShadow:     '0 4px 24px rgba(212,160,176,0.06)',
+          textDecoration: 'none',
+        }}>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(212,160,176,0.15)', border: '1px solid rgba(212,160,176,0.2)' }}>
+            <BarChart2 size={15} color="#D4A0B0" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-[0.75rem] font-semibold text-white/80">Open Full Dashboard</p>
+            <p className="text-[0.6rem] text-white/35 mt-0.5">Google Analytics 4</p>
+          </div>
+        </div>
+        <ExternalLink size={13} color="rgba(212,160,176,0.5)" strokeWidth={1.5} />
+      </a>
+
+      {/* Tracking badge */}
       <div className="flex items-center justify-between rounded-xl px-4 py-3"
         style={{ background: sb, border: `1px solid ${bd}` }}>
         <div>
