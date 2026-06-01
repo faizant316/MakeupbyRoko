@@ -87,6 +87,16 @@ export default function ClassSelector({ classes, selected, onToggle, onClose, on
                         {cls.duration} · <span className="text-[#A0785A]">${cls.deposit} deposit</span>
                       </p>
                       <p className="text-[0.78rem] text-gray-500 leading-[1.7]">{cls.description}</p>
+                      {cls.includes && (
+                        <ul className="mt-2 flex flex-col gap-1">
+                          {cls.includes.map((item, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[0.74rem] text-gray-500">
+                              <span className="text-[#D4A0B0] mt-[2px] flex-shrink-0">•</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 </div>
