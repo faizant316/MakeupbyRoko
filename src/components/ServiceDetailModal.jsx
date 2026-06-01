@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 
-// Remove sentences that duplicate info already shown in a badge
 function dedupeText(text, phrases) {
   if (!text) return text;
   const sentences = text.split(/(?<=[.!?])\s+/);
@@ -10,7 +9,6 @@ function dedupeText(text, phrases) {
   return filtered.length ? filtered.join(' ').trim() : text;
 }
 
-// ── Icons ────────────────────────────────────────────────────
 const IconBack = ({ dark = false }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5"
     strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
@@ -24,7 +22,6 @@ const IconClose = ({ dark = false }) => (
   </svg>
 );
 
-// Dark frosted pill — matches desktop button style exactly
 const darkPillStyle = {
   background: 'rgba(0,0,0,0.38)',
   backdropFilter: 'blur(8px)',
@@ -38,20 +35,119 @@ const darkPillStyle = {
   flexShrink: 0,
 };
 
+function PhotoCarousel({ photos, idx, onPrev, onNext, onSetIdx, showArrows = true }) {
+  const count = photos.length;
+  if (count === 0) return <div className="w-full h-full bg-[#f5f0ec]" />;
+
+  return (
+    <div className="relative w-full h-full overflow-hidden select-none">
+      {photos.map((src, i) => (
+        <img
+          key={i}
+          src={src}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 w-full h-full object-cover object-top"
+          style={{
+            opacity: i === idx ? 1 : 0,
+            transition: 'opacity 0.38s ease',
+            zIndex: i === idx ? 1 : 0,
+          }}
+        />
+      ))}
+
+      {showArrows && count > 1 && (
+        <>
+          <button
+            onClick={e => { e.stopPropagation(); onPrev(); }}
+            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 items-center justify-center transition-all hover:scale-105 active:scale-90"
+            style={darkPillStyle}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onNext(); }}
+            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 items-center justify-center transition-all hover:scale-105 active:scale-90"
+            style={darkPillStyle}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {count > 1 && (
+        <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              onClick={e => { e.stopPropagation(); onSetIdx(i); }}
+              style={{
+                width: i === idx ? 20 : 6,
+                height: 6,
+                borderRadius: 999,
+                background: i === idx ? '#fff' : 'rgba(255,255,255,0.5)',
+                transition: 'all 0.25s ease',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {count > 1 && (
+        <div
+          className="absolute top-3.5 z-10"
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.32)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            borderRadius: 999,
+            padding: '3px 10px',
+            fontSize: '0.6rem',
+            color: 'rgba(255,255,255,0.88)',
+            letterSpacing: '0.08em',
+            pointerEvents: 'none',
+          }}
+        >
+          {idx + 1} / {count}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal, originPoint }) {
   const [visible, setVisible]   = useState(false);
   const [closing, setClosing]   = useState(false);
+  const [photoIdx, setPhotoIdx] = useState(0);
   const mobileScrollRef         = useRef(null);
   const desktopScrollRef        = useRef(null);
-  const modalCardRef            = useRef(null);   // desktop card FLIP
-  const mobileInnerRef          = useRef(null);   // mobile content FLIP (NOT the fixed shell)
+  const modalCardRef            = useRef(null);
+  const mobileInnerRef          = useRef(null);
+  const touchStartRef           = useRef(null);
+
+  const photos = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
+  const photoPrev = () => setPhotoIdx(i => (i - 1 + photos.length) % photos.length);
+  const photoNext = () => setPhotoIdx(i => (i + 1) % photos.length);
+
+  useEffect(() => {
+    setPhotoIdx(0);
+  }, [svc?.key]);
 
   useEffect(() => {
     const sbw = window.innerWidth - document.documentElement.clientWidth;
     if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
 
-    // FLIP: scale both cards down to click origin before first paint
     function initFlip(el) {
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -130,7 +226,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     ? 'background 0.18s ease, backdrop-filter 0.18s ease'
     : 'background 0.30s ease, backdrop-filter 0.30s ease';
 
-  /* ── Shared content fragments ───────────────────────────── */
   const badges = (
     <>
       {svc.title === 'Luxury Bridal Look' && (
@@ -211,11 +306,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════════════
-          DESKTOP — 700px × 84vh parallax modal (z-9990)
-          Nav (z-9999) sits above it — this is intentional on
-          desktop and looks correct (card is padded 72px from top).
-          ═══════════════════════════════════════════════════════ */}
+      {/* ═══ DESKTOP ═══ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
         style={{
@@ -232,12 +323,17 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
+          {/* Photo carousel — top 50% */}
           <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '50%' }}>
-            {svc.photo
-              ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
-              : <div className="w-full h-full bg-[#f5f0ec]" />
-            }
+            <PhotoCarousel
+              photos={photos}
+              idx={photoIdx}
+              onPrev={photoPrev}
+              onNext={photoNext}
+              onSetIdx={setPhotoIdx}
+            />
           </div>
+
           <div ref={desktopScrollRef} className="absolute inset-0 overflow-y-auto z-10" style={{ scrollbarWidth: 'none' }}>
             <div style={{ height: '43%' }} />
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62%' }}>
@@ -245,10 +341,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
               <div className="px-7 pt-5 pb-[84px]">{content}</div>
             </div>
           </div>
+
           <div className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
             style={{ background: '#fff', pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
+
           <button onClick={handleClose}
             className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}>
@@ -262,43 +360,49 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════
-          MOBILE backdrop — z-10000 so it covers the nav (z-9999)
-          Fades independently from the FLIP zoom.
-          ═══════════════════════════════════════════════════════ */}
+      {/* ═══ MOBILE backdrop ═══ */}
       <div
         className="sm:hidden fixed inset-0 z-[10000]"
         style={{ background: visible ? 'rgba(0,0,0,0.50)' : 'rgba(0,0,0,0)', transition: fadeT }}
       />
 
-      {/* ═══════════════════════════════════════════════════════
-          MOBILE modal — z-10001 (above nav + backdrop)
-          Outer shell: position:fixed, NO transform (iOS Safari
-          breaks fixed positioning when transform is applied here).
-          Inner wrapper (mobileInnerRef): does the FLIP scale.
-          Nav buttons: sibling of inner wrapper so they are NOT
-          scaled during the FLIP animation.
-          ═══════════════════════════════════════════════════════ */}
+      {/* ═══ MOBILE modal ═══ */}
       <div className="sm:hidden fixed inset-0 z-[10001]">
-
-        {/* ── FLIP inner wrapper ── */}
         <div
           ref={mobileInnerRef}
           style={{ width: '100%', height: '100%', position: 'relative' }}
         >
-          {/* Image behind the scroll container */}
+          {/* Photo carousel — top 52vh */}
           <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
-            {svc.photo
-              ? <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover object-top" />
-              : <div className="w-full h-full bg-[#f5f0ec]" />
-            }
+            <PhotoCarousel
+              photos={photos}
+              idx={photoIdx}
+              onPrev={photoPrev}
+              onNext={photoNext}
+              onSetIdx={setPhotoIdx}
+              showArrows={false}
+            />
           </div>
 
-          {/* Scroll container */}
+          {/* Scroll container with horizontal swipe detection in image area */}
           <div
             ref={mobileScrollRef}
             className="absolute inset-0 z-10 overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
+            onTouchStart={e => {
+              if (photos.length > 1 && e.touches[0].clientY < window.innerHeight * 0.52) {
+                touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+              }
+            }}
+            onTouchEnd={e => {
+              if (!touchStartRef.current) return;
+              const dx = touchStartRef.current.x - e.changedTouches[0].clientX;
+              const dy = touchStartRef.current.y - e.changedTouches[0].clientY;
+              if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+                dx > 0 ? photoNext() : photoPrev();
+              }
+              touchStartRef.current = null;
+            }}
           >
             <div style={{ height: '44vh' }} onClick={handleClose} />
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
@@ -311,16 +415,14 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
           {/* CTA */}
           <div
-            className="absolute bottom-0 left-0 right: 0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
-            style={{ right: 0, paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+            className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
           >
             {ctaButton}
           </div>
         </div>
 
-        {/* ── Nav buttons — sibling of FLIP wrapper, z-30 within the fixed shell ──
-            NOT inside mobileInnerRef so they stay at normal size during FLIP.
-            Dark frosted glass matching desktop style exactly. ── */}
+        {/* Nav buttons */}
         <div
           style={{
             position: 'absolute',
@@ -347,7 +449,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <IconClose dark />
           </button>
         </div>
-
       </div>
     </>
   );
