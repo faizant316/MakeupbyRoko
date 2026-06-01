@@ -3,16 +3,19 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function requireAdmin() {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-    }
-    return { session };
-  } catch {
-    return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  }
+  // DEV MODE: auth bypassed — re-enable by uncommenting below and removing the return
+  return { session: { user: { id: 'dev', email: 'dev@local' } } };
+
+  // try {
+  //   const supabase = createRouteHandlerClient({ cookies });
+  //   const { data: { session } } = await supabase.auth.getSession();
+  //   if (!session?.user) {
+  //     return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  //   }
+  //   return { session };
+  // } catch {
+  //   return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  // }
 }
 
 // Allowed image MIME types and max size for uploads
