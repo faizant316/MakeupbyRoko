@@ -22,7 +22,7 @@ const IconClose = ({ dark = false }) => (
   </svg>
 );
 
-const darkPillStyle = {
+const darkPill = {
   background: 'rgba(0,0,0,0.38)',
   backdropFilter: 'blur(8px)',
   WebkitBackdropFilter: 'blur(8px)',
@@ -31,99 +31,51 @@ const darkPillStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   cursor: 'pointer', outline: 'none',
   WebkitTapHighlightColor: 'transparent',
-  border: 'none', padding: 0,
-  flexShrink: 0,
+  border: 'none', padding: 0, flexShrink: 0,
 };
 
-function PhotoCarousel({ photos, idx, onPrev, onNext, onSetIdx, showArrows = true }) {
-  const count = photos.length;
-  if (count === 0) return <div className="w-full h-full bg-[#f5f0ec]" />;
-
+// Pure image crossfader — no controls, just the slides
+function PhotoCarousel({ photos, idx }) {
+  if (!photos?.length) return <div className="w-full h-full bg-[#f5f0ec]" />;
   return (
-    <div className="relative w-full h-full overflow-hidden select-none">
+    <div className="relative w-full h-full overflow-hidden">
       {photos.map((src, i) => (
         <img
           key={i}
           src={src}
           alt=""
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover object-top"
-          style={{
-            opacity: i === idx ? 1 : 0,
-            transition: 'opacity 0.38s ease',
-            zIndex: i === idx ? 1 : 0,
-          }}
+          className="absolute inset-0 w-full h-full object-cover object-top select-none"
+          style={{ opacity: i === idx ? 1 : 0, transition: 'opacity 0.38s ease', zIndex: i === idx ? 1 : 0 }}
         />
       ))}
-
-      {showArrows && count > 1 && (
-        <>
-          <button
-            onClick={e => { e.stopPropagation(); onPrev(); }}
-            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 items-center justify-center transition-all hover:scale-105 active:scale-90"
-            style={darkPillStyle}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); onNext(); }}
-            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 items-center justify-center transition-all hover:scale-105 active:scale-90"
-            style={darkPillStyle}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        </>
-      )}
-
-      {count > 1 && (
-        <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
-          {photos.map((_, i) => (
-            <button
-              key={i}
-              onClick={e => { e.stopPropagation(); onSetIdx(i); }}
-              style={{
-                width: i === idx ? 20 : 6,
-                height: 6,
-                borderRadius: 999,
-                background: i === idx ? '#fff' : 'rgba(255,255,255,0.5)',
-                transition: 'all 0.25s ease',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {count > 1 && (
-        <div
-          className="absolute top-3.5 z-10"
-          style={{
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(0,0,0,0.32)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            borderRadius: 999,
-            padding: '3px 10px',
-            fontSize: '0.6rem',
-            color: 'rgba(255,255,255,0.88)',
-            letterSpacing: '0.08em',
-            pointerEvents: 'none',
-          }}
-        >
-          {idx + 1} / {count}
-        </div>
-      )}
     </div>
   );
 }
+
+// Dot row — rendered externally at a z-level that clears the scroll container
+function Dots({ count, idx, onSet }) {
+  if (count <= 1) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      {Array.from({ length: count }, (_, i) => (
+        <button
+          key={i}
+          onClick={e => { e.stopPropagation(); onSet(i); }}
+          style={{
+            width: i === idx ? 20 : 6, height: 6,
+            borderRadius: 999,
+            background: i === idx ? '#fff' : 'rgba(255,255,255,0.55)',
+            transition: 'all 0.25s ease',
+            border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────── */
 
 export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal, originPoint }) {
   const [visible, setVisible]   = useState(false);
@@ -133,15 +85,14 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const desktopScrollRef        = useRef(null);
   const modalCardRef            = useRef(null);
   const mobileInnerRef          = useRef(null);
-  const touchStartRef           = useRef(null);
+  const swipeRef                = useRef(null); // { x, y } on touchstart
 
-  const photos = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
+  const photos   = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
   const photoPrev = () => setPhotoIdx(i => (i - 1 + photos.length) % photos.length);
   const photoNext = () => setPhotoIdx(i => (i + 1) % photos.length);
 
-  useEffect(() => {
-    setPhotoIdx(0);
-  }, [svc?.key]);
+  // Reset gallery when service changes
+  useEffect(() => { setPhotoIdx(0); }, [svc?.key]);
 
   useEffect(() => {
     const sbw = window.innerWidth - document.documentElement.clientWidth;
@@ -158,7 +109,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       el.style.transform  = 'scale(0.07)';
       el.style.opacity    = '0';
     }
-
     initFlip(modalCardRef.current);
     initFlip(mobileInnerRef.current);
 
@@ -185,7 +135,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const handleClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
     if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
-
     const exit = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease';
     for (const r of [modalCardRef, mobileInnerRef]) {
       if (!r.current) continue;
@@ -193,7 +142,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       r.current.style.transform  = 'scale(0.07)';
       r.current.style.opacity    = '0';
     }
-
     setClosing(true);
     setVisible(false);
     setTimeout(onClose, 300);
@@ -203,12 +151,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   const isLessons = svc.category === 'lessons';
   const isBridal  = svc.category === 'bridal';
-
-  const buttonLabel = isBridal
-    ? 'Inquire About Bridal'
-    : isLessons
-    ? 'View Available Classes'
-    : 'Select & Book';
+  const buttonLabel = isBridal ? 'Inquire About Bridal' : isLessons ? 'View Available Classes' : 'Select & Book';
 
   const handleAction = () => {
     handleClose();
@@ -221,8 +164,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const dupeFilters  = svc.title === 'Luxury Bridal Look' ? ['travel fee', '$200'] : [];
   const descToShow   = dupeFilters.length ? dedupeText(svc.desc,           dupeFilters) : svc.desc;
   const expectToShow = dupeFilters.length ? dedupeText(svc.what_to_expect, dupeFilters) : svc.what_to_expect;
-
-  const fadeT = closing
+  const fadeT        = closing
     ? 'background 0.18s ease, backdrop-filter 0.18s ease'
     : 'background 0.30s ease, backdrop-filter 0.30s ease';
 
@@ -306,7 +248,13 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   return (
     <>
-      {/* ═══ DESKTOP ═══ */}
+      {/* ═══════════════════════════════════════════════════
+          DESKTOP
+          Image = top 55% of modal card
+          Scroll container = full card, transparent for top 47%
+          Arrows + dots = z-[25] siblings of scroll container
+          so they sit above it and receive pointer events
+          ═══════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
         style={{
@@ -323,30 +271,62 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Photo carousel — top 50% */}
-          <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '50%' }}>
-            <PhotoCarousel
-              photos={photos}
-              idx={photoIdx}
-              onPrev={photoPrev}
-              onNext={photoNext}
-              onSetIdx={setPhotoIdx}
-            />
+          {/* ── Photo strip (top 55%) ── */}
+          <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '55%' }}>
+            <PhotoCarousel photos={photos} idx={photoIdx} />
           </div>
 
+          {/* ── Scrollable content ── */}
           <div ref={desktopScrollRef} className="absolute inset-0 overflow-y-auto z-10" style={{ scrollbarWidth: 'none' }}>
-            <div style={{ height: '43%' }} />
+            {/* transparent spacer — pointer-events:none so arrows/dots behind it still click */}
+            <div style={{ height: '48%', pointerEvents: 'none' }} />
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62%' }}>
               <div className="mx-auto mt-3 w-9 h-1 rounded-full bg-black/10" />
               <div className="px-7 pt-5 pb-[84px]">{content}</div>
             </div>
           </div>
 
+          {/* ── CTA ── */}
           <div className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
             style={{ background: '#fff', pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
 
+          {/* ── Carousel arrows — z-25 clears the scroll container's z-10 ── */}
+          {photos.length > 1 && (
+            <>
+              <button
+                onClick={photoPrev}
+                className="absolute z-[25] flex items-center justify-center transition-all hover:scale-105 active:scale-90"
+                style={{ ...darkPill, left: 12, top: '27.5%', transform: 'translateY(-50%)' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              <button
+                onClick={photoNext}
+                className="absolute z-[25] flex items-center justify-center transition-all hover:scale-105 active:scale-90"
+                style={{ ...darkPill, right: 12, top: '27.5%', transform: 'translateY(-50%)' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </>
+          )}
+
+          {/* ── Dots — z-25, just above the content sheet divider ── */}
+          {photos.length > 1 && (
+            <div
+              className="absolute z-[25] left-1/2"
+              style={{ top: 'calc(55% - 20px)', transform: 'translateX(-50%)' }}
+            >
+              <Dots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
+            </div>
+          )}
+
+          {/* ── Nav buttons ── */}
           <button onClick={handleClose}
             className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}>
@@ -360,60 +340,77 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         </div>
       </div>
 
-      {/* ═══ MOBILE backdrop ═══ */}
+      {/* ═══════════════════════════════════════════════════
+          MOBILE backdrop
+          ═══════════════════════════════════════════════════ */}
       <div
         className="sm:hidden fixed inset-0 z-[10000]"
         style={{ background: visible ? 'rgba(0,0,0,0.50)' : 'rgba(0,0,0,0)', transition: fadeT }}
       />
 
-      {/* ═══ MOBILE modal ═══ */}
+      {/* ═══════════════════════════════════════════════════
+          MOBILE modal
+          Image = 72vh  |  Spacer = 62vh  |  Peek = 10vh
+          Dots rendered as sibling at z-[15] so they clear
+          the scroll container (z-10) and are always visible
+          ═══════════════════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 z-[10001]">
-        <div
-          ref={mobileInnerRef}
-          style={{ width: '100%', height: '100%', position: 'relative' }}
-        >
-          {/* Photo carousel — top 52vh */}
-          <div className="absolute inset-x-0 top-0 z-0" style={{ height: '52vh' }}>
-            <PhotoCarousel
-              photos={photos}
-              idx={photoIdx}
-              onPrev={photoPrev}
-              onNext={photoNext}
-              onSetIdx={setPhotoIdx}
-              showArrows={false}
-            />
+        <div ref={mobileInnerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+
+          {/* ── Photo strip ── */}
+          <div className="absolute inset-x-0 top-0 z-0" style={{ height: '72vh' }}>
+            <PhotoCarousel photos={photos} idx={photoIdx} />
           </div>
 
-          {/* Scroll container with horizontal swipe detection in image area */}
+          {/* ── Dots — z-15, floats above scroll container (z-10) ──
+               Positioned 18px above the sheet peek edge (62vh) so they
+               sit clearly in the image area. ── */}
+          {photos.length > 1 && (
+            <div
+              className="absolute left-1/2 z-[15]"
+              style={{ top: 'calc(72vh - 36px)', transform: 'translateX(-50%)' }}
+            >
+              <Dots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
+            </div>
+          )}
+
+          {/* ── Scroll container ──
+               Spacer = 62vh so 10vh of white peeks at bottom.
+               Swipe detection only fires when touch starts in the
+               image area (top 72% of screen) to avoid interfering
+               with the content scroll. ── */}
           <div
             ref={mobileScrollRef}
             className="absolute inset-0 z-10 overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onTouchStart={e => {
-              if (photos.length > 1 && e.touches[0].clientY < window.innerHeight * 0.52) {
-                touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+              if (photos.length > 1 && e.touches[0].clientY < window.innerHeight * 0.72) {
+                swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
               }
             }}
             onTouchEnd={e => {
-              if (!touchStartRef.current) return;
-              const dx = touchStartRef.current.x - e.changedTouches[0].clientX;
-              const dy = touchStartRef.current.y - e.changedTouches[0].clientY;
+              if (!swipeRef.current) return;
+              const dx = swipeRef.current.x - e.changedTouches[0].clientX;
+              const dy = swipeRef.current.y - e.changedTouches[0].clientY;
               if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.4) {
                 dx > 0 ? photoNext() : photoPrev();
               }
-              touchStartRef.current = null;
+              swipeRef.current = null;
             }}
           >
-            <div style={{ height: '44vh' }} onClick={handleClose} />
-            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62vh' }}>
+            {/* Tap transparent area to close */}
+            <div style={{ height: '62vh', pointerEvents: 'auto' }} onClick={handleClose} />
+
+            {/* White content sheet */}
+            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '100vh' }}>
               <div className="flex items-center justify-center pt-3.5 pb-1">
                 <div className="w-9 h-1 rounded-full bg-black/10" />
               </div>
-              <div className="px-5 pt-4 pb-24">{content}</div>
+              <div className="px-5 pt-4 pb-28">{content}</div>
             </div>
           </div>
 
-          {/* CTA */}
+          {/* ── CTA ── */}
           <div
             className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
@@ -422,32 +419,20 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           </div>
         </div>
 
-        {/* Nav buttons */}
+        {/* ── Nav buttons (z-30, outside FLIP wrapper) ── */}
         <div
           style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0,
-            zIndex: 30,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
+            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
             paddingTop: 'max(12px, env(safe-area-inset-top))',
-            paddingLeft: '16px',
-            paddingRight: '16px',
-            paddingBottom: '10px',
+            paddingLeft: '16px', paddingRight: '16px', paddingBottom: '10px',
             pointerEvents: 'none',
             opacity: visible ? 1 : 0,
-            transition: closing
-              ? 'opacity 0.15s ease'
-              : 'opacity 0.30s ease 0.18s',
+            transition: closing ? 'opacity 0.15s ease' : 'opacity 0.30s ease 0.18s',
           }}
         >
-          <button onClick={handleClose} style={{ ...darkPillStyle, pointerEvents: 'auto' }}>
-            <IconBack dark />
-          </button>
-          <button onClick={handleClose} style={{ ...darkPillStyle, pointerEvents: 'auto' }}>
-            <IconClose dark />
-          </button>
+          <button onClick={handleClose} style={{ ...darkPill, pointerEvents: 'auto' }}><IconBack dark /></button>
+          <button onClick={handleClose} style={{ ...darkPill, pointerEvents: 'auto' }}><IconClose dark /></button>
         </div>
       </div>
     </>
