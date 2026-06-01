@@ -80,6 +80,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const [visible, setVisible]   = useState(false);
   const [closing, setClosing]   = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [dotsVisible, setDotsVisible] = useState(true);
   const mobileScrollRef         = useRef(null);
   const desktopScrollRef        = useRef(null);
   const modalCardRef            = useRef(null);
@@ -331,12 +332,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             </>
           )}
 
-          {/* Nav buttons */}
-          <button onClick={handleClose}
-            className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
-            <IconBack dark />
-          </button>
+          {/* Close only — no redundant back arrow on desktop */}
           <button onClick={handleClose}
             className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
@@ -370,11 +366,28 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <PhotoCarousel photos={photos} idx={photoIdx} />
           </div>
 
-          {/* Scroll container — swipe detection in image area only */}
+          {/* Dots — absolute at z-15, fade out as soon as user scrolls */}
+          {photos.length > 1 && (
+            <div
+              className="absolute left-1/2 z-[15]"
+              style={{
+                top: 'calc(72vh - 36px)',
+                transform: 'translateX(-50%)',
+                opacity: dotsVisible ? 1 : 0,
+                transition: 'opacity 0.2s ease',
+                pointerEvents: dotsVisible ? 'auto' : 'none',
+              }}
+            >
+              <MobileDots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
+            </div>
+          )}
+
+          {/* Scroll container */}
           <div
             ref={mobileScrollRef}
             className="absolute inset-0 z-10 overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
+            onScroll={e => setDotsVisible(e.target.scrollTop < 24)}
             onTouchStart={e => {
               if (photos.length > 1 && e.touches[0].clientY < window.innerHeight * 0.72) {
                 swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -391,16 +404,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             }}
           >
             {/* Transparent spacer — tap to close */}
-            <div style={{ height: '62vh' }} onClick={handleClose} />
-
-            {/* Dots strip — in normal document flow so it scrolls away
-                with the image when user swipes up the sheet */}
-            <div
-              style={{ height: '10vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              onClick={handleClose}
-            >
-              <MobileDots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
-            </div>
+            <div style={{ height: '72vh' }} onClick={handleClose} />
 
             {/* White content sheet */}
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '100vh' }}>
