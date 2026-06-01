@@ -23,7 +23,7 @@ const IconClose = ({ dark = false }) => (
 );
 
 const darkPill = {
-  background: 'rgba(0,0,0,0.38)',
+  background: 'rgba(0,0,0,0.42)',
   backdropFilter: 'blur(8px)',
   WebkitBackdropFilter: 'blur(8px)',
   width: 36, height: 36,
@@ -34,11 +34,11 @@ const darkPill = {
   border: 'none', padding: 0, flexShrink: 0,
 };
 
-// Pure image crossfader — no controls, just the slides
+// Images only — dark bg prevents bleed-through during crossfade transition
 function PhotoCarousel({ photos, idx }) {
-  if (!photos?.length) return <div className="w-full h-full bg-[#f5f0ec]" />;
+  if (!photos?.length) return <div className="w-full h-full" style={{ background: '#1a1a1a' }} />;
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden" style={{ background: '#1a1a1a' }}>
       {photos.map((src, i) => (
         <img
           key={i}
@@ -53,11 +53,11 @@ function PhotoCarousel({ photos, idx }) {
   );
 }
 
-// Dot row — rendered externally at a z-level that clears the scroll container
-function Dots({ count, idx, onSet }) {
+// Dot row for mobile — rendered inside scroll flow so it scrolls away with the image
+function MobileDots({ count, idx, onSet }) {
   if (count <= 1) return null;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       {Array.from({ length: count }, (_, i) => (
         <button
           key={i}
@@ -66,6 +66,7 @@ function Dots({ count, idx, onSet }) {
             width: i === idx ? 20 : 6, height: 6,
             borderRadius: 999,
             background: i === idx ? '#fff' : 'rgba(255,255,255,0.55)',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
             transition: 'all 0.25s ease',
             border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0,
           }}
@@ -75,8 +76,6 @@ function Dots({ count, idx, onSet }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────── */
-
 export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassModal, originPoint }) {
   const [visible, setVisible]   = useState(false);
   const [closing, setClosing]   = useState(false);
@@ -85,13 +84,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const desktopScrollRef        = useRef(null);
   const modalCardRef            = useRef(null);
   const mobileInnerRef          = useRef(null);
-  const swipeRef                = useRef(null); // { x, y } on touchstart
+  const swipeRef                = useRef(null);
 
-  const photos   = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
+  const photos    = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
   const photoPrev = () => setPhotoIdx(i => (i - 1 + photos.length) % photos.length);
   const photoNext = () => setPhotoIdx(i => (i + 1) % photos.length);
 
-  // Reset gallery when service changes
   useEffect(() => { setPhotoIdx(0); }, [svc?.key]);
 
   useEffect(() => {
@@ -149,8 +147,8 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   if (!svc) return null;
 
-  const isLessons = svc.category === 'lessons';
-  const isBridal  = svc.category === 'bridal';
+  const isLessons   = svc.category === 'lessons';
+  const isBridal    = svc.category === 'bridal';
   const buttonLabel = isBridal ? 'Inquire About Bridal' : isLessons ? 'View Available Classes' : 'Select & Book';
 
   const handleAction = () => {
@@ -250,10 +248,8 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     <>
       {/* ═══════════════════════════════════════════════════
           DESKTOP
-          Image = top 55% of modal card
-          Scroll container = full card, transparent for top 47%
-          Arrows + dots = z-[25] siblings of scroll container
-          so they sit above it and receive pointer events
+          Image = top 55% · Arrows at z-25 (above scroll z-10)
+          No dots on desktop — counter pill shows "2 / 5"
           ═══════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
@@ -271,14 +267,13 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
-          {/* ── Photo strip (top 55%) ── */}
+          {/* Photo strip */}
           <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '55%' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
           </div>
 
-          {/* ── Scrollable content ── */}
+          {/* Scrollable content — spacer is pointer-events:none so arrows behind it still fire */}
           <div ref={desktopScrollRef} className="absolute inset-0 overflow-y-auto z-10" style={{ scrollbarWidth: 'none' }}>
-            {/* transparent spacer — pointer-events:none so arrows/dots behind it still click */}
             <div style={{ height: '48%', pointerEvents: 'none' }} />
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62%' }}>
               <div className="mx-auto mt-3 w-9 h-1 rounded-full bg-black/10" />
@@ -286,13 +281,13 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             </div>
           </div>
 
-          {/* ── CTA ── */}
+          {/* CTA */}
           <div className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
             style={{ background: '#fff', pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
 
-          {/* ── Carousel arrows — z-25 clears the scroll container's z-10 ── */}
+          {/* Carousel arrows — z-25 clears the scroll container */}
           {photos.length > 1 && (
             <>
               <button
@@ -313,28 +308,38 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
+
+              {/* Counter pill — replaces dots on desktop */}
+              <div
+                className="absolute z-[25]"
+                style={{
+                  bottom: 'calc(45% + 12px)',
+                  right: 52,
+                  background: 'rgba(0,0,0,0.42)',
+                  backdropFilter: 'blur(6px)',
+                  WebkitBackdropFilter: 'blur(6px)',
+                  borderRadius: 999,
+                  padding: '3px 10px',
+                  fontSize: '0.6rem',
+                  color: 'rgba(255,255,255,0.9)',
+                  letterSpacing: '0.08em',
+                  pointerEvents: 'none',
+                }}
+              >
+                {photoIdx + 1} / {photos.length}
+              </div>
             </>
           )}
 
-          {/* ── Dots — z-25, just above the content sheet divider ── */}
-          {photos.length > 1 && (
-            <div
-              className="absolute z-[25] left-1/2"
-              style={{ top: 'calc(55% - 20px)', transform: 'translateX(-50%)' }}
-            >
-              <Dots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
-            </div>
-          )}
-
-          {/* ── Nav buttons ── */}
+          {/* Nav buttons */}
           <button onClick={handleClose}
             className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}>
+            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
             <IconBack dark />
           </button>
           <button onClick={handleClose}
             className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.38)', backdropFilter: 'blur(6px)' }}>
+            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
             <IconClose dark />
           </button>
         </div>
@@ -350,35 +355,22 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
       {/* ═══════════════════════════════════════════════════
           MOBILE modal
-          Image = 72vh  |  Spacer = 62vh  |  Peek = 10vh
-          Dots rendered as sibling at z-[15] so they clear
-          the scroll container (z-10) and are always visible
+          Image = 72vh tall (behind scroll container at z-0)
+          Scroll container: z-10
+            ├─ 62vh transparent spacer (click-to-close)
+            ├─ 10vh dots strip — IN FLOW so they scroll away
+            │   with the image when user swipes up
+            └─ white content sheet (min-height 100vh)
           ═══════════════════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 z-[10001]">
         <div ref={mobileInnerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
 
-          {/* ── Photo strip ── */}
+          {/* Photo strip */}
           <div className="absolute inset-x-0 top-0 z-0" style={{ height: '72vh' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
           </div>
 
-          {/* ── Dots — z-15, floats above scroll container (z-10) ──
-               Positioned 18px above the sheet peek edge (62vh) so they
-               sit clearly in the image area. ── */}
-          {photos.length > 1 && (
-            <div
-              className="absolute left-1/2 z-[15]"
-              style={{ top: 'calc(72vh - 36px)', transform: 'translateX(-50%)' }}
-            >
-              <Dots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
-            </div>
-          )}
-
-          {/* ── Scroll container ──
-               Spacer = 62vh so 10vh of white peeks at bottom.
-               Swipe detection only fires when touch starts in the
-               image area (top 72% of screen) to avoid interfering
-               with the content scroll. ── */}
+          {/* Scroll container — swipe detection in image area only */}
           <div
             ref={mobileScrollRef}
             className="absolute inset-0 z-10 overflow-y-auto"
@@ -398,8 +390,17 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
               swipeRef.current = null;
             }}
           >
-            {/* Tap transparent area to close */}
-            <div style={{ height: '62vh', pointerEvents: 'auto' }} onClick={handleClose} />
+            {/* Transparent spacer — tap to close */}
+            <div style={{ height: '62vh' }} onClick={handleClose} />
+
+            {/* Dots strip — in normal document flow so it scrolls away
+                with the image when user swipes up the sheet */}
+            <div
+              style={{ height: '10vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onClick={handleClose}
+            >
+              <MobileDots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
+            </div>
 
             {/* White content sheet */}
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '100vh' }}>
@@ -410,7 +411,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             </div>
           </div>
 
-          {/* ── CTA ── */}
+          {/* CTA */}
           <div
             className="absolute bottom-0 left-0 right-0 z-20 px-5 py-4 bg-white border-t border-[#f0ebe6]"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
@@ -419,7 +420,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           </div>
         </div>
 
-        {/* ── Nav buttons (z-30, outside FLIP wrapper) ── */}
+        {/* Nav buttons — outside FLIP wrapper, z-30 */}
         <div
           style={{
             position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,

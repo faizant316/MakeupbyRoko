@@ -6,10 +6,19 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
       onClick={(e) => onViewDetail && onViewDetail(svc, e)}
     >
       {/* Photo — top on mobile, right on desktop */}
-      <div className="sm:hidden w-full h-[220px] overflow-hidden bg-[#f5f5f5] flex-shrink-0">
+      <div className="sm:hidden w-full h-[220px] overflow-hidden bg-[#f5f5f5] flex-shrink-0 relative">
         <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
           className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
           style={{ objectPosition: 'center 35%' }} />
+        {svc.photos?.length > 1 && (
+          <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(0,0,0,0.48)', backdropFilter: 'blur(4px)' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" width={11} height={11}>
+              <rect x="3" y="8" width="18" height="13" rx="2"/><path d="M16 8V6a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><circle cx="12" cy="14" r="2"/>
+            </svg>
+            <span style={{ fontSize: '0.6rem', color: '#fff', letterSpacing: '0.06em' }}>{svc.photos.length} photos</span>
+          </div>
+        )}
       </div>
 
       {/* Text */}
