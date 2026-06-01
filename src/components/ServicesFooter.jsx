@@ -6,12 +6,7 @@ import { api } from '@/api/apiClient';
 export default function ServicesFooter() {
   const currentYear = new Date().getFullYear();
   const [activeTopic, setActiveTopic] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    api.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
-  }, []);
 
   return (
     <>
@@ -100,17 +95,15 @@ export default function ServicesFooter() {
             <a href="/terms-of-service" className="text-[0.65rem] text-[#444] hover:text-[#888] transition-colors">Terms of Service</a>
           </div>
           <div className="flex items-center gap-4">
-            {isAdmin && (
-              <button
-                onClick={() => router.push('/admin')}
-                className="flex items-center gap-1.5 text-[0.65rem] text-[#D4A0B0] hover:text-white transition-colors tracking-[0.08em] uppercase font-medium"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                </svg>
-                Admin Dashboard
-              </button>
-            )}
+            <button
+              onClick={() => router.push('/admin')}
+              className="flex items-center gap-1.5 text-[0.65rem] text-[#D4A0B0] hover:text-white transition-colors tracking-[0.08em] uppercase font-medium"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              Admin Dashboard
+            </button>
             <p className="text-[0.65rem] text-[#444]">Crafted with care ✦</p>
           </div>
         </div>
