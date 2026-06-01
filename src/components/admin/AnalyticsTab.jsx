@@ -12,13 +12,14 @@ const fmtDur = s  => !s ? '--' : s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(
 const pct    = (a, b) => b ? `${Math.round(a / b * 100)}%` : '0%';
 
 const CHANNEL_MAP = {
-  'Organic Search': { label: 'Google Search',  dot: '#4285F4', letter: 'G' },
-  'Organic Social': { label: 'Social Media',   dot: '#E1306C', letter: '◈' },
-  'Direct':         { label: 'Direct',         dot: '#8B5CF6', letter: '↗' },
-  'Referral':       { label: 'Referral Links', dot: '#10B981', letter: '⋯' },
-  'Email':          { label: 'Email',          dot: '#F59E0B', letter: '@' },
-  'Paid Search':    { label: 'Paid Search',    dot: '#EF4444', letter: '$' },
-  'Unassigned':     { label: 'Other',          dot: '#6B7280', letter: '·' },
+  'Organic Search':   { label: 'Google Search',    dot: '#4285F4', letter: 'G', desc: 'People who Googled "makeup artist" or your name and found you' },
+  'Organic Social':   { label: 'Instagram / TikTok', dot: '#E1306C', letter: '◈', desc: 'Clicks from your social posts, reels, or bio link' },
+  'Direct':           { label: 'Direct',           dot: '#8B5CF6', letter: '↗', desc: 'Typed your URL directly or used a bookmark — usually loyal repeat clients' },
+  'Referral':         { label: 'Referral Links',   dot: '#10B981', letter: '⋯', desc: 'Someone else\'s website linked to yours — wedding blogs, vendor lists, directories' },
+  'Email':            { label: 'Email',            dot: '#F59E0B', letter: '@', desc: 'Clicked a link from one of your emails or booking confirmations' },
+  'Paid Search':      { label: 'Paid Ads',         dot: '#EF4444', letter: '$', desc: 'Traffic from Google Ads (if you\'re running any)' },
+  'Organic Shopping': { label: 'Google Shopping',  dot: '#34A853', letter: 'S', desc: 'People browsing beauty services on Google Shopping' },
+  'Unassigned':       { label: 'Other',            dot: '#6B7280', letter: '·', desc: 'Traffic that Google couldn\'t categorize into a specific source' },
 };
 
 const COUNTRY_FLAG = {
@@ -47,12 +48,16 @@ function Skel({ dm, h = 16, className = '' }) {
   );
 }
 
-function SectionHead({ label, dm }) {
+function SectionHead({ label, desc, dm }) {
+  const mu = dm ? '#71717a' : '#999';
   return (
-    <p className="text-[0.57rem] font-semibold tracking-[0.18em] uppercase mb-3"
-      style={{ color: dm ? '#52525b' : '#bbb' }}>
-      {label}
-    </p>
+    <div className="mb-3">
+      <p className="text-[0.57rem] font-semibold tracking-[0.18em] uppercase"
+        style={{ color: dm ? '#52525b' : '#bbb' }}>
+        {label}
+      </p>
+      {desc && <p className="text-[0.65rem] mt-0.5 leading-snug" style={{ color: mu }}>{desc}</p>}
+    </div>
   );
 }
 
@@ -151,18 +156,18 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
       {/* Audience Overview */}
       <div>
-        <SectionHead label="Audience Overview — Last 30 Days" dm={dm} />
+        <SectionHead label="Audience Overview — Last 30 Days" desc="How many people visited the site and how they engaged with it" dm={dm} />
         <div className="grid grid-cols-2 gap-3">
-          <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Active users"           loading={loading} dm={dm} />
-          <MetricCard icon={Activity}  accent="#22C55E" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total sessions"         loading={loading} dm={dm} />
-          <MetricCard icon={Clock}     accent="#F59E0B" label="Avg Time"  value={fmtDur(ov?.avgSessionDuration)}                    sub="Per session"            loading={loading} dm={dm} />
-          <MetricCard icon={RefreshCw} accent="#D4A0B0" label="New Users" value={ov ? pct(ov.newUsers, ov.activeUsers) : '--'}      sub="First-time visitors"    loading={loading} dm={dm} />
+          <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Unique people who visited"     loading={loading} dm={dm} />
+          <MetricCard icon={Activity}  accent="#22C55E" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total visits (1 person can visit multiple times)" loading={loading} dm={dm} />
+          <MetricCard icon={Clock}     accent="#F59E0B" label="Avg Time"  value={fmtDur(ov?.avgSessionDuration)}                    sub="How long people stay per visit" loading={loading} dm={dm} />
+          <MetricCard icon={RefreshCw} accent="#D4A0B0" label="New Users" value={ov ? pct(ov.newUsers, ov.activeUsers) : '--'}      sub="First-time visitors this month" loading={loading} dm={dm} />
         </div>
       </div>
 
       {/* Traffic sources */}
       <div>
-        <SectionHead label="Where Traffic Comes From" dm={dm} />
+        <SectionHead label="Where Traffic Comes From" desc="How people are finding the site — useful for knowing what's working" dm={dm} />
         <div className="rounded-2xl overflow-hidden" style={{ background: bg, border: `1px solid ${bd}` }}>
           {loading
             ? [1, 2, 3, 4].map(i => (
@@ -189,7 +194,8 @@ export default function AnalyticsTab({ darkMode: dm }) {
                         {m.letter}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[0.75rem] font-semibold mb-1.5" style={{ color: tx }}>{m.label}</p>
+                        <p className="text-[0.75rem] font-semibold" style={{ color: tx }}>{m.label}</p>
+                        {m.desc && <p className="text-[0.6rem] mb-1.5 leading-snug" style={{ color: mu }}>{m.desc}</p>}
                         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f0ebe7' }}>
                           <div className="h-full rounded-full" style={{ width: `${bar}%`, background: m.dot }} />
                         </div>
@@ -206,7 +212,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
       {/* Top pages */}
       <div>
-        <SectionHead label="Top Pages" dm={dm} />
+        <SectionHead label="Top Pages" desc="Which pages people visit most — the booking page ranking high is a good sign" dm={dm} />
         <div className="rounded-2xl overflow-hidden" style={{ background: bg, border: `1px solid ${bd}` }}>
           {loading
             ? [1, 2, 3, 4, 5].map(i => (
@@ -245,7 +251,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
         {/* Devices */}
         <div>
-          <SectionHead label="Devices" dm={dm} />
+          <SectionHead label="Devices" desc="What people use to browse the site" dm={dm} />
           <div className="rounded-2xl p-4 h-full flex flex-col gap-3.5" style={{ background: bg, border: `1px solid ${bd}` }}>
             {loading
               ? [1, 2, 3].map(i => (
@@ -278,7 +284,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
         {/* Locations */}
         <div>
-          <SectionHead label="Top Locations" dm={dm} />
+          <SectionHead label="Top Locations" desc="Where visitors are based" dm={dm} />
           <div className="rounded-2xl p-4 flex flex-col gap-2.5" style={{ background: bg, border: `1px solid ${bd}` }}>
             {loading
               ? [1, 2, 3, 4, 5].map(i => (
