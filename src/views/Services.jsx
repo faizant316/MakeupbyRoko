@@ -124,7 +124,9 @@ export default function ServicesPage() {
   });
 
   const bridalServices = sortedBridal(filtered.filter(s => s.category === 'bridal'));
-  const nonBridal = filtered.filter(s => s.category !== 'bridal');
+  const otherServices  = filtered.filter(s => s.category !== 'bridal' && s.category !== 'lessons');
+  const lessonServices = filtered.filter(s => s.category === 'lessons');
+  const nonBridal = [...otherServices, ...lessonServices]; // keep for mobile scroll ref compatibility
 
 
 
@@ -325,8 +327,8 @@ export default function ServicesPage() {
             </div>
           )}
 
-          {/* Remaining services */}
-          {!servicesLoading && nonBridal.length > 0 && (
+          {/* Other services (non-bridal, non-lessons) */}
+          {!servicesLoading && otherServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <div className="w-[3px] h-[14px] rounded-full bg-[#555] flex-shrink-0" />
@@ -336,46 +338,59 @@ export default function ServicesPage() {
 
               {/* Desktop: vertical stacked cards */}
               <div className="hidden sm:flex flex-col gap-4">
-                {nonBridal.map((svc) => (
+                {otherServices.map((svc) => (
                   <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                 ))}
               </div>
 
-              {/* Mobile: native CSS scroll-snap */}
+              {/* Mobile scroll-snap */}
               <div
                 ref={otherScrollRef}
                 className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
                 style={{
-                  overflowX: 'auto',
-                  overflowY: 'hidden',
+                  overflowX: 'auto', overflowY: 'hidden',
                   scrollSnapType: 'x mandatory',
                   scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
                   WebkitOverflowScrolling: 'touch',
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
+                  scrollbarWidth: 'none', msOverflowStyle: 'none',
                 }}
               >
-                <div
-                  className="flex items-stretch gap-4 pb-4"
-                  style={{
-                    paddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                    paddingRight: 'clamp(1.25rem,5vw,3rem)',
-                  }}
-                >
-                  {nonBridal.map((svc) => (
+                <div className="flex items-stretch gap-4 pb-4"
+                  style={{ paddingLeft: 'clamp(1.25rem,5vw,3rem)', paddingRight: 'clamp(1.25rem,5vw,3rem)' }}>
+                  {otherServices.map((svc) => (
                     <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch" style={{ scrollSnapAlign: 'start' }}>
                       <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                     </div>
                   ))}
                   <div className="flex-shrink-0 w-4" />
                 </div>
-                {nonBridal.length > 1 && (
+                {otherServices.length > 1 && (
                   <div className="flex justify-center gap-1.5 mt-3 pb-1">
-                    {nonBridal.map((_, i) => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]/40" />
-                    ))}
+                    {otherServices.map((_, i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]/40" />)}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Courses — own section */}
+          {!servicesLoading && lessonServices.length > 0 && (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-3">
+                <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
+                <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#D4A0B0]">Courses</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
+              </div>
+              <div className="hidden sm:flex flex-col gap-4">
+                {lessonServices.map((svc) => (
+                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
+                ))}
+              </div>
+              {/* Mobile */}
+              <div className="sm:hidden flex flex-col gap-4">
+                {lessonServices.map((svc) => (
+                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
+                ))}
               </div>
             </div>
           )}
