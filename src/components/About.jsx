@@ -134,10 +134,25 @@ export default function About() {
             </h2>
 
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
-              Hey beauties! I'm Roko. I picked up my first makeup brush at 12, did my first bridal look at 14 (she trusted the teenage me), and I've been in love with this art for 17 years since. Makeup isn't just my career, it's my calm place.
+              I was 12 years old when I first picked up a makeup brush and instantly fell in love with the art of making people feel beautiful. By the age of 14, I had already completed my first bridal client. She trusted me with one of the most important days of her life, even though she had no idea how young I really was. Looking back, that experience sparked a passion that would shape the next 17 years of my career.
+            </p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
+              My journey hasn't always been easy. Like many women, I've faced challenges, setbacks, and moments that tested my strength. Through it all, makeup became more than a profession, it became my purpose.
+            </p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
+              For me, makeup has never been about changing someone's face. It's about enhancing what already makes them beautiful and creating a look that reflects who they truly are. Every bride has a unique personality, energy, and vision, and my goal is to make sure the makeup feels like an extension of her, not a mask.
+            </p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
+              One of the things I value most is creating an environment where my clients feel comfortable, heard, and confident enough to tell me exactly what they love and what they don't. I want every woman who sits in my chair to feel like she's getting ready with a trusted friend, not just a makeup artist.
+            </p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
+              I don't simply provide a service, I create an experience. Whether it's a bridal preview, wedding morning, or special event, I give my clients my full attention, care, and dedication. No matter what is happening in my personal life, my clients will always receive my very best. I believe professionalism, trust, communication, and consistency are just as important as the final look itself.
+            </p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
+              The most rewarding part of what I do isn't the makeup, it's the reaction. It's seeing someone look in the mirror and smile with confidence. It's watching a bride light up when she finally sees herself exactly the way she envisioned. Those moments never get old, and they're the reason I still love what I do after all these years.
             </p>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '2rem' }}>
-              Nothing brings me more peace than making a woman feel truly stunning. Every client gets my full attention, my very best work, and someone genuinely in their corner from the trial all the way to the big day.
+              Thank you for trusting me to be a part of your story. It is truly an honor to help women feel beautiful, confident, and celebrated during some of the most important moments of their lives.
             </p>
 
             {/* Instagram CTA */}
