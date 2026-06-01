@@ -41,13 +41,27 @@ const CATEGORIES = [
   { key: 'lessons', label: 'Makeup Courses', icon: '💄' },
 ];
 
-// Map entity records to the shape the page expects
+// Placeholder gallery photos — replace with real photos once uploaded
+const SAMPLE_GALLERY = [
+  'https://picsum.photos/id/1005/900/1100',
+  'https://picsum.photos/id/1011/900/1100',
+  'https://picsum.photos/id/1060/900/1100',
+  'https://picsum.photos/id/1027/900/1100',
+];
+
 function mapService(svc) {
+  const mainPhoto = svc.photo || '';
+  const gallery = Array.isArray(svc.gallery_photos) ? svc.gallery_photos.filter(Boolean) : [];
+  const photos = gallery.length > 0
+    ? gallery
+    : [mainPhoto, ...SAMPLE_GALLERY].filter(Boolean);
+
   return {
     key: svc.id,
     category: svc.category,
     title: svc.title,
-    photo: svc.photo || '',
+    photo: mainPhoto,
+    photos,
     desc: svc.description || '',
     price: svc.price,
     duration: svc.duration,
