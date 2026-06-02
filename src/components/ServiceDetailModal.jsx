@@ -304,33 +304,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     </button>
   );
 
-  // Bare arrow style for desktop carousel — no bubble, just the SVG with a drop-shadow for legibility
-  const desktopArrow = {
-    position: 'absolute',
-    zIndex: 25,
-    top: '32.5%',
-    transform: 'translateY(-50%)',
-    background: 'none',
-    border: 'none',
-    padding: '10px 8px',
-    cursor: 'pointer',
-    outline: 'none',
-    WebkitTapHighlightColor: 'transparent',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.9,
-  };
-
   return (
     <>
       {/* ═══════════════════════════════════════════════════
-          DESKTOP
-          Counter pill lives inside the photo strip so the
-          scrolling white sheet naturally covers it as it
-          slides up — no more pill floating over content.
-          Arrows are bare (no bubble), close buttons at
-          both top-left (back) and top-right (X).
+          DESKTOP — two-column layout
+          Left: full-height photo carousel
+          Right: scrollable service info + pinned CTA
           ═══════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
@@ -338,81 +317,88 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           background:     visible ? 'rgba(0,0,0,0.58)' : 'rgba(0,0,0,0)',
           backdropFilter: visible ? 'blur(7px)' : 'blur(0px)',
           transition: fadeT,
-          padding: '72px 24px 40px',
+          padding: '40px 24px',
         }}
         onClick={handleClose}
       >
         <div
           ref={modalCardRef}
-          className="relative rounded-[24px] overflow-hidden w-[700px] max-w-[94vw]"
-          style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
+          className="relative flex rounded-[24px] overflow-hidden"
+          style={{
+            width: 'min(900px, 92vw)',
+            height: 'min(88vh, 700px)',
+            boxShadow: '0 32px 100px rgba(0,0,0,0.35)',
+          }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Photo strip — dots embedded so they sit on the photo */}
-          <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '65%' }}>
+          {/* ── LEFT: full-height photo panel ── */}
+          <div className="relative flex-none" style={{ width: '50%' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
+
+            {/* Carousel arrows */}
             {photos.length > 1 && (
-              <div
-                className="absolute left-1/2"
-                style={{ bottom: 18, transform: 'translateX(-50%)', zIndex: 5 }}
-              >
-                <MobileDots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
-              </div>
+              <>
+                <button
+                  onClick={photoPrev}
+                  className="absolute z-10 transition-opacity hover:opacity-60 active:opacity-40"
+                  style={{ left: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', padding: '10px 8px', cursor: 'pointer', outline: 'none' }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"
+                    width={22} height={22} style={{ filter: 'drop-shadow(0 1px 5px rgba(0,0,0,0.9))' }}>
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={photoNext}
+                  className="absolute z-10 transition-opacity hover:opacity-60 active:opacity-40"
+                  style={{ right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', padding: '10px 8px', cursor: 'pointer', outline: 'none' }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"
+                    width={22} height={22} style={{ filter: 'drop-shadow(0 1px 5px rgba(0,0,0,0.9))' }}>
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+
+                {/* Dots at bottom of photo */}
+                <div className="absolute left-1/2 z-10" style={{ bottom: 20, transform: 'translateX(-50%)' }}>
+                  <MobileDots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
+                </div>
+              </>
             )}
+
+            {/* Back arrow over photo */}
+            <button onClick={handleClose}
+              className="absolute top-4 left-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+              style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
+              <IconBack dark />
+            </button>
           </div>
 
-          {/* Scrollable content — spacer matches photo height so full image is visible at scrollTop=0 */}
-          <div ref={desktopScrollRef} className="absolute inset-0 overflow-y-auto z-10" style={{ scrollbarWidth: 'none' }}>
-            <div style={{ height: '65%', pointerEvents: 'none' }} />
-            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '55%' }}>
-              <div className="mx-auto mt-3 w-9 h-1 rounded-full bg-black/10" />
-              <div className="px-7 pt-5 pb-[84px]">{content}</div>
+          {/* ── RIGHT: scrollable info panel ── */}
+          <div className="flex flex-col flex-1 min-w-0" style={{ background: '#fff' }}>
+            {/* Header row with close X */}
+            <div className="flex justify-end px-5 pt-4 pb-1 flex-none">
+              <button onClick={handleClose}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: 'rgba(0,0,0,0.07)' }}>
+                <IconClose />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div
+              ref={desktopScrollRef}
+              className="flex-1 overflow-y-auto"
+              style={{ scrollbarWidth: 'none' }}
+            >
+              <div className="px-7 pt-3 pb-4">{content}</div>
+            </div>
+
+            {/* CTA pinned at bottom */}
+            <div className="flex-none px-6 py-4 border-t border-[#f0ebe6]">
+              {ctaButton}
             </div>
           </div>
-
-          {/* CTA */}
-          <div className="absolute bottom-0 left-0 right-0 z-20 px-6 py-4 border-t border-[#f0ebe6]"
-            style={{ background: '#fff', pointerEvents: 'none' }}>
-            <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
-          </div>
-
-          {/* Carousel arrows — bare, no bubble */}
-          {photos.length > 1 && (
-            <>
-              <button
-                onClick={photoPrev}
-                className="transition-opacity hover:opacity-60 active:opacity-40"
-                style={{ ...desktopArrow, left: 14 }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"
-                  width={20} height={20} style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.85))' }}>
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <button
-                onClick={photoNext}
-                className="transition-opacity hover:opacity-60 active:opacity-40"
-                style={{ ...desktopArrow, right: 14 }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"
-                  width={20} height={20} style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.85))' }}>
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </>
-          )}
-
-          {/* Top-left close (back arrow) + top-right close (X) — matches mobile nav layout */}
-          <button onClick={handleClose}
-            className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
-            <IconBack dark />
-          </button>
-          <button onClick={handleClose}
-            className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
-            <IconClose dark />
-          </button>
         </div>
       </div>
 
