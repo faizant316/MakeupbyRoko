@@ -34,7 +34,6 @@ const darkPill = {
   border: 'none', padding: 0, flexShrink: 0,
 };
 
-// Images only — dark bg prevents bleed-through during crossfade transition
 function PhotoCarousel({ photos, idx }) {
   if (!photos?.length) return <div className="w-full h-full" style={{ background: '#1a1a1a' }} />;
   return (
@@ -53,7 +52,6 @@ function PhotoCarousel({ photos, idx }) {
   );
 }
 
-// Dot row for mobile — rendered inside scroll flow so it scrolls away with the image
 function MobileDots({ count, idx, onSet }) {
   if (count <= 1) return null;
   return (
@@ -81,13 +79,15 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const [closing, setClosing]   = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [dotsVisible, setDotsVisible] = useState(true);
-  const mobileScrollRef         = useRef(null);
-  const desktopScrollRef        = useRef(null);
-  const modalCardRef            = useRef(null);
-  const mobileInnerRef          = useRef(null);
-  const swipeRef                = useRef(null);
+  const mobileScrollRef  = useRef(null);
+  const desktopScrollRef = useRef(null);
+  const modalCardRef     = useRef(null);
+  const mobileInnerRef   = useRef(null);
+  const photosRef        = useRef([]);
 
-  const photos    = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
+  const photos = svc?.photos?.length > 0 ? svc.photos : svc?.photo ? [svc.photo] : [];
+  photosRef.current = photos;
+
   const photoPrev = () => setPhotoIdx(i => (i - 1 + photos.length) % photos.length);
   const photoNext = () => setPhotoIdx(i => (i + 1) % photos.length);
 
@@ -97,6 +97,9 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     const sbw = window.innerWidth - document.documentElement.clientWidth;
     if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
+
+    // Ensure mobile scroll starts at top so the photo is fully visible
+    if (mobileScrollRef.current) mobileScrollRef.current.scrollTop = 0;
 
     function initFlip(el) {
       if (!el) return;
@@ -130,6 +133,62 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       document.body.style.paddingRight = '';
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Non-passive touch listeners so we can preventDefault during confirmed horizontal swipes,
+  // preventing the scroll container from pulling up while the user is swiping photos.
+  useEffect(() => {
+    const el = mobileScrollRef.current;
+    if (!el) return;
+
+    let touch = null; // { x, y, locked: null | 'x' | 'y' }
+
+    function onTouchStart(e) {
+      const t = e.touches[0];
+      // Only activate swipe detection in the photo area
+      if (t.clientY < window.innerHeight * 0.72 && photosRef.current.length > 1) {
+        touch = { x: t.clientX, y: t.clientY, locked: null };
+      }
+    }
+
+    function onTouchMove(e) {
+      if (!touch) return;
+      const dx = e.touches[0].clientX - touch.x;
+      const dy = e.touches[0].clientY - touch.y;
+
+      // Lock axis once we've moved enough to determine intent
+      if (touch.locked === null && Math.sqrt(dx * dx + dy * dy) > 8) {
+        touch.locked = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+        // Vertical intent: release and let the scroll container handle it normally
+        if (touch.locked === 'y') { touch = null; return; }
+      }
+
+      // Horizontal: block scroll so the sheet doesn't move while swiping photos
+      if (touch && touch.locked === 'x') {
+        e.preventDefault();
+      }
+    }
+
+    function onTouchEnd(e) {
+      if (!touch || touch.locked !== 'x') { touch = null; return; }
+      const dx = touch.x - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 32) {
+        const len = photosRef.current.length;
+        if (dx > 0) setPhotoIdx(i => (i + 1) % len);
+        else         setPhotoIdx(i => (i - 1 + len) % len);
+      }
+      touch = null;
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false }); // must be non-passive to preventDefault
+    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove',  onTouchMove);
+      el.removeEventListener('touchend',   onTouchEnd);
+    };
+  }, []);
 
   const handleClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
@@ -245,12 +304,33 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     </button>
   );
 
+  // Bare arrow style for desktop carousel — no bubble, just the SVG with a drop-shadow for legibility
+  const desktopArrow = {
+    position: 'absolute',
+    zIndex: 25,
+    top: '27.5%',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    padding: '10px 8px',
+    cursor: 'pointer',
+    outline: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.9,
+  };
+
   return (
     <>
       {/* ═══════════════════════════════════════════════════
           DESKTOP
-          Image = top 55% · Arrows at z-25 (above scroll z-10)
-          No dots on desktop — counter pill shows "2 / 5"
+          Counter pill lives inside the photo strip so the
+          scrolling white sheet naturally covers it as it
+          slides up — no more pill floating over content.
+          Arrows are bare (no bubble), close buttons at
+          both top-left (back) and top-right (X).
           ═══════════════════════════════════════════════════ */}
       <div
         className="hidden sm:flex fixed inset-0 z-[9990] items-center justify-center"
@@ -268,9 +348,30 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Photo strip */}
+          {/* Photo strip — counter pill is embedded here so it gets covered by the white sheet */}
           <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '55%' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
+            {photos.length > 1 && (
+              <div
+                className="absolute"
+                style={{
+                  bottom: 82,
+                  right: 14,
+                  background: 'rgba(0,0,0,0.42)',
+                  backdropFilter: 'blur(6px)',
+                  WebkitBackdropFilter: 'blur(6px)',
+                  borderRadius: 999,
+                  padding: '3px 10px',
+                  fontSize: '0.6rem',
+                  color: 'rgba(255,255,255,0.9)',
+                  letterSpacing: '0.08em',
+                  pointerEvents: 'none',
+                  zIndex: 5,
+                }}
+              >
+                {photoIdx + 1} / {photos.length}
+              </div>
+            )}
           </div>
 
           {/* Scrollable content — spacer is pointer-events:none so arrows behind it still fire */}
@@ -288,51 +389,38 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <div style={{ pointerEvents: 'auto' }}>{ctaButton}</div>
           </div>
 
-          {/* Carousel arrows — z-25 clears the scroll container */}
+          {/* Carousel arrows — bare, no bubble */}
           {photos.length > 1 && (
             <>
               <button
                 onClick={photoPrev}
-                className="absolute z-[25] flex items-center justify-center transition-all hover:scale-105 active:scale-90"
-                style={{ ...darkPill, left: 12, top: '27.5%', transform: 'translateY(-50%)' }}
+                className="transition-opacity hover:opacity-60 active:opacity-40"
+                style={{ ...desktopArrow, left: 14 }}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"
+                  width={20} height={20} style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.85))' }}>
                   <polyline points="15 18 9 12 15 6" />
                 </svg>
               </button>
               <button
                 onClick={photoNext}
-                className="absolute z-[25] flex items-center justify-center transition-all hover:scale-105 active:scale-90"
-                style={{ ...darkPill, right: 12, top: '27.5%', transform: 'translateY(-50%)' }}
+                className="transition-opacity hover:opacity-60 active:opacity-40"
+                style={{ ...desktopArrow, right: 14 }}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"
+                  width={20} height={20} style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.85))' }}>
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>
-
-              {/* Counter pill — replaces dots on desktop */}
-              <div
-                className="absolute z-[25]"
-                style={{
-                  bottom: 'calc(45% + 12px)',
-                  right: 52,
-                  background: 'rgba(0,0,0,0.42)',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
-                  borderRadius: 999,
-                  padding: '3px 10px',
-                  fontSize: '0.6rem',
-                  color: 'rgba(255,255,255,0.9)',
-                  letterSpacing: '0.08em',
-                  pointerEvents: 'none',
-                }}
-              >
-                {photoIdx + 1} / {photos.length}
-              </div>
             </>
           )}
 
-          {/* Close only — no redundant back arrow on desktop */}
+          {/* Top-left close (back arrow) + top-right close (X) — matches mobile nav layout */}
+          <button onClick={handleClose}
+            className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
+            <IconBack dark />
+          </button>
           <button onClick={handleClose}
             className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)' }}>
@@ -351,12 +439,10 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
       {/* ═══════════════════════════════════════════════════
           MOBILE modal
-          Image = 72vh tall (behind scroll container at z-0)
-          Scroll container: z-10
-            ├─ 62vh transparent spacer (click-to-close)
-            ├─ 10vh dots strip — IN FLOW so they scroll away
-            │   with the image when user swipes up
-            └─ white content sheet (min-height 100vh)
+          Touch swipe handled via non-passive DOM listeners
+          (useEffect above) so we can preventDefault during
+          confirmed horizontal swipes and prevent the sheet
+          from pulling up or closing mid-swipe.
           ═══════════════════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 z-[10001]">
         <div ref={mobileInnerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -382,26 +468,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             </div>
           )}
 
-          {/* Scroll container */}
+          {/* Scroll container — swipe listeners attached in useEffect, no inline touch handlers */}
           <div
             ref={mobileScrollRef}
             className="absolute inset-0 z-10 overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onScroll={e => setDotsVisible(e.target.scrollTop < 24)}
-            onTouchStart={e => {
-              if (photos.length > 1 && e.touches[0].clientY < window.innerHeight * 0.72) {
-                swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-              }
-            }}
-            onTouchEnd={e => {
-              if (!swipeRef.current) return;
-              const dx = swipeRef.current.x - e.changedTouches[0].clientX;
-              const dy = swipeRef.current.y - e.changedTouches[0].clientY;
-              if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-                dx > 0 ? photoNext() : photoPrev();
-              }
-              swipeRef.current = null;
-            }}
           >
             {/* Transparent spacer — tap to close */}
             <div style={{ height: '72vh' }} onClick={handleClose} />
