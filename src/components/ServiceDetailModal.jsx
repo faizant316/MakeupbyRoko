@@ -308,7 +308,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const desktopArrow = {
     position: 'absolute',
     zIndex: 25,
-    top: '27.5%',
+    top: '32.5%',
     transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
@@ -348,36 +348,23 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           style={{ height: '84vh', boxShadow: '0 32px 100px rgba(0,0,0,0.35)' }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Photo strip — counter pill is embedded here so it gets covered by the white sheet */}
-          <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '55%' }}>
+          {/* Photo strip — dots embedded so they sit on the photo */}
+          <div className="absolute top-0 left-0 right-0 z-0" style={{ height: '65%' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
             {photos.length > 1 && (
               <div
-                className="absolute"
-                style={{
-                  bottom: 82,
-                  right: 14,
-                  background: 'rgba(0,0,0,0.42)',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
-                  borderRadius: 999,
-                  padding: '3px 10px',
-                  fontSize: '0.6rem',
-                  color: 'rgba(255,255,255,0.9)',
-                  letterSpacing: '0.08em',
-                  pointerEvents: 'none',
-                  zIndex: 5,
-                }}
+                className="absolute left-1/2"
+                style={{ bottom: 18, transform: 'translateX(-50%)', zIndex: 5 }}
               >
-                {photoIdx + 1} / {photos.length}
+                <MobileDots count={photos.length} idx={photoIdx} onSet={setPhotoIdx} />
               </div>
             )}
           </div>
 
-          {/* Scrollable content — spacer is pointer-events:none so arrows behind it still fire */}
+          {/* Scrollable content — spacer matches photo height so full image is visible at scrollTop=0 */}
           <div ref={desktopScrollRef} className="absolute inset-0 overflow-y-auto z-10" style={{ scrollbarWidth: 'none' }}>
-            <div style={{ height: '48%', pointerEvents: 'none' }} />
-            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '62%' }}>
+            <div style={{ height: '65%', pointerEvents: 'none' }} />
+            <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '55%' }}>
               <div className="mx-auto mt-3 w-9 h-1 rounded-full bg-black/10" />
               <div className="px-7 pt-5 pb-[84px]">{content}</div>
             </div>
