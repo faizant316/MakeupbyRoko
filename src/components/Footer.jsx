@@ -22,7 +22,7 @@ export default function Footer() {
       <div className="max-w-[1200px] mx-auto px-[clamp(1.5rem,5vw,3rem)]">
 
         {/* Top row: brand + socials */}
-        <div className="flex items-end justify-between pt-16 pb-12 border-b border-white/[0.07]">
+        <div className="flex items-end justify-between pt-16 pb-12 border-b border-[#D4A0B0]/20">
           <div>
             <p className="font-serif text-[1.7rem] tracking-[0.12em] uppercase text-white leading-none mb-3">
               Roqia Moshref
@@ -33,24 +33,24 @@ export default function Footer() {
           </div>
           <div className="flex items-center gap-5">
             <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener"
-              className="text-white/35 hover:text-white transition-colors duration-200">
+              className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
               <SocialIg />
             </a>
             <a href="https://www.tiktok.com/@makeupbyroko" target="_blank" rel="noopener"
-              className="text-white/35 hover:text-white transition-colors duration-200">
+              className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
               <SocialTt />
             </a>
             <a href="https://www.pinterest.com/makeupbyroko/" target="_blank" rel="noopener"
-              className="text-white/35 hover:text-white transition-colors duration-200">
+              className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
               <SocialPi />
             </a>
           </div>
         </div>
 
         {/* Links grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-10 py-12 border-b border-white/[0.07]">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-10 py-12 border-b border-[#D4A0B0]/20">
           <div>
-            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Navigate</p>
+            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Navigate</p>
             <ul className="flex flex-col gap-3.5">
               {[
                 { label: 'About', href: '#about' },
@@ -60,7 +60,7 @@ export default function Footer() {
                 { label: 'FAQ', href: '#faq' },
               ].map(({ label, href }) => (
                 <li key={label}>
-                  <a href={href} className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200 tracking-[0.01em]">
+                  <a href={href} className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200 tracking-[0.01em]">
                     {label}
                   </a>
                 </li>
@@ -69,29 +69,29 @@ export default function Footer() {
           </div>
 
           <div>
-            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Contact</p>
+            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Contact</p>
             <ul className="flex flex-col gap-3.5">
               <li>
                 <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener"
-                  className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                  className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                   Instagram DM
                 </a>
               </li>
               <li>
                 <a href="https://www.tiktok.com/@makeupbyroko" target="_blank" rel="noopener"
-                  className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                  className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                   TikTok
                 </a>
               </li>
               <li>
                 <a href="mailto:hello@roqiamoshref.com"
-                  className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                  className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                   hello@roqiamoshref.com
                 </a>
               </li>
               <li>
                 <a href="#book"
-                  className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                  className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                   Request a Quote
                 </a>
               </li>
@@ -99,7 +99,7 @@ export default function Footer() {
           </div>
 
           <div className="col-span-2 md:col-span-1">
-            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Studio</p>
+            <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Studio</p>
             <p className="text-[0.82rem] text-white/45 leading-[1.85]">
               Based in the DMV area.<br />
               Available for destination bookings<br />
@@ -114,7 +114,7 @@ export default function Footer() {
             © {new Date().getFullYear()} Roqia Moshref. All rights reserved.
           </p>
           <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener"
-            className="text-[0.7rem] text-white/25 hover:text-white/60 transition-colors duration-200 tracking-[0.04em]">
+            className="text-[0.7rem] text-[#D4A0B0]/40 hover:text-[#D4A0B0] transition-colors duration-200 tracking-[0.04em]">
             @makeupbyroko_
           </a>
         </div>
