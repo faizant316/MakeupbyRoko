@@ -29,7 +29,7 @@ export default function ServicesFooter() {
         <div className="max-w-[1200px] mx-auto px-[clamp(1.5rem,5vw,3rem)]">
 
           {/* Top row: brand + socials */}
-          <div className="flex items-end justify-between pt-16 pb-12 border-b border-white/[0.07]">
+          <div className="flex items-end justify-between pt-16 pb-12 border-b border-[#D4A0B0]/20">
             <div>
               <p className="font-serif text-[1.7rem] tracking-[0.12em] uppercase text-white leading-none mb-3">
                 Roqia Moshref
@@ -40,26 +40,26 @@ export default function ServicesFooter() {
             </div>
             <div className="flex items-center gap-5">
               <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer"
-                className="text-white/35 hover:text-white transition-colors duration-200">
+                className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
                 <SocialIg />
               </a>
               <a href="https://www.tiktok.com/@makeupbyroko_" target="_blank" rel="noopener noreferrer"
-                className="text-white/35 hover:text-white transition-colors duration-200">
+                className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
                 <SocialTt />
               </a>
             </div>
           </div>
 
           {/* Links grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 py-12 border-b border-white/[0.07]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 py-12 border-b border-[#D4A0B0]/20">
             {/* Services */}
             <div>
-              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Services</p>
+              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Services</p>
               <ul className="flex flex-col gap-3.5">
                 {serviceLinks.map(item => (
                   <li key={item}>
                     <a href="#services-grid"
-                      className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                      className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                       {item}
                     </a>
                   </li>
@@ -69,13 +69,13 @@ export default function ServicesFooter() {
 
             {/* Info */}
             <div>
-              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Info</p>
+              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Info</p>
               <ul className="flex flex-col gap-3.5">
                 {infoTopics.map(item => (
                   <li key={item}>
                     <button
                       onClick={() => setActiveTopic(item)}
-                      className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200 text-left"
+                      className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200 text-left"
                     >
                       {item}
                     </button>
@@ -86,23 +86,23 @@ export default function ServicesFooter() {
 
             {/* Contact */}
             <div>
-              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Contact</p>
+              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Contact</p>
               <ul className="flex flex-col gap-3.5">
                 <li>
                   <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer"
-                    className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                    className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                     @makeupbyroko_
                   </a>
                 </li>
                 <li>
                   <a href="mailto:makeupbyroko22@gmail.com"
-                    className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                    className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                     makeupbyroko22@gmail.com
                   </a>
                 </li>
                 <li>
                   <a href="https://www.tiktok.com/@makeupbyroko_" target="_blank" rel="noopener noreferrer"
-                    className="text-[0.82rem] text-white/45 hover:text-white transition-colors duration-200">
+                    className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
                     TikTok
                   </a>
                 </li>
@@ -111,7 +111,7 @@ export default function ServicesFooter() {
 
             {/* Location */}
             <div>
-              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-white/25 mb-5">Location</p>
+              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-5">Location</p>
               <p className="text-[0.82rem] text-white/45 leading-[1.85]">
                 Mountain House, CA<br />
                 Traveling artist available<br />
@@ -127,7 +127,7 @@ export default function ServicesFooter() {
             </p>
             <button
               onClick={() => router.push('/admin')}
-              className="text-[0.7rem] text-white/20 hover:text-white/50 transition-colors duration-200 tracking-[0.06em] uppercase"
+              className="text-[0.7rem] text-[#D4A0B0]/30 hover:text-[#D4A0B0] transition-colors duration-200 tracking-[0.06em] uppercase"
             >
               Admin
             </button>
