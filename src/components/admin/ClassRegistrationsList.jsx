@@ -39,9 +39,18 @@ function normalizePaymentStatus(raw) {
 }
 
 export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExpandId }) {
-  const { data: registrations = [], isLoading } = useQuery({
+  const { data: rawRegistrations = [], isLoading } = useQuery({
     queryKey: ['class-registrations'],
     queryFn: () => api.entities.ClassRegistration.list('-created_date', 100),
+  });
+
+  const registrations = [...rawRegistrations].sort((a, b) => {
+    const aDate = a.appointment_date ? new Date(a.appointment_date) : null;
+    const bDate = b.appointment_date ? new Date(b.appointment_date) : null;
+    if (!aDate && !bDate) return 0;
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return aDate - bDate;
   });
 
   // Auto-navigate to a registration when autoExpandId is provided (e.g. from "Just Signed Up")
