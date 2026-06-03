@@ -4,14 +4,38 @@ import Providers from './providers';
 
 const GA_ID = 'G-HE25CGQHH4';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+
 export const metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Makeup by Roko',
-  description: 'Professional makeup artistry by Roqia Moshref',
+  description: 'Luxury makeup artistry by Roqia Moshref. Bridal, editorial, special occasions, and makeup classes in the Bay Area.',
   viewport: {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
     userScalable: false,
+  },
+  openGraph: {
+    title: 'Makeup by Roko',
+    description: 'Luxury makeup artistry by Roqia Moshref. Bridal, editorial, special occasions, and makeup classes in the Bay Area.',
+    url: siteUrl,
+    siteName: 'Makeup by Roko',
+    images: [
+      {
+        url: '/roko_pic.png',
+        width: 1200,
+        height: 630,
+        alt: 'Roqia Moshref — Makeup by Roko',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Makeup by Roko',
+    description: 'Luxury makeup artistry by Roqia Moshref. Bridal, editorial, special occasions, and makeup classes in the Bay Area.',
+    images: ['/roko_pic.png'],
   },
 };
 

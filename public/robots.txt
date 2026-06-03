@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /admin-invite
+Disallow: /api/
+
+Sitemap: https://makeupby-roko.vercel.app/sitemap.xml
