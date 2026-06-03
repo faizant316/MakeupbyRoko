@@ -883,14 +883,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Time picker — pill grid on ALL screen sizes */}
           {showTimePicker && (
-            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#111'}` }}>
+            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3"
-                style={{ background: '#111', borderBottom: `1px solid ${dm ? '#333' : '#222'}` }}>
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
+                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: '#D4A0B0' }}>
                   Select a time
                   {pendingTime && (
-                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case" style={{ color: '#D4A0B0' }}>
+                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case" style={{ color: dm ? '#F0EBE6' : '#111' }}>
                       — {pendingTime}
                     </span>
                   )}
@@ -899,7 +899,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   type="button"
                   onClick={() => setShowTimePicker(false)}
                   className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation"
-                  style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+                  style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>

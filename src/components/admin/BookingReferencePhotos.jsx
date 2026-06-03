@@ -38,7 +38,7 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
           {photos.length > 0 && <span className="ml-2 opacity-70">({photos.length})</span>}
         </p>
         <label className={`flex items-center gap-1 cursor-pointer transition-all touch-manipulation ${uploading ? 'opacity-50 pointer-events-none' : 'active:opacity-70'} ${photos.length > 0 ? 'px-2 py-0.5 rounded-md text-[0.58rem]' : 'px-3 py-1.5 rounded-lg text-[0.65rem]'}`}
-          style={{ background: dm ? '#2e2e38' : '#111', color: dm ? '#D4A0B0' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#111'}`, ...(photos.length === 0 ? { minHeight: '32px' } : {}) }}>
+          style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.1)', color: dm ? '#D4A0B0' : '#D4A0B0', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.35)'}`, ...(photos.length === 0 ? { minHeight: '32px' } : {}) }}>
           {uploading ? (
             <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Uploading…</>
           ) : (
