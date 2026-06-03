@@ -33,14 +33,14 @@ const TRANSFORMATIONS = [
     id: 6,
     image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/1acef1b83_IMG_1203.jpg',
     type: 'portrait',
-    label: 'Full Glam',
+    label: 'Non-Bridal',
     description: 'A bold, editorial full glam look. Striking liner, voluminous lashes, and a flawless base that pops on camera and in person.',
   },
   {
     id: 7,
     image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/a93ed9a5c_IMG_1202.jpg',
     type: 'side-by-side',
-    label: 'Full Glam',
+    label: 'Non-Bridal',
     description: 'Side-by-side transformation showing the power of professional makeup. Natural skin prepped and transformed into a radiant, camera-ready full glam look.',
   },
 ];
@@ -76,8 +76,6 @@ function LightboxModal({ item, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const isSideBySide = item.type === 'side-by-side';
-
   return (
     <div
       className="fixed inset-0 z-[600] flex items-center justify-center"
@@ -95,15 +93,12 @@ function LightboxModal({ item, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         {/* LEFT: photo panel */}
-        <div className="relative flex-none" style={{ width: '50%', background: isSideBySide ? '#f5f0ed' : '#1a1a1a' }}>
+        <div className="relative flex-none" style={{ width: '50%', background: '#1a1a1a' }}>
           <img
             src={item.image}
             alt={item.label}
             className="absolute inset-0 w-full h-full"
-            style={{
-              objectFit: isSideBySide ? 'contain' : 'cover',
-              objectPosition: 'top',
-            }}
+            style={{ objectFit: 'cover', objectPosition: 'top' }}
           />
           {/* Dark pill close on photo */}
           <button
@@ -166,12 +161,12 @@ function LightboxModal({ item, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Photo */}
-        <div className="relative flex-none" style={{ height: '54vw', maxHeight: 280, background: isSideBySide ? '#f5f0ed' : '#1a1a1a' }}>
+        <div className="relative flex-none" style={{ height: '54vw', maxHeight: 280, background: '#1a1a1a' }}>
           <img
             src={item.image}
             alt={item.label}
             className="absolute inset-0 w-full h-full"
-            style={{ objectFit: isSideBySide ? 'contain' : 'cover', objectPosition: 'top' }}
+            style={{ objectFit: 'cover', objectPosition: 'top' }}
           />
           <button
             onClick={onClose}
