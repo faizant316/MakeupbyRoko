@@ -152,9 +152,11 @@ const CONSULT_BG = 'rgba(91,176,204,0.07)';
 const CONSULT_BORDER = 'rgba(91,176,204,0.2)';
 
 function parseConsultNotes(raw) {
-  if (!raw) return { link: '', notes: '' };
-  const m = raw.match(/^Link: (https?:\/\/\S+)(?:\n|$)/);
-  return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
+  if (!raw) return { link: '', hostLink: '', notes: '' };
+  const linkMatch = raw.match(/^Link: (https?:\/\/\S+)/m);
+  const hostMatch = raw.match(/^HostLink: (https?:\/\/\S+)/m);
+  const notes = raw.split('\n').filter(l => !l.startsWith('Link: ') && !l.startsWith('HostLink: ')).join('\n').trim();
+  return { link: linkMatch?.[1] || '', hostLink: hostMatch?.[1] || '', notes };
 }
 
 function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
@@ -165,6 +167,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
   const [sent, setSent] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [meetLink, setMeetLink] = useState(parsed.link);
+  const [startUrl, setStartUrl] = useState(parsed.hostLink);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: booking.consultation_date || '',
@@ -192,6 +195,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
       const data = await res.json();
       if (data.join_url) {
         setMeetLink(data.join_url);
+        setStartUrl(data.start_url || '');
       } else {
         alert(`Zoom error: ${data.error || 'Unknown error'}`);
       }
@@ -231,7 +235,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      const storedNotes = [activeLink ? `Link: ${activeLink}` : null, form.notes || null].filter(Boolean).join('\n');
+      const storedNotes = [activeLink ? `Link: ${activeLink}` : null, startUrl ? `HostLink: ${startUrl}` : null, form.notes || null].filter(Boolean).join('\n');
       onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: storedNotes });
       setSent(true);
       setExpanded(false);
@@ -379,7 +383,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                 {!meetLink ? (
                   <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                     className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
-                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f0ece8') : '#2D8CFF', color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
+                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f5f5f5') : '#2D8CFF', color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
                     {generatingLink ? (
                       <><div className="w-4 h-4 border-2 border-[#2D8CFF]/30 border-t-[#2D8CFF] rounded-full animate-spin" /> Generating…</>
                     ) : (
@@ -387,17 +391,36 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                     )}
                   </button>
                 ) : (
-                  <button type="button" onClick={copyMeetLink}
-                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
-                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>
-                      {meetLink}
-                    </span>
-                    <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
-                      style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
-                      {linkCopied ? '✓ Copied' : 'Copy'}
-                    </span>
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    {/* Host link — Roqia uses this to start as host */}
+                    {startUrl && (
+                      <div className="flex items-center justify-between px-4 rounded-xl gap-3"
+                        style={{ minHeight: '48px', background: inputBg, border: '1.5px solid #D4A0B0' }}>
+                        <div className="min-w-0">
+                          <p className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase text-[#D4A0B0] mb-0.5">Your Host Link</p>
+                          <span className="text-[0.7rem] truncate block" style={{ color: dm ? '#cdb8c8' : '#D4A0B0' }}>zoom.us/s/…</span>
+                        </div>
+                        <a href={startUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-[0.65rem] font-semibold flex-shrink-0 px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+                          style={{ background: '#D4A0B0', color: '#fff' }}>
+                          Join as Host
+                        </a>
+                      </div>
+                    )}
+                    {/* Client link — copy and send to client */}
+                    <button type="button" onClick={copyMeetLink}
+                      className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                      style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
+                      <div className="min-w-0">
+                        <p className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase mb-0.5" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>Client Link</p>
+                        <span className="text-[0.7rem] truncate block" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>{meetLink}</span>
+                      </div>
+                      <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
+                        style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
+                        {linkCopied ? '✓ Copied' : 'Copy'}
+                      </span>
+                    </button>
+                  </div>
                 )}
               </div>
             )}
