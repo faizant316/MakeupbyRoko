@@ -33,12 +33,12 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
   return (
     <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a]">
+        <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0]">
           Reference Photos & Mood Board
-          {photos.length > 0 && <span className="ml-2 text-[#D4A0B0]">({photos.length})</span>}
+          {photos.length > 0 && <span className="ml-2 opacity-70">({photos.length})</span>}
         </p>
         <label className={`flex items-center gap-1 cursor-pointer transition-all touch-manipulation ${uploading ? 'opacity-50 pointer-events-none' : 'active:opacity-70'} ${photos.length > 0 ? 'px-2 py-0.5 rounded-md text-[0.58rem]' : 'px-3 py-1.5 rounded-lg text-[0.65rem]'}`}
-          style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#D4A0B0' : '#A0785A', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}`, ...(photos.length === 0 ? { minHeight: '32px' } : {}) }}>
+          style={{ background: dm ? '#2e2e38' : '#111', color: dm ? '#D4A0B0' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#111'}`, ...(photos.length === 0 ? { minHeight: '32px' } : {}) }}>
           {uploading ? (
             <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Uploading…</>
           ) : (
@@ -50,9 +50,9 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
 
       {photos.length === 0 ? (
         <label className={`flex items-center gap-3 px-4 py-4 border border-dashed rounded-xl cursor-pointer transition-colors touch-manipulation ${uploading ? 'pointer-events-none opacity-50' : ''}`}
-          style={{ borderColor: dm ? '#3a3a48' : '#e8e2dc' }}>
+          style={{ borderColor: dm ? '#3a3a48' : 'rgba(212,160,176,0.5)' }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
+            style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.1)' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4">
               <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
             </svg>

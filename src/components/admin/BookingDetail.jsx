@@ -842,7 +842,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Appointment Time Setter */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-3">Appointment Time</p>
+          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-3">Appointment Time</p>
 
           {/* Trigger — current time display (clickable) or empty state button */}
           {!showTimePicker && (
@@ -854,8 +854,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#f5f5f5' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </div>
                   <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>{booking.time}</p>
                 </div>
@@ -871,8 +871,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#f5f5f5' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </div>
                   <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#888' }}>Set Appointment Time</p>
                 </div>
@@ -883,14 +883,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Time picker — pill grid on ALL screen sizes */}
           {showTimePicker && (
-            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#111'}` }}>
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3"
-                style={{ background: dm ? '#27272a' : '#f7f3f0', borderBottom: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: dm ? '#71717a' : '#888' }}>
+                style={{ background: '#111', borderBottom: `1px solid ${dm ? '#333' : '#222'}` }}>
+                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.5)' }}>
                   Select a time
                   {pendingTime && (
-                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case" style={{ color: '#D4A0B0' }}>
                       — {pendingTime}
                     </span>
                   )}
@@ -899,7 +899,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   type="button"
                   onClick={() => setShowTimePicker(false)}
                   className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation"
-                  style={{ background: dm ? '#3f3f46' : '#e5e5e5', color: dm ? '#71717a' : '#888' }}
+                  style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -908,7 +908,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </div>
 
               {/* Mobile — native time input (iOS wheel picker) */}
-              <div className="block md:hidden p-4" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+              <div className="block md:hidden p-4" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                 <input
                   type="time"
                   value={to24h(pendingTime)}
@@ -924,13 +924,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               {/* Desktop — pill grid */}
               <div className="hidden md:block">
-                <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+                <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                   <div className="grid grid-cols-4 gap-1.5">
                     {APPT_TIMES.map(t => (
                       <button key={t} type="button" onClick={() => setPendingTime(t)}
                         className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
                         style={pendingTime === t
-                          ? { background: '#111', color: '#fff', border: '1px solid #111' }
+                          ? { background: '#D4A0B0', color: '#fff', border: '1px solid #D4A0B0' }
                           : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
                         }
                       >{t}</button>
@@ -940,7 +940,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </div>
 
               {/* Confirm button */}
-              <div className="px-3 pb-3" style={{ background: dm ? '#1e1e24' : '#fafafa' }}>
+              <div className="px-3 pb-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                 <button
                   type="button"
                   disabled={!pendingTime}
@@ -953,7 +953,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   }}
                   className="w-full py-3 rounded-xl text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
                   style={pendingTime
-                    ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }
+                    ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
                     : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                   }
                 >
