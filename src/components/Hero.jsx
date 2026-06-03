@@ -36,14 +36,13 @@ export default function Hero() {
               ✦ Makeup Artist
             </div>
             <img
-              src="./roqia.jpg"
+              src="/roko_pic.png"
               alt="Roqia Moshref"
               className="w-full h-[580px] object-cover object-top rounded-t-[200px] rounded-b-[12px] shadow-[0_24px_60px_rgba(0,0,0,0.12)]"
-              onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=85&auto=format&fit=crop'}
             />
             <div className="absolute bottom-6 -left-6 bg-white rounded-xl p-[0.875rem_1.25rem] shadow-[var(--shadow-lg)] flex items-center gap-3">
               <div className="w-[42px] h-[42px] rounded-full overflow-hidden flex-shrink-0">
-                <img src="./roqia.jpg" alt="Roqia" className="w-full h-full object-cover" onError={(e) => e.target.style.display='none'} />
+                <img src="/roko_pic.png" alt="Roqia" className="w-full h-full object-cover" />
               </div>
               <div>
                 <div className="text-[0.875rem] font-semibold text-[var(--text)] leading-[1.2]">Roqia Moshref</div>
