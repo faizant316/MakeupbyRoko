@@ -273,7 +273,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                       className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
                       style={{ minHeight: '40px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1px solid ${linkCopied ? '#22c55e' : border}` }}>
                       <div className="min-w-0">
-                        <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase block mb-0.5" style={{ color: linkCopied ? '#16a34a' : (dm ? '#52525b' : '#bbb') }}>Client Link (auto-sent)</span>
+                        <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase block mb-0.5" style={{ color: linkCopied ? '#16a34a' : (dm ? '#52525b' : '#bbb') }}>Client Link</span>
                         <span className="text-[0.68rem] truncate block" style={{ color: linkCopied ? '#16a34a' : (dm ? '#71717a' : '#999') }}>{meetLink}</span>
                       </div>
                       <span className="text-[0.6rem] font-semibold flex-shrink-0 px-2 py-1 rounded-md"
