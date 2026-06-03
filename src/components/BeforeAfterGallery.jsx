@@ -45,6 +45,29 @@ const TRANSFORMATIONS = [
   },
 ];
 
+function PhotoPanel({ src, alt, isSideBySide }) {
+  return (
+    <>
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: 'blur(28px) brightness(0.5)', transform: 'scale(1.15)' }}
+      />
+      <img
+        src={src}
+        alt={alt}
+        className="absolute inset-0 w-full h-full"
+        style={{
+          objectFit: isSideBySide ? 'contain' : 'cover',
+          objectPosition: isSideBySide ? 'center' : 'top',
+        }}
+      />
+    </>
+  );
+}
+
 const IconClose = ({ dark = false }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -94,12 +117,7 @@ function LightboxModal({ item, onClose }) {
       >
         {/* LEFT: photo panel */}
         <div className="relative flex-none" style={{ width: '50%', background: '#1a1a1a' }}>
-          <img
-            src={item.image}
-            alt={item.label}
-            className="absolute inset-0 w-full h-full"
-            style={{ objectFit: 'cover', objectPosition: 'top' }}
-          />
+          <PhotoPanel src={item.image} alt={item.label} isSideBySide={item.type === 'side-by-side'} />
           {/* Dark pill close on photo */}
           <button
             onClick={onClose}
@@ -161,13 +179,8 @@ function LightboxModal({ item, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Photo */}
-        <div className="relative flex-none" style={{ height: '54vw', maxHeight: 280, background: '#1a1a1a' }}>
-          <img
-            src={item.image}
-            alt={item.label}
-            className="absolute inset-0 w-full h-full"
-            style={{ objectFit: 'cover', objectPosition: 'top' }}
-          />
+        <div className="relative flex-none" style={{ height: item.type === 'side-by-side' ? '45vw' : '54vw', maxHeight: 280, background: '#1a1a1a' }}>
+          <PhotoPanel src={item.image} alt={item.label} isSideBySide={item.type === 'side-by-side'} />
           <button
             onClick={onClose}
             className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center"
