@@ -45,14 +45,28 @@ const TRANSFORMATIONS = [
   },
 ];
 
+const IconClose = ({ dark = false }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : '#111'} strokeWidth="2.5" strokeLinecap="round" width={14} height={14}>
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
+const IconInstagram = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width={14} height={14} style={{ flexShrink: 0 }}>
+    <rect x="2" y="2" width="20" height="20" rx="5"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+  </svg>
+);
+
 function LightboxModal({ item, onClose }) {
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = prev;
-      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     };
   }, []);
 
@@ -62,66 +76,134 @@ function LightboxModal({ item, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const isSideBySide = item.type === 'side-by-side';
+
   return (
     <div
-      className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6 sm:pt-16"
-      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(14px)' }}
+      className="fixed inset-0 z-[600] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.58)', backdropFilter: 'blur(7px)', padding: '40px 24px' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Two-column card — image left, details right — on ALL screen sizes */}
+      {/* ── DESKTOP: two-column card ── */}
       <div
-        className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-row w-full"
-        style={{ maxWidth: '860px', maxHeight: '90dvh' }}
+        className="hidden sm:flex relative rounded-[24px] overflow-hidden"
+        style={{
+          width: 'min(900px, 92vw)',
+          height: 'min(88vh, 700px)',
+          boxShadow: '0 32px 100px rgba(0,0,0,0.35)',
+        }}
+        onClick={e => e.stopPropagation()}
       >
-        {/* LEFT: Image — contains full image without cropping */}
-        <div className="flex-shrink-0 bg-[#0a0a0a] flex items-center justify-center" style={{ width: '55%' }}>
+        {/* LEFT: photo panel */}
+        <div className="relative flex-none" style={{ width: '50%', background: isSideBySide ? '#f5f0ed' : '#1a1a1a' }}>
           <img
             src={item.image}
             alt={item.label}
-            className="w-full h-full"
-            style={{ objectFit: 'contain', maxHeight: '90dvh' }}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              objectFit: isSideBySide ? 'contain' : 'cover',
+              objectPosition: 'top',
+            }}
           />
+          {/* Dark pill close on photo */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 left-4 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)', border: 'none', cursor: 'pointer' }}
+          >
+            <IconClose dark />
+          </button>
         </div>
 
-        {/* RIGHT: Details */}
-        <div className="flex flex-col overflow-y-auto" style={{ width: '45%' }}>
-          <div className="flex flex-col flex-1 min-h-0" style={{ padding: 'clamp(1rem, 3vw, 2rem)' }}>
-            {/* Close button */}
+        {/* RIGHT: info panel */}
+        <div className="flex flex-col flex-1 min-w-0" style={{ background: '#fff' }}>
+          {/* X button row */}
+          <div className="flex justify-end px-5 pt-4 pb-1 flex-none">
             <button
               onClick={onClose}
-              className="mb-5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600 ml-auto flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+              style={{ background: 'rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer' }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
+              <IconClose />
             </button>
+          </div>
 
-            <span className="inline-block px-2.5 py-1 bg-[#D4A0B0]/15 rounded-full text-[0.58rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-3 self-start">
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-7 pt-2 pb-4" style={{ scrollbarWidth: 'none' }}>
+            <span className="inline-block px-2.5 py-1 bg-[#D4A0B0]/15 rounded-full text-[0.58rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-4">
               {item.label}
             </span>
 
-            <h3 className="font-serif text-[#111] mb-3 leading-tight" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.5rem)' }}>
+            <h3 className="font-serif text-[1.45rem] font-normal text-[#111] leading-tight mb-5">
               Before <em className="text-[#D4A0B0] not-italic">&</em> After
             </h3>
 
-            <p className="text-[#666] leading-[1.75] flex-1" style={{ fontSize: 'clamp(0.72rem, 1.2vw, 0.84rem)' }}>
-              {item.description}
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2">
+              Transformation
             </p>
+            <p className="text-[0.87rem] text-[#666] leading-[1.78]">{item.description}</p>
+          </div>
 
-            <div className="mt-5 pt-4 border-t border-gray-100">
-              <a
-                href="https://www.instagram.com/makeupbyroko_/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 font-medium tracking-[0.06em] uppercase text-[#999] hover:text-[#D4A0B0] transition-colors"
-                style={{ fontSize: 'clamp(0.6rem, 1vw, 0.72rem)' }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3 flex-shrink-0">
-                  <rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-                </svg>
-                See more on Instagram
-              </a>
-            </div>
+          {/* Pinned CTA */}
+          <div className="flex-none px-6 py-4 border-t border-[#f0ebe6]">
+            <a
+              href="https://www.instagram.com/makeupbyroko_/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
+            >
+              <IconInstagram />
+              See More on Instagram
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MOBILE: stacked card ── */}
+      <div
+        className="sm:hidden flex flex-col rounded-[20px] overflow-hidden w-full"
+        style={{ maxWidth: 480, maxHeight: '90dvh', boxShadow: '0 24px 80px rgba(0,0,0,0.4)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Photo */}
+        <div className="relative flex-none" style={{ height: '54vw', maxHeight: 280, background: isSideBySide ? '#f5f0ed' : '#1a1a1a' }}>
+          <img
+            src={item.image}
+            alt={item.label}
+            className="absolute inset-0 w-full h-full"
+            style={{ objectFit: isSideBySide ? 'contain' : 'cover', objectPosition: 'top' }}
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)', border: 'none', cursor: 'pointer' }}
+          >
+            <IconClose dark />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-col bg-white overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="px-5 pt-5 pb-3">
+            <span className="inline-block px-2.5 py-1 bg-[#D4A0B0]/15 rounded-full text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-3">
+              {item.label}
+            </span>
+            <h3 className="font-serif text-[1.25rem] font-normal text-[#111] leading-tight mb-4">
+              Before <em className="text-[#D4A0B0] not-italic">&</em> After
+            </h3>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2">Transformation</p>
+            <p className="text-[0.84rem] text-[#666] leading-[1.75] mb-5">{item.description}</p>
+          </div>
+          <div className="px-5 pb-5 border-t border-[#f0ebe6] pt-4">
+            <a
+              href="https://www.instagram.com/makeupbyroko_/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
+            >
+              <IconInstagram />
+              See More on Instagram
+            </a>
           </div>
         </div>
       </div>
