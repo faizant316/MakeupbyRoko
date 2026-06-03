@@ -299,20 +299,25 @@ export default function BookingsList({
                   </p>
                 </div>
                 {(() => {
-                  const m = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/);
-                  return m ? (
+                  const hostMatch = b.consultation_notes?.match(/^HostLink: (https?:\/\/\S+)/m);
+                  const joinMatch = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m);
+                  const url = hostMatch?.[1] || joinMatch?.[1];
+                  const isHost = !!hostMatch?.[1];
+                  return url ? (
                     <a
-                      href={m[1]}
+                      href={url}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={e => e.stopPropagation()}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                      style={{ background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                      style={isHost
+                        ? { background: '#D4A0B0', color: '#fff' }
+                        : { background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                         <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                       </svg>
-                      Join
+                      {isHost ? 'Join as Host' : 'Join'}
                     </a>
                   ) : null;
                 })()}
@@ -381,16 +386,18 @@ export default function BookingsList({
                 </div>
                 {isZoom && zoomMatch ? (
                   <a
-                    href={zoomMatch[1]}
+                    href={(() => { const hm = r.lesson_notes?.match(/^HostLink: (https?:\/\/\S+)/m); return hm?.[1] || zoomMatch[1]; })()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                    style={{ background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                    style={r.lesson_notes?.includes('HostLink:')
+                      ? { background: '#D4A0B0', color: '#fff' }
+                      : { background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                       <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                     </svg>
-                    Join
+                    {r.lesson_notes?.includes('HostLink:') ? 'Join as Host' : 'Join'}
                   </a>
                 ) : isPhone && r.phone ? (
                   <a
