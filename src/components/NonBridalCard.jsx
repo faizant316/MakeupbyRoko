@@ -1,7 +1,7 @@
 export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewDetail }) {
   return (
     <div
-      className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row h-full sm:h-[260px] cursor-pointer"
+      className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row h-full sm:h-[280px] cursor-pointer"
       style={{ touchAction: 'manipulation' }}
       onClick={(e) => onViewDetail && onViewDetail(svc, e)}
     >
@@ -67,28 +67,25 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           </div>
         </div>
 
-        <div>
-          {svc.category === 'lessons' ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
-              type="button"
-              className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
-              style={{ touchAction: 'manipulation' }}
-            >
-              View Available Classes →
-            </button>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
-              type="button"
-              className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
-              style={{ touchAction: 'manipulation' }}
-            >
-              Select & Book →
-            </button>
-          )}
-          <div className="h-3" />
-        </div>
+        {svc.category === 'lessons' ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
+            type="button"
+            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
+            style={{ touchAction: 'manipulation' }}
+          >
+            View Available Classes →
+          </button>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
+            type="button"
+            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
+            style={{ touchAction: 'manipulation' }}
+          >
+            Select & Book →
+          </button>
+        )}
       </div>
 
       {/* Photo — right on desktop only */}
