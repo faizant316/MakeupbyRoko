@@ -1,7 +1,7 @@
 export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewDetail }) {
   return (
     <div
-      className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row cursor-pointer"
+      className="service-card group bg-white border border-[#eee] rounded-lg overflow-hidden hover:shadow-[0_6px_24px_rgba(0,0,0,0.07)] active:scale-[0.985] transition-all duration-300 flex flex-col sm:flex-row h-full sm:h-[260px] cursor-pointer"
       style={{ touchAction: 'manipulation' }}
       onClick={(e) => onViewDetail && onViewDetail(svc, e)}
     >
@@ -22,7 +22,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
       </div>
 
       {/* Text */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1 min-w-0 z-10">
+      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between min-w-0 z-10">
         <div>
           <h3 className="font-serif text-[1.1rem] font-normal text-[#111] leading-tight mb-1.5">{svc.title}</h3>
           <div className="flex items-center gap-2 mb-2">
@@ -67,29 +67,32 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           </div>
         </div>
 
-        {svc.category === 'lessons' ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
-            type="button"
-            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
-            style={{ touchAction: 'manipulation' }}
-          >
-            View Available Classes →
-          </button>
-        ) : (
-          <button
-            onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
-            type="button"
-            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
-            style={{ touchAction: 'manipulation' }}
-          >
-            Select & Book →
-          </button>
-        )}
+        <div>
+          {svc.category === 'lessons' ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
+              type="button"
+              className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
+              style={{ touchAction: 'manipulation' }}
+            >
+              View Available Classes →
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
+              type="button"
+              className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
+              style={{ touchAction: 'manipulation' }}
+            >
+              Select & Book →
+            </button>
+          )}
+          <div className="h-3" />
+        </div>
       </div>
 
       {/* Photo — right on desktop only */}
-      <div className="hidden sm:block w-[30%] flex-shrink-0 overflow-hidden bg-[#f5f5f5] relative" style={{ minHeight: '220px' }}>
+      <div className="hidden sm:block w-[30%] flex-shrink-0 overflow-hidden bg-[#f5f5f5] relative">
         <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
           className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
           style={{ objectPosition: 'center 35%' }} />
