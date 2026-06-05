@@ -163,6 +163,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);
+  const [showConfirmSend, setShowConfirmSend] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [meetLink, setMeetLink] = useState(parsed.link);
   const [generatingLink, setGeneratingLink] = useState(false);
@@ -318,7 +319,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase" style={{ color: CONSULT_COLOR }}>Consultation</p>
               <p className="font-serif text-[1rem] mt-0.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>Schedule a Meeting</p>
             </div>
-            <button onClick={() => setExpanded(false)}
+            <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }}
               className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
               style={{ background: dm ? '#3f3f46' : '#f0ece8', color: dm ? '#71717a' : '#888' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -414,18 +415,51 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
             </div>
 
             {/* CTA */}
-            <button onClick={handleSend} disabled={saving || !form.date}
-              className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
-              style={{
-                minHeight: '50px', fontSize: '14px',
-                ...(!form.date
-                  ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
-                  : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
-              }}>
-              {saving
-                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
-                : 'Confirm & Notify Client'}
-            </button>
+            {!showConfirmSend ? (
+              <button onClick={() => { if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date}
+                className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                style={{
+                  minHeight: '50px', fontSize: '14px',
+                  ...(!form.date
+                    ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                    : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
+                }}>
+                Confirm & Notify Client
+              </button>
+            ) : (
+              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#fafafa' }}>
+                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>Confirm & Send Email?</p>
+                  <div className="flex flex-col gap-1.5 mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Date</span>
+                      <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.date ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : '—'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Time</span>
+                      <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.time}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Type</span>
+                      <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.type}</span>
+                    </div>
+                  </div>
+                  <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>An email will be sent to <span style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>{booking.email}</span>.</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowConfirmSend(false)}
+                      className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold transition-all touch-manipulation"
+                      style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                      Cancel
+                    </button>
+                    <button onClick={() => { setShowConfirmSend(false); handleSend(); }} disabled={saving}
+                      className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold transition-all touch-manipulation flex items-center justify-center gap-2"
+                      style={{ background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
+                      {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Yes, Send Email'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {sent && (
               <div className="flex items-center justify-center gap-1.5 py-1">
@@ -627,8 +661,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {booking.notes && (
           <div className="mb-6">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1">Notes</p>
-            <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#777' }}>{booking.notes}</p>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2">Notes</p>
+            <div className="px-4 py-3 rounded-xl" style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+              <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#555' }}>
+                {booking.notes.replace(/^\s*\|\s*/, '').trim()}
+              </p>
+            </div>
           </div>
         )}
 
@@ -883,9 +921,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Time picker — pill grid on ALL screen sizes */}
           {showTimePicker && (
-            <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+            <div className="rounded-xl" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, overflow: 'visible' }}>
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3"
+              <div className="flex items-center justify-between px-4 py-3 rounded-t-xl"
                 style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
                 <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: '#D4A0B0' }}>
                   Select a time
@@ -908,16 +946,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </div>
 
               {/* Mobile — native time input (iOS wheel picker) */}
-              <div className="block md:hidden p-4" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+              <div className="block md:hidden px-4 pt-4 pb-2" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                 <input
                   type="time"
                   value={to24h(pendingTime)}
                   onChange={e => setPendingTime(from24h(e.target.value))}
                   style={{
-                    width: '100%', fontSize: '16px', padding: '12px 16px',
-                    borderRadius: '12px', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`,
-                    background: dm ? '#27272a' : '#fff', color: dm ? '#e4e4e7' : '#111',
-                    outline: 'none',
+                    width: '100%', fontSize: '16px', padding: '14px 16px',
+                    borderRadius: '12px', border: `1.5px solid ${dm ? '#3a3a48' : '#e5e5e5'}`,
+                    background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111',
+                    outline: 'none', boxSizing: 'border-box', display: 'block',
                   }}
                 />
               </div>
