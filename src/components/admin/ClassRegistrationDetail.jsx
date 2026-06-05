@@ -19,11 +19,9 @@ const LESSON_COLOR = '#5BB0CC';
 const LESSON_BG = 'rgba(91,176,204,0.07)';
 
 function parseNotes(raw) {
-  if (!raw) return { link: '', hostLink: '', notes: '' };
-  const linkMatch = raw.match(/^Link: (https?:\/\/\S+)/m);
-  const hostMatch = raw.match(/^HostLink: (https?:\/\/\S+)/m);
-  const notes = raw.split('\n').filter(l => !l.startsWith('Link: ') && !l.startsWith('HostLink: ')).join('\n').trim();
-  return { link: linkMatch?.[1] || '', hostLink: hostMatch?.[1] || '', notes };
+  if (!raw) return { link: '', notes: '' };
+  const m = raw.match(/^Link: (https?:\/\/\S+)(?:\n|$)/);
+  return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
 }
 
 function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) {
@@ -34,7 +32,6 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const [sent, setSent] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [meetLink, setMeetLink] = useState(parsed.link);
-  const [startUrl, setStartUrl] = useState(parsed.hostLink);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: reg.appointment_date || '',
@@ -65,7 +62,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         }),
       });
       const data = await res.json();
-      if (data.join_url) { setMeetLink(data.join_url); setStartUrl(data.start_url || ''); }
+      if (data.join_url) setMeetLink(data.join_url);
       else alert(`Zoom error: ${data.error || 'Unknown error'}`);
     } catch (err) {
       alert(`Failed: ${err.message}`);
@@ -101,7 +98,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      const storedNotes = [form.type === 'Zoom' && meetLink ? `Link: ${meetLink}` : null, startUrl ? `HostLink: ${startUrl}` : null, form.notes || null].filter(Boolean).join('\n');
+      const storedNotes = [form.type === 'Zoom' && meetLink ? `Link: ${meetLink}` : null, form.notes || null].filter(Boolean).join('\n');
       onUpdateReg({ appointment_date: form.date, appointment_time: form.time, consultation_type: form.type, lesson_notes: storedNotes, status: 'enrolled' });
       setSent(true);
       setExpanded(false);
@@ -252,36 +249,15 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                       : 'Generate Zoom Link'}
                   </button>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {startUrl ? (
-                      <a href={startUrl} target="_blank" rel="noopener noreferrer"
-                        className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                        style={{ minHeight: '48px', fontSize: '14px', background: '#D4A0B0', color: '#fff', textDecoration: 'none' }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                          <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
-                        </svg>
-                        Join as Host
-                      </a>
-                    ) : (
-                      <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[0.72rem]"
-                        style={{ background: dm ? '#2e2e38' : '#fffbeb', border: '1px solid #fcd34d', color: '#92400e' }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Click "New Link" above to regenerate and get your host join button
-                      </div>
-                    )}
-                    <button type="button" onClick={copyMeetLink}
-                      className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                      style={{ minHeight: '40px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1px solid ${linkCopied ? '#22c55e' : border}` }}>
-                      <div className="min-w-0">
-                        <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase block mb-0.5" style={{ color: linkCopied ? '#16a34a' : (dm ? '#52525b' : '#bbb') }}>Client Link</span>
-                        <span className="text-[0.68rem] truncate block" style={{ color: linkCopied ? '#16a34a' : (dm ? '#71717a' : '#999') }}>{meetLink}</span>
-                      </div>
-                      <span className="text-[0.6rem] font-semibold flex-shrink-0 px-2 py-1 rounded-md"
-                        style={{ background: linkCopied ? '#22c55e' : (dm ? '#3a3a48' : '#f0f0f0'), color: linkCopied ? '#fff' : (dm ? '#aaa' : '#666') }}>
-                        {linkCopied ? '✓' : 'Copy'}
-                      </span>
-                    </button>
-                  </div>
+                  <button type="button" onClick={copyMeetLink}
+                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
+                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>{meetLink}</span>
+                    <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
+                      style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
+                      {linkCopied ? '✓ Copied' : 'Copy'}
+                    </span>
+                  </button>
                 )}
               </div>
             )}

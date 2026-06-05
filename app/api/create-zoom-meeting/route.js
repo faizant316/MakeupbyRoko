@@ -52,8 +52,8 @@ export async function POST(req) {
         duration,
         ...(start_time ? { start_time } : {}),
         settings: {
-          join_before_host: false,
-          waiting_room: true,
+          join_before_host: true,
+          waiting_room: false,
           auto_recording: 'none',
         },
       }),
@@ -66,7 +66,7 @@ export async function POST(req) {
     }
 
     const meeting = await meetingRes.json();
-    return NextResponse.json({ join_url: meeting.join_url, start_url: meeting.start_url, meeting_id: meeting.id, password: meeting.password });
+    return NextResponse.json({ join_url: meeting.join_url, meeting_id: meeting.id, password: meeting.password });
   } catch (err) {
     console.error('create-zoom-meeting:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
