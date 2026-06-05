@@ -108,7 +108,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
                     <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
                       style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
                   )}
-                  {hasBookings && <span className={`text-[0.5rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
+                  {hasBookings && <span className={`text-[0.62rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
                 </>
               )}
             </div>
@@ -193,7 +193,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
                 <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
                   style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
               )}
-              {hasBookings && <span className={`text-[0.5rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
+              {hasBookings && <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
             </>
           )}
         </div>

@@ -172,8 +172,8 @@ export default function UploadZelle() {
 
       {/* Navbar */}
       <div className="flex-shrink-0 border-b border-[#F0E0E9] px-5 py-3.5 flex items-center justify-between" style={{ background: '#fff' }}>
-        <a href="/" className="flex items-center gap-1.5 text-[0.68rem] text-[#888888] hover:text-[#111111] transition-colors group">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+        <a href="/" className="flex items-center gap-2 text-[0.78rem] text-[#888888] hover:text-[#111111] transition-colors touch-manipulation" style={{ minHeight: '44px', padding: '0 4px' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 flex-shrink-0">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           Back to site
