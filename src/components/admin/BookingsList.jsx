@@ -27,7 +27,8 @@ const CLASS_LABELS = {
 export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
-  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient
+  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient,
+  classRegs = [], viewType = 'appointments', setViewType,
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
@@ -52,6 +53,14 @@ export default function BookingsList({
 
   const bridalBookings = activeBookings.filter(isBridalBooking);
   const nonBridalBookings = activeBookings.filter(b => !isBridalBooking(b));
+
+  const consultationBookings = (allBookings || [])
+    .filter(b => b.consultation_date && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
+    .sort((a, b) => (a.consultation_date || '').localeCompare(b.consultation_date || ''));
+
+  const filteredClassRegs = classRegs
+    .filter(r => !search || [r.full_name, r.email, r.phone].some(f => f?.toLowerCase().includes(search.toLowerCase())))
+    .sort((a, b) => (a.appointment_date || '').localeCompare(b.appointment_date || ''));
 
   return (
     <div>
@@ -190,7 +199,7 @@ export default function BookingsList({
         />
       </div>
 
-      {/* Status pills — color-coded, always shown */}
+      {/* Status pills + service type pills */}
       {(() => {
         const STATUS_COLORS = {
           all:       { active: dm ? '#D4A0B0' : '#111', activeTxt: dm ? '#1a1614' : '#fff', dot: null },
@@ -199,16 +208,17 @@ export default function BookingsList({
           completed: { active: '#22C55E', activeTxt: '#fff', dot: '#22C55E' },
           cancelled: { active: '#EF4444', activeTxt: '#fff', dot: '#EF4444' },
         };
+        const inAppointments = viewType === 'appointments';
         return (
           <div className="flex items-center gap-1.5 mb-5 overflow-x-auto no-scrollbar pb-0.5">
             {STATUSES.map(s => {
               const count = statusCounts[s] || 0;
-              const isActive = statusFilter === s;
+              const isActive = inAppointments && statusFilter === s;
               const colors = STATUS_COLORS[s];
               return (
                 <button
                   key={s}
-                  onClick={() => setStatusFilter(s)}
+                  onClick={() => { setStatusFilter(s); setViewType?.('appointments'); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
                   style={isActive
                     ? { background: colors.active, color: colors.activeTxt, border: `1px solid ${colors.active}` }
@@ -223,6 +233,37 @@ export default function BookingsList({
                 </button>
               );
             })}
+
+            {/* Divider */}
+            <div className="w-px h-4 rounded-full flex-shrink-0 mx-0.5" style={{ background: dm ? '#3f3f46' : '#e0d8d2' }} />
+
+            {/* Makeup Courses pill */}
+            <button
+              onClick={() => setViewType?.('courses')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+              style={viewType === 'courses'
+                ? { background: LESSON_COLOR, color: '#fff', border: `1px solid ${LESSON_COLOR}` }
+                : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
+              }
+            >
+              {viewType !== 'courses' && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: LESSON_COLOR }} />}
+              <span>Makeup Courses</span>
+              <span className="opacity-70">({classRegs.length})</span>
+            </button>
+
+            {/* Consultations pill */}
+            <button
+              onClick={() => setViewType?.('consultations')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+              style={viewType === 'consultations'
+                ? { background: CONSULT_COLOR, color: '#fff', border: `1px solid ${CONSULT_COLOR}` }
+                : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
+              }
+            >
+              {viewType !== 'consultations' && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CONSULT_COLOR }} />}
+              <span>Consultations</span>
+              <span className="opacity-70">({(allBookings || []).filter(b => b.consultation_date).length})</span>
+            </button>
           </div>
         );
       })()}
@@ -414,8 +455,123 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Content */}
-      {loading ? (
+      {/* Makeup Courses view */}
+      {viewType === 'courses' && (
+        <div>
+          {filteredClassRegs.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-[#b5a99a] text-[0.85rem]">No makeup courses found</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredClassRegs.map((r, i) => {
+                const classList = Object.keys(CLASS_LABELS).filter(k => r[k]);
+                const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Course';
+                const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#22C55E' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
+                const statusLabel = r.status === 'enrolled' ? 'Enrolled' : r.status === 'confirmed' ? 'Confirmed' : 'Pending';
+                return (
+                  <div
+                    key={r.id}
+                    className="flex items-center gap-4 px-5 py-4 rounded-xl"
+                    style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+                        {r.full_name || 'Client'}
+                      </p>
+                      <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                        {classLabel}
+                        {r.appointment_date && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{new Date(r.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {r.appointment_time && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{r.appointment_time}</span>}
+                        {r.consultation_type && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{r.consultation_type}</span>}
+                      </p>
+                    </div>
+                    <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
+                      style={{ background: `${statusColor}18`, color: statusColor }}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Consultations view */}
+      {viewType === 'consultations' && (
+        <div>
+          {consultationBookings.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-[#b5a99a] text-[0.85rem]">No consultations found</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {consultationBookings.map(b => {
+                const hostMatch = b.consultation_notes?.match(/^HostLink: (https?:\/\/\S+)/m);
+                const joinMatch = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m);
+                const url = hostMatch?.[1] || joinMatch?.[1];
+                const isHost = !!hostMatch?.[1];
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => onSelect(b)}
+                    className="flex items-center gap-4 w-full text-left px-5 py-4 rounded-xl transition-colors group"
+                    style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}
+                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
+                    onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,176,204,0.12)' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4">
+                        <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+                        {b.name || 'Client'}
+                      </p>
+                      <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                        {b.service}
+                        {b.consultation_date && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{new Date(b.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {b.consultation_time && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{b.consultation_time}</span>}
+                        {b.consultation_type && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{b.consultation_type}</span>}
+                      </p>
+                    </div>
+                    {url && (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
+                        style={isHost
+                          ? { background: '#D4A0B0', color: '#fff' }
+                          : { background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                          <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                        </svg>
+                        {isHost ? 'Join as Host' : 'Join'}
+                      </a>
+                    )}
+                    <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Appointments content */}
+      {viewType === 'appointments' && (loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-[#e8e2dc] border-t-[#A0785A] rounded-full animate-spin" />
         </div>
@@ -520,7 +676,7 @@ export default function BookingsList({
             </div>
           )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

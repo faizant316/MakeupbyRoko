@@ -22,6 +22,7 @@ const DEFAULT_CAP = 3;
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('bookings');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewType, setViewType] = useState('appointments');
   const [search, setSearch] = useState('');
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -433,6 +434,7 @@ export default function Admin() {
                 onSelect={setSelectedBooking} currentMonth={currentMonth}
                 allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
                 darkMode={dm} onAddClient={() => setShowAddClient(true)}
+                classRegs={classRegs} viewType={viewType} setViewType={setViewType}
               />
             </div>
             {showAddClient && (
