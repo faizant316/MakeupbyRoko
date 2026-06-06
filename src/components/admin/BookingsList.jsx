@@ -221,7 +221,7 @@ export default function BookingsList({
                 <button
                   key={s}
                   onClick={() => { setStatusFilter(s); setViewType?.('appointments'); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
                   style={isActive
                     ? { background: colors.active, color: colors.activeTxt, border: `1px solid ${colors.active}` }
                     : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
@@ -242,7 +242,7 @@ export default function BookingsList({
             {/* Makeup Courses pill */}
             <button
               onClick={() => setViewType?.('courses')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
               style={viewType === 'courses'
                 ? { background: LESSON_COLOR, color: '#fff', border: `1px solid ${LESSON_COLOR}` }
                 : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
@@ -256,7 +256,7 @@ export default function BookingsList({
             {/* Consultations pill */}
             <button
               onClick={() => setViewType?.('consultations')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
               style={viewType === 'consultations'
                 ? { background: CONSULT_COLOR, color: '#fff', border: `1px solid ${CONSULT_COLOR}` }
                 : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
