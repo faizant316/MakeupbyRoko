@@ -435,6 +435,7 @@ export default function Admin() {
                 allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
                 darkMode={dm} onAddClient={() => setShowAddClient(true)}
                 classRegs={classRegs} viewType={viewType} setViewType={setViewType}
+                onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
               />
             </div>
             {showAddClient && (

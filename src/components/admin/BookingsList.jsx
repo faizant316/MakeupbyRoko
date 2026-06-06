@@ -28,7 +28,7 @@ export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient,
-  classRegs = [], viewType = 'appointments', setViewType,
+  classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
@@ -54,12 +54,14 @@ export default function BookingsList({
   const bridalBookings = activeBookings.filter(isBridalBooking);
   const nonBridalBookings = activeBookings.filter(b => !isBridalBooking(b));
 
+  const today = new Date().toISOString().split('T')[0];
+
   const consultationBookings = (allBookings || [])
-    .filter(b => b.consultation_date && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
+    .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
     .sort((a, b) => (a.consultation_date || '').localeCompare(b.consultation_date || ''));
 
   const filteredClassRegs = classRegs
-    .filter(r => !search || [r.full_name, r.email, r.phone].some(f => f?.toLowerCase().includes(search.toLowerCase())))
+    .filter(r => (!r.appointment_date || r.appointment_date >= today) && (!search || [r.full_name, r.email, r.phone].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
     .sort((a, b) => (a.appointment_date || '').localeCompare(b.appointment_date || ''));
 
   return (
@@ -470,10 +472,13 @@ export default function BookingsList({
                 const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#22C55E' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
                 const statusLabel = r.status === 'enrolled' ? 'Enrolled' : r.status === 'confirmed' ? 'Confirmed' : 'Pending';
                 return (
-                  <div
+                  <button
                     key={r.id}
-                    className="flex items-center gap-4 px-5 py-4 rounded-xl"
+                    onClick={() => onSelectClassReg?.(r)}
+                    className="flex items-center gap-4 px-5 py-4 rounded-xl w-full text-left transition-colors group"
                     style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}
+                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
+                    onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
                   >
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
@@ -495,7 +500,10 @@ export default function BookingsList({
                       style={{ background: `${statusColor}18`, color: statusColor }}>
                       {statusLabel}
                     </span>
-                  </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
                 );
               })}
             </div>
@@ -549,9 +557,7 @@ export default function BookingsList({
                         rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                        style={isHost
-                          ? { background: '#D4A0B0', color: '#fff' }
-                          : { background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                        style={{ background: '#D4A0B0', color: '#fff' }}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                           <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
