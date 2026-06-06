@@ -147,9 +147,9 @@ function from24h(val) {
   return `${h12}:${mStr} ${ampm}`;
 }
 
-const CONSULT_COLOR = '#5BB0CC';
-const CONSULT_BG = 'rgba(91,176,204,0.07)';
-const CONSULT_BORDER = 'rgba(91,176,204,0.2)';
+const CONSULT_COLOR = '#C96B6B';
+const CONSULT_BG = 'rgba(201,107,107,0.07)';
+const CONSULT_BORDER = 'rgba(201,107,107,0.2)';
 
 function parseConsultNotes(raw) {
   if (!raw) return { link: '', notes: '' };

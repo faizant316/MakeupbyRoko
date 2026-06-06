@@ -13,7 +13,7 @@ function isBridalBooking(booking) {
   return BRIDAL_KEYWORDS.some(kw => service.includes(kw));
 }
 
-const CONSULT_COLOR = '#5BB0CC';
+const CONSULT_COLOR = '#C96B6B';
 const LESSON_COLOR = '#D4A0B0';
 
 const CLASS_LABELS = {
@@ -298,11 +298,11 @@ export default function BookingsList({
         const uniqueConsults = consultationsOnDate.filter(b => !bookings.some(fb => fb.id === b.id));
         if (uniqueConsults.length === 0) return null;
         return (
-          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(91,176,204,0.25)` }}>
+          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(201,107,107,0.25)` }}>
             {/* Header */}
             <div className="flex items-center gap-2.5 px-4 py-3"
-              style={{ background: 'rgba(91,176,204,0.07)', borderBottom: '1px solid rgba(91,176,204,0.15)' }}>
-              <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,176,204,0.15)' }}>
+              style={{ background: 'rgba(201,107,107,0.07)', borderBottom: '1px solid rgba(201,107,107,0.15)' }}>
+              <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,107,107,0.15)' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-3 h-3">
                   <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
@@ -310,7 +310,7 @@ export default function BookingsList({
               <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: CONSULT_COLOR }}>
                 Zoom Consultations
               </span>
-              <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(91,176,204,0.12)', color: CONSULT_COLOR }}>
+              <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(201,107,107,0.12)', color: CONSULT_COLOR }}>
                 {uniqueConsults.length}
               </span>
             </div>
@@ -328,7 +328,7 @@ export default function BookingsList({
                 onMouseEnter={e => e.currentTarget.style.background = dm ? '#27272a' : '#faf8f6'}
                 onMouseLeave={e => e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,176,204,0.1)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,107,107,0.1)' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4">
                     <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                   </svg>
@@ -551,7 +551,7 @@ export default function BookingsList({
                     onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
                     onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(91,176,204,0.12)' }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,107,107,0.12)' }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4">
                         <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                       </svg>
