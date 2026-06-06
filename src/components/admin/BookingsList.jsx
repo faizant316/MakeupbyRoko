@@ -13,8 +13,8 @@ function isBridalBooking(booking) {
   return BRIDAL_KEYWORDS.some(kw => service.includes(kw));
 }
 
-const CONSULT_COLOR = '#C96B6B';
-const LESSON_COLOR = '#D4A0B0';
+const CONSULT_COLOR = '#7B9E87';
+const LESSON_COLOR = '#C4956A';
 
 const CLASS_LABELS = {
   private_basic_lesson: 'Basic Makeup Lesson',
@@ -250,7 +250,7 @@ export default function BookingsList({
             >
               {viewType !== 'courses' && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: LESSON_COLOR }} />}
               <span>Makeup Courses</span>
-              <span className="opacity-70">({classRegs.length})</span>
+              <span className="opacity-70">({classRegs.filter(r => !r.appointment_date || r.appointment_date >= today).length})</span>
             </button>
 
             {/* Consultations pill */}
@@ -264,7 +264,7 @@ export default function BookingsList({
             >
               {viewType !== 'consultations' && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CONSULT_COLOR }} />}
               <span>Consultations</span>
-              <span className="opacity-70">({(allBookings || []).filter(b => b.consultation_date).length})</span>
+              <span className="opacity-70">({(allBookings || []).filter(b => b.consultation_date && b.consultation_date >= today).length})</span>
             </button>
           </div>
         );
@@ -298,11 +298,11 @@ export default function BookingsList({
         const uniqueConsults = consultationsOnDate.filter(b => !bookings.some(fb => fb.id === b.id));
         if (uniqueConsults.length === 0) return null;
         return (
-          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(201,107,107,0.25)` }}>
+          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(123,158,135,0.25)` }}>
             {/* Header */}
             <div className="flex items-center gap-2.5 px-4 py-3"
-              style={{ background: 'rgba(201,107,107,0.07)', borderBottom: '1px solid rgba(201,107,107,0.15)' }}>
-              <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,107,107,0.15)' }}>
+              style={{ background: 'rgba(123,158,135,0.07)', borderBottom: '1px solid rgba(123,158,135,0.15)' }}>
+              <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(123,158,135,0.15)' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-3 h-3">
                   <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
@@ -310,7 +310,7 @@ export default function BookingsList({
               <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: CONSULT_COLOR }}>
                 Zoom Consultations
               </span>
-              <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(201,107,107,0.12)', color: CONSULT_COLOR }}>
+              <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(123,158,135,0.12)', color: CONSULT_COLOR }}>
                 {uniqueConsults.length}
               </span>
             </div>
@@ -328,7 +328,7 @@ export default function BookingsList({
                 onMouseEnter={e => e.currentTarget.style.background = dm ? '#27272a' : '#faf8f6'}
                 onMouseLeave={e => e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,107,107,0.1)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(123,158,135,0.1)' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4">
                     <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                   </svg>
@@ -353,14 +353,12 @@ export default function BookingsList({
                       rel="noopener noreferrer"
                       onClick={e => e.stopPropagation()}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                      style={isHost
-                        ? { background: '#D4A0B0', color: '#fff' }
-                        : { background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                      style={{ background: '#D4A0B0', color: '#fff' }}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                         <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                       </svg>
-                      {isHost ? 'Join as Host' : 'Join'}
+                      Join
                     </a>
                   ) : null;
                 })()}
@@ -375,11 +373,11 @@ export default function BookingsList({
 
       {/* Makeup Lessons on selected date */}
       {selectedDate && lessonsOnDate.length > 0 && (
-        <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(212,160,176,0.3)` }}>
+        <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(196,149,106,0.3)` }}>
           {/* Header */}
           <div className="flex items-center gap-2.5 px-4 py-3"
-            style={{ background: 'rgba(212,160,176,0.08)', borderBottom: '1px solid rgba(212,160,176,0.18)' }}>
-            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.18)' }}>
+            style={{ background: 'rgba(196,149,106,0.08)', borderBottom: '1px solid rgba(196,149,106,0.18)' }}>
+            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,149,106,0.18)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-3 h-3">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
@@ -387,7 +385,7 @@ export default function BookingsList({
             <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: LESSON_COLOR }}>
               Makeup Lessons
             </span>
-            <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(212,160,176,0.15)', color: LESSON_COLOR }}>
+            <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(196,149,106,0.15)', color: LESSON_COLOR }}>
               {lessonsOnDate.length}
             </span>
           </div>
@@ -408,7 +406,7 @@ export default function BookingsList({
                   borderBottom: i < lessonsOnDate.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#ebebeb'}` : 'none',
                 }}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,149,106,0.12)' }}>
                   {isZoom ? (
                     <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
                       <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
@@ -433,20 +431,18 @@ export default function BookingsList({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                    style={r.lesson_notes?.includes('HostLink:')
-                      ? { background: '#D4A0B0', color: '#fff' }
-                      : { background: 'rgba(45,140,255,0.1)', color: '#2D8CFF', border: '1px solid rgba(45,140,255,0.22)' }}
+                    style={{ background: '#D4A0B0', color: '#fff' }}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                       <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                     </svg>
-                    {r.lesson_notes?.includes('HostLink:') ? 'Join as Host' : 'Join'}
+                    Join
                   </a>
                 ) : isPhone && r.phone ? (
                   <a
                     href={`tel:${r.phone}`}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                    style={{ background: 'rgba(212,160,176,0.1)', color: LESSON_COLOR, border: '1px solid rgba(212,160,176,0.25)' }}
+                    style={{ background: 'rgba(196,149,106,0.1)', color: LESSON_COLOR, border: '1px solid rgba(196,149,106,0.25)' }}
                   >
                     {r.phone}
                   </a>
@@ -483,7 +479,7 @@ export default function BookingsList({
                     onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
                     onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,149,106,0.12)' }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
                         <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
                       </svg>
@@ -551,7 +547,7 @@ export default function BookingsList({
                     onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
                     onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(201,107,107,0.12)' }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(123,158,135,0.12)' }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4">
                         <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                       </svg>
