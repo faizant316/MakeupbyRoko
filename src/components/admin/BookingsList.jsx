@@ -471,6 +471,9 @@ export default function BookingsList({
                 const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Course';
                 const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#22C55E' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
                 const statusLabel = r.status === 'enrolled' ? 'Enrolled' : r.status === 'confirmed' ? 'Confirmed' : 'Pending';
+                const ps = r.payment_status;
+                const isPaid = ps === 'paid' || ps === 'deposit_paid' || ps === 'paid_in_full';
+                const isRefunded = ps === 'refunded';
                 return (
                   <button
                     key={r.id}
@@ -496,10 +499,24 @@ export default function BookingsList({
                         {r.consultation_type && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{r.consultation_type}</span>}
                       </p>
                     </div>
-                    <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
-                      style={{ background: `${statusColor}18`, color: statusColor }}>
-                      {statusLabel}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {isPaid && (
+                        <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
+                          Paid
+                        </span>
+                      )}
+                      {isRefunded && (
+                        <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(239,68,68,0.1)', color: '#b91c1c' }}>
+                          Refunded
+                        </span>
+                      )}
+                      <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full"
+                        style={{ background: `${statusColor}18`, color: statusColor }}>
+                        {statusLabel}
+                      </span>
+                    </div>
                     <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                     </svg>

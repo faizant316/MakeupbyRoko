@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react';
+﻿import { useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -378,19 +378,6 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const queryClient = useQueryClient();
   const [reg, setReg] = useState(initialReg);
   const [confirmModal, setConfirmModal] = useState(null);
-  const [toast, setToast] = useState(null);
-  const [toastVisible, setToastVisible] = useState(false);
-  const toastTimer = useRef(null);
-
-  const showToast = (msg, color) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ message: msg, color });
-    setToastVisible(true);
-    toastTimer.current = setTimeout(() => {
-      setToastVisible(false);
-      setTimeout(() => setToast(null), 500);
-    }, 1800);
-  };
 
   const cardBg    = dm ? '#26262e' : '#fff';
   const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
@@ -442,7 +429,6 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       confirmLabel: 'Yes, Update',
       onConfirm: () => {
         updateMutation.mutate({ payment_status: newStatus });
-        showToast(`Payment ${meta.label.toLowerCase()}`, meta.color);
       },
     });
   };
@@ -624,36 +610,6 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
         onCancel={() => setConfirmModal(null)}
         onConfirm={() => { confirmModal?.onConfirm(); setConfirmModal(null); }}
       />
-
-      {/* Toast notification */}
-      {toast && (
-        <div
-          className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
-          style={{
-            transition: 'opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.56,0.64,1)',
-            opacity: toastVisible ? 1 : 0,
-            transform: `translateX(-50%) translateY(${toastVisible ? '0px' : '-16px'})`,
-          }}
-        >
-          <div
-            className="flex items-center gap-3 rounded-2xl"
-            style={{
-              background: '#fff',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
-              border: `1.5px solid ${toast.color}28`,
-              padding: '12px 20px',
-              minWidth: '220px',
-              maxWidth: '360px',
-            }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: `${toast.color}18` }}>
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: toast.color }} />
-            </div>
-            <p className="text-[0.8rem] font-semibold text-[#111] leading-snug whitespace-nowrap">{toast.message}</p>
-          </div>
-        </div>
-      )}
     </>
   );
 }
