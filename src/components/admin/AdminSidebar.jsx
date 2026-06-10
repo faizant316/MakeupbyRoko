@@ -140,16 +140,15 @@ export default function AdminSidebar({
       </aside>
 
       {/* ════════════════════════════════════════════════════
-          MOBILE full-screen nav overlay — slides in from right
+          MOBILE full-screen nav overlay — fades in over the page
           Matches the style of Navigation.jsx mobile menu
           ════════════════════════════════════════════════════ */}
       <div
-        className="sm:hidden fixed inset-0 z-[200] flex flex-col"
+        className={`sm:hidden fixed inset-0 z-[200] flex flex-col transition-all duration-300 ${
+          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
         style={{
           background: dm ? '#1e1e24' : '#ffffff',
-          transform: mobileOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)',
-          pointerEvents: mobileOpen ? 'auto' : 'none',
         }}
       >
         {/* Header row — matches height of admin header */}

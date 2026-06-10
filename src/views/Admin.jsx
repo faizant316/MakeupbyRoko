@@ -294,34 +294,32 @@ export default function Admin() {
           {/* Mobile hamburger — animates to × when open */}
           <button
             onClick={() => setMobileNavOpen(o => !o)}
-            className="sm:hidden w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90"
+            className="sm:hidden relative w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90"
             style={{ background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent' }}
             aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
           >
-            <div className="relative w-5 h-5 flex items-center justify-center">
-              {/* Top line */}
-              <span style={{
-                position: 'absolute', display: 'block', width: '18px', height: '1.5px',
-                background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
-                transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s',
-                transform: mobileNavOpen ? 'translateY(0) rotate(45deg)' : 'translateY(-5px)',
-                opacity: 1,
-              }} />
-              {/* Middle line */}
-              <span style={{
-                position: 'absolute', display: 'block', width: '18px', height: '1.5px',
-                background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
-                transition: 'opacity 0.15s',
-                opacity: mobileNavOpen ? 0 : 1,
-              }} />
-              {/* Bottom line */}
-              <span style={{
-                position: 'absolute', display: 'block', width: '18px', height: '1.5px',
-                background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
-                transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
-                transform: mobileNavOpen ? 'translateY(0) rotate(-45deg)' : 'translateY(5px)',
-              }} />
-            </div>
+            {/* Top line */}
+            <span style={{
+              position: 'absolute', display: 'block', width: '18px', height: '1.5px',
+              background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
+              transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s',
+              transform: mobileNavOpen ? 'translateY(0) rotate(45deg)' : 'translateY(-5px)',
+              opacity: 1,
+            }} />
+            {/* Middle line */}
+            <span style={{
+              position: 'absolute', display: 'block', width: '18px', height: '1.5px',
+              background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
+              transition: 'opacity 0.15s',
+              opacity: mobileNavOpen ? 0 : 1,
+            }} />
+            {/* Bottom line */}
+            <span style={{
+              position: 'absolute', display: 'block', width: '18px', height: '1.5px',
+              background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
+              transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+              transform: mobileNavOpen ? 'translateY(0) rotate(-45deg)' : 'translateY(5px)',
+            }} />
           </button>
         </div>
       </div>
