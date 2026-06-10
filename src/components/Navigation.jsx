@@ -40,12 +40,16 @@ export default function Navigation({ onCloseModal }) {
   const handleNavClick = (href) => {
     setMobileOpen(false);
     if (onCloseModal) onCloseModal();
-    if (href === '#') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }
+    // Defer until after the body-scroll-lock cleanup restores scroll position,
+    // otherwise that restore overrides the scroll triggered here.
+    setTimeout(() => {
+      if (href === '#') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const el = document.querySelector(href);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 50);
   };
 
   const goHome = (e) => {
