@@ -358,7 +358,7 @@ export default function Admin() {
           <>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-5 mb-8">
               <AdminStats today={todayCount} pending={pendingCount} confirmed={confirmedCount} completed={completedCount} darkMode={dm} onFilterClick={(filter) => { setStatusFilter(filter); setTimeout(() => document.getElementById('bookings-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} />
-              <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
+              <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
             </div>
             <div className="mb-6">
               <CapacitySettings selectedDate={selectedDate} darkMode={dm} />
