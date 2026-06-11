@@ -202,7 +202,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   );
 }
 
-export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm }) {
+export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm }) {
   const [view, setView] = useState('month');
   const [blockPopup, setBlockPopup] = useState(null);
   const queryClient = useQueryClient();
@@ -261,8 +261,12 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     classRegDateMap[r.appointment_date].push(r.full_name || 'Client');
   });
 
-  const goToToday = () => { setCurrentMonth(new Date()); setSelectedDate(todayKey); };
-  const handleSingleClick = (key) => setSelectedDate(key === selectedDate ? null : key);
+  const goToToday = () => { setCurrentMonth(new Date()); setSelectedDate(todayKey); setStatusFilter?.('all'); };
+  const handleSingleClick = (key) => {
+    const isNewSelection = key !== selectedDate;
+    setSelectedDate(isNewSelection ? key : null);
+    if (isNewSelection) setStatusFilter?.('all');
+  };
   const handleDoubleClick = (key) => setBlockPopup({ date: key });
   const handleUnblock = (id) => unblockMutation.mutate(id);
 
