@@ -306,11 +306,11 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
         {/* Send photos to */}
         <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
           <div className="px-5 pt-4 pb-1">
-            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Inspiration & Prep Photos</p>
+            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">With & Without Makeup Photos</p>
           </div>
           <div className="px-5 pb-4 pt-2">
             <p className="text-[0.75rem] text-[#6E6058] leading-[1.7] mb-3">
-              If you uploaded inspo photos in the form, you're all set! If you haven't yet — or want to add more — send them here:
+              If you uploaded photos in the form, you're all set! If you haven't yet — or want to add more — send them here:
             </p>
             <div className="flex flex-col gap-2.5">
               <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
@@ -912,10 +912,10 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="What do I need to know about your day? Your makeup vision? Any inspo images?" className={`${inputClass} resize-none h-[80px] border-b`} />
           </div>
 
-          {/* Inspo Photos — moved here, right next to makeup vision */}
+          {/* Before & After Photos — moved here, right next to makeup vision */}
           <div>
-            <label className={labelClass}>Inspo Photos <span className="text-gray-300 normal-case tracking-normal font-normal">— optional</span></label>
-            <p className="text-[0.68rem] text-gray-400 mb-3">Share any inspiration photos, mood board images, or looks you love.</p>
+            <label className={labelClass}>Photos of You (With & Without Makeup) <span className="text-gray-300 normal-case tracking-normal font-normal">— optional</span></label>
+            <p className="text-[0.68rem] text-gray-400 mb-3">Send a couple of recent photos of yourself with and without makeup so I can get a feel for your features.</p>
 
             {inspoPhotos.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mb-3">
@@ -940,7 +940,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
               {inspoUploading ? (
                 <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /><span className="text-[0.72rem]">Uploading…</span></>
               ) : (
-                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span className="text-[0.72rem] font-medium">Add inspo photos</span></>
+                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span className="text-[0.72rem] font-medium">Add photos</span></>
               )}
               <input type="file" accept="image/*" multiple className="hidden" disabled={inspoUploading}
                 onChange={async (e) => {
