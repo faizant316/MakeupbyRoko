@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
 const VIDEO_URL = '/hero.mp4';
-const POSTER_URL = '';
+const POSTER_URL = '/hero-poster.jpg';
 
 function useMobileHeroProgress() {
   const [progress, setProgress] = useState(0);
@@ -30,7 +30,7 @@ function useViewportHeight() {
 // Two-video swap loop — the only reliable way to get a seamless loop on iOS Safari.
 // While video A is playing, video B sits loaded at t=0. When A has ~1.5s left,
 // B starts playing and fades in. A is paused and reset. They alternate forever.
-function MobileVideoLoop({ src, videoStyle, onError }) {
+function MobileVideoLoop({ src, poster, videoStyle, onError }) {
   const refA = useRef(null);
   const refB = useRef(null);
   const activeRef = useRef('A');
@@ -85,9 +85,9 @@ function MobileVideoLoop({ src, videoStyle, onError }) {
 
   return (
     <>
-      <video ref={refA} src={src} muted playsInline preload="auto" autoPlay
+      <video ref={refA} src={src} poster={poster} muted playsInline preload="auto" autoPlay
         style={{ ...base, opacity: front === 'A' ? 1 : 0 }} onError={onError} />
-      <video ref={refB} src={src} muted playsInline preload="auto"
+      <video ref={refB} src={src} poster={poster} muted playsInline preload="auto"
         style={{ ...base, opacity: front === 'B' ? 1 : 0 }} />
     </>
   );
@@ -140,6 +140,7 @@ export default function ServicesHero() {
             ? <img src={POSTER_URL} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }} />
             : <MobileVideoLoop
                 src={VIDEO_URL}
+                poster={POSTER_URL}
                 videoStyle={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }}
                 onError={() => setMobileVideoFailed(true)}
               />
