@@ -63,7 +63,6 @@ function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, block
         : isPartial ? 'text-[#555] font-medium hover:text-[#111]'
         : 'text-[#888] hover:text-[#111]'
       }`}>
-      {isToday && !isSel && <span className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[#D4A0B0]" />}
       <span>{day.d}</span>
       {!unavailable && !isSel && isPartial && (
         <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#F0C27A]" />
