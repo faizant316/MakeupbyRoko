@@ -46,7 +46,7 @@ export async function POST(req) {
     });
 
     // Admin notification (fire-and-forget, don't fail the request if this errors)
-    const adminEmail = process.env.ADMIN_EMAIL || 'makeupbyroko22@gmail.com';
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
       to: adminEmail,
       subject: `📋 Consultation Scheduled — ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,

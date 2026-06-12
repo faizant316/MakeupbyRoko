@@ -45,7 +45,7 @@ export async function POST(req) {
       }),
     });
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'makeupbyroko22@gmail.com';
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
       to: adminEmail,
       subject: `💄 Lesson Scheduled: ${clientName} · ${dateFormatted} at ${lessonTime}`,
