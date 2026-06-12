@@ -2,12 +2,6 @@ import { Resend } from 'resend';
 
 const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
 const ADMIN_URL = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupbyroko.com'}/admin`;
-// Override all recipient addresses during testing. Remove this env var when going live.
-const TEST_TO = process.env.RESEND_TEST_EMAIL;
-
-function resolveTo(address) {
-  return TEST_TO || address;
-}
 
 function base(content) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -51,7 +45,7 @@ function step(n, title, sub) {
 
 export async function sendEmail({ to, subject, html }) {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const result = await resend.emails.send({ from: FROM, to: [resolveTo(to)], subject, html });
+  const result = await resend.emails.send({ from: FROM, to: [to], subject, html });
   if (result.error) throw new Error(result.error.message);
   return result;
 }
@@ -60,7 +54,7 @@ export async function sendEmailPair(emails) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const results = await Promise.allSettled(
     emails.map(({ to, subject, html }) =>
-      resend.emails.send({ from: FROM, to: [resolveTo(to)], subject, html })
+      resend.emails.send({ from: FROM, to: [to], subject, html })
         .then(r => { if (r.error) throw new Error(r.error.message); return r; })
     )
   );
