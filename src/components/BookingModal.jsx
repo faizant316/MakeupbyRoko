@@ -67,7 +67,6 @@ function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick
           ? 'text-[#555] font-medium hover:text-[#111]'
           : 'text-[#888] hover:text-[#111]'
       }`}>
-      {isToday && !isSel && <span className="absolute top-1 right-1 w-1 h-1 rounded-full bg-[#D4A0B0]" />}
       <span>{day.d}</span>
       {/* Status dot — larger and more visible */}
       {!unavailable && !isSel && isPartial && (
@@ -286,7 +285,7 @@ export default function BookingModal({ service: initialService, onClose }) {
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
         style={{
-          animation: 'slideUpSheet 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
+          animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
           boxShadow: window.innerWidth >= 640 ? 'inset 0 0 200px rgba(212,140,170,0.12), inset 100px 0 200px rgba(212,140,170,0.08), inset -100px 0 200px rgba(180,140,220,0.08), 0 -1px 0 rgba(212,160,176,0.35)' : undefined,
           marginTop: '52px',
           height: 'calc(100% - 52px)',

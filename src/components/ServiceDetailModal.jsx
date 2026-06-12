@@ -205,6 +205,24 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     setTimeout(onClose, 300);
   };
 
+  // Used when the CTA leads straight into another sheet (booking/class modal).
+  // Slides this sheet down out of view instead of shrinking to a point, so it
+  // reads as one continuous swap rather than a "close, then reopen" sequence.
+  const handleActionClose = () => {
+    if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
+    if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
+    const exit = 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease';
+    for (const r of [modalCardRef, mobileInnerRef]) {
+      if (!r.current) continue;
+      r.current.style.transition = exit;
+      r.current.style.transform  = 'translateY(100%)';
+      r.current.style.opacity    = '0.4';
+    }
+    setClosing(true);
+    setVisible(false);
+    setTimeout(onClose, 320);
+  };
+
   if (!svc) return null;
 
   const isLessons   = svc.category === 'lessons';
@@ -212,11 +230,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const buttonLabel = isBridal ? 'Inquire About Bridal' : isLessons ? 'View Available Classes' : 'Select & Book';
 
   const handleAction = () => {
-    handleClose();
-    setTimeout(() => {
-      if (isLessons) onOpenClassModal?.();
-      else onBook(svc);
-    }, 300);
+    // Mount the next sheet immediately — it sits at a lower z-index and slides
+    // up while this sheet slides down on top of it, so the two animations read
+    // as a single continuous swap instead of close-then-reopen.
+    if (isLessons) onOpenClassModal?.();
+    else onBook(svc);
+    handleActionClose();
   };
 
   const dupeFilters  = svc.title === 'Luxury Bridal Look' ? ['travel fee', '$200'] : [];

@@ -148,7 +148,7 @@ export default function ClassCheckoutFlow({ onClose }) {
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
         style={{
-          animation: 'slideUpSheet 0.38s cubic-bezier(0.32, 0.72, 0, 1)',
+          animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
           marginTop: '52px',
           height: 'calc(100vh - 52px)',
           boxShadow: '0 -1px 0 rgba(212,160,176,0.3)',
