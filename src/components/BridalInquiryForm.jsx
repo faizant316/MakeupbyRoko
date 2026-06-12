@@ -609,7 +609,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
       {/* Hero Banner */}
       <div className="relative h-[160px] overflow-hidden flex-shrink-0">
-        <img src="https://media.base44.com/images/public/69dad1fca2043b3db56edb29/74694b27b_image.png" alt="Bridal" className="w-full h-full object-cover object-[center_30%]" />
+        <img src="/IMG_9891.jpeg" alt="Bridal" className="w-full h-full object-cover object-[center_30%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <p className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mb-1 text-white/60">{bridalTitle} — {bridalPrice}</p>
