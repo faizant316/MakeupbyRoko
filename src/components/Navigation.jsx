@@ -44,10 +44,10 @@ export default function Navigation({ onCloseModal }) {
     // otherwise that restore overrides the scroll triggered here.
     setTimeout(() => {
       if (href === '#') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
       } else {
         const el = document.querySelector(href);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        if (el) el.scrollIntoView({ behavior: 'instant' });
       }
     }, 50);
   };
