@@ -1,6 +1,7 @@
 import Script from 'next/script';
 import './globals.css';
 import Providers from './providers';
+import SmoothScroll from '@/components/SmoothScroll';
 
 const GA_ID = 'G-HE25CGQHH4';
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+        <SmoothScroll />
         <Providers>{children}</Providers>
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
         <Script id="ga-init" strategy="afterInteractive">{`
