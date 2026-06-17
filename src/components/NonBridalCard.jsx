@@ -24,42 +24,42 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
       {/* Text */}
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between min-w-0 z-10">
         <div>
-          <h3 className="font-serif text-[1.1rem] font-normal text-[#111] leading-tight mb-1.5">{svc.title}</h3>
+          <h3 className="font-serif text-[1.22rem] font-normal text-[#111] leading-tight mb-1.5">{svc.title}</h3>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[0.85rem] font-medium text-[#111]">{svc.price}</span>
+            <span className="text-[0.92rem] font-medium text-[#111]">{svc.price}</span>
             <span className="text-[#ccc]">·</span>
-            <span className="text-[0.75rem] text-[#7a7068]">{svc.duration}</span>
-            {svc.deposit && <><span className="text-[#ccc]">·</span><span className="text-[0.72rem] text-[#7a7068]">{svc.deposit}</span></>}
+            <span className="text-[0.8rem] text-[#7a7068]">{svc.duration}</span>
+            {svc.deposit && <><span className="text-[#ccc]">·</span><span className="text-[0.78rem] text-[#7a7068]">{svc.deposit}</span></>}
           </div>
           {svc.includes?.length > 0 ? (
             <ul className="flex flex-col gap-1 mb-2.5">
               {svc.includes.slice(0, 2).map((item) => (
-                <li key={item} className="flex items-start gap-2 text-[0.72rem] text-[#6d6460]">
+                <li key={item} className="flex items-start gap-2 text-[0.78rem] text-[#6d6460]">
                   <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
                 </li>
               ))}
               {svc.includes.length > 2 && (
-                <li className="text-[0.68rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 2} more (tap to see all)</li>
+                <li className="text-[0.73rem] text-[#D4A0B0] pl-4">+{svc.includes.length - 2} more (tap to see all)</li>
               )}
             </ul>
           ) : svc.desc ? (
-            <p className="text-[0.72rem] text-[#6d6460] leading-[1.55] line-clamp-1 mb-2">{svc.desc}</p>
+            <p className="text-[0.78rem] text-[#6d6460] leading-[1.55] line-clamp-1 mb-2">{svc.desc}</p>
           ) : null}
           <div className="flex flex-col gap-1.5 mt-0.5">
             {(svc.category === 'event' || svc.category === 'creative') && (
-              <div className="flex items-center gap-1.5 text-[0.68rem] text-[#A0785A]">
+              <div className="flex items-center gap-1.5 text-[0.72rem] text-[#A0785A]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span>Studio only · Mountain House, CA</span>
               </div>
             )}
             {svc.category === 'event' && (
-              <div className="flex items-center gap-1.5 text-[0.68rem] text-[#A0785A]">
+              <div className="flex items-center gap-1.5 text-[0.72rem] text-[#A0785A]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span>Must be booked within <strong>1 month</strong> of the event (bookings made earlier are subject to bridal pricing)</span>
               </div>
             )}
             {svc.category === 'lessons' && (
-              <div className="flex items-center gap-1.5 text-[0.68rem] text-[#A0785A]">
+              <div className="flex items-center gap-1.5 text-[0.72rem] text-[#A0785A]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span>Mon–Thu · 10 AM – 8 PM · 50% Zelle deposit to secure spot</span>
               </div>
@@ -71,7 +71,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <button
             onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
             type="button"
-            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
+            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.8rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all text-center block"
             style={{ touchAction: 'manipulation' }}
           >
             View Available Classes →
@@ -80,7 +80,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <button
             onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
             type="button"
-            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.75rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
+            className="mt-4 w-full py-3 bg-[#111] text-white text-[0.8rem] font-medium tracking-[0.06em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
             style={{ touchAction: 'manipulation' }}
           >
             Select & Book →
