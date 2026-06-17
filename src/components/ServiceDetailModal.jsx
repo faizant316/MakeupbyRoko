@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { lenisStop, lenisStart } from '@/lib/lenis';
 
 function dedupeText(text, phrases) {
   if (!text) return text;
@@ -97,6 +98,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     const sbw = window.innerWidth - document.documentElement.clientWidth;
     if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
+    lenisStop();
 
     // Ensure mobile scroll starts at top so the photo is fully visible
     if (mobileScrollRef.current) mobileScrollRef.current.scrollTop = 0;
@@ -131,6 +133,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       cancelAnimationFrame(t);
       document.body.style.overflow     = '';
       document.body.style.paddingRight = '';
+      lenisStart();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -248,21 +251,21 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const badges = (
     <>
       {svc.title === 'Luxury Bridal Look' && (
-        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055] mb-4">
+        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055] mb-4">
           <strong>$200+ travel fee</strong> automatically added for services not held at the studio
         </div>
       )}
       {svc.title === 'Full Day Service' && (
-        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055] mb-4">
+        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055] mb-4">
           Required for: bridal switch, location over <strong>1 hr from studio</strong>, or start time <strong>before 7 AM</strong>
         </div>
       )}
       {svc.title === 'Bridal Trial' && (
         <div className="flex flex-col gap-2 mb-4">
-          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055]">
+          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
             <strong>Test your look before the big day.</strong> No surprises on your wedding day.
           </div>
-          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.68rem] text-[#6B4055]">
+          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
             Recommended <strong>1–3 months before</strong> your wedding date
           </div>
         </div>
@@ -272,26 +275,26 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   const content = (
     <>
-      <h3 className="font-serif text-[1.45rem] font-normal text-[#111] leading-tight mb-2">{svc.title}</h3>
+      <h3 className="font-serif text-[1.6rem] font-normal text-[#111] leading-tight mb-2">{svc.title}</h3>
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <span className="font-serif text-lg text-[#111]">{svc.price}</span>
-        {svc.duration && <><span className="text-[#ddd]">·</span><span className="text-[0.78rem] text-[#888]">{svc.duration}</span></>}
-        {svc.deposit  && <><span className="text-[#ddd]">·</span><span className="text-[0.7rem]  text-[#aaa]">{svc.deposit}</span></>}
+        <span className="font-serif text-xl text-[#111]">{svc.price}</span>
+        {svc.duration && <><span className="text-[#ddd]">·</span><span className="text-[0.84rem] text-[#888]">{svc.duration}</span></>}
+        {svc.deposit  && <><span className="text-[#ddd]">·</span><span className="text-[0.78rem] text-[#aaa]">{svc.deposit}</span></>}
       </div>
       {badges}
-      {descToShow   && <p className="text-[0.87rem] text-[#666] leading-[1.78] mb-5">{descToShow}</p>}
+      {descToShow   && <p className="text-[0.93rem] text-[#666] leading-[1.78] mb-5">{descToShow}</p>}
       {expectToShow && (
         <div className="mb-5">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2">What to Expect</p>
-          <p className="text-[0.85rem] text-[#666] leading-[1.72]">{expectToShow}</p>
+          <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2">What to Expect</p>
+          <p className="text-[0.92rem] text-[#666] leading-[1.72]">{expectToShow}</p>
         </div>
       )}
       {svc.key_features?.length > 0 && (
         <div className="mb-5">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">Highlights</p>
+          <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">Highlights</p>
           <ul className="flex flex-col gap-1.5">
             {svc.key_features.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-[0.85rem] text-[#666]">
+              <li key={i} className="flex items-start gap-2 text-[0.92rem] text-[#666]">
                 <span className="text-[#D4A0B0] mt-[3px] flex-shrink-0 text-[0.55rem]">●</span>{item}
               </li>
             ))}
@@ -300,10 +303,10 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
       )}
       {svc.includes?.length > 0 && (
         <div className="mb-2">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">What's Included</p>
+          <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">What's Included</p>
           <ul className="flex flex-col gap-1.5">
             {svc.includes.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-[0.85rem] text-[#555]">
+              <li key={i} className="flex items-start gap-2 text-[0.92rem] text-[#555]">
                 <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
               </li>
             ))}
@@ -316,7 +319,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const ctaButton = (
     <button
       onClick={handleAction}
-      className="w-full py-3.5 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] active:bg-[#333] transition-all"
+      className="w-full py-3.5 bg-[#111] text-white text-[0.85rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] active:bg-[#333] transition-all"
       style={{ touchAction: 'manipulation' }}
     >
       {buttonLabel} →

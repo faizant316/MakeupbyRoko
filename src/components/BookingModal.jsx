@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
+import { lenisStop, lenisStart } from '@/lib/lenis';
 import { useQuery } from '@tanstack/react-query';
 
 function useBookingCounts() {
@@ -251,6 +252,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     document.body.style.left = '0';
     document.body.style.right = '0';
     document.body.style.overflow = 'hidden';
+    lenisStop();
     return () => {
       document.documentElement.style.scrollBehavior = 'auto';
       document.body.style.position = '';
@@ -260,6 +262,7 @@ export default function BookingModal({ service: initialService, onClose }) {
       document.body.style.overflow = '';
       window.scrollTo(0, scrollY);
       requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
+      lenisStart();
     };
   }, []);
 
