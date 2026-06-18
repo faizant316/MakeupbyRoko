@@ -12,6 +12,8 @@ export async function GET(req) {
     let query = supabase.from('bridal_inquiries').select('*').order('created_at', { ascending: false });
     const email = searchParams.get('email');
     if (email) query = query.eq('email', email);
+    const uploadToken = searchParams.get('upload_token');
+    if (uploadToken) query = query.eq('upload_token', uploadToken);
     const { data, error } = await query;
     if (error) throw error;
     return NextResponse.json(data.map(r => ({ ...r, created_date: r.created_at })));
