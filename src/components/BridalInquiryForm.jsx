@@ -572,7 +572,11 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     setNewBookingId(newBooking.id);
     setUploadToken(token);
 
-    const uploadUrl = `${window.location.origin}/upload-zelle?id=${newBooking.id}&token=${token}`;
+    // Use the stable public production URL, not window.location.origin, so the
+    // email link never points at a protected *.vercel.app deployment URL (which
+    // would force clients into a Vercel login wall on mobile).
+    const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}`;
     const bridalDateFormatted = selectedDate
       ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
       : 'your requested date';

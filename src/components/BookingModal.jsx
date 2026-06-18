@@ -206,7 +206,12 @@ export default function BookingModal({ service: initialService, onClose }) {
 
     // Send confirmation email via backend function (keeps payload small, avoids Gmail clipping)
     const dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const uploadUrl = `${window.location.origin}/upload-zelle?id=${newBooking.id}&token=${token}&deposit=${encodeURIComponent(service.deposit || '')}&price=${encodeURIComponent(service.price || '')}`;
+    // Always build the upload link from the stable public production URL, never
+    // window.location.origin. A visitor (or owner testing) may submit from a
+    // deployment-specific *.vercel.app URL that has Vercel Deployment Protection,
+    // which would force clients into a Vercel login wall on the email link.
+    const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&deposit=${encodeURIComponent(service.deposit || '')}&price=${encodeURIComponent(service.price || '')}`;
 
     const hasTravelFee = formData.travel_requested === true;
 
