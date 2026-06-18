@@ -544,12 +544,16 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-    // Create bridal inquiry record
-    await fetch('/api/bridal-inquiries', {
+    // Create bridal inquiry record (carries all the wedding details shown in admin)
+    const inquiryRes = await fetch('/api/bridal-inquiries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, preferred_date: selectedDate || '', preferred_time: '', status: 'new', upload_token: token }),
     });
+    if (!inquiryRes.ok) {
+      // Don't block the booking, but make the failure loud instead of silent.
+      console.error('Bridal inquiry insert failed:', await inquiryRes.text().catch(() => inquiryRes.status));
+    }
 
     // Create associated booking record (carries the upload token + inspo photos)
     const bookingRes = await fetch('/api/bookings', {
