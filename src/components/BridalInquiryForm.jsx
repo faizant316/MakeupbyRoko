@@ -13,6 +13,7 @@ function useBookingCounts() {
   return counts;
 }
 import CustomSelect from './CustomSelect';
+import { compressImage } from '@/lib/compressImage';
 import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
@@ -948,11 +949,16 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                   setInspoUploading(true);
                   try {
                     const urls = await Promise.all(files.map(async (f) => {
+                      // Shrink large photos so they stay under the upload size limit.
+                      const compressed = await compressImage(f);
                       const fd = new FormData();
-                      fd.append('file', f);
+                      fd.append('file', compressed);
                       const res = await fetch('/api/upload-inspo-photo', { method: 'POST', body: fd });
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        throw new Error(data.error || `Upload failed (${res.status})`);
+                      }
                       const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || 'Upload failed');
                       return data.url;
                     }));
                     setInspoPhotos(p => [...p, ...urls]);
