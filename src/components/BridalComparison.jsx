@@ -70,7 +70,7 @@ export default function BridalComparison({ bridalServices, onSelect }) {
   if (!luxury || !fullday) return null;
 
   return (
-    <div className="mt-2">
+    <div className="-mt-1">
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}

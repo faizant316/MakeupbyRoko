@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/api/apiClient';
 
@@ -6,6 +6,7 @@ export default function Navigation({ onCloseModal }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const pendingHrefRef = useRef(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,24 +33,37 @@ export default function Navigation({ onCloseModal }) {
         document.body.style.left = '';
         document.body.style.right = '';
         document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
+        // If a nav item was tapped, jump straight to its target in the SAME
+        // synchronous step the lock is released — no intermediate restore to the
+        // old position, so the hero never flashes before the chosen section.
+        const href = pendingHrefRef.current;
+        if (href != null) {
+          pendingHrefRef.current = null;
+          if (href === '#') {
+            window.scrollTo(0, 0);
+          } else {
+            document.querySelector(href)?.scrollIntoView({ behavior: 'instant' });
+          }
+        } else {
+          window.scrollTo(0, scrollY);
+        }
       };
     }
   }, [mobileOpen]);
 
   const handleNavClick = (href) => {
-    setMobileOpen(false);
     if (onCloseModal) onCloseModal();
-    // Defer until after the body-scroll-lock cleanup restores scroll position,
-    // otherwise that restore overrides the scroll triggered here.
-    setTimeout(() => {
-      if (href === '#') {
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      } else {
-        const el = document.querySelector(href);
-        if (el) el.scrollIntoView({ behavior: 'instant' });
-      }
-    }, 50);
+    if (mobileOpen) {
+      // Mobile menu open: defer the scroll to the lock-release cleanup so the
+      // unlock + jump run in one synchronous step (no hero flash).
+      pendingHrefRef.current = href;
+      setMobileOpen(false);
+    } else if (href === '#') {
+      // Desktop / no lock active: scroll immediately.
+      window.scrollTo(0, 0);
+    } else {
+      document.querySelector(href)?.scrollIntoView({ behavior: 'instant' });
+    }
   };
 
   const goHome = (e) => {

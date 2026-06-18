@@ -410,6 +410,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             {/* Scrollable content */}
             <div
               ref={desktopScrollRef}
+              data-lenis-prevent
               className="flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'none' }}
             >
@@ -463,9 +464,11 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             </div>
           )}
 
-          {/* Scroll container — swipe listeners attached in useEffect, no inline touch handlers */}
+          {/* Scroll container — swipe listeners attached in useEffect, no inline touch handlers.
+              data-lenis-prevent keeps Lenis from preventDefault-ing touch scroll here while it's stopped. */}
           <div
             ref={mobileScrollRef}
+            data-lenis-prevent
             className="absolute inset-0 z-10 overflow-y-auto"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onScroll={e => setDotsVisible(e.target.scrollTop < 24)}
