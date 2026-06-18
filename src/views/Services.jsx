@@ -80,8 +80,20 @@ export default function ServicesPage() {
   const [detailOrigin, setDetailOrigin] = useState(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [bridalIdx, setBridalIdx] = useState(0);
+  const [otherIdx, setOtherIdx]   = useState(0);
   const bridalScrollRef  = useRef(null);
   const otherScrollRef   = useRef(null);
+
+  // Track which carousel card is centred so the pagination dots stay in sync.
+  const handleCarouselScroll = useCallback((ref, count, setIdx) => {
+    const el = ref.current;
+    const card = el?.firstElementChild?.firstElementChild;
+    if (!card) return;
+    const stride = card.offsetWidth + 16; // card width + gap-4 (16px)
+    const idx = Math.min(count - 1, Math.max(0, Math.round(el.scrollLeft / stride)));
+    setIdx(idx);
+  }, []);
 
   const { data: serviceEntities = [], isLoading: servicesLoading, isError: servicesError } = useQuery({
     queryKey: ['public-services'],
@@ -109,6 +121,8 @@ export default function ServicesPage() {
   useEffect(() => {
     if (bridalScrollRef.current) bridalScrollRef.current.scrollLeft = 0;
     if (otherScrollRef.current)  otherScrollRef.current.scrollLeft  = 0;
+    setBridalIdx(0);
+    setOtherIdx(0);
   }, [activeCategory]);
 
   // Compute filtered list before any effects that depend on it
@@ -268,7 +282,7 @@ export default function ServicesPage() {
 
           {/* Bridal — featured cards side by side */}
           {!servicesLoading && bridalServices.length > 0 && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               {/* Section label */}
               <div className="flex items-center gap-3">
                 <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
@@ -284,37 +298,48 @@ export default function ServicesPage() {
               </div>
 
               {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
-              <div
-                ref={bridalScrollRef}
-                className="lg:hidden -mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
-                style={{
-                  overflowX: 'auto',
-                  overflowY: 'hidden',
-                  scrollSnapType: 'x mandatory',
-                  scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                  WebkitOverflowScrolling: 'touch',
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
-                }}
-              >
+              <div className="lg:hidden">
                 <div
-                  className="flex gap-4 pb-4"
+                  ref={bridalScrollRef}
+                  onScroll={() => handleCarouselScroll(bridalScrollRef, bridalServices.length, setBridalIdx)}
+                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
                   style={{
-                    paddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                    paddingRight: 'clamp(1.25rem,5vw,3rem)',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollSnapType: 'x mandatory',
+                    scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
                   }}
                 >
-                  {bridalServices.map((svc, idx) => (
-                    <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[340px]" style={{ scrollSnapAlign: 'start' }}>
-                      <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
-                    </div>
-                  ))}
-                  <div className="flex-shrink-0 w-4" />
+                  <div
+                    className="flex gap-4 pb-4"
+                    style={{
+                      paddingLeft: 'clamp(1.25rem,5vw,3rem)',
+                      paddingRight: 'clamp(1.25rem,5vw,3rem)',
+                    }}
+                  >
+                    {bridalServices.map((svc, idx) => (
+                      <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[340px]" style={{ scrollSnapAlign: 'start' }}>
+                        <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
+                      </div>
+                    ))}
+                    <div className="flex-shrink-0 w-4" />
+                  </div>
                 </div>
+                {/* Pagination dots — one per card, active card highlighted */}
                 {bridalServices.length > 1 && (
-                  <div className="flex justify-center gap-1.5 mt-3 pb-1">
+                  <div className="flex justify-center items-center gap-1.5 mt-3">
                     {bridalServices.map((_, i) => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]/40" />
+                      <div
+                        key={i}
+                        className="h-1.5 rounded-full transition-all duration-300"
+                        style={{
+                          width: i === bridalIdx ? 18 : 6,
+                          background: i === bridalIdx ? '#D4A0B0' : 'rgba(212,160,176,0.35)',
+                        }}
+                      />
                     ))}
                   </div>
                 )}
@@ -344,29 +369,42 @@ export default function ServicesPage() {
               </div>
 
               {/* Mobile scroll-snap */}
-              <div
-                ref={otherScrollRef}
-                className="sm:hidden -mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
-                style={{
-                  overflowX: 'auto', overflowY: 'hidden',
-                  scrollSnapType: 'x mandatory',
-                  scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                  WebkitOverflowScrolling: 'touch',
-                  scrollbarWidth: 'none', msOverflowStyle: 'none',
-                }}
-              >
-                <div className="flex items-stretch gap-4 pb-4"
-                  style={{ paddingLeft: 'clamp(1.25rem,5vw,3rem)', paddingRight: 'clamp(1.25rem,5vw,3rem)' }}>
-                  {otherServices.map((svc) => (
-                    <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch" style={{ scrollSnapAlign: 'start' }}>
-                      <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
-                    </div>
-                  ))}
-                  <div className="flex-shrink-0 w-4" />
+              <div className="sm:hidden">
+                <div
+                  ref={otherScrollRef}
+                  onScroll={() => handleCarouselScroll(otherScrollRef, otherServices.length, setOtherIdx)}
+                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
+                  style={{
+                    overflowX: 'auto', overflowY: 'hidden',
+                    scrollSnapType: 'x mandatory',
+                    scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none', msOverflowStyle: 'none',
+                  }}
+                >
+                  <div className="flex items-stretch gap-4 pb-4"
+                    style={{ paddingLeft: 'clamp(1.25rem,5vw,3rem)', paddingRight: 'clamp(1.25rem,5vw,3rem)' }}>
+                    {otherServices.map((svc) => (
+                      <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch" style={{ scrollSnapAlign: 'start' }}>
+                        <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
+                      </div>
+                    ))}
+                    <div className="flex-shrink-0 w-4" />
+                  </div>
                 </div>
+                {/* Pagination dots — one per card, active card highlighted */}
                 {otherServices.length > 1 && (
-                  <div className="flex justify-center gap-1.5 mt-3 pb-1">
-                    {otherServices.map((_, i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]/40" />)}
+                  <div className="flex justify-center items-center gap-1.5 mt-3">
+                    {otherServices.map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-1.5 rounded-full transition-all duration-300"
+                        style={{
+                          width: i === otherIdx ? 18 : 6,
+                          background: i === otherIdx ? '#D4A0B0' : 'rgba(212,160,176,0.35)',
+                        }}
+                      />
+                    ))}
                   </div>
                 )}
               </div>

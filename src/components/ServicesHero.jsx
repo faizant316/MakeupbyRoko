@@ -237,8 +237,8 @@ export default function ServicesHero() {
               gap: '0.5rem',
               marginBottom: '1.5rem',
               padding: '0.75rem 1.4rem',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: 'rgba(255,255,255,0.75)',
+              border: '1px solid #D4A0B0',
+              color: '#D4A0B0',
               borderRadius: '1px',
               fontSize: '0.72rem',
               fontFamily: 'var(--font-sans)',
@@ -335,13 +335,13 @@ export default function ServicesHero() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
               fontSize: '0.8rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.15)',
+              color: '#D4A0B0', border: '1px solid #D4A0B0',
               padding: '0.875rem 1.75rem', width: 'fit-content',
               transition: 'all 0.25s', borderRadius: '1px',
               textDecoration: 'none',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,160,176,0.12)'; e.currentTarget.style.borderColor = '#E0B4C2'; e.currentTarget.style.color = '#E0B4C2'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
           >
             Book a Service
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: '14px', height: '14px' }}>
