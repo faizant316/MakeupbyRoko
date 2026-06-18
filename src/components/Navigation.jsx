@@ -33,17 +33,11 @@ export default function Navigation({ onCloseModal }) {
         document.body.style.left = '';
         document.body.style.right = '';
         document.body.style.overflow = '';
-        // If a nav item was tapped, jump straight to its target in the SAME
-        // synchronous step the lock is released — no intermediate restore to the
-        // old position, so the hero never flashes before the chosen section.
-        const href = pendingHrefRef.current;
-        if (href != null) {
+        // A nav tap already released the lock and jumped to its target inside the
+        // tap handler (handleNavClick) — so here we must NOT restore the old
+        // position, or it would yank the page back to the hero.
+        if (pendingHrefRef.current != null) {
           pendingHrefRef.current = null;
-          if (href === '#') {
-            window.scrollTo(0, 0);
-          } else {
-            document.querySelector(href)?.scrollIntoView({ behavior: 'instant' });
-          }
         } else {
           window.scrollTo(0, scrollY);
         }
@@ -51,18 +45,33 @@ export default function Navigation({ onCloseModal }) {
     }
   }, [mobileOpen]);
 
-  const handleNavClick = (href) => {
-    if (onCloseModal) onCloseModal();
-    if (mobileOpen) {
-      // Mobile menu open: defer the scroll to the lock-release cleanup so the
-      // unlock + jump run in one synchronous step (no hero flash).
-      pendingHrefRef.current = href;
-      setMobileOpen(false);
-    } else if (href === '#') {
-      // Desktop / no lock active: scroll immediately.
+  const scrollToHref = (href) => {
+    if (href === '#') {
       window.scrollTo(0, 0);
     } else {
       document.querySelector(href)?.scrollIntoView({ behavior: 'instant' });
+    }
+  };
+
+  const handleNavClick = (href) => {
+    if (onCloseModal) onCloseModal();
+    if (mobileOpen) {
+      // Release the body-scroll lock and jump to the target RIGHT NOW — inside
+      // the tap handler, before React re-renders and the menu begins to fade.
+      // React flushes the close + this scroll before the next paint, so the page
+      // is already at the target section by the time the menu is even slightly
+      // transparent. The hero never flashes behind it.
+      pendingHrefRef.current = href; // tell the lock cleanup not to restore scroll
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      scrollToHref(href);
+      setMobileOpen(false);
+    } else {
+      // Desktop / no lock active.
+      scrollToHref(href);
     }
   };
 
