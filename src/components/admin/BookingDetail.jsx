@@ -147,9 +147,9 @@ function from24h(val) {
   return `${h12}:${mStr} ${ampm}`;
 }
 
-const CONSULT_COLOR = '#7B9E87';
-const CONSULT_BG = 'rgba(123,158,135,0.07)';
-const CONSULT_BORDER = 'rgba(123,158,135,0.2)';
+const CONSULT_COLOR = '#A855F7';
+const CONSULT_BG = 'rgba(168,85,247,0.08)';
+const CONSULT_BORDER = 'rgba(168,85,247,0.25)';
 
 function parseConsultNotes(raw) {
   if (!raw) return { link: '', notes: '' };
@@ -263,7 +263,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>
+              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
                 {booking.consultation_type} · {booking.consultation_time}
               </p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>
@@ -283,7 +283,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
           </div>
           <button onClick={() => { setExpanded(true); setSent(false); }}
             className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase ml-3 flex-shrink-0"
-            style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>
+            style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
             Edit
           </button>
         </div>
@@ -299,7 +299,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>Schedule Consultation</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Schedule Consultation</p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>Set date, time &amp; meeting type</p>
             </div>
           </div>
@@ -429,7 +429,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
             ) : (
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
                 <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#fafafa' }}>
-                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>Confirm & Send Email?</p>
+                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirm & Send Email?</p>
                   <div className="flex flex-col gap-1.5 mb-4">
                     <div className="flex items-center justify-between">
                       <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Date</span>
@@ -444,7 +444,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                       <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.type}</span>
                     </div>
                   </div>
-                  <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>An email will be sent to <span style={{ color: dm ? '#cdb8c8' : CONSULT_COLOR }}>{booking.email}</span>.</p>
+                  <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>An email will be sent to <span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{booking.email}</span>.</p>
                   <div className="flex gap-2">
                     <button onClick={() => setShowConfirmSend(false)}
                       className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold transition-all touch-manipulation"
@@ -556,12 +556,21 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const isBridal = /bridal|bride|wedding|full day/i.test(booking.service || '') && !/non-bridal/i.test(booking.service || '');
 
   const { data: bridalInquiry } = useQuery({
-    queryKey: ['bridal-inquiry', booking.email],
+    queryKey: ['bridal-inquiry', booking.upload_token, booking.email],
     queryFn: async () => {
-      const results = await api.entities.BridalInquiry.filter({ email: booking.email }, '-created_date', 1);
-      return results[0] || null;
+      // The inquiry and its booking share an upload_token — the exact 1:1 link.
+      // Fall back to email in case an older booking has no token.
+      if (booking.upload_token) {
+        const byToken = await api.entities.BridalInquiry.filter({ upload_token: booking.upload_token });
+        if (byToken[0]) return byToken[0];
+      }
+      if (booking.email) {
+        const byEmail = await api.entities.BridalInquiry.filter({ email: booking.email });
+        if (byEmail[0]) return byEmail[0];
+      }
+      return null;
     },
-    enabled: isBridal && !!booking.email,
+    enabled: isBridal && (!!booking.upload_token || !!booking.email),
   });
 
   // Scroll to top when detail view mounts
@@ -683,8 +692,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {/* Top grid — key timing info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
                 {[
-                  { icon: '👰', label: 'Bride', value: `${bridalInquiry.bride_name || ''}${bridalInquiry.soon_to_be_last_name ? ` ${bridalInquiry.soon_to_be_last_name}` : ''}` },
-                  { icon: '📅', label: 'Wedding Date', value: bridalInquiry.wedding_date ? new Date(bridalInquiry.wedding_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : null },
+                  { icon: '📅', label: 'Wedding Date', value: bridalInquiry.wedding_date && bridalInquiry.wedding_date !== 'partial' ? new Date(bridalInquiry.wedding_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : null },
+                  { icon: '🗓️', label: 'Preferred Appt', value: bridalInquiry.preferred_date ? new Date(bridalInquiry.preferred_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }) : null },
                   { icon: '🕐', label: 'Event Start', value: bridalInquiry.event_start_time },
                   { icon: '🚪', label: 'Venue Access', value: bridalInquiry.venue_access_time },
                 ].filter(f => f.value).map(({ icon, label, value }) => (
@@ -800,12 +809,31 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </div>
               )}
 
-              {/* Bottom row — glam count, instagram, how heard */}
+              {/* Bottom row — bride, glam count, out of state, instagram, how heard */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                {(bridalInquiry.bride_name || bridalInquiry.soon_to_be_last_name) && (
+                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Bride</p>
+                    <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#111' }}>👰 {`${bridalInquiry.bride_name || ''}${bridalInquiry.soon_to_be_last_name ? ` ${bridalInquiry.soon_to_be_last_name}` : ''}`.trim()}</p>
+                  </div>
+                )}
                 {bridalInquiry.num_people_glam && (
                   <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
                     <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">People Needing Glam</p>
                     <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#111' }}>✨ {bridalInquiry.num_people_glam}</p>
+                  </div>
+                )}
+                {(bridalInquiry.out_of_state === true || bridalInquiry.out_of_state === false || bridalInquiry.out_of_state === 'true' || bridalInquiry.out_of_state === 'false') && (
+                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Out of State</p>
+                    {(() => {
+                      const oos = bridalInquiry.out_of_state === true || bridalInquiry.out_of_state === 'true';
+                      return (
+                        <p className="text-[0.85rem] font-medium" style={{ color: oos ? (dm ? '#fbbf24' : '#C4849A') : (dm ? '#e4e4e7' : '#111') }}>
+                          {oos ? '✈️ Yes, out of state' : '📍 No, local'}
+                        </p>
+                      );
+                    })()}
                   </div>
                 )}
                 {bridalInquiry.instagram_handle && (

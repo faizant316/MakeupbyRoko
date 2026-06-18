@@ -102,7 +102,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
                   ))}
                   {hasConsultation && (
                     <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7B9E87' }} />
+                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#A855F7' }} />
                   )}
                   {hasClassReg && (
                     <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
@@ -465,7 +465,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             </span>
           ))}
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
-            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#7B9E87' }} /> Consultation
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#A855F7' }} /> Consultation
           </span>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#D4A0B0' }} /> Makeup Class
