@@ -2,7 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 
 export default function CustomSelect({ value, onChange, options, placeholder = 'Select an option', label, labelClass }) {
   const [open, setOpen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   const ref = useRef(null);
+
+  useEffect(() => {
+    // Detect iOS after mount to avoid SSR/hydration mismatches.
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
+  }, []);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -14,6 +20,33 @@ export default function CustomSelect({ value, onChange, options, placeholder = '
 
   const selected = options.find(o => (typeof o === 'string' ? o : o.value) === value);
   const displayLabel = selected ? (typeof selected === 'string' ? selected : selected.label) : null;
+
+  // iOS: native <select> triggers the native drum-roll wheel picker (matches the wedding date field).
+  if (isIOS) {
+    return (
+      <div className="relative">
+        {label && <label className={labelClass}>{label}</label>}
+        <div className="relative">
+          <select
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className={`w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent appearance-none ${value ? 'text-[#111]' : 'text-gray-400'}`}
+            style={{ WebkitAppearance: 'none' }}
+          >
+            <option value="" disabled>{placeholder}</option>
+            {options.map((opt) => {
+              const optValue = typeof opt === 'string' ? opt : opt.value;
+              const optLabel = typeof opt === 'string' ? opt : opt.label;
+              return <option key={optValue} value={optValue}>{optLabel}</option>;
+            })}
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-[#bbb] absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="relative">
