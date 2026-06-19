@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -44,11 +44,21 @@ export default function Admin() {
     localStorage.setItem('admin-dark', darkMode);
   }, [darkMode]);
 
-  // Floating nav button (mobile): reveal it once the header scrolls out of easy reach.
+  // Floating back button (mobile): stay out of the way while reading down a page,
+  // then slide in when the user scrolls up (the intent to leave). Hidden near the top
+  // where the header already sits.
+  const lastScrollY = useRef(0);
   useEffect(() => {
-    const onScroll = () => setShowNavFab(window.scrollY > 80);
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastScrollY.current;
+      if (Math.abs(delta) < 6) return;          // ignore jitter
+      if (y < 60) setShowNavFab(false);          // at the top, header is right there
+      else if (delta < 0) setShowNavFab(true);   // scrolling up → reveal
+      else setShowNavFab(false);                 // scrolling down → tuck away
+      lastScrollY.current = y;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -271,6 +281,22 @@ export default function Admin() {
   // Resolve active tab label for mobile header
   const activeTabLabel = ADMIN_TABS.find(t => t.key === activeTab)?.label ?? '';
 
+  // Floating back button: where "back" goes. Not shown on the Home overview
+  // (use the menu to switch sections); everywhere else it returns one level up.
+  const isDetailOpen =
+    (activeTab === 'bookings' && !!selectedBooking) ||
+    (activeTab === 'classes' && !!selectedClassReg);
+  const canGoBack = isDetailOpen || activeTab !== 'bookings';
+  const handleBack = () => {
+    if (activeTab === 'bookings' && selectedBooking) { setSelectedBooking(null); return; }
+    if (activeTab === 'classes' && selectedClassReg) { setSelectedClassReg(null); return; }
+    if (activeTab !== 'bookings') {
+      setActiveTab('bookings');
+      setSelectedBooking(null);
+      setSelectedClassReg(null);
+    }
+  };
+
   return (
     <div
       className="min-h-screen transition-colors duration-300"
@@ -333,28 +359,26 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* ── Floating nav button (mobile) ─────────────────────────
-          A bubbly back arrow that floats with you down the page. Tapping it
-          opens the section menu (same as the hamburger) so you can see where
-          you are and jump elsewhere without scrolling back to the top. */}
+      {/* ── Floating back button (mobile) ────────────────────────
+          Gray translucent arrow, like the public site's modal back button.
+          Goes up one level (no menu). Hidden while scrolling down a page;
+          slides in when you scroll up to leave. */}
       <button
-        onClick={() => setMobileNavOpen(true)}
-        aria-label="Open navigation menu"
-        className={`sm:hidden fixed left-4 top-[68px] z-[90] w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ease-out active:scale-90 ${
-          showNavFab && !mobileNavOpen
+        onClick={handleBack}
+        aria-label="Go back"
+        className={`sm:hidden fixed left-4 top-[68px] z-[90] w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ease-out active:scale-90 ${
+          showNavFab && canGoBack && !mobileNavOpen
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
         style={{
-          background: dm ? 'rgba(38,38,46,0.9)' : 'rgba(255,255,255,0.9)',
-          border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}`,
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          boxShadow: dm ? '0 6px 20px rgba(0,0,0,0.45)' : '0 6px 20px rgba(0,0,0,0.12)',
+          background: 'rgba(0,0,0,0.45)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
         }}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#57534e'} strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
