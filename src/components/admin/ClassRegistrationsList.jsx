@@ -46,7 +46,8 @@ function ClassRow({ reg, onSelect, dm }) {
   const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
   const classLabel = selectedClasses.length > 0 ? selectedClasses.map(([, l]) => l).join(' · ') : 'No classes selected';
   const meta = ENROLLMENT_STYLES[reg.status || 'pending'] || ENROLLMENT_STYLES.pending;
-  const pm = PAYMENT_META[normalizePaymentStatus(reg.payment_status)] || PAYMENT_META.unpaid;
+  const isRefunded = normalizePaymentStatus(reg.payment_status) === 'refunded';
+  const isNew = reg.created_date && (Date.now() - new Date(reg.created_date).getTime()) < 24 * 60 * 60 * 1000;
   const rel = relativeDate(reg.appointment_date);
   const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
   const mutedColor = dm ? '#71717a' : '#a99e95';
@@ -88,10 +89,19 @@ function ClassRow({ reg, onSelect, dm }) {
           {reg.appointment_time && <span className="font-normal" style={{ color: mutedColor }}> · {reg.appointment_time}</span>}
         </span>
         <div className="flex items-center gap-1.5">
-          <span className="hidden sm:inline-flex text-[0.55rem] font-semibold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
-            style={{ background: pm.bg, color: pm.color }}>
-            {pm.label}
-          </span>
+          {isNew && (
+            <span className="inline-flex items-center gap-1 text-[0.55rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
+              style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.22)', color: dm ? '#e7c9d5' : '#A0607A' }}>
+              <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: dm ? '#e7c9d5' : '#A0607A' }} />
+              New
+            </span>
+          )}
+          {isRefunded && (
+            <span className="hidden sm:inline-flex text-[0.55rem] font-semibold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
+              style={{ background: PAYMENT_META.refunded.bg, color: PAYMENT_META.refunded.color }}>
+              Refunded
+            </span>
+          )}
           <span className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-lg flex-shrink-0"
             style={{ background: meta.bg, color: meta.text }}>
             {meta.label}
@@ -181,8 +191,15 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     );
   }
 
+  // Surface the just-signed-up / not-yet-scheduled sign-ups: pull the
+  // "Unscheduled" bucket to the very top and dress it as an action callout,
+  // then the timeline (This Week → This Month → Later) follows beneath it.
   const timeGroups = groupByTime(registrations, r => r.appointment_date);
-  const todayCount = registrations.filter(r => daysUntil(r.appointment_date) === 0).length;
+  const orderedGroups = [
+    ...timeGroups.filter(g => g.key === 'unscheduled'),
+    ...timeGroups.filter(g => g.key !== 'unscheduled'),
+  ];
+  const unscheduledCount = registrations.filter(r => !r.appointment_date).length;
   const weekCount = registrations.filter(r => { const d = daysUntil(r.appointment_date); return d >= 0 && d <= 7; }).length;
 
   return (
@@ -190,13 +207,13 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
       {/* Time-aware summary glance */}
       <div className="flex items-stretch gap-2 mb-5">
         {[
-          { label: 'Today', value: todayCount },
+          { label: 'Needs Scheduling', value: unscheduledCount, accent: unscheduledCount > 0 },
           { label: 'This Week', value: weekCount },
           { label: 'Total', value: registrations.length },
         ].map(s => (
           <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
             style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
-            <p className="text-[1.1rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</p>
+            <p className="text-[1.1rem] font-serif leading-none" style={{ color: s.accent ? '#A0607A' : (dm ? '#e4e4e7' : '#1a1a1a') }}>{s.value}</p>
             <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
           </div>
         ))}
@@ -204,8 +221,11 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
 
       {/* Time-grouped rows */}
       <div className="flex flex-col gap-6">
-        {timeGroups.map(group => {
+        {orderedGroups.map(group => {
           const open = !collapsedGroups[group.key];
+          const isNeedsScheduling = group.key === 'unscheduled';
+          const headAccent = isNeedsScheduling ? (dm ? '#c47a92' : '#A0607A') : group.accent;
+          const headLabel = isNeedsScheduling ? 'Needs Scheduling' : group.label;
           return (
             <div key={group.key}>
               <button
@@ -213,12 +233,15 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
                 onClick={() => setCollapsedGroups(p => ({ ...p, [group.key]: !p[group.key] }))}
                 className="flex items-center gap-2.5 mb-3 w-full"
               >
-                {group.accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.accent }} />}
-                <h3 className="font-serif text-[1.05rem]" style={{ color: group.accent || (dm ? '#e4e4e7' : '#111') }}>{group.label}</h3>
+                {headAccent && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isNeedsScheduling ? 'animate-pulse' : ''}`} style={{ background: headAccent }} />}
+                <h3 className="font-serif text-[1.05rem]" style={{ color: headAccent || (dm ? '#e4e4e7' : '#111') }}>{headLabel}</h3>
                 <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
                   style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#a99e95' }}>
                   {group.items.length}
                 </span>
+                {isNeedsScheduling && (
+                  <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>awaiting a date</span>
+                )}
                 <span className="flex-1" />
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2"
                   className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>

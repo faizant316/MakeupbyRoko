@@ -668,9 +668,7 @@ export default function BookingsList({
                 const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Course';
                 const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#22C55E' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
                 const statusLabel = r.status === 'enrolled' ? 'Enrolled' : r.status === 'confirmed' ? 'Confirmed' : 'Pending';
-                const ps = r.payment_status;
-                const isPaid = ps === 'paid' || ps === 'deposit_paid' || ps === 'paid_in_full';
-                const isRefunded = ps === 'refunded';
+                const isRefunded = r.payment_status === 'refunded';
                 return (
                   <button
                     key={r.id}
@@ -697,12 +695,6 @@ export default function BookingsList({
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {isPaid && (
-                        <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full"
-                          style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
-                          Paid
-                        </span>
-                      )}
                       {isRefunded && (
                         <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full"
                           style={{ background: 'rgba(239,68,68,0.1)', color: '#b91c1c' }}>
