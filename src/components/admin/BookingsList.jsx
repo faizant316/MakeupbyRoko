@@ -289,12 +289,12 @@ export default function BookingsList({
 
       {/* Just Booked — appointments only, last 24 hrs */}
       {recentBookings.length > 0 && (
-        <div className="mb-7 overflow-hidden rounded-2xl" style={{ border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`, boxShadow: '0 2px 20px rgba(160,120,90,0.07)' }}>
+        <div className="mb-7 relative">
           <button
             onClick={() => setShowRecentPanel(v => !v)}
             aria-expanded={showRecentPanel}
-            className="w-full flex items-center justify-between px-5 py-3 transition-colors"
-            style={{ background: dm ? 'rgba(180,100,120,0.25)' : 'rgba(212,160,176,0.25)' }}
+            className="w-full flex items-center justify-between px-5 py-3 rounded-2xl transition-colors"
+            style={{ background: dm ? 'rgba(180,100,120,0.25)' : 'rgba(212,160,176,0.25)', border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`, boxShadow: '0 2px 20px rgba(160,120,90,0.07)' }}
           >
             <div className="flex items-center gap-2.5">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dm ? '#c47a92' : '#D4A0B0' }} />
@@ -311,7 +311,7 @@ export default function BookingsList({
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#c47a92' : '#A0607A'} strokeWidth="2"
                 className="w-3.5 h-3.5"
-                style={{ transition: 'transform 450ms cubic-bezier(0.16,1,0.3,1)', transform: showRecentPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showRecentPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </div>
