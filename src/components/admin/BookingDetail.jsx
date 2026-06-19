@@ -31,7 +31,7 @@ function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   };
 
   return (
-    <div className="mb-3 rounded-xl overflow-hidden border" style={{ borderColor: dm ? '#3a3a48' : '#e5e5e5' }}>
+    <div className="mb-3 rounded-[6px] overflow-hidden border" style={{ borderColor: dm ? '#3a3a48' : '#e5e5e5' }}>
       <button
         onClick={handleExpand}
         className="w-full flex items-center justify-between px-4 py-3 transition-colors"
@@ -147,6 +147,32 @@ function from24h(val) {
   return `${h12}:${mStr} ${ampm}`;
 }
 
+// Brand plum (matches the front-end bridal cards)
+const PLUM = '#C4849A';
+
+// Universal Google Maps link — works on desktop + mobile, no API key required.
+function mapsUrl(address) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+// One label/value pair in the bridal details "spec sheet" grid.
+function BField({ label, value, dm, accent = false, href }) {
+  if (value === null || value === undefined || value === '') return null;
+  const valueColor = accent ? PLUM : (dm ? '#e4e4e7' : '#2C1A14');
+  return (
+    <div className="min-w-0">
+      <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>{label}</p>
+      {href ? (
+        <a href={href} target="_blank" rel="noopener noreferrer"
+          className="text-[0.86rem] font-medium leading-snug break-words transition-opacity hover:opacity-70"
+          style={{ color: valueColor }}>{value}</a>
+      ) : (
+        <p className="text-[0.86rem] font-medium leading-snug break-words" style={{ color: valueColor }}>{value}</p>
+      )}
+    </div>
+  );
+}
+
 const CONSULT_COLOR = '#A855F7';
 const CONSULT_BG = 'rgba(168,85,247,0.08)';
 const CONSULT_BORDER = 'rgba(168,85,247,0.25)';
@@ -252,11 +278,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
 
   return (
     <div className="mb-6">
-      <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-3">Consultation</p>
+      <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Consultation</p>
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
-        <div className="flex items-center justify-between px-4 py-4 rounded-xl transition-all"
+        <div className="flex items-center justify-between px-4 py-4 rounded-[6px] transition-all"
           style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
@@ -292,7 +318,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
       {/* Empty state */}
       {!hasConsult && !expanded && (
         <button onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-between px-4 py-4 rounded-xl transition-all touch-manipulation"
+          className="w-full flex items-center justify-between px-4 py-4 rounded-[6px] transition-all touch-manipulation"
           style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
@@ -311,7 +337,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
 
       {/* Picker */}
       {expanded && (
-        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+        <div className="rounded-[6px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
           {/* Header */}
           <div className="px-5 py-4 flex items-center justify-between"
             style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
@@ -332,13 +358,13 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
                 <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                  className="w-full px-4 rounded-xl outline-none appearance-none"
+                  className="w-full px-4 rounded-[6px] outline-none appearance-none"
                   style={{ ...inputStyle, minHeight: '48px' }} />
               </div>
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Time</label>
                 <select value={form.time} onChange={e => set('time', e.target.value)}
-                  className="w-full px-4 rounded-xl outline-none appearance-none"
+                  className="w-full px-4 rounded-[6px] outline-none appearance-none"
                   style={{ ...inputStyle, minHeight: '48px' }}>
                   {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -351,7 +377,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <div className="flex gap-2">
                 {['Zoom', 'Phone'].map(key => (
                   <button key={key} type="button" onClick={() => set('type', key)}
-                    className="flex-1 py-3 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
+                    className="flex-1 py-3 rounded-[6px] text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
                     style={form.type === key
                       ? { background: '#111', color: '#fff', border: '1px solid #111' }
                       : { background: inputBg, color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }
@@ -379,7 +405,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
 
                 {!meetLink ? (
                   <button type="button" onClick={generateZoomLink} disabled={generatingLink}
-                    className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                    className="w-full rounded-[6px] font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
                     style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f0ece8') : '#2D8CFF', color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
                     {generatingLink ? (
                       <><div className="w-4 h-4 border-2 border-[#2D8CFF]/30 border-t-[#2D8CFF] rounded-full animate-spin" /> Generating…</>
@@ -389,7 +415,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                   </button>
                 ) : (
                   <button type="button" onClick={copyMeetLink}
-                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                    className="w-full px-4 rounded-[6px] text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
                     style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
                     <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>
                       {meetLink}
@@ -410,14 +436,14 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
-                className="w-full px-4 py-3 rounded-xl outline-none resize-none"
+                className="w-full px-4 py-3 rounded-[6px] outline-none resize-none"
                 style={{ ...inputStyle, minHeight: '80px' }} />
             </div>
 
             {/* CTA */}
             {!showConfirmSend ? (
               <button onClick={() => { if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date}
-                className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                className="w-full rounded-[6px] font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
                 style={{
                   minHeight: '50px', fontSize: '14px',
                   ...(!form.date
@@ -427,7 +453,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                 Confirm & Notify Client
               </button>
             ) : (
-              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+              <div className="rounded-[6px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
                 <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#fafafa' }}>
                   <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirm & Send Email?</p>
                   <div className="flex flex-col gap-1.5 mb-4">
@@ -447,12 +473,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
                   <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>An email will be sent to <span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{booking.email}</span>.</p>
                   <div className="flex gap-2">
                     <button onClick={() => setShowConfirmSend(false)}
-                      className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold transition-all touch-manipulation"
+                      className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
                       style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
                       Cancel
                     </button>
                     <button onClick={() => { setShowConfirmSend(false); handleSend(); }} disabled={saving}
-                      className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold transition-all touch-manipulation flex items-center justify-center gap-2"
+                      className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation flex items-center justify-center gap-2"
                       style={{ background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
                       {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Yes, Send Email'}
                     </button>
@@ -487,11 +513,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pendingTime, setPendingTime] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
-  const [mapsKey, setMapsKey] = useState('');
-
-  useEffect(() => {
-    api.functions.invoke('getMapKey', {}).then(res => setMapsKey(res.data?.key || '')).catch(() => {});
-  }, []);
 
   const showToast = (msg, color) => {
     setToast({ message: msg, color });
@@ -573,6 +594,21 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     enabled: isBridal && (!!booking.upload_token || !!booking.email),
   });
 
+  // Derived bridal values for the redesigned details block
+  const biWedding = bridalInquiry?.wedding_date && bridalInquiry.wedding_date !== 'partial'
+    ? new Date(bridalInquiry.wedding_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
+    : null;
+  const biPreferred = bridalInquiry?.preferred_date
+    ? new Date(bridalInquiry.preferred_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })
+    : null;
+  const biBrideName = bridalInquiry
+    ? `${bridalInquiry.bride_name || ''}${bridalInquiry.soon_to_be_last_name ? ` ${bridalInquiry.soon_to_be_last_name}` : ''}`.trim()
+    : '';
+  const biOos = bridalInquiry?.out_of_state === true || bridalInquiry?.out_of_state === 'true';
+  const biOosLabel = bridalInquiry && [true, false, 'true', 'false'].includes(bridalInquiry.out_of_state)
+    ? (biOos ? 'Yes, out of state' : 'No, local')
+    : null;
+
   // Scroll to top when detail view mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -614,7 +650,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         Back to List
       </button>
 
-      <div className="rounded-xl p-6 sm:p-8 mb-6" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
+      <div className="rounded-[6px] p-6 sm:p-8 mb-6" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -638,18 +674,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Client stats — toggled by name click */}
         {showClientStats && (
-          <div className="grid grid-cols-3 gap-3 mb-6 p-4 rounded-xl" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#2a2420' : '#ebebeb'}`, animation: 'fadeSlideDown 0.3s ease-out' }}>
+          <div className="grid grid-cols-3 gap-3 mb-6 p-4 rounded-[6px]" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#2a2420' : '#ebebeb'}`, animation: 'fadeSlideDown 0.3s ease-out' }}>
             <div className="text-center">
               <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#F0EBE6' : '#111' }}>{totalVisits}</div>
-              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#999]">Total Visits</div>
+              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Total Visits</div>
             </div>
             <div className="text-center">
               <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#F0EBE6' : '#111' }}>{completedVisits}</div>
-              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#999]">Completed</div>
+              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Completed</div>
             </div>
             <div className="text-center">
               <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#F0EBE6' : '#111' }}>{cancelledVisits}</div>
-              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#999]">Cancelled</div>
+              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Cancelled</div>
             </div>
           </div>
         )}
@@ -657,12 +693,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Info grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div>
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1">Date & Time</p>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Date & Time</p>
             <p className="text-[0.9rem] font-medium" style={{ color: dm ? '#F0EBE6' : '#111' }}>{dateFormatted}</p>
             {booking.time && <p className="text-[0.85rem]" style={{ color: dm ? '#D4A0B0' : '#888' }}>{booking.time}</p>}
           </div>
           <div>
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1">Contact</p>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Contact</p>
             {booking.email && <a href={`mailto:${booking.email}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block" style={{ color: dm ? '#e4e4e7' : '#111' }}>{booking.email}</a>}
             {booking.phone && <a href={`sms:${booking.phone}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>{booking.phone}</a>}
           </div>
@@ -670,9 +706,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {booking.notes && (
           <div className="mb-6">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2">Notes</p>
-            <div className="px-4 py-3 rounded-xl" style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-              <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#555' }}>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
+            <div className="px-4 py-3" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
+              <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>
                 {booking.notes.replace(/^\s*\|\s*/, '').trim()}
               </p>
             </div>
@@ -681,183 +717,72 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Bridal Inquiry Details */}
         {isBridal && bridalInquiry && (
-          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
+          <div className="mb-6 overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${dm ? '#3a3a48' : '#E8E2DC'}` }}>
             {/* Section header */}
-            <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: dm ? 'rgba(212,160,176,0.12)' : 'rgba(212,160,176,0.1)', borderBottom: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-              <span className="text-base">💍</span>
-              <p className="text-[0.6rem] font-bold tracking-[0.18em] uppercase text-[#D4A0B0]">Bridal Inquiry Details</p>
+            <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7', borderBottom: `1px solid ${dm ? '#3a3a48' : '#F0E0E9'}` }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.4" className="w-4 h-4">
+                <path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="M9 3 7.5 9 12 21l4.5-12L15 3"/>
+              </svg>
+              <p className="text-[0.6rem] font-semibold tracking-[0.18em] uppercase" style={{ color: PLUM }}>Bridal Inquiry Details</p>
             </div>
 
-            <div className="p-5" style={{ background: dm ? '#1e1e24' : '#FFFCFA' }}>
-              {/* Top grid — key timing info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                {[
-                  { icon: '📅', label: 'Wedding Date', value: bridalInquiry.wedding_date && bridalInquiry.wedding_date !== 'partial' ? new Date(bridalInquiry.wedding_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : null },
-                  { icon: '🗓️', label: 'Preferred Appt', value: bridalInquiry.preferred_date ? new Date(bridalInquiry.preferred_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }) : null },
-                  { icon: '🕐', label: 'Event Start', value: bridalInquiry.event_start_time },
-                  { icon: '🚪', label: 'Venue Access', value: bridalInquiry.venue_access_time },
-                ].filter(f => f.value).map(({ icon, label, value }) => (
-                  <div key={label} className="rounded-xl px-4 py-3 flex items-center gap-3 sm:block" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <span className="text-[1.2rem] sm:hidden">{icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">{label}</p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[0.85rem] hidden sm:inline">{icon}</span>
-                        <p className="text-[0.85rem] font-medium leading-snug" style={{ color: dm ? '#e4e4e7' : '#111' }}>{value}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div className="px-5 py-5" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+              {/* Wedding timeline */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5">
+                <BField dm={dm} label="Wedding Date" value={biWedding} />
+                <BField dm={dm} label="Preferred Appt" value={biPreferred} />
+                <BField dm={dm} label="Event Start" value={bridalInquiry.event_start_time} />
+                <BField dm={dm} label="Venue Access" value={bridalInquiry.venue_access_time} />
+                <BField dm={dm} label="Artist Arrive By" value={bridalInquiry.ready_by_time} accent />
+                <BField dm={dm} label="Photographer Arrives" value={bridalInquiry.photographer_arrival_time} />
               </div>
 
-              {/* Makeup artist timing row */}
-              {(bridalInquiry.ready_by_time || bridalInquiry.photographer_arrival_time) && (
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                  {bridalInquiry.ready_by_time && (
-                    <div className="rounded-xl px-4 py-3 flex items-center gap-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                      <div className="w-8 h-8 rounded-full bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[0.9rem]">💄</span>
-                      </div>
-                      <div>
-                        <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Artist Arrive By</p>
-                        <p className="text-[0.85rem] font-semibold" style={{ color: dm ? '#D4A0B0' : '#C4849A' }}>{bridalInquiry.ready_by_time}</p>
-                      </div>
-                    </div>
-                  )}
-                  {bridalInquiry.photographer_arrival_time && (
-                    <div className="rounded-xl px-4 py-3 flex items-center gap-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                      <div className="w-8 h-8 rounded-full bg-[#B8A0D4]/15 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[0.9rem]">📷</span>
-                      </div>
-                      <div>
-                        <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Photographer Arrives</p>
-                        <p className="text-[0.85rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{bridalInquiry.photographer_arrival_time}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Event Location — big card with map embed */}
+              {/* Event Location */}
               {bridalInquiry.event_location && (
-                <div className="rounded-xl overflow-hidden mb-5" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                  <div className="px-4 py-4 sm:py-3" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Event Location</p>
-                        <CopyableAddress address={bridalInquiry.event_location} dm={dm} />
-                      </div>
-                      <a
-                        href={`maps://?q=${encodeURIComponent(bridalInquiry.event_location)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold transition-colors flex-shrink-0"
-                        style={{ background: dm ? '#3a3a48' : '#f5f5f5', color: dm ? '#D4A0B0' : '#888' }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        Maps
-                      </a>
+                <div className="mt-5 pt-5 flex items-start justify-between gap-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Event Location</p>
+                      <CopyableAddress address={bridalInquiry.event_location} dm={dm} />
                     </div>
                   </div>
-                  {/* Google Maps embed — desktop only */}
-                  <div className="hidden sm:block">
-                    {mapsKey ? (
-                      <iframe
-                        title="Event Location"
-                        width="100%"
-                        height="220"
-                        style={{ border: 0, display: 'block' }}
-                        loading="lazy"
-                        allowFullScreen
-                        src={`https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${encodeURIComponent(bridalInquiry.event_location)}&zoom=14`}
-                      />
-                    ) : (
-                      <div className="h-[120px] flex items-center justify-center" style={{ background: dm ? '#1e1e24' : '#f5f0ec' }}>
-                        <div className="w-5 h-5 border-2 border-[#D4A0B0]/30 border-t-[#D4A0B0] rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
+                  <a href={mapsUrl(bridalInquiry.event_location)} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] transition-opacity hover:opacity-80 flex-shrink-0"
+                    style={{ borderRadius: 2, border: `1px solid ${dm ? '#5a4750' : '#E2C4D2'}`, color: PLUM, background: dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Maps
+                  </a>
                 </div>
               )}
 
-              {/* Vendor row */}
+              {/* Vendors */}
               {(bridalInquiry.photographer || bridalInquiry.hairstylist) && (
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                  {bridalInquiry.photographer && (
-                    <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                      <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-1">Photographer</p>
-                      <a href={`https://instagram.com/${bridalInquiry.photographer.replace('@','')}`} target="_blank" rel="noopener noreferrer"
-                        className="text-[0.82rem] font-medium hover:text-[#D4A0B0] transition-colors" style={{ color: dm ? '#e4e4e7' : '#333' }}>
-                        {bridalInquiry.photographer}
-                      </a>
-                    </div>
-                  )}
-                  {bridalInquiry.hairstylist && (
-                    <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                      <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-1">Hairstylist</p>
-                      <a href={`https://instagram.com/${bridalInquiry.hairstylist.replace('@','')}`} target="_blank" rel="noopener noreferrer"
-                        className="text-[0.82rem] font-medium hover:text-[#D4A0B0] transition-colors" style={{ color: dm ? '#e4e4e7' : '#333' }}>
-                        {bridalInquiry.hairstylist}
-                      </a>
-                    </div>
-                  )}
+                <div className="mt-5 pt-5 grid grid-cols-2 gap-x-4 gap-y-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
+                  <BField dm={dm} label="Photographer" value={bridalInquiry.photographer}
+                    href={bridalInquiry.photographer ? `https://instagram.com/${bridalInquiry.photographer.replace('@','')}` : undefined} />
+                  <BField dm={dm} label="Hairstylist" value={bridalInquiry.hairstylist}
+                    href={bridalInquiry.hairstylist ? `https://instagram.com/${bridalInquiry.hairstylist.replace('@','')}` : undefined} />
                 </div>
               )}
 
-              {/* Bottom row — bride, glam count, out of state, instagram, how heard */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                {(bridalInquiry.bride_name || bridalInquiry.soon_to_be_last_name) && (
-                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Bride</p>
-                    <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#111' }}>👰 {`${bridalInquiry.bride_name || ''}${bridalInquiry.soon_to_be_last_name ? ` ${bridalInquiry.soon_to_be_last_name}` : ''}`.trim()}</p>
-                  </div>
-                )}
-                {bridalInquiry.num_people_glam && (
-                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">People Needing Glam</p>
-                    <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#111' }}>✨ {bridalInquiry.num_people_glam}</p>
-                  </div>
-                )}
-                {(bridalInquiry.out_of_state === true || bridalInquiry.out_of_state === false || bridalInquiry.out_of_state === 'true' || bridalInquiry.out_of_state === 'false') && (
-                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Out of State</p>
-                    {(() => {
-                      const oos = bridalInquiry.out_of_state === true || bridalInquiry.out_of_state === 'true';
-                      return (
-                        <p className="text-[0.85rem] font-medium" style={{ color: oos ? (dm ? '#fbbf24' : '#C4849A') : (dm ? '#e4e4e7' : '#111') }}>
-                          {oos ? '✈️ Yes, out of state' : '📍 No, local'}
-                        </p>
-                      );
-                    })()}
-                  </div>
-                )}
-                {bridalInquiry.instagram_handle && (
-                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">Instagram / TikTok</p>
-                    <a href={`https://instagram.com/${bridalInquiry.instagram_handle.replace('@','')}`} target="_blank" rel="noopener noreferrer"
-                      className="text-[0.82rem] font-medium hover:text-[#D4A0B0] transition-colors" style={{ color: dm ? '#e4e4e7' : '#333' }}>
-                      {bridalInquiry.instagram_handle}
-                    </a>
-                  </div>
-                )}
-                {bridalInquiry.how_heard && (
-                  <div className="rounded-xl px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-0.5">How They Heard</p>
-                    <p className="text-[0.82rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#333' }}>{bridalInquiry.how_heard}</p>
-                  </div>
-                )}
+              {/* Details */}
+              <div className="mt-5 pt-5 grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
+                <BField dm={dm} label="Bride" value={biBrideName} />
+                <BField dm={dm} label="People Needing Glam" value={bridalInquiry.num_people_glam} />
+                <BField dm={dm} label="Out of State" value={biOosLabel} accent={biOos} />
+                <BField dm={dm} label="Instagram / TikTok" value={bridalInquiry.instagram_handle}
+                  href={bridalInquiry.instagram_handle ? `https://instagram.com/${bridalInquiry.instagram_handle.replace('@','')}` : undefined} />
+                <BField dm={dm} label="How They Heard" value={bridalInquiry.how_heard} />
               </div>
 
-              {/* Additional details */}
+              {/* Makeup vision note */}
               {bridalInquiry.additional_details && (
-                <div className="rounded-xl px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                  <p className="text-[0.55rem] font-bold tracking-[0.12em] uppercase text-[#999] mb-1.5">Additional Details / Makeup Vision</p>
-                  <p className="text-[0.83rem] leading-[1.7]" style={{ color: dm ? '#a1a1aa' : '#555' }}>{bridalInquiry.additional_details}</p>
+                <div className="mt-5 px-4 py-3.5" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
+                  <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM }}>Makeup Vision &amp; Additional Details</p>
+                  <p className="text-[0.84rem] leading-[1.7]" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{bridalInquiry.additional_details}</p>
                 </div>
               )}
             </div>
@@ -866,7 +791,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Zelle Deposit Received */}
         <div className="mb-6">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-3">Zelle Deposit</p>
+          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
 
           {/* Screenshot viewer */}
           {booking.zelle_screenshot && (
@@ -876,7 +801,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <div className="flex items-stretch gap-3">
             <button
               onClick={() => onUpdateBooking({ deposit_received: true })}
-              className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all"
+              className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
               style={booking.deposit_received
                 ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#fff', border: '1px solid #22c55e', boxShadow: '0 4px 16px rgba(34,197,94,0.25)' }
                 : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
@@ -889,7 +814,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </button>
             <button
               onClick={() => onUpdateBooking({ deposit_received: false })}
-              className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all"
+              className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
               style={!booking.deposit_received
                 ? { background: dm ? 'rgba(120,20,20,0.55)' : 'linear-gradient(135deg, rgba(244,63,63,0.08), rgba(220,38,38,0.12))', color: dm ? '#fca5a5' : '#b91c1c', border: `1px solid ${dm ? 'rgba(185,28,28,0.4)' : 'rgba(239,68,68,0.25)'}`, boxShadow: 'none' }
                 : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
@@ -916,7 +841,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <button
                 type="button"
                 onClick={() => { setPendingTime(booking.time); setShowTimePicker(true); setShowReconfirmBanner(false); }}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all touch-manipulation hover:opacity-80 active:opacity-60"
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[6px] transition-all touch-manipulation hover:opacity-80 active:opacity-60"
                 style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
               >
                 <div className="flex items-center gap-3">
@@ -933,7 +858,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <button
                 type="button"
                 onClick={() => { setPendingTime(''); setShowTimePicker(true); }}
-                className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl touch-manipulation transition-all hover:opacity-80"
+                className="w-full flex items-center justify-between px-4 py-3.5 rounded-[6px] touch-manipulation transition-all hover:opacity-80"
                 style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
               >
                 <div className="flex items-center gap-3">
@@ -949,7 +874,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Time picker — pill grid on ALL screen sizes */}
           {showTimePicker && (
-            <div className="rounded-xl" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, overflow: 'visible' }}>
+            <div className="rounded-[6px]" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, overflow: 'visible' }}>
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 rounded-t-xl"
                 style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
@@ -1017,7 +942,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     showToast(`Time set to ${pendingTime}`, '#888');
                     if (booking.status === 'confirmed') setShowReconfirmBanner(true);
                   }}
-                  className="w-full py-3 rounded-xl text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
+                  className="w-full py-3 rounded-[6px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
                   style={pendingTime
                     ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
                     : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
@@ -1031,7 +956,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Reconfirm banner — appears when time changes on a confirmed booking */}
           {showReconfirmBanner && booking.status === 'confirmed' && (
-            <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-xl"
+            <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-[6px]"
               style={{
                 background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.07)',
                 border: '1px solid rgba(59,130,246,0.25)',
@@ -1066,13 +991,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Update Status */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-3">Update Status</p>
+          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Update Status</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {STATUSES.map(s => {
               const isActive = booking.status === s;
               return (
                 <button key={s} onClick={() => handleStatusChange(s)}
-                  className="py-2.5 px-3 text-[0.65rem] font-semibold tracking-[0.06em] uppercase rounded-xl transition-all hover:opacity-90 truncate"
+                  className="py-2.5 px-3 text-[0.65rem] font-semibold tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90 truncate"
                   style={isActive
                     ? { background: STATUS_COLORS[s], color: '#fff' }
                     : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
@@ -1113,8 +1038,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
       {/* Client history */}
       {clientBookings.length > 0 && (
-        <div className="rounded-xl p-6 sm:p-8" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-4">Appointment History</p>
+        <div className="rounded-[6px] p-6 sm:p-8" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-4">Appointment History</p>
           <div className="flex flex-col">
             {clientBookings.map((b, idx) => (
               <div key={b.id} className="flex items-center justify-between py-3"
@@ -1176,7 +1101,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       {/* Status change confirmation */}
       {pendingStatus && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
-          <div className="rounded-xl shadow-2xl p-7 max-w-[340px] w-full text-center"
+          <div className="rounded-[6px] shadow-2xl p-7 max-w-[340px] w-full text-center"
             style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}`, animation: 'fadeSlideDown 0.25s ease-out' }}>
             {(() => {
               const isReconfirm = pendingStatus === 'reconfirm';
