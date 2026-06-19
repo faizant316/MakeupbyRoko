@@ -1,6 +1,8 @@
-﻿import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
+import Collapse from './Collapse';
+import { groupByTime, relativeDate, daysUntil } from './timeline';
 
 const CLASS_LABELS = {
   private_basic_lesson: 'Basic Makeup Lesson',
@@ -38,11 +40,103 @@ function normalizePaymentStatus(raw) {
   return 'unpaid';
 }
 
+// Compact one-line row, mirroring the appointments list.
+function ClassRow({ reg, onSelect, dm }) {
+  const selectedClasses = Object.entries(CLASS_LABELS).filter(([key]) => reg[key]);
+  const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
+  const classLabel = selectedClasses.length > 0 ? selectedClasses.map(([, l]) => l).join(' · ') : 'No classes selected';
+  const meta = ENROLLMENT_STYLES[reg.status || 'pending'] || ENROLLMENT_STYLES.pending;
+  const pm = PAYMENT_META[normalizePaymentStatus(reg.payment_status)] || PAYMENT_META.unpaid;
+  const rel = relativeDate(reg.appointment_date);
+  const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
+  const mutedColor = dm ? '#71717a' : '#a99e95';
+  const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#8a7e84');
+
+  const iconBtn = 'flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105';
+  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#ece5e0'}` };
+
+  return (
+    <button
+      onClick={() => onSelect(reg)}
+      className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
+      style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.55)'; e.currentTarget.style.background = dm ? '#27272a' : '#FDFAFB'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#2e2e38' : '#f0e9e4'; e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'; }}
+    >
+      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
+        style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#b0a59c' }}>
+        {initial}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
+          {reg.full_name || 'Unknown'}
+        </p>
+        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
+          {classLabel}
+          {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: dateColor }}>
+          {rel.label}
+          {reg.appointment_time && <span className="font-normal" style={{ color: mutedColor }}> · {reg.appointment_time}</span>}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="hidden sm:inline-flex text-[0.55rem] font-semibold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
+            style={{ background: pm.bg, color: pm.color }}>
+            {pm.label}
+          </span>
+          <span className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-lg flex-shrink-0"
+            style={{ background: meta.bg, color: meta.text }}>
+            {meta.label}
+          </span>
+        </div>
+      </div>
+
+      <div className="hidden md:flex items-center gap-1 flex-shrink-0 w-[60px] justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        {reg.email && (
+          <a
+            href={`mailto:${reg.email}?subject=Makeup Class with Roko`}
+            onClick={e => e.stopPropagation()}
+            aria-label="Email registrant"
+            className={iconBtn}
+            style={iconBtnStyle}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece5e0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </a>
+        )}
+        {reg.phone && (
+          <a
+            href={`sms:${reg.phone}`}
+            onClick={e => e.stopPropagation()}
+            aria-label="Text registrant"
+            className={iconBtn}
+            style={iconBtnStyle}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece5e0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </a>
+        )}
+      </div>
+    </button>
+  );
+}
+
 export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExpandId }) {
   const { data: rawRegistrations = [], isLoading } = useQuery({
     queryKey: ['class-registrations'],
     queryFn: () => api.entities.ClassRegistration.list('-created_date', 100),
   });
+  const [collapsedGroups, setCollapsedGroups] = useState({ later: true });
 
   const registrations = [...rawRegistrations].sort((a, b) => {
     const aDate = a.appointment_date ? new Date(a.appointment_date) : null;
@@ -61,11 +155,6 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoExpandId, registrations.length]);
-
-  const cardBg     = dm ? '#1e1e24' : '#fff';
-  const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
-  const textMain   = dm ? '#F0EBE6' : '#111';
-  const textMuted  = dm ? '#71717a' : '#999';
 
   if (isLoading) {
     return (
@@ -88,155 +177,58 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     );
   }
 
+  const timeGroups = groupByTime(registrations, r => r.appointment_date);
+  const todayCount = registrations.filter(r => daysUntil(r.appointment_date) === 0).length;
+  const weekCount = registrations.filter(r => { const d = daysUntil(r.appointment_date); return d >= 0 && d <= 7; }).length;
+
   return (
     <div>
-      {/* Summary row */}
-      <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <p className="text-[0.65rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#71717a' : '#999' }}>
-          {registrations.length} registration{registrations.length !== 1 ? 's' : ''}
-        </p>
-        {Object.entries(ENROLLMENT_STYLES).map(([s, meta]) => {
-          const cnt = registrations.filter(r => (r.status || 'pending') === s).length;
-          if (!cnt) return null;
-          return (
-            <span key={s} className="text-[0.65rem] font-semibold" style={{ color: meta.bg }}>
-              {cnt} {meta.label.toLowerCase()}
-            </span>
-          );
-        })}
+      {/* Time-aware summary glance */}
+      <div className="flex items-stretch gap-2 mb-5">
+        {[
+          { label: 'Today', value: todayCount },
+          { label: 'This Week', value: weekCount },
+          { label: 'Total', value: registrations.length },
+        ].map(s => (
+          <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
+            style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
+            <p className="text-[1.1rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</p>
+            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Card grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {registrations.map(reg => {
-          const selectedClasses = Object.entries(CLASS_LABELS).filter(([key]) => reg[key]);
-          const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
-          const enrollmentStatus = reg.status || 'pending';
-          const enrollmentMeta = ENROLLMENT_STYLES[enrollmentStatus] || ENROLLMENT_STYLES.pending;
-          const paymentStatus = normalizePaymentStatus(reg.payment_status);
-          const pm = PAYMENT_META[paymentStatus] || PAYMENT_META.unpaid;
-
-          const appointmentDate = reg.appointment_date
-            ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', {
-                month: '2-digit', day: '2-digit', year: 'numeric',
-              })
-            : '';
-
+      {/* Time-grouped rows */}
+      <div className="flex flex-col gap-6">
+        {timeGroups.map(group => {
+          const open = !collapsedGroups[group.key];
           return (
-            <button
-              key={reg.id}
-              onClick={() => onSelect(reg)}
-              className="rounded-xl p-4 text-left transition-all group w-full"
-              style={{
-                background: cardBg,
-                border: `1px solid ${cardBorder}`,
-                boxShadow: dm ? 'none' : '0 1px 4px rgba(0,0,0,0.04)',
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(212,160,176,0.5)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = cardBorder}
-            >
-              {/* Name + badge */}
-              <div className="flex items-start justify-between mb-2.5">
-                <h4
-                  className="font-serif text-[1rem] group-hover:text-[#D4A0B0] transition-colors"
-                  style={{ color: textMain }}
-                >
-                  {reg.full_name || 'Unknown'}
-                </h4>
-                <span
-                  className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0 ml-2"
-                  style={{ background: enrollmentMeta.bg, color: enrollmentMeta.text }}
-                >
-                  {enrollmentMeta.label}
-                </span>
-              </div>
-
-              {/* Date / email / phone */}
-              <div className="flex flex-col gap-1 mb-2.5">
-                <div
-                  className="flex items-center gap-2 text-[0.72rem]"
-                  style={{ color: appointmentDate ? textMuted : (dm ? '#52525b' : '#ccc') }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  {appointmentDate
-                    ? `${appointmentDate}${reg.appointment_time ? ` at ${reg.appointment_time}` : ''}`
-                    : 'No date scheduled yet'}
-                </div>
-                {reg.email && (
-                  <div className="flex items-center gap-2 text-[0.72rem]" style={{ color: textMuted }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                    {reg.email}
-                  </div>
-                )}
-                {reg.phone && (
-                  <div className="flex items-center gap-2 text-[0.72rem]" style={{ color: textMuted }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 11.7 19.79 19.79 0 0 1 1 3.07 2 2 0 0 1 2.11 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    {reg.phone}
-                  </div>
-                )}
-              </div>
-
-              {/* Class names */}
-              <p className="text-[0.72rem] font-semibold mb-2.5" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
-                {selectedClasses.length > 0
-                  ? selectedClasses.map(([, l]) => l).join(' · ')
-                  : 'No classes selected'}
-                {totalPrice > 0 && (
-                  <span className="ml-1.5 font-normal text-[0.67rem]" style={{ color: textMuted }}>
-                    (${totalPrice.toLocaleString()})
-                  </span>
-                )}
-              </p>
-
-              {/* Footer: payment badge + quick contact */}
-              <div
-                className="flex items-center gap-2 pt-2.5"
-                style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}
+            <div key={group.key}>
+              <button
+                type="button"
+                onClick={() => setCollapsedGroups(p => ({ ...p, [group.key]: !p[group.key] }))}
+                className="flex items-center gap-2.5 mb-3 w-full"
               >
-                <span
-                  className="text-[0.58rem] font-semibold tracking-[0.08em] uppercase px-2.5 py-0.5 rounded-full"
-                  style={{ background: pm.bg, color: pm.color }}
-                >
-                  {pm.label}
+                {group.accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.accent }} />}
+                <h3 className="font-serif text-[1.05rem]" style={{ color: group.accent || (dm ? '#e4e4e7' : '#111') }}>{group.label}</h3>
+                <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                  style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#a99e95' }}>
+                  {group.items.length}
                 </span>
-                {reg.email && (
-                  <a
-                    href={`mailto:${reg.email}?subject=Makeup Class with Roko`}
-                    onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[0.62rem] font-medium tracking-[0.04em] uppercase rounded-lg hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all ml-auto"
-                    style={{ color: textMuted, border: `1px solid ${dm ? '#3a3a48' : '#e4ddd7'}` }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                    Email
-                  </a>
-                )}
-                {reg.phone && (
-                  <a
-                    href={`sms:${reg.phone}`}
-                    onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[0.62rem] font-medium tracking-[0.04em] uppercase rounded-lg hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all"
-                    style={{ color: textMuted, border: `1px solid ${dm ? '#3a3a48' : '#e4ddd7'}` }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    Text
-                  </a>
-                )}
-              </div>
-            </button>
+                <span className="flex-1" />
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2"
+                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <Collapse open={open}>
+                <div className="flex flex-col gap-2 pb-1">
+                  {group.items.map(reg => (
+                    <ClassRow key={reg.id} reg={reg} onSelect={onSelect} dm={dm} />
+                  ))}
+                </div>
+              </Collapse>
+            </div>
           );
         })}
       </div>

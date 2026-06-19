@@ -1,18 +1,5 @@
 import StatusBadge from './StatusBadge';
-
-// Relative, human label for a booking date: Today / Tomorrow / Sat, Jun 27.
-function relativeDate(dateStr) {
-  if (!dateStr) return { label: 'No date', tone: 'muted' };
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(dateStr + 'T00:00:00');
-  const diff = Math.round((d - today) / 86400000);
-  if (diff === 0) return { label: 'Today', tone: 'accent' };
-  if (diff === 1) return { label: 'Tomorrow', tone: 'accent' };
-  if (diff === -1) return { label: 'Yesterday', tone: 'past' };
-  const formatted = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  return { label: formatted, tone: diff < 0 ? 'past' : 'normal' };
-}
+import { relativeDate } from './timeline';
 
 // Compact one-line list item for the appointments list. The rich detail lives
 // in the modal opened on click, so the row only carries what helps you scan:
@@ -43,14 +30,14 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.55)'; e.currentTarget.style.background = dm ? '#27272a' : '#FDFAFB'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#2e2e38' : '#f0e9e4'; e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'; }}
     >
-      {/* Avatar initial — plum-tinted for bridal */}
+      {/* Avatar initial — plum colorway + soft ring marks bridal, no emoji */}
       <div
-        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.85rem]"
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
         style={bridal
-          ? { background: dm ? 'rgba(212,160,176,0.18)' : '#F8ECF2', color: dm ? '#e7c9d5' : '#A0607A' }
+          ? { background: dm ? 'rgba(212,160,176,0.2)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#A0607A', boxShadow: `0 0 0 1.5px ${dm ? 'rgba(212,160,176,0.35)' : 'rgba(196,132,154,0.45)'}` }
           : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#b0a59c' }}
       >
-        {bridal ? '💍' : initial}
+        {initial}
       </div>
 
       {/* Name + service */}
@@ -61,8 +48,8 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           </p>
           {bridal && (
             <span
-              className="hidden sm:inline-flex items-center text-[0.5rem] font-bold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.18)' : '#F8ECF2', color: dm ? '#e7c9d5' : '#A0607A' }}
+              className="hidden sm:inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dm ? 'rgba(212,160,176,0.18)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#A0607A' }}
             >
               Bridal
             </span>
