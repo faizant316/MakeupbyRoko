@@ -279,23 +279,22 @@ export default function BookingsList({
             </div>
           </button>
 
-          {/* Collapsible panel — grid-rows 0fr→1fr gives a smooth, JS-free height animation */}
+          {/* Collapsible panel — animate a measured pixel height: smooth on iOS Safari + desktop */}
           <div
-            className="grid"
             style={{
-              gridTemplateRows: showRecentPanel ? '1fr' : '0fr',
-              transition: 'grid-template-rows 450ms cubic-bezier(0.16,1,0.3,1)',
+              height: showRecentPanel ? recentPanelH : 0,
+              overflow: 'hidden',
+              transition: 'height 360ms cubic-bezier(0.22,1,0.36,1)',
+              willChange: 'height',
             }}
           >
-            <div className="overflow-hidden">
             <div
+              ref={recentPanelRef}
               style={{
                 background: dm ? '#27272a' : '#fff',
                 opacity: showRecentPanel ? 1 : 0,
-                transform: showRecentPanel ? 'translateY(0)' : 'translateY(-8px)',
                 pointerEvents: showRecentPanel ? 'auto' : 'none',
-                transition: 'opacity 300ms ease, transform 350ms cubic-bezier(0.16,1,0.3,1)',
-                transitionDelay: showRecentPanel ? '110ms' : '0ms',
+                transition: 'opacity 260ms ease',
               }}
             >
               <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(160,120,90,0.1)'}` }}>
@@ -351,7 +350,6 @@ export default function BookingsList({
               {recentSearch && recentBookings.filter(b => [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase()))).length === 0 && (
                 <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>No results for "{recentSearch}"</div>
               )}
-            </div>
             </div>
           </div>
         </div>
