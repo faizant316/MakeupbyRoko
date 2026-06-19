@@ -728,10 +728,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {isBridal && bridalInquiry && (
           <div className="mb-6 overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${dm ? '#3a3a48' : '#E8E2DC'}` }}>
             {/* Section header */}
-            <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7', borderBottom: `1px solid ${dm ? '#3a3a48' : '#F0E0E9'}` }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.4" className="w-4 h-4">
-                <path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="M9 3 7.5 9 12 21l4.5-12L15 3"/>
-              </svg>
+            <div className="px-5 py-3.5" style={{ background: dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7', borderBottom: `1px solid ${dm ? '#3a3a48' : '#F0E0E9'}` }}>
               <p className="text-[0.6rem] font-semibold tracking-[0.18em] uppercase" style={{ color: PLUM }}>Bridal Inquiry Details</p>
             </div>
 

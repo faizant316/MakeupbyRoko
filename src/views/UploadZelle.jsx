@@ -16,16 +16,17 @@ const DIVIDER = '#F0E8EC';
 function CardHead({ icon, children }) {
   return (
     <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: HEAD_BG, borderBottom: `1px solid ${HEAD_BORDER}` }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-4 h-4 flex-shrink-0">
-        {icon}
-      </svg>
+      {icon && (
+        <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-4 h-4 flex-shrink-0">
+          {icon}
+        </svg>
+      )}
       <p className="text-[0.6rem] font-semibold tracking-[0.18em] uppercase" style={{ color: PLUM }}>{children}</p>
     </div>
   );
 }
 
 const ICON = {
-  diamond: <><path d="M6 3h12l3 6-9 12L3 9z" /><path d="M3 9h18" /><path d="M9 3 7.5 9 12 21l4.5-12L15 3" /></>,
   card: <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></>,
   upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>,
 };
@@ -47,7 +48,7 @@ function SummaryRow({ label, value, highlight }) {
 function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice }) {
   return (
     <div className="bg-white overflow-hidden h-full flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
-      <CardHead icon={ICON.diamond}>Booking Summary</CardHead>
+      <CardHead>Booking Summary</CardHead>
       <div className="flex-1" style={{ borderColor: DIVIDER }}>
         <div className="divide-y" style={{ borderColor: DIVIDER }}>
           <SummaryRow label="Client" value={booking?.name} />
