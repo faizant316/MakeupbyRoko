@@ -101,15 +101,15 @@ function TypeSegment({ value, onChange, dm }) {
   const activeIndex = Math.max(0, segs.findIndex(s => s.key === value));
   return (
     <div className="relative grid grid-cols-3 p-0.5 rounded-lg w-full sm:w-[268px]"
-      style={{ background: dm ? '#2e2e38' : '#FBF5F7', border: `1px solid ${dm ? '#3f3f46' : '#EBD7DF'}` }}>
+      style={{ background: dm ? '#2e2e38' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#EAD7E0'}` }}>
       <div className="absolute rounded-md pointer-events-none"
         style={{
           top: 2, bottom: 2, left: 2, width: 'calc((100% - 4px) / 3)',
           transform: `translateX(${activeIndex * 100}%)`,
           transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
-          background: dm ? '#1e1e24' : '#fff',
-          border: dm ? 'none' : '1px solid #F0DDE5',
-          boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.10)' : '0 1px 4px rgba(160,96,122,0.18)',
+          background: dm ? '#1e1e24' : '#F8ECF2',
+          border: dm ? 'none' : '1px solid #E8CBDA',
+          boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
         }} />
       {segs.map(s => {
         const isActive = s.key === value;
@@ -154,6 +154,8 @@ export default function BookingsList({
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [recentSearch, setRecentSearch] = useState('');
+  const recentPanelRef = useRef(null);
+  const [recentPanelH, setRecentPanelH] = useState(0);
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
 
@@ -178,6 +180,12 @@ export default function BookingsList({
   const recentBookings = (allBookings || [])
     .filter(b => b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+  // Measure the panel's real content height so we can animate a pixel `height`
+  // (smooth on every browser, unlike grid-template-rows fr which janks on iOS Safari).
+  useEffect(() => {
+    if (recentPanelRef.current) setRecentPanelH(recentPanelRef.current.scrollHeight);
+  }, [showRecentPanel, recentSearch, recentBookings.length, dm]);
 
   // Apply the month filter (appointments list only), then sort chronologically
   const monthScoped = effectiveMonth
@@ -779,7 +787,7 @@ export default function BookingsList({
           </p>
         </div>
       ) : (
-        <div key={`${effectiveMonth || 'all'}-${typeFilter}`} className="flex flex-col gap-8" style={{ animation: 'fadeRiseIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
+        <div className="flex flex-col gap-8">
           {visibleActiveCount === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
