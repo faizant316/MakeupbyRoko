@@ -18,18 +18,34 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
   const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#ece5e0'}` };
 
+  // Non-bridal rows get their own quiet card presence so they lift off the
+  // page (same #fff / #1e1e24 as the background) without competing with bridal.
+  const skin = bridal
+    ? {
+        bg: dm ? 'rgba(212,160,176,0.1)' : '#FDF6F9',
+        border: dm ? 'rgba(212,160,176,0.24)' : '#F0D9E3',
+        shadow: dm ? 'inset 3px 0 0 0 #C47A92' : 'inset 3px 0 0 0 #D4A0B0, 0 1px 2px rgba(160,96,122,0.06), 0 2px 6px rgba(160,96,122,0.05)',
+        hoverBg: dm ? 'rgba(212,160,176,0.16)' : '#FBEDF3',
+      }
+    : {
+        bg: dm ? '#26262d' : '#FBF9F7',
+        border: dm ? '#34343d' : '#ece4dc',
+        shadow: dm ? 'none' : '0 1px 2px rgba(60,45,35,0.05), 0 2px 5px rgba(60,45,35,0.04)',
+        hoverBg: dm ? '#2e2e37' : '#FFFDFB',
+      };
+
   return (
     <button
       onClick={onClick}
       className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
       style={{
-        background: bridal ? (dm ? 'rgba(212,160,176,0.06)' : '#FDF6F9') : (dm ? '#1e1e24' : '#fff'),
-        border: `1px solid ${bridal ? (dm ? 'rgba(212,160,176,0.22)' : '#F0D9E3') : (dm ? '#2e2e38' : '#f0e9e4')}`,
-        boxShadow: bridal ? `inset 3px 0 0 0 ${dm ? '#C47A92' : '#D4A0B0'}` : 'none',
+        background: skin.bg,
+        border: `1px solid ${skin.border}`,
+        boxShadow: skin.shadow,
         opacity: dimmed ? 0.62 : 1,
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = bridal ? (dm ? 'rgba(212,160,176,0.1)' : '#FBEDF3') : (dm ? '#27272a' : '#FDFAFB'); }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = bridal ? (dm ? 'rgba(212,160,176,0.22)' : '#F0D9E3') : (dm ? '#2e2e38' : '#f0e9e4'); e.currentTarget.style.background = bridal ? (dm ? 'rgba(212,160,176,0.06)' : '#FDF6F9') : (dm ? '#1e1e24' : '#fff'); }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = skin.hoverBg; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = skin.border; e.currentTarget.style.background = skin.bg; }}
     >
       {/* Avatar initial — plum colorway + soft ring marks bridal, no emoji */}
       <div

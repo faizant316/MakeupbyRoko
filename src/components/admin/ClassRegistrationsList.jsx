@@ -59,9 +59,13 @@ function ClassRow({ reg, onSelect, dm }) {
     <button
       onClick={() => onSelect(reg)}
       className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
-      style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.55)'; e.currentTarget.style.background = dm ? '#27272a' : '#FDFAFB'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#2e2e38' : '#f0e9e4'; e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'; }}
+      style={{
+        background: dm ? '#26262d' : '#FBF9F7',
+        border: `1px solid ${dm ? '#34343d' : '#ece4dc'}`,
+        boxShadow: dm ? 'none' : '0 1px 2px rgba(60,45,35,0.05), 0 2px 5px rgba(60,45,35,0.04)',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = dm ? '#2e2e37' : '#FFFDFB'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#ece4dc'; e.currentTarget.style.background = dm ? '#26262d' : '#FBF9F7'; }}
     >
       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
         style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#b0a59c' }}>
