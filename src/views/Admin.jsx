@@ -30,6 +30,7 @@ export default function Admin() {
   const [userName, setUserName] = useState('');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [showNavFab, setShowNavFab] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
@@ -42,6 +43,14 @@ export default function Admin() {
   useEffect(() => {
     localStorage.setItem('admin-dark', darkMode);
   }, [darkMode]);
+
+  // Floating nav button (mobile): reveal it once the header scrolls out of easy reach.
+  useEffect(() => {
+    const onScroll = () => setShowNavFab(window.scrollY > 80);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // DEV MODE: auth bypassed — re-enable by uncommenting below and reverting useState defaults above
   // useEffect(() => {
@@ -262,24 +271,6 @@ export default function Admin() {
   // Resolve active tab label for mobile header
   const activeTabLabel = ADMIN_TABS.find(t => t.key === activeTab)?.label ?? '';
 
-  // ── Per-section "back" navigation ──────────────────────
-  // Goes up one level: open detail → its list; any sub-tab → Home; Home → site.
-  const isDetailOpen =
-    (activeTab === 'bookings' && !!selectedBooking) ||
-    (activeTab === 'classes' && !!selectedClassReg);
-  const backLabel = activeTab === 'bookings' ? 'Site' : 'Home';
-  const handleBack = () => {
-    if (activeTab === 'bookings' && selectedBooking) { setSelectedBooking(null); return; }
-    if (activeTab === 'classes' && selectedClassReg) { setSelectedClassReg(null); return; }
-    if (activeTab !== 'bookings') {
-      setActiveTab('bookings');
-      setSelectedBooking(null);
-      setSelectedClassReg(null);
-      return;
-    }
-    router.push('/');
-  };
-
   return (
     <div
       className="min-h-screen transition-colors duration-300"
@@ -342,6 +333,32 @@ export default function Admin() {
         </div>
       </div>
 
+      {/* ── Floating nav button (mobile) ─────────────────────────
+          A bubbly back arrow that floats with you down the page. Tapping it
+          opens the section menu (same as the hamburger) so you can see where
+          you are and jump elsewhere without scrolling back to the top. */}
+      <button
+        onClick={() => setMobileNavOpen(true)}
+        aria-label="Open navigation menu"
+        className={`sm:hidden fixed left-4 top-[68px] z-[90] w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ease-out active:scale-90 ${
+          showNavFab && !mobileNavOpen
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
+        style={{
+          background: dm ? 'rgba(38,38,46,0.9)' : 'rgba(255,255,255,0.9)',
+          border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}`,
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          boxShadow: dm ? '0 6px 20px rgba(0,0,0,0.45)' : '0 6px 20px rgba(0,0,0,0.12)',
+        }}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#57534e'} strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
       {/* ── Sidebar + Content ────────────────────────────────── */}
       <div className="flex">
         <AdminSidebar
@@ -357,26 +374,8 @@ export default function Admin() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Per-section back arrow — gray circle, like the public site. Detail views have their own. */}
-          {!isDetailOpen && (
-            <button
-              onClick={handleBack}
-              aria-label={`Back to ${backLabel}`}
-              title={`Back to ${backLabel}`}
-              className="mt-8 sm:mt-10 mb-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors active:scale-90"
-              style={{ background: dm ? '#2e2e38' : '#f1ece8' }}
-              onMouseEnter={e => e.currentTarget.style.background = dm ? '#3a3a48' : '#e8e0d8'}
-              onMouseLeave={e => e.currentTarget.style.background = dm ? '#2e2e38' : '#f1ece8'}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#57534e'} strokeWidth="2.5"
-                strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          )}
-
           {/* Page title */}
-          <div className={`flex items-end justify-between gap-4 mb-6 ${isDetailOpen ? 'mt-8 sm:mt-10' : ''}`}>
+          <div className="flex items-end justify-between gap-4 mt-8 sm:mt-10 mb-6">
             <div>
               <h1
                 className="font-serif text-[2rem] sm:text-[2.25rem] leading-none tracking-[-0.01em]"
