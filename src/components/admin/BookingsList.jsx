@@ -1,8 +1,77 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import BookingCard from './BookingCard';
 import StatusBadge from './StatusBadge';
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
+
+// Month picker for the appointments list — native <select> (iOS wheel) on
+// iPhone/iPad, a styled dropdown on desktop.
+function MonthSelect({ value, onChange, options, dm }) {
+  const [open, setOpen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => { setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream); }, []);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const selected = options.find(o => o.value === value) || options[0];
+  const fieldStyle = {
+    background: dm ? '#2e2e38' : '#fff',
+    border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`,
+    color: dm ? '#e4e4e7' : '#111',
+  };
+
+  if (isIOS) {
+    return (
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none rounded-lg pl-3 pr-8 py-2 font-semibold outline-none"
+          style={{ ...fieldStyle, WebkitAppearance: 'none', fontSize: '16px' }}
+        >
+          {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#bbb'} strokeWidth="2" className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between gap-2 rounded-lg pl-3 pr-2.5 py-2 text-[0.72rem] font-semibold transition-all"
+        style={fieldStyle}>
+        <span className="truncate">{selected?.label}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#bbb'} strokeWidth="2"
+          className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 left-0 top-full mt-1.5 z-50 rounded-lg overflow-hidden max-h-[260px] overflow-y-auto"
+          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#ece6e0'}`, boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
+          {options.map(o => {
+            const isSel = o.value === value;
+            return (
+              <button key={o.value} type="button"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                className="w-full text-left px-3.5 py-2.5 text-[0.72rem] font-medium transition-colors flex items-center justify-between gap-2"
+                style={{ background: isSel ? (dm ? 'rgba(196,132,154,0.14)' : '#FBF5F7') : 'transparent', color: isSel ? '#C4849A' : (dm ? '#a1a1aa' : '#555') }}
+                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = dm ? '#2e2e38' : '#FAF8F6'; }}
+                onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}>
+                <span className="truncate">{o.label}</span>
+                {isSel && <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2.5" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const BRIDAL_KEYWORDS = ['bridal', 'bride', 'wedding', 'full day'];
 const NON_BRIDAL_KEYWORDS = ['non-bridal', 'non bridal'];
@@ -33,6 +102,23 @@ export default function BookingsList({
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [recentSearch, setRecentSearch] = useState('');
+  const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
+
+  // Months that actually have appointments, for the month dropdown
+  const monthMap = new Map();
+  (bookings || []).forEach(b => {
+    if (!b.date) return;
+    const key = b.date.slice(0, 7);
+    if (!monthMap.has(key)) {
+      monthMap.set(key, new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    }
+  });
+  const monthOptions = [
+    { value: '', label: 'All Months' },
+    ...[...monthMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([value, label]) => ({ value, label })),
+  ];
+  // Ignore a selected month that no longer exists in the current results
+  const effectiveMonth = monthFilter && monthMap.has(monthFilter) ? monthFilter : '';
 
   // Recent bookings: created within the last 24 hours (uses allBookings, unfiltered)
   const now = Date.now();
@@ -40,8 +126,11 @@ export default function BookingsList({
     .filter(b => b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
-  // Sort chronologically (earliest date first)
-  const sorted = [...bookings].sort((a, b) => {
+  // Apply the month filter (appointments list only), then sort chronologically
+  const monthScoped = effectiveMonth
+    ? (bookings || []).filter(b => (b.date || '').slice(0, 7) === effectiveMonth)
+    : bookings;
+  const sorted = [...monthScoped].sort((a, b) => {
     const dateCompare = (a.date || '').localeCompare(b.date || '');
     if (dateCompare !== 0) return dateCompare;
     return (a.created_date || '').localeCompare(b.created_date || '');
@@ -586,6 +675,23 @@ export default function BookingsList({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Month filter — appointments list (separate from the calendar above) */}
+      {viewType === 'appointments' && !selectedDate && !loading && monthOptions.length > 1 && (
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2 min-w-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#71717a' : '#A89098'} strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase truncate" style={{ color: dm ? '#71717a' : '#A89098' }}>
+              {effectiveMonth ? 'Showing' : 'Filter by month'}
+            </span>
+          </div>
+          <div className="w-[170px] flex-shrink-0">
+            <MonthSelect value={effectiveMonth} onChange={setMonthFilter} options={monthOptions} dm={dm} />
+          </div>
         </div>
       )}
 
