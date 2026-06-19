@@ -262,16 +262,12 @@ export default function Admin() {
   // Resolve active tab label for mobile header
   const activeTabLabel = ADMIN_TABS.find(t => t.key === activeTab)?.label ?? '';
 
-  // ── Always-visible header "back" navigation ────────────
-  // Goes up one level: open detail → its list; any sub-tab → Appointments; Appointments → site.
+  // ── Per-section "back" navigation ──────────────────────
+  // Goes up one level: open detail → its list; any sub-tab → Home; Home → site.
   const isDetailOpen =
     (activeTab === 'bookings' && !!selectedBooking) ||
     (activeTab === 'classes' && !!selectedClassReg);
-  const backLabel = isDetailOpen
-    ? 'Back'
-    : activeTab === 'bookings'
-      ? 'Site'
-      : 'Appointments';
+  const backLabel = activeTab === 'bookings' ? 'Site' : 'Home';
   const handleBack = () => {
     if (activeTab === 'bookings' && selectedBooking) { setSelectedBooking(null); return; }
     if (activeTab === 'classes' && selectedClassReg) { setSelectedClassReg(null); return; }
@@ -295,32 +291,11 @@ export default function Admin() {
         style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }}
       >
         <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
-          {/* Back button + branding + active section chip (mobile) */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {/* Always-visible back arrow — arrow only on mobile, arrow + label on desktop */}
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-1.5 h-9 pl-2.5 pr-2.5 sm:pr-3.5 rounded-full transition-all active:scale-95 flex-shrink-0"
-              style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}`, background: 'transparent', color: '#D4A0B0' }}
-              onMouseEnter={e => { e.currentTarget.style.background = dm ? 'rgba(212,160,176,0.12)' : 'rgba(212,160,176,0.08)'; e.currentTarget.style.borderColor = 'rgba(212,160,176,0.5)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece6e0'; }}
-              aria-label={`Back to ${backLabel}`}
-              title={`Back to ${backLabel}`}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 flex-shrink-0">
-                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-              </svg>
-              <span className="hidden sm:inline text-[0.7rem] font-semibold tracking-[0.08em] uppercase whitespace-nowrap">
-                {backLabel}
-              </span>
-            </button>
-
-            {/* Divider (desktop) */}
-            <span className="hidden sm:block w-px h-5 flex-shrink-0" style={{ background: dm ? '#3a3a48' : '#e8e2dc' }} />
-
+          {/* Branding + active section chip (mobile) */}
+          <div className="flex items-center gap-2.5 min-w-0">
             <a
               href="/"
-              className="font-serif text-base sm:text-lg tracking-[0.12em] uppercase whitespace-nowrap flex-shrink-0"
+              className="font-serif text-lg tracking-[0.12em] uppercase whitespace-nowrap flex-shrink-0"
               style={{ color: dm ? '#e4e4e7' : '#111' }}
             >
               Roqia Moshref
@@ -382,8 +357,26 @@ export default function Admin() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 pb-16">
+          {/* Per-section back arrow — gray circle, like the public site. Detail views have their own. */}
+          {!isDetailOpen && (
+            <button
+              onClick={handleBack}
+              aria-label={`Back to ${backLabel}`}
+              title={`Back to ${backLabel}`}
+              className="mt-8 sm:mt-10 mb-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors active:scale-90"
+              style={{ background: dm ? '#2e2e38' : '#f1ece8' }}
+              onMouseEnter={e => e.currentTarget.style.background = dm ? '#3a3a48' : '#e8e0d8'}
+              onMouseLeave={e => e.currentTarget.style.background = dm ? '#2e2e38' : '#f1ece8'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#57534e'} strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+
           {/* Page title */}
-          <div className="flex items-end justify-between gap-4 mt-8 sm:mt-10 mb-6">
+          <div className={`flex items-end justify-between gap-4 mb-6 ${isDetailOpen ? 'mt-8 sm:mt-10' : ''}`}>
             <div>
               <h1
                 className="font-serif text-[2rem] sm:text-[2.25rem] leading-none tracking-[-0.01em]"
