@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 
 export const ADMIN_TABS = [
-  { key: 'bookings',   label: 'Appointments', sub: 'Manage all bookings'     },
+  { key: 'bookings',   label: 'Home',         sub: 'Overview & appointments' },
   { key: 'services',   label: 'Services',     sub: 'Edit & update offerings'  },
   { key: 'reviews',    label: 'Reviews',      sub: 'Approve & manage'         },
   { key: 'classes',    label: 'Class Sign-Ups', sub: 'Registrations'          },
