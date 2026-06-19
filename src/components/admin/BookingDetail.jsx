@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
+import { lenisScrollTo } from '@/lib/lenis';
 import confetti from 'canvas-confetti';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
@@ -609,11 +610,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     ? (biOos ? 'Yes, out of state' : 'No, local')
     : null;
 
-  // Scroll to top when detail view mounts
+  // Scroll to top when detail view mounts. Lenis owns the scroll position
+  // site-wide, so we must reset Lenis too — a plain window.scrollTo is ignored.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    const toTop = () => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      lenisScrollTo(0, { immediate: true });
+    };
+    toTop();
+    const raf = requestAnimationFrame(toTop);
+    const t = setTimeout(toTop, 60); // after the new (shorter) content lays out
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
   }, []);
 
   const handleSaveEdit = (data) => {
