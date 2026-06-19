@@ -91,6 +91,39 @@ function MonthSelect({ value, onChange, options, dm }) {
   );
 }
 
+// Bridal / Non-Bridal / Both toggle — segmented control with a sliding indicator.
+function TypeSegment({ value, onChange, dm }) {
+  const segs = [
+    { key: 'both', label: 'Both' },
+    { key: 'bridal', label: 'Bridal' },
+    { key: 'nonbridal', label: 'Non-Bridal' },
+  ];
+  const activeIndex = Math.max(0, segs.findIndex(s => s.key === value));
+  return (
+    <div className="relative grid grid-cols-3 p-0.5 rounded-lg w-full sm:w-[268px]"
+      style={{ background: dm ? '#2e2e38' : '#F5F0EC', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}>
+      <div className="absolute rounded-md pointer-events-none"
+        style={{
+          top: 2, bottom: 2, left: 2, width: 'calc((100% - 4px) / 3)',
+          transform: `translateX(${activeIndex * 100}%)`,
+          transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
+          background: dm ? '#1e1e24' : '#fff',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+        }} />
+      {segs.map(s => {
+        const isActive = s.key === value;
+        return (
+          <button key={s.key} type="button" onClick={() => onChange(s.key)}
+            className="relative z-10 py-2 text-[0.68rem] font-semibold tracking-[0.01em] transition-colors whitespace-nowrap text-center"
+            style={{ color: isActive ? (dm ? '#e7c9d5' : '#A0607A') : (dm ? '#8a8a93' : '#9a8e94') }}>
+            {s.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const BRIDAL_KEYWORDS = ['bridal', 'bride', 'wedding', 'full day'];
 const NON_BRIDAL_KEYWORDS = ['non-bridal', 'non bridal'];
 
@@ -121,6 +154,7 @@ export default function BookingsList({
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
+  const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
 
   // Months that actually have appointments, for the month dropdown
   const monthMap = new Map();
@@ -160,6 +194,12 @@ export default function BookingsList({
 
   const bridalBookings = activeBookings.filter(isBridalBooking);
   const nonBridalBookings = activeBookings.filter(b => !isBridalBooking(b));
+
+  // Type filter (Bridal / Non-Bridal / Both)
+  const showBridal = typeFilter !== 'nonbridal';
+  const showNonBridal = typeFilter !== 'bridal';
+  const visibleActiveCount = (showBridal ? bridalBookings.length : 0) + (showNonBridal ? nonBridalBookings.length : 0);
+  const visibleCompleted = completedBookings.filter(b => (isBridalBooking(b) ? showBridal : showNonBridal));
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -696,10 +736,13 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Month filter — appointments list (separate from the calendar above) */}
-      {viewType === 'appointments' && !selectedDate && !loading && monthOptions.length > 1 && (
-        <div className="mb-5">
-          <MonthSelect value={effectiveMonth} onChange={setMonthFilter} options={monthOptions} dm={dm} />
+      {/* Type + Month filters — appointments list (separate from the calendar above) */}
+      {viewType === 'appointments' && !selectedDate && !loading && (activeBookings.length > 0 || completedBookings.length > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <TypeSegment value={typeFilter} onChange={setTypeFilter} dm={dm} />
+          {monthOptions.length > 1 && (
+            <MonthSelect value={effectiveMonth} onChange={setMonthFilter} options={monthOptions} dm={dm} />
+          )}
         </div>
       )}
 
@@ -708,13 +751,15 @@ export default function BookingsList({
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-[#e8e2dc] border-t-[#A0785A] rounded-full animate-spin" />
         </div>
-      ) : activeBookings.length === 0 && completedBookings.length === 0 ? (
+      ) : visibleActiveCount === 0 && visibleCompleted.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-[#b5a99a] text-[0.85rem]">No appointments found</p>
+          <p className="text-[#b5a99a] text-[0.85rem]">
+            No {typeFilter === 'bridal' ? 'bridal ' : typeFilter === 'nonbridal' ? 'non-bridal ' : ''}appointments found
+          </p>
         </div>
       ) : (
-        <div key={effectiveMonth || 'all'} className="flex flex-col gap-8" style={{ animation: 'fadeRiseIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
-          {activeBookings.length === 0 ? (
+        <div key={`${effectiveMonth || 'all'}-${typeFilter}`} className="flex flex-col gap-8" style={{ animation: 'fadeRiseIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
+          {visibleActiveCount === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="1.5" className="w-5 h-5">
@@ -725,7 +770,7 @@ export default function BookingsList({
                 <p className="text-[0.9rem] font-serif" style={{ color: dm ? '#71717a' : '#b5a99a' }}>No active appointments</p>
                 <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#52525b' : '#d4c8c0' }}>All wrapped up here ✦</p>
               </div>
-              {completedBookings.length > 0 && (
+              {visibleCompleted.length > 0 && (
                 <button
                   onClick={() => setShowArchive(true)}
                   className="flex flex-col items-center gap-1 mt-1 group"
@@ -742,7 +787,7 @@ export default function BookingsList({
           ) : (
             <>
               {/* Bridal Section — Top Priority */}
-              {bridalBookings.length > 0 && (
+              {showBridal && bridalBookings.length > 0 && (
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex items-center gap-2">
@@ -763,7 +808,7 @@ export default function BookingsList({
               )}
 
               {/* Non-Bridal Section */}
-              {nonBridalBookings.length > 0 && (
+              {showNonBridal && nonBridalBookings.length > 0 && (
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex items-center gap-2">
@@ -783,7 +828,7 @@ export default function BookingsList({
           )}
 
           {/* Completed Archive */}
-          {completedBookings.length > 0 && (
+          {visibleCompleted.length > 0 && (
             <div className="border-t border-dashed border-[#e8e2dc] pt-6">
               <button
                 onClick={() => setShowArchive(v => !v)}
@@ -793,7 +838,7 @@ export default function BookingsList({
                   <span className="text-[1rem]">🗂️</span>
                   <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#52525b' : '#999' }}>Completed Archive</h3>
                 </div>
-                <span className="text-[0.65rem] text-[#bbb]">({completedBookings.length})</span>
+                <span className="text-[0.65rem] text-[#bbb]">({visibleCompleted.length})</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"
                   className={`w-4 h-4 transition-transform duration-200 ${showArchive ? 'rotate-180' : ''}`}>
                   <polyline points="6 9 12 15 18 9"/>
@@ -801,7 +846,7 @@ export default function BookingsList({
               </button>
               {showArchive && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-70">
-                  {completedBookings.map(b => (
+                  {visibleCompleted.map(b => (
                     <BookingCard key={b.id} booking={b} onClick={() => onSelect(b)} darkMode={dm} />
                   ))}
                 </div>
