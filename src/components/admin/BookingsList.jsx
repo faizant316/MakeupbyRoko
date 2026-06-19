@@ -154,8 +154,6 @@ export default function BookingsList({
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [recentSearch, setRecentSearch] = useState('');
-  const recentPanelRef = useRef(null);
-  const [recentPanelH, setRecentPanelH] = useState(0);
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   const [collapsedGroups, setCollapsedGroups] = useState({ later: true }); // far-future folded by default
@@ -181,12 +179,6 @@ export default function BookingsList({
   const recentBookings = (allBookings || [])
     .filter(b => b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-
-  // Measure the panel's real content height so we can animate a pixel `height`
-  // (smooth on every browser, unlike grid-template-rows fr which janks on iOS Safari).
-  useEffect(() => {
-    if (recentPanelRef.current) setRecentPanelH(recentPanelRef.current.scrollHeight);
-  }, [showRecentPanel, recentSearch, recentBookings.length, dm]);
 
   // Apply the month filter (appointments list only), then sort chronologically
   const monthScoped = effectiveMonth
@@ -317,25 +309,27 @@ export default function BookingsList({
             </div>
           </button>
 
-          {/* Collapsible panel — animate a measured pixel height: smooth on iOS Safari + desktop */}
+          {/* Floating dropdown — animates transform + opacity only (GPU-composited), so it stays
+              buttery on mobile, where animating height / grid-rows forces per-frame layout + repaint. */}
           <div
+            className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
             style={{
-              height: showRecentPanel ? recentPanelH : 0,
-              overflow: 'hidden',
-              transition: 'height 360ms cubic-bezier(0.22,1,0.36,1)',
-              willChange: 'height',
+              background: dm ? '#27272a' : '#fff',
+              border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`,
+              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(160,120,90,0.18)',
+              maxHeight: 'min(70vh, 520px)',
+              transformOrigin: 'top center',
+              opacity: showRecentPanel ? 1 : 0,
+              transform: showRecentPanel ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.985)',
+              pointerEvents: showRecentPanel ? 'auto' : 'none',
+              visibility: showRecentPanel ? 'visible' : 'hidden',
+              willChange: 'transform, opacity',
+              transition: showRecentPanel
+                ? 'opacity 200ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1)'
+                : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
             }}
           >
-            <div
-              ref={recentPanelRef}
-              style={{
-                background: dm ? '#27272a' : '#fff',
-                opacity: showRecentPanel ? 1 : 0,
-                pointerEvents: showRecentPanel ? 'auto' : 'none',
-                transition: 'opacity 260ms ease',
-              }}
-            >
-              <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(160,120,90,0.1)'}` }}>
+            <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(160,120,90,0.1)'}` }}>
                 <div className="relative">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -357,6 +351,7 @@ export default function BookingsList({
                   )}
                 </div>
               </div>
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {recentBookings
                 .filter(b => !recentSearch || [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase())))
                 .map((b, i) => (
