@@ -209,6 +209,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Subtle content rise-in (list refresh) */
+@keyframes fadeRiseIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Mobile bottom sheet slide-up */
 @keyframes slideUpSheet {
   from { transform: translateY(100%); }
