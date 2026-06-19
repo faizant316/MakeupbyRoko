@@ -405,10 +405,13 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
 
   const selectedClasses = Object.entries(CLASS_LABELS).filter(([key]) => reg[key]);
   const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
-  const paymentStatus = normalizePaymentStatus(reg.payment_status);
+  // Sign-ups reach this page because they paid through Stripe at checkout, so
+  // "paid" is the baseline truth — the only meaningful payment action left is a
+  // refund. We track just paid vs refunded and drop the redundant "unpaid".
+  const isRefunded = normalizePaymentStatus(reg.payment_status) === 'refunded';
   const enrollmentStatus = reg.status || 'pending';
   const enrollmentMeta = ENROLLMENT_STATUSES[enrollmentStatus] || ENROLLMENT_STATUSES.pending;
-  const paymentMeta = PAYMENT_META[paymentStatus] || PAYMENT_META.unpaid;
+  const paymentMeta = isRefunded ? PAYMENT_META.refunded : PAYMENT_META.paid;
 
   const appointmentDate = reg.appointment_date
     ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', {
@@ -561,24 +564,52 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           }}
         />
 
-        {/* Payment Status */}
+        {/* Payment — paid at checkout, so refund is the only real action */}
         <div className="mb-8">
-          <SectionLabel>Payment Status</SectionLabel>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(PAYMENT_META).map(([s, meta]) => (
+          <SectionLabel>Payment</SectionLabel>
+          {!isRefunded ? (
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
+              style={{ background: sectionBg, border: `1px solid ${cardBorder}` }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#86efac' : '#15803d' }}>Paid in full</p>
+                  <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted }}>
+                    Settled at checkout{totalPrice > 0 ? ` · $${totalPrice.toLocaleString()}` : ''}
+                  </p>
+                </div>
+              </div>
               <button
-                key={s}
-                onClick={() => changePayment(s)}
-                className="py-2.5 px-3 rounded-xl text-[0.68rem] font-semibold tracking-[0.04em] transition-all"
-                style={paymentStatus === s
-                  ? { background: meta.bg, color: meta.color, border: `1px solid ${meta.color}30`, boxShadow: `0 0 0 2px ${meta.color}20` }
-                  : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#71717a' : '#aaa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
-                }
+                onClick={() => changePayment('refunded')}
+                className="text-[0.65rem] font-semibold tracking-[0.04em] px-3 py-2 rounded-lg transition-all flex-shrink-0"
+                style={{ color: '#b91c1c', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}
               >
-                {meta.label}
+                Mark as Refunded
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
+              style={{ background: dm ? 'rgba(239,68,68,0.08)' : '#FEF2F2', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" className="w-3.5 h-3.5"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.8rem] font-semibold" style={{ color: '#b91c1c' }}>Refunded</p>
+                  <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted }}>This payment was returned</p>
+                </div>
+              </div>
+              <button
+                onClick={() => changePayment('paid')}
+                className="text-[0.65rem] font-semibold tracking-[0.04em] px-3 py-2 rounded-lg transition-all flex-shrink-0"
+                style={{ color: dm ? '#86efac' : '#15803d', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, background: dm ? '#2e2e38' : '#f5f5f5' }}
+              >
+                Undo Refund
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stripe reference */}
