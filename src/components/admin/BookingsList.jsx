@@ -855,6 +855,14 @@ export default function BookingsList({
                 </button>
               )}
             </div>
+          ) : selectedDate ? (
+            // A single day is selected — show its appointments flat (no timeline
+            // buckets to hide them under, no collapse).
+            <div className="flex flex-col gap-2">
+              {visibleActive.map(b => (
+                <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} />
+              ))}
+            </div>
           ) : (
             <div className="flex flex-col gap-6">
               {timeGroups.map(group => {

@@ -23,12 +23,13 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       onClick={onClick}
       className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
       style={{
-        background: dm ? '#1e1e24' : '#fff',
-        border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}`,
+        background: bridal ? (dm ? 'rgba(212,160,176,0.06)' : '#FDF6F9') : (dm ? '#1e1e24' : '#fff'),
+        border: `1px solid ${bridal ? (dm ? 'rgba(212,160,176,0.22)' : '#F0D9E3') : (dm ? '#2e2e38' : '#f0e9e4')}`,
+        boxShadow: bridal ? `inset 3px 0 0 0 ${dm ? '#C47A92' : '#D4A0B0'}` : 'none',
         opacity: dimmed ? 0.62 : 1,
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.55)'; e.currentTarget.style.background = dm ? '#27272a' : '#FDFAFB'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#2e2e38' : '#f0e9e4'; e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = bridal ? (dm ? 'rgba(212,160,176,0.1)' : '#FBEDF3') : (dm ? '#27272a' : '#FDFAFB'); }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = bridal ? (dm ? 'rgba(212,160,176,0.22)' : '#F0D9E3') : (dm ? '#2e2e38' : '#f0e9e4'); e.currentTarget.style.background = bridal ? (dm ? 'rgba(212,160,176,0.06)' : '#FDF6F9') : (dm ? '#1e1e24' : '#fff'); }}
     >
       {/* Avatar initial — plum colorway + soft ring marks bridal, no emoji */}
       <div
@@ -48,8 +49,8 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           </p>
           {bridal && (
             <span
-              className="hidden sm:inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.18)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#A0607A' }}
+              className="inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dm ? 'rgba(212,160,176,0.28)' : '#EFCEDD', color: dm ? '#f0d5e1' : '#9A5474' }}
             >
               Bridal
             </span>
