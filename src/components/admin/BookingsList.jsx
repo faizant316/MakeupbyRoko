@@ -101,21 +101,22 @@ function TypeSegment({ value, onChange, dm }) {
   const activeIndex = Math.max(0, segs.findIndex(s => s.key === value));
   return (
     <div className="relative grid grid-cols-3 p-0.5 rounded-lg w-full sm:w-[268px]"
-      style={{ background: dm ? '#2e2e38' : '#F5F0EC', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }}>
+      style={{ background: dm ? '#2e2e38' : '#FBF5F7', border: `1px solid ${dm ? '#3f3f46' : '#EBD7DF'}` }}>
       <div className="absolute rounded-md pointer-events-none"
         style={{
           top: 2, bottom: 2, left: 2, width: 'calc((100% - 4px) / 3)',
           transform: `translateX(${activeIndex * 100}%)`,
           transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
           background: dm ? '#1e1e24' : '#fff',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+          border: dm ? 'none' : '1px solid #F0DDE5',
+          boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.10)' : '0 1px 4px rgba(160,96,122,0.18)',
         }} />
       {segs.map(s => {
         const isActive = s.key === value;
         return (
           <button key={s.key} type="button" onClick={() => onChange(s.key)}
             className="relative z-10 py-2 text-[0.68rem] font-semibold tracking-[0.01em] transition-colors whitespace-nowrap text-center"
-            style={{ color: isActive ? (dm ? '#e7c9d5' : '#A0607A') : (dm ? '#8a8a93' : '#9a8e94') }}>
+            style={{ color: isActive ? (dm ? '#e7c9d5' : '#A0607A') : (dm ? '#8a8a93' : '#B59AA6') }}>
             {s.label}
           </button>
         );
