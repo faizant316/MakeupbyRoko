@@ -245,6 +245,7 @@ export default function BookingsList({
         <div className="mb-7 overflow-hidden rounded-2xl" style={{ border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`, boxShadow: '0 2px 20px rgba(160,120,90,0.07)' }}>
           <button
             onClick={() => setShowRecentPanel(v => !v)}
+            aria-expanded={showRecentPanel}
             className="w-full flex items-center justify-between px-5 py-3 transition-colors"
             style={{ background: dm ? 'rgba(180,100,120,0.25)' : 'rgba(212,160,176,0.25)' }}
           >
@@ -262,14 +263,32 @@ export default function BookingsList({
                 {showRecentPanel ? 'collapse' : 'view all'}
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#c47a92' : '#A0607A'} strokeWidth="2"
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${showRecentPanel ? 'rotate-180' : ''}`}>
+                className="w-3.5 h-3.5"
+                style={{ transition: 'transform 450ms cubic-bezier(0.16,1,0.3,1)', transform: showRecentPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </div>
           </button>
 
-          {showRecentPanel && (
-            <div style={{ background: dm ? '#27272a' : '#fff' }}>
+          {/* Collapsible panel — grid-rows 0fr→1fr gives a smooth, JS-free height animation */}
+          <div
+            className="grid"
+            style={{
+              gridTemplateRows: showRecentPanel ? '1fr' : '0fr',
+              transition: 'grid-template-rows 450ms cubic-bezier(0.16,1,0.3,1)',
+            }}
+          >
+            <div className="overflow-hidden">
+            <div
+              style={{
+                background: dm ? '#27272a' : '#fff',
+                opacity: showRecentPanel ? 1 : 0,
+                transform: showRecentPanel ? 'translateY(0)' : 'translateY(-8px)',
+                pointerEvents: showRecentPanel ? 'auto' : 'none',
+                transition: 'opacity 300ms ease, transform 350ms cubic-bezier(0.16,1,0.3,1)',
+                transitionDelay: showRecentPanel ? '110ms' : '0ms',
+              }}
+            >
               <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(160,120,90,0.1)'}` }}>
                 <div className="relative">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2">
@@ -324,7 +343,8 @@ export default function BookingsList({
                 <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>No results for "{recentSearch}"</div>
               )}
             </div>
-          )}
+            </div>
+          </div>
         </div>
       )}
 
