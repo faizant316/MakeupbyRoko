@@ -127,12 +127,16 @@ export default function UploadZelle() {
       formData.append('file', fileToUpload);
       formData.append('token', token);
       const res = await fetch('/api/zelle-upload', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      // Read as text first so a non-JSON response (e.g. an HTML error/auth page)
+      // doesn't throw before we can surface a useful message.
+      const raw = await res.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { /* response was not JSON */ }
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
       setUploaded(true);
       setBooking(b => ({ ...b, zelle_screenshot: 'uploaded', screenshot_url: data.url }));
-    } catch {
-      alert('Upload failed. Please try again.');
+    } catch (err) {
+      alert(err?.message ? `Upload failed: ${err.message}` : 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
