@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import BookingCard from './BookingCard';
+import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
@@ -69,7 +69,7 @@ function MonthSelect({ value, onChange, options, dm }) {
     <div ref={ref} className="relative inline-flex">
       {trigger}
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 rounded-lg overflow-hidden min-w-[190px] max-h-[280px] overflow-y-auto"
+        <div className="absolute right-0 top-full mt-1.5 z-50 rounded-lg overflow-hidden min-w-[190px] max-h-[280px] overflow-y-auto"
           style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#ece6e0'}`, boxShadow: '0 10px 34px rgba(0,0,0,0.14)', animation: 'fadeSlideDown 0.16s ease-out' }}>
           {options.map(o => {
             const isSel = o.value === value;
@@ -158,6 +158,7 @@ export default function BookingsList({
   const [recentPanelH, setRecentPanelH] = useState(0);
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
+  const [collapsedGroups, setCollapsedGroups] = useState({ later: true }); // far-future folded by default
 
   // Months that actually have appointments, for the month dropdown
   const monthMap = new Map();
@@ -210,7 +211,44 @@ export default function BookingsList({
   const visibleActiveCount = (showBridal ? bridalBookings.length : 0) + (showNonBridal ? nonBridalBookings.length : 0);
   const visibleCompleted = completedBookings.filter(b => (isBridalBooking(b) ? showBridal : showNonBridal));
 
+  // Active bookings the type filter lets through, bridal first within the same day.
+  const visibleActive = activeBookings
+    .filter(b => (isBridalBooking(b) ? showBridal : showNonBridal))
+    .sort((a, b) => {
+      const ad = a.date || '9999-12-31';
+      const bd = b.date || '9999-12-31';
+      if (ad !== bd) return ad.localeCompare(bd);
+      const ab = isBridalBooking(a) ? 0 : 1;
+      const bb = isBridalBooking(b) ? 0 : 1;
+      if (ab !== bb) return ab - bb;
+      return (a.created_date || '').localeCompare(b.created_date || '');
+    });
+
+  // Bucket by how soon each appointment is, so the list reads as a timeline
+  // instead of one endless run. "Later" folds away by default.
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const daysUntil = (dateStr) => {
+    if (!dateStr) return Infinity;
+    return Math.round((new Date(dateStr + 'T00:00:00') - todayMidnight) / 86400000);
+  };
+  const TIME_GROUPS = [
+    { key: 'pastdue', label: 'Past Due', accent: '#E0795B', test: (d) => d < 0 },
+    { key: 'today', label: 'Today', accent: '#A0607A', test: (d) => d === 0 },
+    { key: 'week', label: 'This Week', accent: null, test: (d) => d >= 1 && d <= 7 },
+    { key: 'month', label: 'This Month', accent: null, test: (d) => d >= 8 && d <= 30 },
+    { key: 'later', label: 'Later', accent: null, test: (d) => d > 30 || d === Infinity },
+  ];
+  const timeGroups = TIME_GROUPS
+    .map(g => ({ ...g, items: visibleActive.filter(b => g.test(daysUntil(b.date))) }))
+    .filter(g => g.items.length > 0);
+
   const today = new Date().toISOString().split('T')[0];
+
+  // "Needs you" summary — time-aware glance the status pills don't give.
+  const todayCount = visibleActive.filter(b => daysUntil(b.date) === 0).length;
+  const weekCount = visibleActive.filter(b => { const d = daysUntil(b.date); return d >= 0 && d <= 7; }).length;
+  const pendingCount = visibleActive.filter(b => b.status === 'pending').length;
 
   const consultationBookings = (allBookings || [])
     .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
@@ -226,10 +264,10 @@ export default function BookingsList({
       <div className="flex items-center justify-between mb-6 pb-4"
         style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}>
         <div>
-          <p className="text-[0.55rem] font-semibold tracking-[0.18em] uppercase mb-1"
-            style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Appointments</p>
-          <p className="font-serif text-[1.4rem] font-light tracking-[-0.01em]"
-            style={{ color: dm ? '#e4e4e7' : '#111' }}>
+          <h2 className="font-serif text-[1.85rem] sm:text-[2.1rem] font-light leading-none tracking-[-0.01em]"
+            style={{ color: dm ? '#e4e4e7' : '#111' }}>Appointments</h2>
+          <p className="text-[0.72rem] font-medium tracking-[0.04em] mt-1.5"
+            style={{ color: dm ? '#71717a' : '#bbb' }}>
             {selectedDate
               ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
               : currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -773,6 +811,33 @@ export default function BookingsList({
         </div>
       )}
 
+      {/* Needs-you summary — a time-aware glance the status pills don't give */}
+      {viewType === 'appointments' && !selectedDate && !loading && visibleActiveCount > 0 && (
+        <div className="flex items-stretch gap-2 mb-5">
+          {[{ label: 'Today', value: todayCount }, { label: 'This Week', value: weekCount }].map(s => (
+            <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
+              style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
+              <p className="text-[1.1rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</p>
+              <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => { if (pendingCount > 0) setStatusFilter('pending'); }}
+            disabled={pendingCount === 0}
+            className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5 text-left transition-all"
+            style={{
+              background: pendingCount > 0 ? (dm ? 'rgba(245,158,11,0.12)' : '#FFFBEB') : (dm ? '#1e1e24' : '#fff'),
+              border: `1px solid ${pendingCount > 0 ? 'rgba(245,158,11,0.35)' : (dm ? '#2e2e38' : '#f0e9e4')}`,
+              cursor: pendingCount > 0 ? 'pointer' : 'default',
+            }}
+          >
+            <p className="text-[1.1rem] font-serif leading-none" style={{ color: pendingCount > 0 ? (dm ? '#fbbf77' : '#B45309') : (dm ? '#e4e4e7' : '#1a1a1a') }}>{pendingCount}</p>
+            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: pendingCount > 0 ? (dm ? '#d9a441' : '#D97706') : (dm ? '#71717a' : '#b0a59c') }}>Pending</p>
+          </button>
+        </div>
+      )}
+
       {/* Appointments content */}
       {viewType === 'appointments' && (loading ? (
         <div className="flex items-center justify-center py-20">
@@ -812,46 +877,39 @@ export default function BookingsList({
               )}
             </div>
           ) : (
-            <>
-              {/* Bridal Section — Top Priority */}
-              {showBridal && bridalBookings.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[1rem]">💍</span>
-                      <h3 className="font-serif text-[1.1rem]" style={{ color: dm ? '#e4e4e7' : '#111' }}>Bridal</h3>
-                    </div>
-                    <span className="px-2.5 py-1 bg-[#D4A0B0]/15 text-[#D4A0B0] text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-full">
-                      Top Priority
-                    </span>
-                    <span className="text-[0.65rem] text-[#bbb]">({bridalBookings.length})</span>
+            <div className="flex flex-col gap-6">
+              {timeGroups.map(group => {
+                const open = !collapsedGroups[group.key];
+                return (
+                  <div key={group.key}>
+                    <button
+                      type="button"
+                      onClick={() => setCollapsedGroups(p => ({ ...p, [group.key]: !p[group.key] }))}
+                      className="flex items-center gap-2.5 mb-3 w-full"
+                    >
+                      {group.accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.accent }} />}
+                      <h3 className="font-serif text-[1.05rem]" style={{ color: group.accent || (dm ? '#e4e4e7' : '#111') }}>{group.label}</h3>
+                      <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#a99e95' }}>
+                        {group.items.length}
+                      </span>
+                      <span className="flex-1" />
+                      <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2"
+                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${open ? '' : '-rotate-90'}`}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+                    {open && (
+                      <div className="flex flex-col gap-2">
+                        {group.items.map(b => (
+                          <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {bridalBookings.map(b => (
-                      <BookingCard key={b.id} booking={b} onClick={() => onSelect(b)} darkMode={dm} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Non-Bridal Section */}
-              {showNonBridal && nonBridalBookings.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[1rem]">✨</span>
-                      <h3 className="font-serif text-[1.1rem]" style={{ color: dm ? '#e4e4e7' : '#111' }}>Non-Bridal</h3>
-                    </div>
-                    <span className="text-[0.65rem] text-[#bbb]">({nonBridalBookings.length})</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {nonBridalBookings.map(b => (
-                      <BookingCard key={b.id} booking={b} onClick={() => onSelect(b)} darkMode={dm} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+                );
+              })}
+            </div>
           )}
 
           {/* Completed Archive */}
@@ -872,9 +930,9 @@ export default function BookingsList({
                 </svg>
               </button>
               {showArchive && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-70">
+                <div className="flex flex-col gap-2">
                   {visibleCompleted.map(b => (
-                    <BookingCard key={b.id} booking={b} onClick={() => onSelect(b)} darkMode={dm} />
+                    <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} dimmed />
                   ))}
                 </div>
               )}
