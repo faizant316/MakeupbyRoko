@@ -2,41 +2,60 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/api/apiClient';
 
+// ── Brand plum palette (matches the admin BookingDetail + bridal cards) ──
+const PLUM = '#C4849A';
+const PLUM_DARK = '#6B4055';
+const LABEL = '#A89098';
+const VALUE = '#2C1A14';
+const CARD_BORDER = '#E8E2DC';
+const HEAD_BG = '#FBF5F7';
+const HEAD_BORDER = '#F0E0E9';
+const DIVIDER = '#F0E8EC';
+
+// Tinted section-header bar with a plum icon + uppercase tracked label.
+function CardHead({ icon, children }) {
+  return (
+    <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: HEAD_BG, borderBottom: `1px solid ${HEAD_BORDER}` }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-4 h-4 flex-shrink-0">
+        {icon}
+      </svg>
+      <p className="text-[0.6rem] font-semibold tracking-[0.18em] uppercase" style={{ color: PLUM }}>{children}</p>
+    </div>
+  );
+}
+
+const ICON = {
+  diamond: <><path d="M6 3h12l3 6-9 12L3 9z" /><path d="M3 9h18" /><path d="M9 3 7.5 9 12 21l4.5-12L15 3" /></>,
+  card: <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></>,
+  upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>,
+};
+
+// One label / value row in the booking "spec sheet".
+function SummaryRow({ label, value, highlight }) {
+  if (!value) return null;
+  return (
+    <div
+      className="flex items-center justify-between gap-4 px-5 py-3.5"
+      style={highlight ? { background: HEAD_BG } : undefined}
+    >
+      <span className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase flex-shrink-0" style={{ color: highlight ? PLUM : LABEL }}>{label}</span>
+      <span className={`text-right ${highlight ? 'text-[1rem] font-bold' : 'text-[0.85rem] font-semibold'}`} style={{ color: VALUE }}>{value}</span>
+    </div>
+  );
+}
+
 function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden h-full flex flex-col">
-      <div className="px-5 py-3.5 border-b border-[#F0E0E9]" style={{ background: 'rgba(196,132,154,0.05)' }}>
-        <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Booking Summary</p>
-      </div>
-      <div className="divide-y divide-[#F5E8EF] flex-1">
-        {booking?.name && (
-          <div className="flex items-center justify-between px-5 py-3">
-            <span className="text-[0.75rem] text-[#888888]">Client</span>
-            <span className="text-[0.82rem] font-semibold text-[#111111]">{booking.name}</span>
-          </div>
-        )}
-        {booking?.service && (
-          <div className="flex items-center justify-between px-5 py-3">
-            <span className="text-[0.75rem] text-[#888888]">Service</span>
-            <span className="text-[0.82rem] font-semibold text-[#111111] text-right ml-4">{booking.service}</span>
-          </div>
-        )}
-        {servicePrice && (
-          <div className="flex items-center justify-between px-5 py-3">
-            <span className="text-[0.75rem] text-[#888888]">Service Price</span>
-            <span className="text-[0.82rem] font-semibold text-[#111111]">{servicePrice}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between px-5 py-3">
-          <span className="text-[0.75rem] text-[#888888]">Date</span>
-          <span className="text-[0.82rem] font-semibold text-[#111111]">{dateFormatted || 'TBD'}</span>
+    <div className="bg-white overflow-hidden h-full flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+      <CardHead icon={ICON.diamond}>Booking Summary</CardHead>
+      <div className="flex-1" style={{ borderColor: DIVIDER }}>
+        <div className="divide-y" style={{ borderColor: DIVIDER }}>
+          <SummaryRow label="Client" value={booking?.name} />
+          <SummaryRow label="Service" value={booking?.service} />
+          <SummaryRow label="Service Price" value={servicePrice} />
+          <SummaryRow label="Date" value={dateFormatted || 'TBD'} />
+          <SummaryRow label="Zelle deposit" value={depositAmount} highlight />
         </div>
-        {depositAmount && (
-          <div className="flex items-center justify-between px-5 py-3 bg-[#FDF8FA]">
-            <span className="text-[0.75rem] font-semibold text-[#C4849A]">Zelle deposit</span>
-            <span className="text-[0.95rem] font-bold text-[#111111]">{depositAmount}</span>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -44,32 +63,81 @@ function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice })
 
 function ZelleCard({ depositAmount }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden h-full flex flex-col">
-      <div className="px-5 py-3.5 border-b border-[#F0E0E9]" style={{ background: 'rgba(196,132,154,0.05)' }}>
-        <p className="text-[0.58rem] font-bold tracking-[0.18em] uppercase text-[#C4849A]">Step 1 — Send Your Zelle Deposit</p>
-      </div>
+    <div className="bg-white overflow-hidden h-full flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+      <CardHead icon={ICON.card}>Step 1 — Send Your Zelle Deposit</CardHead>
       <div className="px-6 py-5 flex flex-col gap-4 flex-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="font-serif text-[1.1rem] text-[#111111] font-light">Ruqia Moshref</p>
-            <p className="text-[0.78rem] text-[#888888] mt-0.5">510-491-6497</p>
+            <p className="font-serif text-[1.15rem] font-light" style={{ color: VALUE }}>Ruqia Moshref</p>
+            <p className="text-[0.78rem] mt-0.5" style={{ color: LABEL }}>510-491-6497</p>
           </div>
           {depositAmount && (
             <div className="text-right">
-              <p className="text-[0.62rem] text-[#888888] uppercase tracking-wide">Amount</p>
-              <p className="text-[1.05rem] font-bold text-[#111111]">{depositAmount}</p>
+              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: LABEL }}>Amount</p>
+              <p className="text-[1.1rem] font-bold mt-0.5" style={{ color: PLUM }}>{depositAmount}</p>
             </div>
           )}
         </div>
-        <div className="bg-[#FDF8FA] rounded-xl px-4 py-3 border border-[#F0E0E9]">
-          <p className="text-[0.73rem] text-[#444444] leading-[1.7]">
-            Include your <strong className="text-[#111111]">name</strong> + <strong className="text-[#111111]">appointment date</strong> in the note when you send.
+        {/* Deep-plum note box (matches admin "Makeup Vision" / Notes styling) */}
+        <div className="px-4 py-3" style={{ borderRadius: 6, background: HEAD_BG, borderLeft: `2px solid ${PLUM}` }}>
+          <p className="text-[0.75rem] leading-[1.7]" style={{ color: PLUM_DARK }}>
+            Include your <strong style={{ color: VALUE }}>name</strong> + <strong style={{ color: VALUE }}>appointment date</strong> in the note when you send.
           </p>
         </div>
-        <p className="text-[0.65rem] text-[#999999] text-center mt-auto">
-          Remaining balance due in <strong className="text-[#444444]">cash</strong> on appointment day
+        <p className="text-[0.65rem] text-center mt-auto pt-1" style={{ color: LABEL }}>
+          Remaining balance due in <strong style={{ color: PLUM_DARK }}>cash</strong> on appointment day
         </p>
       </div>
+    </div>
+  );
+}
+
+// Reusable upload card body (dropzone + submit) — same markup on desktop & mobile.
+function UploadBody({ filePreview, setFilePreview, fileToUpload, setFileToUpload, uploading, handleFileChange, handleUpload, ctaLabel }) {
+  return (
+    <div className="p-5 flex flex-col gap-4 flex-1">
+      {filePreview ? (
+        <div className="relative overflow-hidden" style={{ borderRadius: 10, border: `1px solid ${HEAD_BORDER}` }}>
+          <img src={filePreview} alt="Preview" className="w-full object-contain max-h-[220px]" />
+          <button
+            onClick={() => { setFilePreview(null); setFileToUpload(null); }}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+      ) : (
+        <label
+          className="flex flex-col items-center gap-3 px-5 py-8 cursor-pointer transition-all group"
+          style={{ borderRadius: 10, border: `1.5px dashed ${HEAD_BORDER}`, background: '#FEFCFD' }}
+        >
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors" style={{ background: HEAD_BG }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-5 h-5">{ICON.upload}</svg>
+          </div>
+          <div className="text-center">
+            <p className="text-[0.8rem] font-semibold" style={{ color: PLUM_DARK }}>{ctaLabel}</p>
+            <p className="text-[0.62rem] mt-1" style={{ color: LABEL }}>PNG, JPG up to 10MB</p>
+          </div>
+          <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        </label>
+      )}
+
+      <button
+        onClick={handleUpload}
+        disabled={!fileToUpload || uploading}
+        className="w-full py-4 text-[0.82rem] font-semibold tracking-[0.04em] transition-all"
+        style={fileToUpload && !uploading
+          ? { borderRadius: 10, background: '#111111', color: '#fff', boxShadow: '0 6px 22px rgba(196,132,154,0.28)' }
+          : { borderRadius: 10, background: '#F4ECF0', color: '#C9B3BE', cursor: 'not-allowed' }
+        }
+      >
+        {uploading ? (
+          <span className="flex items-center justify-center gap-2">
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Uploading…
+          </span>
+        ) : 'Submit Screenshot →'}
+      </button>
     </div>
   );
 }
@@ -146,46 +214,51 @@ export default function UploadZelle() {
     ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : '';
 
+  const pageBg = { background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF6F8 100%)' };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#fff' }}>
-        <div className="w-7 h-7 border-4 border-[#C4849A]/30 border-t-[#C4849A] rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={pageBg}>
+        <div className="w-7 h-7 border-4 rounded-full animate-spin" style={{ borderColor: 'rgba(196,132,154,0.25)', borderTopColor: PLUM }} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#fff' }}>
+      <div className="min-h-screen flex items-center justify-center px-6" style={pageBg}>
         <div className="text-center max-w-[320px]">
           <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
             <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" className="w-7 h-7">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h2 className="font-serif text-xl text-[#111] mb-2">Invalid Link</h2>
-          <p className="text-[0.82rem] text-[#444444] leading-[1.7]">{error}</p>
-          <p className="text-[0.75rem] text-[#999999] mt-3">Need help? Email <a href="mailto:makeupbyroko22@gmail.com" className="text-[#C4849A] underline">makeupbyroko22@gmail.com</a></p>
+          <h2 className="font-serif text-xl mb-2" style={{ color: VALUE }}>Invalid Link</h2>
+          <p className="text-[0.82rem] leading-[1.7]" style={{ color: PLUM_DARK }}>{error}</p>
+          <p className="text-[0.75rem] mt-3" style={{ color: LABEL }}>Need help? Email <a href="mailto:makeupbyroko22@gmail.com" className="underline" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a></p>
         </div>
       </div>
     );
   }
 
+  const uploadProps = { filePreview, setFilePreview, fileToUpload, setFileToUpload, uploading, handleFileChange, handleUpload };
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#ffffff' }}>
+    <div className="min-h-screen flex flex-col" style={pageBg}>
 
       {/* Navbar */}
-      <div className="flex-shrink-0 border-b border-[#F0E0E9] px-5 py-3.5 flex items-center justify-between" style={{ background: '#fff' }}>
-        <a href="/" className="flex items-center gap-2 text-[0.78rem] text-[#888888] hover:text-[#111111] transition-colors touch-manipulation" style={{ minHeight: '44px', padding: '0 4px' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 flex-shrink-0">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Back to site
+      <div className="relative flex-shrink-0 px-4 sm:px-6 py-3 flex items-center" style={{ borderBottom: `1px solid ${HEAD_BORDER}`, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
+        <a
+          href="/"
+          className="group relative z-10 inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full transition-all touch-manipulation"
+          style={{ border: `1px solid ${HEAD_BORDER}`, color: PLUM, background: '#fff' }}
+        >
+          <span className="flex items-center justify-center w-5 h-5 rounded-full transition-colors" style={{ background: HEAD_BG }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.2" className="w-3 h-3"><polyline points="15 18 9 12 15 6" /></svg>
+          </span>
+          <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase">Back to site</span>
         </a>
-        <div className="text-center">
-          <p className="text-[0.62rem] font-bold tracking-[0.22em] uppercase text-[#C4849A]">Makeup by Roko</p>
-        </div>
-        <div className="w-[80px]" />
+        <p className="absolute left-1/2 -translate-x-1/2 text-[0.62rem] font-bold tracking-[0.22em] uppercase" style={{ color: PLUM }}>Makeup by Roko</p>
       </div>
 
       {/* ─── UPLOADED STATE ─── */}
@@ -195,14 +268,14 @@ export default function UploadZelle() {
           <div className="py-10 px-5 text-center">
             <div className="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-4">
               <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.2" className="w-6 h-6">
-                <polyline points="20 6 9 17 4 12"/>
+                <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <p className="text-[0.6rem] font-bold tracking-[0.2em] uppercase text-[#C4849A] mb-1.5">Deposit Received</p>
-            <h1 className="font-serif text-[1.9rem] lg:text-[2.4rem] font-light text-[#111111] leading-tight">
-              Screenshot <em className="italic text-[#C4849A]">Submitted!</em>
+            <p className="text-[0.6rem] font-bold tracking-[0.2em] uppercase mb-1.5" style={{ color: PLUM }}>Deposit Received</p>
+            <h1 className="font-serif text-[1.9rem] lg:text-[2.4rem] font-light leading-tight" style={{ color: VALUE }}>
+              Screenshot <em className="italic" style={{ color: PLUM }}>Submitted!</em>
             </h1>
-            <p className="text-[0.82rem] text-[#888888] mt-2">Roko will confirm your appointment within 24–48 hours.</p>
+            <p className="text-[0.82rem] mt-2" style={{ color: LABEL }}>Roko will confirm your appointment within 24–48 hours.</p>
           </div>
 
           {/* Desktop: 3-col | Mobile: stacked */}
@@ -215,10 +288,8 @@ export default function UploadZelle() {
 
               {/* Col 2: Screenshot preview */}
               {booking?.screenshot_url && (
-                <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden flex flex-col">
-                  <div className="px-5 py-3.5 border-b border-[#F0E0E9]" style={{ background: 'rgba(196,132,154,0.05)' }}>
-                    <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Your Screenshot</p>
-                  </div>
+                <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                  <CardHead icon={ICON.upload}>Your Screenshot</CardHead>
                   <div className="p-4 flex items-center justify-center flex-1">
                     <img src={booking.screenshot_url} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[300px]" />
                   </div>
@@ -227,24 +298,24 @@ export default function UploadZelle() {
 
               {/* Col 3: Next steps */}
               <div className="flex flex-col gap-4">
-                <div className="bg-white rounded-2xl border border-[#F0E0E9] p-5">
-                  <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-3">What's Next</p>
-                  <p className="text-[0.78rem] text-[#444444] leading-[1.75]">
-                    Roko has been notified and will reach out to confirm your appointment time within <strong className="text-[#111111]">24–48 hours</strong>.
+                <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                  <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: PLUM }}>What's Next</p>
+                  <p className="text-[0.78rem] leading-[1.75]" style={{ color: PLUM_DARK }}>
+                    Roko has been notified and will reach out to confirm your appointment time within <strong style={{ color: VALUE }}>24–48 hours</strong>.
                   </p>
-                  <div className="mt-3 pt-3 border-t border-[#F5E8EF]">
-                    <p className="text-[0.72rem] text-[#888888]">Remaining balance due in <strong>cash</strong> on appointment day.</p>
+                  <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${DIVIDER}` }}>
+                    <p className="text-[0.72rem]" style={{ color: LABEL }}>Remaining balance due in <strong style={{ color: PLUM_DARK }}>cash</strong> on appointment day.</p>
                   </div>
                 </div>
-                <div className="bg-white rounded-2xl border border-[#F0E0E9] p-5">
-                  <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-2">Questions?</p>
-                  <p className="text-[0.73rem] text-[#444444] leading-[1.7]">
-                    Email <a href="mailto:makeupbyroko22@gmail.com" className="text-[#C4849A] hover:underline font-medium">makeupbyroko22@gmail.com</a>
-                    {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="text-[#C4849A] hover:underline font-medium">@makeupbyroko_</a>
+                <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                  <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-2" style={{ color: PLUM }}>Questions?</p>
+                  <p className="text-[0.73rem] leading-[1.7]" style={{ color: PLUM_DARK }}>
+                    Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline font-medium" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
+                    {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="hover:underline font-medium" style={{ color: PLUM }}>@makeupbyroko_</a>
                   </p>
                 </div>
-                <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4 text-center">
-                  <p className="font-serif italic text-[#C4849A] text-[1.05rem]">With love, Roko</p>
+                <div className="px-5 py-4 text-center" style={{ borderRadius: 12, background: HEAD_BG, border: `1px solid ${HEAD_BORDER}` }}>
+                  <p className="font-serif italic text-[1.05rem]" style={{ color: PLUM }}>With love, Roko</p>
                 </div>
               </div>
             </div>
@@ -254,31 +325,29 @@ export default function UploadZelle() {
               <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
 
               {booking?.screenshot_url && (
-                <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
-                  <div className="px-5 py-3.5 border-b border-[#F0E0E9]" style={{ background: 'rgba(196,132,154,0.05)' }}>
-                    <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Your Screenshot</p>
-                  </div>
+                <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                  <CardHead icon={ICON.upload}>Your Screenshot</CardHead>
                   <div className="p-4">
                     <img src={booking.screenshot_url} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[280px]" />
                   </div>
                 </div>
               )}
 
-              <div className="bg-white rounded-2xl border border-[#F0E0E9] p-5">
-                <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-2.5">What's Next</p>
-                <p className="text-[0.78rem] text-[#444444] leading-[1.75]">
-                  Roko will confirm within <strong className="text-[#111111]">24–48 hours</strong>.
+              <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-2.5" style={{ color: PLUM }}>What's Next</p>
+                <p className="text-[0.78rem] leading-[1.75]" style={{ color: PLUM_DARK }}>
+                  Roko will confirm within <strong style={{ color: VALUE }}>24–48 hours</strong>.
                 </p>
-                <div className="mt-3 pt-3 border-t border-[#F5E8EF]">
-                  <p className="text-[0.72rem] text-[#888888]">Remaining balance due in <strong>cash</strong> on appointment day.</p>
+                <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${DIVIDER}` }}>
+                  <p className="text-[0.72rem]" style={{ color: LABEL }}>Remaining balance due in <strong style={{ color: PLUM_DARK }}>cash</strong> on appointment day.</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#F0E0E9] p-5">
-                <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-2">Questions?</p>
-                <p className="text-[0.73rem] text-[#444444] leading-[1.7]">
-                  Email <a href="mailto:makeupbyroko22@gmail.com" className="text-[#C4849A] hover:underline font-medium">makeupbyroko22@gmail.com</a>
-                  {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="text-[#C4849A] hover:underline font-medium">@makeupbyroko_</a>
+              <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-2" style={{ color: PLUM }}>Questions?</p>
+                <p className="text-[0.73rem] leading-[1.7]" style={{ color: PLUM_DARK }}>
+                  Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline font-medium" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
+                  {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="hover:underline font-medium" style={{ color: PLUM }}>@makeupbyroko_</a>
                 </p>
               </div>
             </div>
@@ -291,11 +360,11 @@ export default function UploadZelle() {
         <div className="flex-1 flex flex-col">
           {/* Hero */}
           <div className="py-10 px-5 text-center">
-            <p className="text-[0.6rem] font-bold tracking-[0.2em] uppercase text-[#C4849A] mb-1.5">Zelle Deposit Upload</p>
-            <h1 className="font-serif text-[1.9rem] lg:text-[2.4rem] font-light text-[#111111] leading-tight">
-              Secure Your <em className="italic text-[#C4849A]">Date</em>
+            <p className="text-[0.6rem] font-bold tracking-[0.2em] uppercase mb-1.5" style={{ color: PLUM }}>Zelle Deposit Upload</p>
+            <h1 className="font-serif text-[1.9rem] lg:text-[2.4rem] font-light leading-tight" style={{ color: VALUE }}>
+              Secure Your <em className="italic" style={{ color: PLUM }}>Date</em>
             </h1>
-            <p className="text-[0.82rem] text-[#888888] mt-2">Send your deposit via Zelle, then upload your screenshot below.</p>
+            <p className="text-[0.82rem] mt-2" style={{ color: LABEL }}>Send your deposit via Zelle, then upload your screenshot below.</p>
           </div>
 
           {/* Desktop: 3-col | Mobile: stacked */}
@@ -307,57 +376,12 @@ export default function UploadZelle() {
               <ZelleCard depositAmount={depositAmount} />
 
               {/* Col 2: Upload */}
-              <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden flex flex-col">
-                <div className="px-5 py-3.5 border-b border-[#F0E0E9]" style={{ background: 'rgba(196,132,154,0.05)' }}>
-                  <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Step 2 — Upload Screenshot</p>
-                </div>
-                <div className="p-5 flex flex-col gap-4 flex-1">
-                  {filePreview ? (
-                    <div className="relative rounded-xl overflow-hidden border border-[#E8C4D0]">
-                      <img src={filePreview} alt="Preview" className="w-full object-contain max-h-[220px]" />
-                      <button
-                        onClick={() => { setFilePreview(null); setFileToUpload(null); }}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-3 px-5 py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#C4849A] transition-colors group">
-                      <div className="w-11 h-11 rounded-2xl bg-gray-50 group-hover:bg-[#FDF0F5] flex items-center justify-center transition-colors">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" className="w-5 h-5 group-hover:stroke-[#C4849A] transition-colors">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[0.78rem] font-medium text-gray-500 group-hover:text-[#C4849A] transition-colors">Click to select your screenshot</p>
-                        <p className="text-[0.62rem] text-gray-300 mt-0.5">PNG, JPG up to 10MB</p>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    </label>
-                  )}
-
-                  <button
-                    onClick={handleUpload}
-                    disabled={!fileToUpload || uploading}
-                    className={`w-full py-3.5 rounded-xl text-[0.82rem] font-semibold tracking-[0.04em] transition-all ${
-                      fileToUpload && !uploading
-                        ? 'bg-[#111111] text-white hover:bg-[#222222] shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {uploading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Uploading…
-                      </span>
-                    ) : 'Submit Screenshot →'}
-                  </button>
-
-                  <p className="text-[0.63rem] text-center text-gray-400">
-                    Trouble? Email <a href="mailto:makeupbyroko22@gmail.com" className="text-[#C4849A] hover:underline">makeupbyroko22@gmail.com</a>
-                  </p>
-                </div>
+              <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                <CardHead icon={ICON.upload}>Step 2 — Upload Screenshot</CardHead>
+                <UploadBody {...uploadProps} ctaLabel="Click to select your screenshot" />
+                <p className="text-[0.63rem] text-center px-5 pb-5 -mt-1" style={{ color: LABEL }}>
+                  Trouble? Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
+                </p>
               </div>
 
               {/* Col 3: Booking summary */}
@@ -369,67 +393,23 @@ export default function UploadZelle() {
               <ZelleCard depositAmount={depositAmount} />
 
               {/* Upload */}
-              <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-[#F0E0E9]" style={{ background: 'rgba(196,132,154,0.05)' }}>
-                  <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Step 2 — Upload Screenshot</p>
-                </div>
-                <div className="p-5 flex flex-col gap-4 flex-1">
-                  {filePreview ? (
-                    <div className="relative rounded-xl overflow-hidden border border-[#E8C4D0]">
-                      <img src={filePreview} alt="Preview" className="w-full object-contain max-h-[220px]" />
-                      <button
-                        onClick={() => { setFilePreview(null); setFileToUpload(null); }}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-3 px-5 py-8 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#C4849A] transition-colors group">
-                      <div className="w-11 h-11 rounded-2xl bg-gray-50 group-hover:bg-[#FDF0F5] flex items-center justify-center transition-colors">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" className="w-5 h-5 group-hover:stroke-[#C4849A] transition-colors">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[0.82rem] font-medium text-gray-500 group-hover:text-[#C4849A] transition-colors">Tap to select your screenshot</p>
-                        <p className="text-[0.65rem] text-gray-300 mt-0.5">PNG, JPG up to 10MB</p>
-                      </div>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                    </label>
-                  )}
-
-                  <button
-                    onClick={handleUpload}
-                    disabled={!fileToUpload || uploading}
-                    className={`w-full py-4 rounded-xl text-[0.85rem] font-semibold tracking-[0.04em] transition-all ${
-                      fileToUpload && !uploading
-                        ? 'bg-[#111111] text-white hover:bg-[#222222] shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {uploading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Uploading…
-                      </span>
-                    ) : 'Submit Screenshot →'}
-                  </button>
-                </div>
+              <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                <CardHead icon={ICON.upload}>Step 2 — Upload Screenshot</CardHead>
+                <UploadBody {...uploadProps} ctaLabel="Tap to select your screenshot" />
               </div>
 
               {/* Booking summary always visible on mobile */}
               <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} />
 
-              <p className="text-[0.65rem] text-center text-gray-400 pb-2">
-                Trouble? Email <a href="mailto:makeupbyroko22@gmail.com" className="text-[#C4849A] hover:underline">makeupbyroko22@gmail.com</a>
+              <p className="text-[0.65rem] text-center pb-2" style={{ color: LABEL }}>
+                Trouble? Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
               </p>
             </div>
           </div>
         </div>
       )}
 
-      <p className="text-center text-[0.58rem] text-gray-300 pb-6 tracking-wide">© {new Date().getFullYear()} Makeup by Roko</p>
+      <p className="text-center text-[0.58rem] pb-6 tracking-wide" style={{ color: '#C9B8C0' }}>© {new Date().getFullYear()} Makeup by Roko</p>
     </div>
   );
 }
