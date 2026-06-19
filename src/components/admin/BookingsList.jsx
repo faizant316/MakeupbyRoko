@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
+import Collapse from './Collapse';
+import { groupByTime, daysUntil } from './timeline';
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
 
@@ -174,6 +176,13 @@ export default function BookingsList({
   // Ignore a selected month that no longer exists in the current results
   const effectiveMonth = monthFilter && monthMap.has(monthFilter) ? monthFilter : '';
 
+  // Connect the month picker to the timeline: picking a specific month opens
+  // every group so those bookings show right away (no hunting under "Later");
+  // clearing it restores the default of folding "Later" away.
+  useEffect(() => {
+    setCollapsedGroups(effectiveMonth ? {} : { later: true });
+  }, [effectiveMonth]);
+
   // Recent bookings: created within the last 24 hours (uses allBookings, unfiltered)
   const now = Date.now();
   const recentBookings = (allBookings || [])
@@ -218,29 +227,14 @@ export default function BookingsList({
 
   // Bucket by how soon each appointment is, so the list reads as a timeline
   // instead of one endless run. "Later" folds away by default.
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
-  const daysUntil = (dateStr) => {
-    if (!dateStr) return Infinity;
-    return Math.round((new Date(dateStr + 'T00:00:00') - todayMidnight) / 86400000);
-  };
-  const TIME_GROUPS = [
-    { key: 'pastdue', label: 'Past Due', accent: '#E0795B', test: (d) => d < 0 },
-    { key: 'today', label: 'Today', accent: '#A0607A', test: (d) => d === 0 },
-    { key: 'week', label: 'This Week', accent: null, test: (d) => d >= 1 && d <= 7 },
-    { key: 'month', label: 'This Month', accent: null, test: (d) => d >= 8 && d <= 30 },
-    { key: 'later', label: 'Later', accent: null, test: (d) => d > 30 || d === Infinity },
-  ];
-  const timeGroups = TIME_GROUPS
-    .map(g => ({ ...g, items: visibleActive.filter(b => g.test(daysUntil(b.date))) }))
-    .filter(g => g.items.length > 0);
+  const timeGroups = groupByTime(visibleActive, b => b.date);
 
   const today = new Date().toISOString().split('T')[0];
 
-  // "Needs you" summary — time-aware glance the status pills don't give.
+  // Time-aware summary glance the status pills don't give.
   const todayCount = visibleActive.filter(b => daysUntil(b.date) === 0).length;
   const weekCount = visibleActive.filter(b => { const d = daysUntil(b.date); return d >= 0 && d <= 7; }).length;
-  const pendingCount = visibleActive.filter(b => b.status === 'pending').length;
+  const upcomingCount = visibleActive.length;
 
   const consultationBookings = (allBookings || [])
     .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
@@ -806,30 +800,20 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Needs-you summary — a time-aware glance the status pills don't give */}
+      {/* Time-aware summary — a quick glance the status pills don't give */}
       {viewType === 'appointments' && !selectedDate && !loading && visibleActiveCount > 0 && (
         <div className="flex items-stretch gap-2 mb-5">
-          {[{ label: 'Today', value: todayCount }, { label: 'This Week', value: weekCount }].map(s => (
+          {[
+            { label: 'Today', value: todayCount },
+            { label: 'This Week', value: weekCount },
+            { label: 'Upcoming', value: upcomingCount },
+          ].map(s => (
             <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
               style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
               <p className="text-[1.1rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</p>
               <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => { if (pendingCount > 0) setStatusFilter('pending'); }}
-            disabled={pendingCount === 0}
-            className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5 text-left transition-all"
-            style={{
-              background: pendingCount > 0 ? (dm ? 'rgba(245,158,11,0.12)' : '#FFFBEB') : (dm ? '#1e1e24' : '#fff'),
-              border: `1px solid ${pendingCount > 0 ? 'rgba(245,158,11,0.35)' : (dm ? '#2e2e38' : '#f0e9e4')}`,
-              cursor: pendingCount > 0 ? 'pointer' : 'default',
-            }}
-          >
-            <p className="text-[1.1rem] font-serif leading-none" style={{ color: pendingCount > 0 ? (dm ? '#fbbf77' : '#B45309') : (dm ? '#e4e4e7' : '#1a1a1a') }}>{pendingCount}</p>
-            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: pendingCount > 0 ? (dm ? '#d9a441' : '#D97706') : (dm ? '#71717a' : '#b0a59c') }}>Pending</p>
-          </button>
         </div>
       )}
 
@@ -890,17 +874,17 @@ export default function BookingsList({
                       </span>
                       <span className="flex-1" />
                       <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2"
-                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${open ? '' : '-rotate-90'}`}>
+                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>
                         <polyline points="6 9 12 15 18 9"/>
                       </svg>
                     </button>
-                    {open && (
-                      <div className="flex flex-col gap-2">
+                    <Collapse open={open}>
+                      <div className="flex flex-col gap-2 pb-1">
                         {group.items.map(b => (
                           <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} />
                         ))}
                       </div>
-                    )}
+                    </Collapse>
                   </div>
                 );
               })}
@@ -920,17 +904,17 @@ export default function BookingsList({
                 </div>
                 <span className="text-[0.65rem] text-[#bbb]">({visibleCompleted.length})</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"
-                  className={`w-4 h-4 transition-transform duration-200 ${showArchive ? 'rotate-180' : ''}`}>
+                  className={`w-4 h-4 transition-transform duration-300 ${showArchive ? 'rotate-180' : ''}`}>
                   <polyline points="6 9 12 15 18 9"/>
                 </svg>
               </button>
-              {showArchive && (
-                <div className="flex flex-col gap-2">
+              <Collapse open={showArchive}>
+                <div className="flex flex-col gap-2 pb-1">
                   {visibleCompleted.map(b => (
                     <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} dimmed />
                   ))}
                 </div>
-              )}
+              </Collapse>
             </div>
           )}
         </div>
