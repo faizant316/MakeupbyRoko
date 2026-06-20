@@ -46,7 +46,9 @@ function ClassRow({ reg, onSelect, dm }) {
   const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
   const classLabel = selectedClasses.length > 0 ? selectedClasses.map(([, l]) => l).join(' · ') : 'No classes selected';
   const meta = ENROLLMENT_STYLES[reg.status || 'pending'] || ENROLLMENT_STYLES.pending;
-  const isRefunded = normalizePaymentStatus(reg.payment_status) === 'refunded';
+  const payState = normalizePaymentStatus(reg.payment_status);
+  const isRefunded = payState === 'refunded';
+  const isUnpaid = payState === 'unpaid' && !reg.stripe_session_id;
   const isNew = reg.created_date && (Date.now() - new Date(reg.created_date).getTime()) < 24 * 60 * 60 * 1000;
   const rel = relativeDate(reg.appointment_date);
   const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
@@ -94,6 +96,12 @@ function ClassRow({ reg, onSelect, dm }) {
               style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.22)', color: dm ? '#e7c9d5' : '#A0607A' }}>
               <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: dm ? '#e7c9d5' : '#A0607A' }} />
               New
+            </span>
+          )}
+          {isUnpaid && (
+            <span className="hidden sm:inline-flex text-[0.55rem] font-semibold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
+              style={{ background: PAYMENT_META.unpaid.bg, color: PAYMENT_META.unpaid.color }}>
+              Unpaid
             </span>
           )}
           {isRefunded && (

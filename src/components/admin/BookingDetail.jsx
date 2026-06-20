@@ -5,6 +5,7 @@ import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
 import { lenisScrollTo } from '@/lib/lenis';
+import { openZoomHost } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
@@ -179,9 +180,17 @@ const CONSULT_BG = 'rgba(168,85,247,0.08)';
 const CONSULT_BORDER = 'rgba(168,85,247,0.25)';
 
 function parseConsultNotes(raw) {
-  if (!raw) return { link: '', notes: '' };
-  const m = raw.match(/^Link: (https?:\/\/\S+)(?:\n|$)/);
-  return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
+  if (!raw) return { link: '', meetingId: '', notes: '' };
+  let link = '', meetingId = '';
+  const rest = [];
+  for (const line of raw.split('\n')) {
+    const lm = line.match(/^Link: (https?:\/\/\S+)\s*$/);
+    const mm = line.match(/^MeetingId: (\S+)\s*$/);
+    if (lm) link = lm[1];
+    else if (mm) meetingId = mm[1];
+    else rest.push(line);
+  }
+  return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
 function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
@@ -193,6 +202,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
   const [showConfirmSend, setShowConfirmSend] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [meetLink, setMeetLink] = useState(parsed.link);
+  const [meetingId, setMeetingId] = useState(parsed.meetingId);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: booking.consultation_date || '',
@@ -220,6 +230,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
       const data = await res.json();
       if (data.join_url) {
         setMeetLink(data.join_url);
+        setMeetingId(data.meeting_id ? String(data.meeting_id) : '');
       } else {
         alert(`Zoom error: ${data.error || 'Unknown error'}`);
       }
@@ -259,7 +270,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      const storedNotes = [activeLink ? `Link: ${activeLink}` : null, form.notes || null].filter(Boolean).join('\n');
+      const storedNotes = [
+        activeLink ? `Link: ${activeLink}` : null,
+        form.type === 'Zoom' && meetingId ? `MeetingId: ${meetingId}` : null,
+        form.notes || null,
+      ].filter(Boolean).join('\n');
       onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: storedNotes });
       setSent(true);
       setExpanded(false);
@@ -296,13 +311,23 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>
                 {booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </p>
-              {parsed.link && (
+              {(meetingId || parsed.meetingId) ? (
+                <button type="button"
+                  onClick={() => openZoomHost(meetingId || parsed.meetingId, meetLink || parsed.link)}
+                  className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
+                  style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+                    <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                  </svg>
+                  Join as host
+                </button>
+              ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
                   className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
                   style={{ color: dm ? '#71717a' : '#999' }}>
                   {parsed.link}
                 </a>
-              )}
+              ) : null}
               {parsed.notes && (
                 <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>{parsed.notes}</p>
               )}
