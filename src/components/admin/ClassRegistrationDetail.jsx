@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { openZoomHost } from '@/lib/zoomHost';
 
 const TIME_SLOTS = (() => {
   const slots = [];
@@ -19,9 +20,17 @@ const LESSON_COLOR = '#5BB0CC';
 const LESSON_BG = 'rgba(91,176,204,0.07)';
 
 function parseNotes(raw) {
-  if (!raw) return { link: '', notes: '' };
-  const m = raw.match(/^Link: (https?:\/\/\S+)(?:\n|$)/);
-  return m ? { link: m[1], notes: raw.slice(m[0].length).trimStart() } : { link: '', notes: raw };
+  if (!raw) return { link: '', meetingId: '', notes: '' };
+  let link = '', meetingId = '';
+  const rest = [];
+  for (const line of raw.split('\n')) {
+    const lm = line.match(/^Link: (https?:\/\/\S+)\s*$/);
+    const mm = line.match(/^MeetingId: (\S+)\s*$/);
+    if (lm) link = lm[1];
+    else if (mm) meetingId = mm[1];
+    else rest.push(line);
+  }
+  return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
 function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) {
@@ -32,6 +41,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const [sent, setSent] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [meetLink, setMeetLink] = useState(parsed.link);
+  const [meetingId, setMeetingId] = useState(parsed.meetingId);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: reg.appointment_date || '',
@@ -62,8 +72,10 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         }),
       });
       const data = await res.json();
-      if (data.join_url) setMeetLink(data.join_url);
-      else alert(`Zoom error: ${data.error || 'Unknown error'}`);
+      if (data.join_url) {
+        setMeetLink(data.join_url);
+        setMeetingId(data.meeting_id ? String(data.meeting_id) : '');
+      } else alert(`Zoom error: ${data.error || 'Unknown error'}`);
     } catch (err) {
       alert(`Failed: ${err.message}`);
     } finally {
@@ -98,7 +110,11 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         }),
       });
       if (!res.ok) throw new Error('Failed');
-      const storedNotes = [form.type === 'Zoom' && meetLink ? `Link: ${meetLink}` : null, form.notes || null].filter(Boolean).join('\n');
+      const storedNotes = [
+        form.type === 'Zoom' && meetLink ? `Link: ${meetLink}` : null,
+        form.type === 'Zoom' && meetingId ? `MeetingId: ${meetingId}` : null,
+        form.notes || null,
+      ].filter(Boolean).join('\n');
       onUpdateReg({ appointment_date: form.date, appointment_time: form.time, consultation_type: form.type, lesson_notes: storedNotes, status: 'enrolled' });
       setSent(true);
       setExpanded(false);
@@ -141,11 +157,21 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type} · {reg.appointment_time}
               </p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: textMuted }}>{lessonDate}</p>
-              {parsed.link && (
+              {(meetingId || parsed.meetingId) ? (
+                <button type="button"
+                  onClick={() => openZoomHost(meetingId || parsed.meetingId, meetLink || parsed.link)}
+                  className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
+                  style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
+                    <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                  </svg>
+                  Join as host
+                </button>
+              ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
                   className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
                   style={{ color: textMuted }}>{parsed.link}</a>
-              )}
+              ) : null}
             </div>
           </div>
           <button onClick={() => { setExpanded(true); setSent(false); }}
@@ -407,11 +433,14 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
   // Sign-ups reach this page because they paid through Stripe at checkout, so
   // "paid" is the baseline truth — the only meaningful payment action left is a
-  // refund. We track just paid vs refunded and drop the redundant "unpaid".
-  const isRefunded = normalizePaymentStatus(reg.payment_status) === 'refunded';
+  // refund. Exception: a client added manually (no Stripe session) never went
+  // through checkout, so treat that as genuinely unpaid and let Roko mark it paid.
+  const payState = normalizePaymentStatus(reg.payment_status);
+  const isRefunded = payState === 'refunded';
+  const isUnpaid = payState === 'unpaid' && !reg.stripe_session_id;
   const enrollmentStatus = reg.status || 'pending';
   const enrollmentMeta = ENROLLMENT_STATUSES[enrollmentStatus] || ENROLLMENT_STATUSES.pending;
-  const paymentMeta = isRefunded ? PAYMENT_META.refunded : PAYMENT_META.paid;
+  const paymentMeta = isRefunded ? PAYMENT_META.refunded : isUnpaid ? PAYMENT_META.unpaid : PAYMENT_META.paid;
 
   const appointmentDate = reg.appointment_date
     ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', {
@@ -526,7 +555,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
         {totalPrice > 0 && (
           <div className="mb-8 px-4 py-3 rounded-xl flex items-center justify-between"
             style={{ background: sectionBg, border: `1px solid ${cardBorder}` }}>
-            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.08em]" style={{ color: textMuted }}>Total Paid</span>
+            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.08em]" style={{ color: textMuted }}>{isUnpaid ? 'Total Due' : 'Total Paid'}</span>
             <div className="flex items-center gap-3">
               <span
                 className="px-2.5 py-0.5 rounded-full text-[0.6rem] font-semibold tracking-[0.06em] uppercase"
@@ -564,10 +593,33 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           }}
         />
 
-        {/* Payment — paid at checkout, so refund is the only real action */}
+        {/* Payment — paid at checkout, so refund is the only real action.
+            Manually-added clients (no Stripe session) start out genuinely unpaid. */}
         <div className="mb-8">
           <SectionLabel>Payment</SectionLabel>
-          {!isRefunded ? (
+          {isUnpaid ? (
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
+              style={{ background: dm ? 'rgba(212,160,176,0.08)' : '#FBF5F7', border: `1px solid ${dm ? '#5a4750' : '#EAD7E0'}` }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,132,154,0.16)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#e7c9d5' : '#A0607A' }}>Not paid yet</p>
+                  <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted }}>
+                    Added manually{totalPrice > 0 ? ` · $${totalPrice.toLocaleString()} due` : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => changePayment('paid')}
+                className="text-[0.65rem] font-semibold tracking-[0.04em] px-3 py-2 rounded-lg transition-all flex-shrink-0"
+                style={{ color: '#fff', background: '#15803d', border: '1px solid #15803d' }}
+              >
+                Mark as Paid
+              </button>
+            </div>
+          ) : !isRefunded ? (
             <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
               style={{ background: sectionBg, border: `1px solid ${cardBorder}` }}>
               <div className="flex items-center gap-2.5 min-w-0">
