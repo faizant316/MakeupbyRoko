@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import TestimonialPhone from './TestimonialPhone';
 import LeaveReviewForm from './LeaveReviewForm';
+import ApprovedReviews from './ApprovedReviews';
 
 const REVIEWS = [
   {
@@ -231,6 +232,9 @@ export default function Testimonials() {
             <LeaveReviewForm />
           </div>
         </div>
+
+        {/* Approved reviews wall — fed by the form above, once moderated */}
+        <ApprovedReviews />
 
         {/* Instagram CTA */}
         <div className="text-center mt-10">
