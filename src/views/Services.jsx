@@ -84,6 +84,18 @@ export default function ServicesPage() {
   const [otherIdx, setOtherIdx]   = useState(0);
   const bridalScrollRef  = useRef(null);
   const otherScrollRef   = useRef(null);
+  const filterScrollRef  = useRef(null);
+  // Edge state for the category filter strip, so we can show "more to scroll" cues.
+  const [filterEdges, setFilterEdges] = useState({ atStart: true, atEnd: false });
+
+  // Recompute whether the filter strip is scrolled to its start / end.
+  const updateFilterEdges = useCallback(() => {
+    const el = filterScrollRef.current;
+    if (!el) return;
+    const atStart = el.scrollLeft <= 1;
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+    setFilterEdges(prev => (prev.atStart === atStart && prev.atEnd === atEnd ? prev : { atStart, atEnd }));
+  }, []);
 
   // Track which carousel card is centred so the pagination dots stay in sync.
   const handleCarouselScroll = useCallback((ref, count, setIdx) => {
@@ -124,6 +136,13 @@ export default function ServicesPage() {
     setBridalIdx(0);
     setOtherIdx(0);
   }, [activeCategory]);
+
+  // Keep the filter-strip scroll cues accurate on mount and when the width changes
+  useEffect(() => {
+    updateFilterEdges();
+    window.addEventListener('resize', updateFilterEdges);
+    return () => window.removeEventListener('resize', updateFilterEdges);
+  }, [updateFilterEdges]);
 
   // Compute filtered list before any effects that depend on it
   const filtered = activeCategory === 'all'
@@ -214,8 +233,14 @@ export default function ServicesPage() {
                 Each service is tailored to you, from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
 
-              {/* Filter — editorial underline tabs */}
-              <div className="flex items-center gap-7 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {/* Filter — editorial underline tabs (horizontally scrollable on mobile) */}
+              <div className="relative">
+              <div
+                ref={filterScrollRef}
+                onScroll={updateFilterEdges}
+                className="flex items-center gap-7 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.key}
@@ -245,6 +270,25 @@ export default function ServicesPage() {
                     {cat.label}
                   </button>
                 ))}
+              </div>
+
+                {/* Left fade — appears once the strip is scrolled */}
+                <div
+                  className="pointer-events-none absolute inset-y-0 left-0 w-8 transition-opacity duration-300 lg:hidden"
+                  style={{ background: 'linear-gradient(to right, #fff 35%, rgba(255,255,255,0))', opacity: filterEdges.atStart ? 0 : 1 }}
+                />
+
+                {/* Right fade + soft-gray nudging disc — signals there are more categories to swipe through */}
+                <div
+                  className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end transition-opacity duration-300 lg:hidden"
+                  style={{ width: '62px', background: 'linear-gradient(to left, #fff 34%, rgba(255,255,255,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
+                >
+                  <span className="swipe-hint flex items-center justify-center rounded-full" style={{ width: 22, height: 22, background: 'rgba(60,50,55,0.07)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c7f85" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -299,11 +343,10 @@ export default function ServicesPage() {
 
               {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
               <div className="lg:hidden">
-                <div className="relative -mx-[clamp(1.25rem,5vw,3rem)]">
                 <div
                   ref={bridalScrollRef}
                   onScroll={() => handleCarouselScroll(bridalScrollRef, bridalServices.length, setBridalIdx)}
-                  className="[&::-webkit-scrollbar]:hidden"
+                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
                   style={{
                     overflowX: 'auto',
                     overflowY: 'hidden',
@@ -328,27 +371,6 @@ export default function ServicesPage() {
                     ))}
                     <div className="flex-shrink-0 w-4" />
                   </div>
-                </div>
-                {/* Swipe hint — clear cue the row scrolls; gently nudges, fades once scrolled */}
-                {bridalServices.length > 1 && (
-                  <div
-                    className="swipe-hint pointer-events-none absolute right-3.5 z-10 flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full"
-                    style={{
-                      top: '30vw',
-                      background: 'rgba(22,19,18,0.58)',
-                      backdropFilter: 'blur(6px)',
-                      WebkitBackdropFilter: 'blur(6px)',
-                      boxShadow: '0 6px 18px rgba(0,0,0,0.22)',
-                      opacity: bridalIdx === 0 ? 1 : 0,
-                      transition: 'opacity 0.45s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#fff' }}>Swipe</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 6l6 6-6 6" />
-                    </svg>
-                  </div>
-                )}
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}
                 {bridalServices.length > 1 && (
@@ -392,11 +414,10 @@ export default function ServicesPage() {
 
               {/* Mobile scroll-snap */}
               <div className="sm:hidden">
-                <div className="relative -mx-[clamp(1.25rem,5vw,3rem)]">
                 <div
                   ref={otherScrollRef}
                   onScroll={() => handleCarouselScroll(otherScrollRef, otherServices.length, setOtherIdx)}
-                  className="[&::-webkit-scrollbar]:hidden"
+                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
                   style={{
                     overflowX: 'auto', overflowY: 'hidden',
                     scrollSnapType: 'x mandatory',
@@ -414,27 +435,6 @@ export default function ServicesPage() {
                     ))}
                     <div className="flex-shrink-0 w-4" />
                   </div>
-                </div>
-                {/* Swipe hint — clear cue the row scrolls; gently nudges, fades once scrolled */}
-                {otherServices.length > 1 && (
-                  <div
-                    className="swipe-hint pointer-events-none absolute right-3.5 z-10 flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full"
-                    style={{
-                      top: '110px',
-                      background: 'rgba(22,19,18,0.58)',
-                      backdropFilter: 'blur(6px)',
-                      WebkitBackdropFilter: 'blur(6px)',
-                      boxShadow: '0 6px 18px rgba(0,0,0,0.22)',
-                      opacity: otherIdx === 0 ? 1 : 0,
-                      transition: 'opacity 0.45s ease',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#fff' }}>Swipe</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 6l6 6-6 6" />
-                    </svg>
-                  </div>
-                )}
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}
                 {otherServices.length > 1 && (
