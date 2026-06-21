@@ -12,6 +12,7 @@ import ServicesList from '../components/admin/ServicesList';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
 import TodayAgenda from '../components/admin/TodayAgenda';
+import ClassSignupsCard from '../components/admin/ClassSignupsCard';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
@@ -429,63 +430,12 @@ export default function Admin() {
             />
             {/* Class Sign-Ups quick access — sits above bookings list */}
             {classRegs.length > 0 && (
-              <button
-                onClick={() => { setActiveTab('classes'); setSelectedBooking(null); }}
-                className="w-full mb-14 flex flex-col px-5 py-4 rounded-2xl text-left transition-all group"
-                style={{
-                  background: dm ? '#27272a' : '#fff',
-                  border: `1px solid ${dm ? '#3a3a48' : '#ede8e4'}`,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.5)'; e.currentTarget.style.background = dm ? '#2e2a2e' : '#FDF8F6'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ede8e4'; e.currentTarget.style.background = dm ? '#27272a' : '#fff'; }}
-              >
-                {/* Top row: icon + info + arrow */}
-                <div className="flex items-center gap-4 w-full">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(212,160,176,0.12)' }}>
-                    <span style={{ fontSize: '1rem' }}>💄</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {[
-                        { label: 'Pending',   count: classRegs.filter(r => (r.status || 'pending') === 'pending').length,   color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
-                        { label: 'Confirmed', count: classRegs.filter(r => r.status === 'confirmed').length,                 color: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
-                        { label: 'Enrolled',  count: classRegs.filter(r => r.status === 'enrolled').length,                  color: '#22C55E', bg: 'rgba(34,197,94,0.1)'  },
-                      ].map(({ label, count, color, bg }) => count > 0 && (
-                        <span key={label} className="text-[0.6rem] font-semibold px-2.5 py-0.5 rounded-full"
-                          style={{ background: bg, color }}>
-                          {count} {label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0" style={{ color: dm ? '#71717a' : '#bbb' }}>
-                    <span className="text-[0.65rem] font-medium group-hover:text-[#D4A0B0] transition-colors"
-                      style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
-                      {classRegs.length} total
-                    </span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                      className="w-3.5 h-3.5 transition-colors group-hover:stroke-[#D4A0B0]">
-                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                    </svg>
-                  </div>
-                </div>
-                {/* Just Signed Up — recent registrations (last 24 hrs) */}
-                {recentClassRegs.length > 0 && (
-                  <div className="w-full mt-3.5 pt-3.5 flex items-center gap-2.5"
-                    style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe5'}` }}>
-                    <span className="text-[0.55rem] font-semibold tracking-[0.15em] uppercase"
-                      style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Just Signed Up</span>
-                    <span className="text-[0.7rem] font-semibold px-2.5 py-0.5 rounded-full"
-                      style={{ background: 'rgba(212,160,176,0.12)', color: '#D4A0B0' }}>
-                      +{recentClassRegs.length}
-                    </span>
-                    <span className="text-[0.65rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
-                      — tap to view
-                    </span>
-                  </div>
-                )}
-              </button>
+              <ClassSignupsCard
+                classRegs={classRegs}
+                onOpenAll={() => { setActiveTab('classes'); setSelectedBooking(null); }}
+                onOpenReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                darkMode={dm}
+              />
             )}
             <div id="bookings-list">
               <BookingsList
