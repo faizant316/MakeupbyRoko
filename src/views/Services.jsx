@@ -233,13 +233,14 @@ export default function ServicesPage() {
                 Each service is tailored to you, from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
 
-              {/* Filter — editorial underline tabs inside a soft pill track (scrollable on mobile).
-                  The pill bundles the categories visually and signals they scroll; no animation. */}
-              <div className="relative inline-flex max-w-full align-middle rounded-full" style={{ background: '#eef0f2' }}>
+              {/* Filter — editorial underline tabs (scrollable on mobile).
+                  Sleek static chevrons fade in at whichever edge has more to scroll:
+                  a back-arrow once scrolled, a forward-arrow while there's more ahead. */}
+              <div className="relative">
                 <div
                   ref={filterScrollRef}
                   onScroll={updateFilterEdges}
-                  className="flex items-center overflow-x-auto rounded-full [&::-webkit-scrollbar]:hidden"
+                  className="flex items-center gap-7 overflow-x-auto [&::-webkit-scrollbar]:hidden"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {CATEGORIES.map(cat => {
@@ -248,42 +249,57 @@ export default function ServicesPage() {
                       <button
                         key={cat.key}
                         onClick={() => handleCategorySelect(cat.key)}
-                        className="flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'none', border: 'none', padding: '0 13px', minHeight: '32px', cursor: 'pointer' }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          borderBottom: active ? '1px solid #111' : '1px solid transparent',
+                          padding: '10px 0 6px 0',
+                          fontSize: '0.66rem',
+                          fontFamily: 'var(--font-sans)',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          color: active ? '#111' : '#b3b3b3',
+                          fontWeight: active ? 500 : 400,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          transition: 'color 0.2s, border-color 0.2s',
+                          minHeight: '44px',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                        }}
+                        onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#888'; }}
+                        onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#b3b3b3'; }}
                       >
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            fontFamily: 'var(--font-sans)',
-                            fontSize: '0.63rem',
-                            letterSpacing: '0.1em',
-                            textTransform: 'uppercase',
-                            whiteSpace: 'nowrap',
-                            color: active ? '#111' : '#9aa0a6',
-                            fontWeight: active ? 500 : 400,
-                            paddingBottom: '2px',
-                            borderBottom: active ? '1px solid #111' : '1px solid transparent',
-                            transition: 'color 0.2s, border-color 0.2s',
-                          }}
-                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#5f6368'; }}
-                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#9aa0a6'; }}
-                        >
-                          {cat.label}
-                        </span>
+                        {cat.label}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Soft edge fades in the pill's own color — static cue that there's more to scroll */}
+                {/* Left cue — fades in once scrolled, points back */}
                 <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-7 rounded-l-full transition-opacity duration-300 lg:hidden"
-                  style={{ background: 'linear-gradient(to right, #eef0f2 38%, rgba(238,240,242,0))', opacity: filterEdges.atStart ? 0 : 1 }}
-                />
+                  className="pointer-events-none absolute inset-y-0 left-0 flex items-center justify-start transition-opacity duration-300 lg:hidden"
+                  style={{ width: '50px', background: 'linear-gradient(to right, #fff 32%, rgba(255,255,255,0))', opacity: filterEdges.atStart ? 0 : 1 }}
+                >
+                  <span className="flex items-center justify-center rounded-full" style={{ width: 22, height: 22, background: 'rgba(80,86,96,0.06)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </span>
+                </div>
+
+                {/* Right cue — fades in while there's more, points forward */}
                 <div
-                  className="pointer-events-none absolute inset-y-0 right-0 w-7 rounded-r-full transition-opacity duration-300 lg:hidden"
-                  style={{ background: 'linear-gradient(to left, #eef0f2 38%, rgba(238,240,242,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
-                />
+                  className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end transition-opacity duration-300 lg:hidden"
+                  style={{ width: '50px', background: 'linear-gradient(to left, #fff 32%, rgba(255,255,255,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
+                >
+                  <span className="flex items-center justify-center rounded-full" style={{ width: 22, height: 22, background: 'rgba(80,86,96,0.06)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9aa0a6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </span>
+                </div>
               </div>
             </div>
 
