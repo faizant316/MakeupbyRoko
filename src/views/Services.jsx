@@ -194,7 +194,7 @@ export default function ServicesPage() {
 
       {/* Services Grid */}
       <div id="services-grid" className="px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]">
-        <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
+        <div className="max-w-[1280px] mx-auto flex flex-col gap-6">
 
           {/* Section header */}
           <div className="mb-8">
@@ -299,10 +299,11 @@ export default function ServicesPage() {
 
               {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
               <div className="lg:hidden">
+                <div className="relative -mx-[clamp(1.25rem,5vw,3rem)]">
                 <div
                   ref={bridalScrollRef}
                   onScroll={() => handleCarouselScroll(bridalScrollRef, bridalServices.length, setBridalIdx)}
-                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
+                  className="[&::-webkit-scrollbar]:hidden"
                   style={{
                     overflowX: 'auto',
                     overflowY: 'hidden',
@@ -327,6 +328,11 @@ export default function ServicesPage() {
                     ))}
                     <div className="flex-shrink-0 w-4" />
                   </div>
+                </div>
+                {/* Subtle right-edge fade — hints there's more to scroll */}
+                {bridalServices.length > 1 && (
+                  <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-14" style={{ background: 'linear-gradient(to left, rgba(255,255,255,0.92), rgba(255,255,255,0))' }} />
+                )}
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}
                 {bridalServices.length > 1 && (
@@ -370,10 +376,11 @@ export default function ServicesPage() {
 
               {/* Mobile scroll-snap */}
               <div className="sm:hidden">
+                <div className="relative -mx-[clamp(1.25rem,5vw,3rem)]">
                 <div
                   ref={otherScrollRef}
                   onScroll={() => handleCarouselScroll(otherScrollRef, otherServices.length, setOtherIdx)}
-                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
+                  className="[&::-webkit-scrollbar]:hidden"
                   style={{
                     overflowX: 'auto', overflowY: 'hidden',
                     scrollSnapType: 'x mandatory',
@@ -391,6 +398,11 @@ export default function ServicesPage() {
                     ))}
                     <div className="flex-shrink-0 w-4" />
                   </div>
+                </div>
+                {/* Subtle right-edge fade — hints there's more to scroll */}
+                {otherServices.length > 1 && (
+                  <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-14" style={{ background: 'linear-gradient(to left, rgba(255,255,255,0.92), rgba(255,255,255,0))' }} />
+                )}
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}
                 {otherServices.length > 1 && (
