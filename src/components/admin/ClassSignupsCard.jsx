@@ -47,7 +47,7 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
   }, [classRegs]);
 
   return (
-    <div className="w-full mb-12 pt-7" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f1ece7'}` }}>
+    <div className="w-full mb-8 pt-7" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f1ece7'}` }}>
       {/* Header — opens the full Class Sign-Ups tab */}
       <button onClick={onOpenAll} className="group w-full flex items-center gap-3 mb-4 text-left">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(160,96,122,0.1)' }}>
