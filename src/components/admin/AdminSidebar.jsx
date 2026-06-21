@@ -20,12 +20,26 @@ export default function AdminSidebar({
   onBackToSite,
   onLogout,
 }) {
-  // Lock body scroll when mobile nav is open
+  // Lock body scroll when mobile nav is open — same robust technique the public
+  // site's menu uses (pin the body with position:fixed and restore the exact
+  // scroll position on close). Plain overflow:hidden lets the page lurch on
+  // mobile; this keeps the open/close buttery smooth with no shift.
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = ''; };
-    }
+    if (!mobileOpen) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
+    };
   }, [mobileOpen]);
 
   const handleTabClick = (key) => {
@@ -33,34 +47,29 @@ export default function AdminSidebar({
     setMobileOpen(false);
   };
 
-  /* ── Utility row helpers ───────────────────────────────── */
-  const DarkToggle = ({ size = 'sm' }) => (
+  /* ── Utility row helpers (desktop sidebar) ─────────────── */
+  const DarkToggle = () => (
     <button
       onClick={onDarkModeToggle}
-      className={`flex items-center gap-2.5 transition-opacity hover:opacity-70 active:opacity-50 ${size === 'lg' ? 'py-2' : 'w-full px-3.5 py-2.5 rounded-xl'}`}
+      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl transition-opacity hover:opacity-70 active:opacity-50"
     >
       {/* Mini toggle pill */}
       <div
         className="relative rounded-full flex items-center flex-shrink-0 px-0.5 transition-colors duration-300"
-        style={{ width: size === 'lg' ? '34px' : '28px', height: size === 'lg' ? '20px' : '16px', background: dm ? '#D4A0B0' : '#e2dbd5' }}
+        style={{ width: '28px', height: '16px', background: dm ? '#D4A0B0' : '#e2dbd5' }}
       >
         <div
           className="rounded-full shadow-sm transition-transform duration-300"
           style={{
-            width:  size === 'lg' ? '16px' : '12px',
-            height: size === 'lg' ? '16px' : '12px',
+            width: '12px',
+            height: '12px',
             background: dm ? '#1a1210' : '#fff',
-            transform: dm
-              ? `translateX(${size === 'lg' ? '14px' : '12px'})`
-              : 'translateX(0px)',
+            transform: dm ? 'translateX(12px)' : 'translateX(0px)',
           }}
         />
       </div>
-      <span
-        className={`font-medium ${size === 'lg' ? 'text-[0.85rem]' : 'text-[0.7rem]'}`}
-        style={{ color: dm ? '#71717a' : '#888' }}
-      >
-        {dm ? (size === 'lg' ? 'Switch to Light Mode' : 'Light Mode') : (size === 'lg' ? 'Switch to Dark Mode' : 'Dark Mode')}
+      <span className="font-medium text-[0.7rem]" style={{ color: dm ? '#71717a' : '#888' }}>
+        {dm ? 'Light Mode' : 'Dark Mode'}
       </span>
     </button>
   );
@@ -115,7 +124,7 @@ export default function AdminSidebar({
           className="px-3 pb-6 pt-4 flex flex-col gap-0.5"
           style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}` }}
         >
-          <DarkToggle size="sm" />
+          <DarkToggle />
 
           <button
             onClick={onBackToSite}
@@ -207,31 +216,66 @@ export default function AdminSidebar({
           })}
         </nav>
 
-        {/* Utility actions at bottom */}
+        {/* Utility actions at bottom — generous, tappable rows with icon chips */}
         <div
-          className="px-6 pb-8 pt-6 flex flex-col gap-5 flex-shrink-0"
+          className="px-5 pb-7 pt-3 flex flex-col gap-1 flex-shrink-0"
           style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ebe6'}` }}
         >
-          <DarkToggle size="lg" />
-
+          {/* Dark / light mode — sun & moon */}
           <button
-            onClick={() => { setMobileOpen(false); onBackToSite(); }}
-            className="flex items-center gap-3 active:opacity-60"
+            onClick={onDarkModeToggle}
+            className="w-full flex items-center gap-3.5 py-3 rounded-xl active:opacity-60 transition-opacity"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#71717a' : '#888'} strokeWidth="1.5" className="w-4 h-4 flex-shrink-0">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
-            </svg>
-            <span className="text-[0.82rem] font-medium" style={{ color: dm ? '#71717a' : '#888' }}>Back to Site</span>
+            <span
+              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#f5f0ec' }}
+            >
+              {dm ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[19px] h-[19px]">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[19px] h-[19px]">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              )}
+            </span>
+            <span className="text-[0.95rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>
+              {dm ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            </span>
           </button>
 
+          {/* Back to site */}
+          <button
+            onClick={() => { setMobileOpen(false); onBackToSite(); }}
+            className="w-full flex items-center gap-3.5 py-3 rounded-xl active:opacity-60 transition-opacity"
+          >
+            <span
+              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+              </svg>
+            </span>
+            <span className="text-[0.95rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>Back to Site</span>
+          </button>
+
+          {/* Log out */}
           <button
             onClick={() => { setMobileOpen(false); onLogout(); }}
-            className="flex items-center gap-3 active:opacity-60"
+            className="w-full flex items-center gap-3.5 py-3 rounded-xl active:opacity-60 transition-opacity"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-            </svg>
-            <span className="text-[0.82rem] font-medium text-red-400">Log Out</span>
+            <span
+              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(239,68,68,0.1)' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+              </svg>
+            </span>
+            <span className="text-[0.95rem] font-medium" style={{ color: '#ef4444' }}>Log Out</span>
           </button>
         </div>
       </div>

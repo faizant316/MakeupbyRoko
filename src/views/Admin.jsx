@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -44,20 +44,12 @@ export default function Admin() {
     localStorage.setItem('admin-dark', darkMode);
   }, [darkMode]);
 
-  // Floating back button (mobile): stay out of the way while reading down a page,
-  // then slide in when the user scrolls up (the intent to leave). Hidden near the top
-  // where the header already sits.
-  const lastScrollY = useRef(0);
+  // Floating back button (mobile): reveal as soon as the page is scrolled even
+  // a little past the header, and keep it there so it's always within reach.
+  // Only tucked away right at the top, where the header already sits.
   useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      const delta = y - lastScrollY.current;
-      if (Math.abs(delta) < 6) return;          // ignore jitter
-      if (y < 60) setShowNavFab(false);          // at the top, header is right there
-      else if (delta < 0) setShowNavFab(true);   // scrolling up → reveal
-      else setShowNavFab(false);                 // scrolling down → tuck away
-      lastScrollY.current = y;
-    };
+    const onScroll = () => setShowNavFab(window.scrollY > 40);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -307,9 +299,9 @@ export default function Admin() {
         className="sticky top-0 z-[100]"
         style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }}
       >
-        <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+        <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 h-14">
           {/* Branding + active section chip (mobile) */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <a
               href="/"
               className="font-serif text-lg tracking-[0.12em] uppercase whitespace-nowrap flex-shrink-0"
@@ -317,44 +309,49 @@ export default function Admin() {
             >
               Roqia Moshref
             </a>
-            {/* Active section pill — mobile only */}
+            {/* Active section pill — mobile only. Truncates so it can never
+                overflow onto the hamburger and swallow its taps. */}
             <span
-              className="sm:hidden text-[0.55rem] tracking-[0.14em] uppercase font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0"
+              className="sm:hidden text-[0.55rem] tracking-[0.14em] uppercase font-semibold px-1.5 py-0.5 rounded-md min-w-0 truncate"
               style={{ color: '#D4A0B0', background: dm ? 'rgba(212,160,176,0.1)' : 'rgba(212,160,176,0.08)' }}
             >
               {activeTabLabel}
             </span>
           </div>
 
-          {/* Mobile hamburger — animates to × when open */}
+          {/* Mobile hamburger — animates to × when open.
+              Mirrors the public site's nav button (the one that feels buttery
+              smooth): Tailwind-driven line transforms, a single solid hit
+              target (lines are pointer-events-none so every tap lands on the
+              button), and touch-action:manipulation for instant taps. */}
           <button
             onClick={() => setMobileNavOpen(o => !o)}
-            className="sm:hidden relative w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90"
-            style={{ background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent' }}
+            className="sm:hidden relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full transition-transform duration-200 active:scale-90"
+            style={{
+              background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
             aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
           >
-            {/* Top line */}
-            <span style={{
-              position: 'absolute', display: 'block', width: '18px', height: '1.5px',
-              background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
-              transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s',
-              transform: mobileNavOpen ? 'translateY(0) rotate(45deg)' : 'translateY(-5px)',
-              opacity: 1,
-            }} />
-            {/* Middle line */}
-            <span style={{
-              position: 'absolute', display: 'block', width: '18px', height: '1.5px',
-              background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
-              transition: 'opacity 0.15s',
-              opacity: mobileNavOpen ? 0 : 1,
-            }} />
-            {/* Bottom line */}
-            <span style={{
-              position: 'absolute', display: 'block', width: '18px', height: '1.5px',
-              background: dm ? '#F0EBE6' : '#111', borderRadius: '2px',
-              transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
-              transform: mobileNavOpen ? 'translateY(0) rotate(-45deg)' : 'translateY(5px)',
-            }} />
+            <span
+              className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
+                mobileNavOpen ? 'rotate-45 translate-y-0' : '-translate-y-[5px]'
+              }`}
+              style={{ background: dm ? '#F0EBE6' : '#111' }}
+            />
+            <span
+              className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
+                mobileNavOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
+              }`}
+              style={{ background: dm ? '#F0EBE6' : '#111' }}
+            />
+            <span
+              className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
+                mobileNavOpen ? '-rotate-45 translate-y-0' : 'translate-y-[5px]'
+              }`}
+              style={{ background: dm ? '#F0EBE6' : '#111' }}
+            />
           </button>
         </div>
       </div>
