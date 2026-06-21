@@ -449,71 +449,80 @@ export default function BookingsList({
         )}
       </div>
 
-      {/* Status pills + service type pills */}
+      {/* Status + service-type filters — minimal text chips, soft-tint when active */}
       {(() => {
         const STATUS_COLORS = {
-          all:       { active: dm ? '#D4A0B0' : '#111', activeTxt: dm ? '#1a1614' : '#fff', dot: null },
-          pending:   { active: '#F59E0B', activeTxt: '#fff', dot: '#F59E0B' },
-          confirmed: { active: '#3B82F6', activeTxt: '#fff', dot: '#3B82F6' },
-          completed: { active: '#22C55E', activeTxt: '#fff', dot: '#22C55E' },
-          cancelled: { active: '#EF4444', activeTxt: '#fff', dot: '#EF4444' },
+          all:       { dot: null,      light: { bg: 'rgba(160,96,122,0.10)', txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)', txt: '#e7c9d5' } },
+          pending:   { dot: '#F59E0B', light: { bg: 'rgba(245,158,11,0.13)', txt: '#B26A04' }, dark: { bg: 'rgba(245,158,11,0.18)',  txt: '#F5B83C' } },
+          confirmed: { dot: '#3B82F6', light: { bg: 'rgba(59,130,246,0.12)', txt: '#2563EB' }, dark: { bg: 'rgba(59,130,246,0.20)',  txt: '#7DAEF9' } },
+          completed: { dot: '#22C55E', light: { bg: 'rgba(34,197,94,0.13)',  txt: '#15803D' }, dark: { bg: 'rgba(34,197,94,0.18)',   txt: '#56D98A' } },
+          cancelled: { dot: '#EF4444', light: { bg: 'rgba(239,68,68,0.12)',  txt: '#DC2626' }, dark: { bg: 'rgba(239,68,68,0.18)',   txt: '#F87171' } },
         };
         const inAppointments = viewType === 'appointments';
+        const mutedTxt = dm ? '#8a8a93' : '#9b8e88';
+        const hoverTxt = dm ? '#cfcfd6' : '#6b6259';
+        const hoverBg  = dm ? '#26262d' : '#F5F1EC';
+        const chipCls = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.66rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
+        const inactiveStyle = { background: 'transparent', color: mutedTxt };
+        const onEnter = (e, active) => { if (!active) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } };
+        const onLeave = (e, active) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = mutedTxt; } };
         return (
-          <div className="flex items-center gap-1.5 mb-5 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex items-center gap-1 mb-5 overflow-x-auto no-scrollbar pb-0.5">
             {STATUSES.map(s => {
               const count = statusCounts[s] || 0;
               const isActive = inAppointments && statusFilter === s;
-              const colors = STATUS_COLORS[s];
+              const c = STATUS_COLORS[s];
+              const tone = dm ? c.dark : c.light;
               return (
                 <button
                   key={s}
                   onClick={() => { setStatusFilter(s); setViewType?.('appointments'); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
-                  style={isActive
-                    ? { background: colors.active, color: colors.activeTxt, border: `1px solid ${colors.active}` }
-                    : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
-                  }
+                  className={chipCls}
+                  style={isActive ? { background: tone.bg, color: tone.txt } : inactiveStyle}
+                  onMouseEnter={e => onEnter(e, isActive)}
+                  onMouseLeave={e => onLeave(e, isActive)}
                 >
-                  {colors.dot && !isActive && (
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colors.dot }} />
-                  )}
+                  {c.dot && !isActive && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />}
                   <span className="capitalize">{s}</span>
-                  <span className="opacity-70">({count})</span>
+                  <span style={{ opacity: 0.55 }}>{count}</span>
                 </button>
               );
             })}
 
             {/* Divider */}
-            <div className="w-px h-4 rounded-full flex-shrink-0 mx-0.5" style={{ background: dm ? '#3f3f46' : '#e0d8d2' }} />
+            <div className="w-px h-3.5 rounded-full flex-shrink-0 mx-1.5" style={{ background: dm ? '#3f3f46' : '#e6ddd6' }} />
 
-            {/* Makeup Courses pill */}
-            <button
-              onClick={() => setViewType?.('courses')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
-              style={viewType === 'courses'
-                ? { background: LESSON_COLOR, color: '#fff', border: `1px solid ${LESSON_COLOR}` }
-                : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
-              }
-            >
-              {viewType !== 'courses' && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: LESSON_COLOR }} />}
-              <span>Makeup Courses</span>
-              <span className="opacity-70">({classRegs.filter(r => !r.appointment_date || r.appointment_date >= today).length})</span>
-            </button>
+            {/* Makeup Courses */}
+            {(() => {
+              const active = viewType === 'courses';
+              const tone = dm ? { bg: 'rgba(196,149,106,0.2)', txt: '#D8B084' } : { bg: 'rgba(196,149,106,0.14)', txt: '#9C6B38' };
+              const count = classRegs.filter(r => !r.appointment_date || r.appointment_date >= today).length;
+              return (
+                <button onClick={() => setViewType?.('courses')} className={chipCls}
+                  style={active ? { background: tone.bg, color: tone.txt } : inactiveStyle}
+                  onMouseEnter={e => onEnter(e, active)} onMouseLeave={e => onLeave(e, active)}>
+                  {!active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: LESSON_COLOR }} />}
+                  <span>Makeup Courses</span>
+                  <span style={{ opacity: 0.55 }}>{count}</span>
+                </button>
+              );
+            })()}
 
-            {/* Consultations pill */}
-            <button
-              onClick={() => setViewType?.('consultations')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[0.65rem] font-semibold whitespace-nowrap transition-all flex-shrink-0"
-              style={viewType === 'consultations'
-                ? { background: CONSULT_COLOR, color: '#fff', border: `1px solid ${CONSULT_COLOR}` }
-                : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}` }
-              }
-            >
-              {viewType !== 'consultations' && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CONSULT_COLOR }} />}
-              <span>Consultations</span>
-              <span className="opacity-70">({(allBookings || []).filter(b => b.consultation_date && b.consultation_date >= today).length})</span>
-            </button>
+            {/* Consultations */}
+            {(() => {
+              const active = viewType === 'consultations';
+              const tone = dm ? { bg: 'rgba(168,85,247,0.22)', txt: '#C99BF5' } : { bg: 'rgba(168,85,247,0.12)', txt: '#9333EA' };
+              const count = (allBookings || []).filter(b => b.consultation_date && b.consultation_date >= today).length;
+              return (
+                <button onClick={() => setViewType?.('consultations')} className={chipCls}
+                  style={active ? { background: tone.bg, color: tone.txt } : inactiveStyle}
+                  onMouseEnter={e => onEnter(e, active)} onMouseLeave={e => onLeave(e, active)}>
+                  {!active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CONSULT_COLOR }} />}
+                  <span>Consultations</span>
+                  <span style={{ opacity: 0.55 }}>{count}</span>
+                </button>
+              );
+            })()}
           </div>
         );
       })()}
