@@ -186,28 +186,28 @@ export default function AdminSidebar({
           </button>
         </div>
 
-        {/* Nav items — large serif text like Navigation.jsx */}
-        <nav className="flex-1 overflow-y-auto px-6 pt-2">
+        {/* Nav items — serif text like Navigation.jsx, sized so all sections fit */}
+        <nav className="flex-1 overflow-y-auto px-6 pt-1">
           {ADMIN_TABS.map(tab => {
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
                 onClick={() => handleTabClick(tab.key)}
-                className="w-full text-left py-5 flex flex-col gap-1 active:opacity-60 transition-opacity"
+                className="w-full text-left py-3.5 flex flex-col gap-0.5 active:opacity-60 transition-opacity"
                 style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe6'}` }}
               >
                 <span
                   className="font-serif font-light leading-none"
                   style={{
-                    fontSize: 'clamp(1.7rem, 6vw, 2.1rem)',
+                    fontSize: 'clamp(1.35rem, 5vw, 1.7rem)',
                     color: isActive ? '#D4A0B0' : (dm ? '#e4e4e7' : '#111'),
                   }}
                 >
                   {tab.label}
                 </span>
                 <span
-                  className="text-[0.65rem] tracking-[0.12em] uppercase mt-0.5"
+                  className="text-[0.6rem] tracking-[0.12em] uppercase mt-0.5"
                   style={{ color: dm ? '#52525b' : '#bbb' }}
                 >
                   {tab.sub}
@@ -217,32 +217,33 @@ export default function AdminSidebar({
           })}
         </nav>
 
-        {/* Utility actions at bottom — generous, tappable rows with icon chips */}
+        {/* Utility actions at bottom — compact rows with icon chips, kept small
+            so every nav section stays visible above them without scrolling */}
         <div
-          className="px-5 pb-7 pt-3 flex flex-col gap-1 flex-shrink-0"
+          className="px-5 pb-5 pt-1.5 flex flex-col flex-shrink-0"
           style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ebe6'}` }}
         >
           {/* Dark / light mode — sun & moon */}
           <button
             onClick={onDarkModeToggle}
-            className="w-full flex items-center gap-3.5 py-3 rounded-xl active:opacity-60 transition-opacity"
+            className="w-full flex items-center gap-3 py-2 rounded-lg active:opacity-60 transition-opacity"
           >
             <span
-              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#f5f0ec' }}
             >
               {dm ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[19px] h-[19px]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
                   <circle cx="12" cy="12" r="4"/>
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
                 </svg>
               ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[19px] h-[19px]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                 </svg>
               )}
             </span>
-            <span className="text-[0.95rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>
+            <span className="text-[0.82rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>
               {dm ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             </span>
           </button>
@@ -250,33 +251,33 @@ export default function AdminSidebar({
           {/* Back to site */}
           <button
             onClick={() => { setMobileOpen(false); onBackToSite(); }}
-            className="w-full flex items-center gap-3.5 py-3 rounded-xl active:opacity-60 transition-opacity"
+            className="w-full flex items-center gap-3 py-2 rounded-lg active:opacity-60 transition-opacity"
           >
             <span
-              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
               </svg>
             </span>
-            <span className="text-[0.95rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>Back to Site</span>
+            <span className="text-[0.82rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>Back to Site</span>
           </button>
 
           {/* Log out */}
           <button
             onClick={() => { setMobileOpen(false); onLogout(); }}
-            className="w-full flex items-center gap-3.5 py-3 rounded-xl active:opacity-60 transition-opacity"
+            className="w-full flex items-center gap-3 py-2 rounded-lg active:opacity-60 transition-opacity"
           >
             <span
-              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: 'rgba(239,68,68,0.1)' }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
               </svg>
             </span>
-            <span className="text-[0.95rem] font-medium" style={{ color: '#ef4444' }}>Log Out</span>
+            <span className="text-[0.82rem] font-medium" style={{ color: '#ef4444' }}>Log Out</span>
           </button>
         </div>
       </div>

@@ -299,9 +299,10 @@ export default function Admin() {
         className="sticky top-0 z-[100]"
         style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }}
       >
-        <div className="px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2 h-14">
-          {/* Branding + active section chip (mobile) */}
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div className="px-4 sm:px-6 lg:px-8 flex items-center h-14">
+          {/* Branding + active section chip (mobile). pr-14 on mobile reserves
+              room for the fixed hamburger so the pill never slides under it. */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-14 sm:pr-0">
             <a
               href="/"
               className="font-serif text-lg tracking-[0.12em] uppercase whitespace-nowrap flex-shrink-0"
@@ -309,8 +310,7 @@ export default function Admin() {
             >
               Roqia Moshref
             </a>
-            {/* Active section pill — mobile only. Truncates so it can never
-                overflow onto the hamburger and swallow its taps. */}
+            {/* Active section pill — mobile only. Truncates so it stays tidy. */}
             <span
               className="sm:hidden text-[0.55rem] tracking-[0.14em] uppercase font-semibold px-1.5 py-0.5 rounded-md min-w-0 truncate"
               style={{ color: '#D4A0B0', background: dm ? 'rgba(212,160,176,0.1)' : 'rgba(212,160,176,0.08)' }}
@@ -318,43 +318,45 @@ export default function Admin() {
               {activeTabLabel}
             </span>
           </div>
-
-          {/* Mobile hamburger — animates to × when open.
-              Mirrors the public site's nav button (the one that feels buttery
-              smooth): Tailwind-driven line transforms, a single solid hit
-              target (lines are pointer-events-none so every tap lands on the
-              button), and touch-action:manipulation for instant taps. */}
-          <button
-            onClick={() => setMobileNavOpen(o => !o)}
-            className="sm:hidden relative w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full transition-transform duration-200 active:scale-90"
-            style={{
-              background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent',
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
-          >
-            <span
-              className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
-                mobileNavOpen ? 'rotate-45 translate-y-0' : '-translate-y-[5px]'
-              }`}
-              style={{ background: dm ? '#F0EBE6' : '#111' }}
-            />
-            <span
-              className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
-                mobileNavOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
-              }`}
-              style={{ background: dm ? '#F0EBE6' : '#111' }}
-            />
-            <span
-              className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
-                mobileNavOpen ? '-rotate-45 translate-y-0' : 'translate-y-[5px]'
-              }`}
-              style={{ background: dm ? '#F0EBE6' : '#111' }}
-            />
-          </button>
         </div>
       </div>
+
+      {/* Mobile hamburger — animates to × when open.
+          Rendered as a FIXED button (not inside the sticky header) so its hit
+          box always lines up with where it's painted — exactly how the public
+          site's nav button behaves (its parent is fixed too). The sticky header
+          was desyncing the tap target downward; fixed positioning fixes that.
+          Lines are pointer-events-none so every tap lands on the button, and
+          touch-action:manipulation keeps taps instant. */}
+      <button
+        onClick={() => setMobileNavOpen(o => !o)}
+        className="sm:hidden fixed top-[6px] right-4 z-[110] w-11 h-11 flex items-center justify-center rounded-full transition-transform duration-200 active:scale-90"
+        style={{
+          background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent',
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+        aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+      >
+        <span
+          className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
+            mobileNavOpen ? 'rotate-45 translate-y-0' : '-translate-y-[5px]'
+          }`}
+          style={{ background: dm ? '#F0EBE6' : '#111' }}
+        />
+        <span
+          className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
+            mobileNavOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
+          }`}
+          style={{ background: dm ? '#F0EBE6' : '#111' }}
+        />
+        <span
+          className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
+            mobileNavOpen ? '-rotate-45 translate-y-0' : 'translate-y-[5px]'
+          }`}
+          style={{ background: dm ? '#F0EBE6' : '#111' }}
+        />
+      </button>
 
       {/* ── Floating back button (mobile) ────────────────────────
           Gray translucent arrow, like the public site's modal back button.
