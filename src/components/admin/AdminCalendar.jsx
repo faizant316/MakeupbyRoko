@@ -295,15 +295,15 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <button onClick={() => setCurrentMonth(new Date(year, month - 1))}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0"
-              style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>‹</button>
+              style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
             <span className="text-[0.875rem] sm:text-[0.95rem] font-semibold tracking-tight text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{monthName}</span>
             <button onClick={() => setCurrentMonth(new Date(year, month + 1))}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0"
-              style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>›</button>
+              style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
           <button onClick={goToToday}
             className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all flex-shrink-0"
-            style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>
+            style={{ background: dm ? 'rgba(160,120,90,0.14)' : '#F6EFE8' }}>
             Today
           </button>
         </div>
@@ -338,9 +338,9 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
       <>
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>‹</button>
+            <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
             <span className="text-[0.8rem] font-semibold text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
-            <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>›</button>
+            <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
           <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
         </div>
@@ -368,9 +368,9 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
       <>
         <div className="flex flex-col gap-2 mb-5">
           <div className="flex items-center gap-2">
-            <button onClick={prevDay} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>‹</button>
+            <button onClick={prevDay} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
             <span className="text-[0.875rem] font-semibold flex-1 min-w-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
-            <button onClick={nextDay} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#777' }}>›</button>
+            <button onClick={nextDay} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
@@ -428,18 +428,24 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
   return (
     <>
-      <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
-        {/* View switcher + hint */}
+      <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f1ece7'}` }}>
+        {/* View switcher + hint — minimal text tabs, soft tint when active */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-0.5 rounded-xl p-1" style={{ background: dm ? '#1e1e24' : '#F5F0EC' }}>
-            {['Day', 'Week', 'Month'].map(v => (
-              <button key={v} onClick={() => setView(v.toLowerCase())}
-                className="px-4 py-1.5 text-[0.7rem] font-semibold tracking-[0.06em] uppercase rounded-lg transition-all"
-                style={view === v.toLowerCase()
-                  ? { background: dm ? '#3a3a48' : '#fff', color: dm ? '#e4e4e7' : '#111', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
-                  : { color: dm ? '#71717a' : '#aaa' }
-                }>{v}</button>
-            ))}
+          <div className="flex items-center gap-1">
+            {['Day', 'Week', 'Month'].map(v => {
+              const active = view === v.toLowerCase();
+              return (
+                <button key={v} onClick={() => setView(v.toLowerCase())}
+                  className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
+                  style={active
+                    ? { background: dm ? '#34343d' : '#F1EBE6', color: dm ? '#f0ebe6' : '#1a1a1a' }
+                    : { background: 'transparent', color: dm ? '#6f6f78' : '#b3a89f' }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#8a7e84'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#b3a89f'; }}>
+                  {v}
+                </button>
+              );
+            })}
           </div>
           <span className="text-[0.6rem] tracking-wide hidden sm:block italic" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Double-click to block a date</span>
         </div>

@@ -133,7 +133,7 @@ function TypeSegment({ value, onChange, dm }) {
             ref={el => { btnRefs.current[s.key] = el; }}
             type="button"
             onClick={() => onChange(s.key)}
-            className="relative pb-2 pt-0.5 text-[0.8rem] tracking-[0.01em] whitespace-nowrap transition-colors duration-200"
+            className="relative pb-2 pt-0.5 text-[0.92rem] tracking-[0.01em] whitespace-nowrap transition-colors duration-200"
             style={{
               color: isActive ? (dm ? '#f0ebe6' : '#1a1a1a') : (dm ? '#6f6f78' : '#b3a89f'),
               fontWeight: isActive ? 600 : 500,
@@ -263,10 +263,22 @@ export default function BookingsList({
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Time-aware summary glance the status pills don't give.
-  const todayCount = visibleActive.filter(b => daysUntil(b.date) === 0).length;
-  const weekCount = visibleActive.filter(b => { const d = daysUntil(b.date); return d >= 0 && d <= 7; }).length;
-  const upcomingCount = visibleActive.length;
+  // Time-aware summary glance — counts everything on the calendar that day, not
+  // only service bookings: makeup classes and consultations count too, so it
+  // reconciles with the Today card up top (a class today is not "0 today").
+  const lessonEvents = (classRegs || []).filter(r => r.appointment_date && r.status !== 'cancelled');
+  const consultEvents = (allBookings || []).filter(b => b.consultation_date && b.status !== 'cancelled');
+  const inToday = d => daysUntil(d) === 0;
+  const inWeek = d => { const x = daysUntil(d); return x >= 0 && x <= 7; };
+  const todayCount = visibleActive.filter(b => inToday(b.date)).length
+    + lessonEvents.filter(r => inToday(r.appointment_date)).length
+    + consultEvents.filter(b => inToday(b.consultation_date)).length;
+  const weekCount = visibleActive.filter(b => inWeek(b.date)).length
+    + lessonEvents.filter(r => inWeek(r.appointment_date)).length
+    + consultEvents.filter(b => inWeek(b.consultation_date)).length;
+  const upcomingCount = visibleActive.length
+    + lessonEvents.filter(r => daysUntil(r.appointment_date) >= 0).length
+    + consultEvents.filter(b => daysUntil(b.consultation_date) >= 0).length;
 
   const consultationBookings = (allBookings || [])
     .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
@@ -418,7 +430,7 @@ export default function BookingsList({
 
       {/* Search */}
       <div className="relative mb-4">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -426,10 +438,10 @@ export default function BookingsList({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, email, or service..."
-          className="w-full pl-11 pr-11 py-3 rounded-xl text-base sm:text-[0.85rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
+          className="w-full pl-10 pr-10 py-2.5 rounded-lg text-base sm:text-[0.82rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
           style={{
-            background: dm ? '#27272a' : '#fff',
-            border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`,
+            background: dm ? '#232328' : '#FAF8F6',
+            border: `1px solid ${dm ? '#34343d' : '#efe9e3'}`,
             color: dm ? '#e4e4e7' : '#111',
           }}
         />
@@ -462,7 +474,7 @@ export default function BookingsList({
         const mutedTxt = dm ? '#8a8a93' : '#9b8e88';
         const hoverTxt = dm ? '#cfcfd6' : '#6b6259';
         const hoverBg  = dm ? '#26262d' : '#F5F1EC';
-        const chipCls = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.66rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
+        const chipCls = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
         const inactiveStyle = { background: 'transparent', color: mutedTxt };
         const onEnter = (e, active) => { if (!active) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } };
         const onLeave = (e, active) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = mutedTxt; } };
@@ -852,18 +864,17 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Time-aware summary — a quick glance the status pills don't give */}
-      {viewType === 'appointments' && !selectedDate && !loading && visibleActiveCount > 0 && (
-        <div className="flex items-stretch gap-2 mb-5">
+      {/* Time-aware summary — minimal inline glance (no boxes) */}
+      {viewType === 'appointments' && !selectedDate && !loading && upcomingCount > 0 && (
+        <div className="flex items-center gap-7 sm:gap-9 mb-5 px-0.5">
           {[
             { label: 'Today', value: todayCount },
             { label: 'This Week', value: weekCount },
             { label: 'Upcoming', value: upcomingCount },
           ].map(s => (
-            <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
-              style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
-              <p className="text-[1.1rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</p>
-              <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
+            <div key={s.label} className="flex items-baseline gap-1.5">
+              <span className="text-[1.25rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</span>
+              <span className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</span>
             </div>
           ))}
         </div>

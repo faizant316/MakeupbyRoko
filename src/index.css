@@ -243,11 +243,11 @@
   transform: translateY(0) !important;
 }
 
-/* Carousel "swipe" hint — gentle right-nudge to signal horizontal scroll */
+/* "Scroll" hint chevron — gentle right-nudge to signal horizontal scroll */
 @keyframes swipeNudge {
-  0%, 55%, 100% { transform: translate(0, -50%); }
-  72% { transform: translate(7px, -50%); }
-  86% { transform: translate(2px, -50%); }
+  0%, 55%, 100% { transform: translateX(0); }
+  72% { transform: translateX(4px); }
+  86% { transform: translateX(1px); }
 }
 .swipe-hint {
   animation: swipeNudge 2.1s ease-in-out infinite;

@@ -64,14 +64,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
   const hasItems = items.length > 0;
 
   return (
-    <div
-      className="rounded-2xl p-5 mb-6"
-      style={{
-        background: dm ? '#26262e' : '#fff',
-        border: `1px solid ${hasItems ? (dm ? 'rgba(212,160,176,0.32)' : '#F0D9E3') : (dm ? '#3a3a48' : '#ede8e4')}`,
-        boxShadow: hasItems ? (dm ? 'none' : '0 1px 2px rgba(160,96,122,0.06), 0 6px 18px rgba(160,96,122,0.07)') : 'none',
-      }}
-    >
+    <div className="mb-8">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-4">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasItems ? 'animate-pulse' : ''}`} style={{ background: hasItems ? '#D4A0B0' : (dm ? '#52525b' : '#d8cfc8') }} />
@@ -93,10 +86,10 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
               <button
                 key={item.id}
                 onClick={item.onClick}
-                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
-                style={{ background: dm ? '#1e1e24' : '#FBF9F7', border: `1px solid ${dm ? '#34343d' : '#ece4dc'}` }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = dm ? '#2e2e37' : '#FFFDFB'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#ece4dc'; e.currentTarget.style.background = dm ? '#1e1e24' : '#FBF9F7'; }}
+                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors"
+                style={{ background: dm ? '#1e1e24' : '#FAF8F6' }}
+                onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2a2a31' : '#F4EFEC'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = dm ? '#1e1e24' : '#FAF8F6'; }}
               >
                 <span className="text-[0.72rem] font-semibold w-[64px] flex-shrink-0 tabular-nums" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
                   {item.time || '—'}
