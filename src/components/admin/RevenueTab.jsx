@@ -146,7 +146,7 @@ function fmtRevenue(n) {
 
 function StatCard({ icon: Icon, label, sub, value, accent, delta, dm }) {
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
+  const bd = dm ? '#3a3a48' : '#e4ddd7';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
@@ -174,7 +174,7 @@ function StatCard({ icon: Icon, label, sub, value, accent, delta, dm }) {
 
 function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
+  const bd = dm ? '#3a3a48' : '#e4ddd7';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
@@ -194,7 +194,7 @@ function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
 
 function ChartTooltip({ active, payload, label, dm }) {
   if (!active || !payload?.length) return null;
-  const bg = dm ? '#26262e' : '#fff', bd = dm ? '#3a3a48' : '#ede8e3';
+  const bg = dm ? '#26262e' : '#fff', bd = dm ? '#3a3a48' : '#e4ddd7';
   const tx = dm ? '#e4e4e7' : '#111', mu = dm ? '#71717a' : '#999';
   return (
     <div className="rounded-xl px-3.5 py-3" style={{ background: bg, border: `1px solid ${bd}`, boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
@@ -230,7 +230,7 @@ export default function RevenueTab({ darkMode: dm }) {
   }, [range, demoMode]);
 
   const bg      = dm ? '#26262e' : '#fff';
-  const bd      = dm ? '#3a3a48' : '#ede8e3';
+  const bd      = dm ? '#3a3a48' : '#e4ddd7';
   const tx      = dm ? '#e4e4e7' : '#111';
   const mu      = dm ? '#71717a' : '#999';
   const grid    = dm ? '#2e2e38' : '#f3eeea';
