@@ -59,8 +59,6 @@ export default function ServicesList({ darkMode: dm }) {
   const tagBg = dm ? '#1e1e24' : '#FAF8F6';
   const tagColor = dm ? '#a1a1aa' : '#888';
   const actionBorder = dm ? '#3a3a48' : '#e4ddd7';
-  const actionIcon = dm ? '#71717a' : '#999';
-  const actionIconHover = dm ? '#e4e4e7' : '#111';
   const inactiveBg = dm ? '#3a3a48' : '#f5f5f5';
   const inactiveColor = dm ? '#71717a' : '#aaa';
 
@@ -80,34 +78,39 @@ export default function ServicesList({ darkMode: dm }) {
         </button>
       </div>
 
-      {/* Services grid */}
-      <div className="flex flex-col gap-3">
+      {/* Services grid — tap a card anywhere to edit */}
+      <div className="flex flex-col gap-2.5">
         {services.map(svc => (
           <div key={svc.id}
-            className={`rounded-xl p-4 flex items-center gap-3 transition-all hover:shadow-sm ${!svc.is_active ? 'opacity-50' : ''}`}
-            style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+            role="button" tabIndex={0}
+            onClick={() => { setEditingService(svc); setShowForm(true); }}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingService(svc); setShowForm(true); } }}
+            className={`group rounded-2xl p-3 sm:p-3.5 flex items-center gap-3.5 cursor-pointer transition-all hover:shadow-md ${!svc.is_active ? 'opacity-55' : ''}`}
+            style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = dm ? '#52525b' : '#d8cfc7'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = cardBorder; }}>
             {/* Photo */}
             {svc.photo ? (
-              <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: dm ? '#3a3a48' : '#f5f5f5' }}>
-                <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover" />
+              <div className="w-[58px] h-[58px] sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0" style={{ background: dm ? '#3a3a48' : '#f5f5f5' }}>
+                <img src={svc.photo} alt={svc.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
               </div>
             ) : (
-              <div className="w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: tagBg }}>
+              <div className="w-[58px] h-[58px] sm:w-16 sm:h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: tagBg }}>
                 <span className="text-[#D4A0B0] text-lg">✦</span>
               </div>
             )}
 
             {/* Info */}
             <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 mb-0.5">
-                <h4 className="text-[0.9rem] font-medium truncate" style={{ color: titleColor }}>{svc.title}</h4>
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="text-[0.92rem] font-medium truncate" style={{ color: titleColor }}>{svc.title}</h4>
                 {!svc.is_active && (
-                  <span className="px-2 py-0.5 text-[0.55rem] font-semibold tracking-[0.1em] uppercase rounded-full"
+                  <span className="px-2 py-0.5 text-[0.55rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0"
                     style={{ background: inactiveBg, color: inactiveColor }}>Inactive</span>
                 )}
               </div>
               <div className="flex items-center gap-2 text-[0.75rem] flex-wrap" style={{ color: mutedColor }}>
-                <span className="px-2 py-0.5 rounded text-[0.65rem] font-medium whitespace-nowrap"
+                <span className="px-2 py-0.5 rounded-md text-[0.65rem] font-medium whitespace-nowrap"
                   style={{ background: tagBg, color: tagColor }}>
                   {CATEGORY_LABELS[svc.category] || svc.category}
                 </span>
@@ -118,18 +121,9 @@ export default function ServicesList({ darkMode: dm }) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => { setEditingService(svc); setShowForm(true); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                style={{ border: `1px solid ${actionBorder}`, color: actionIcon }}
-                onMouseEnter={e => { e.currentTarget.style.color = actionIconHover; e.currentTarget.style.borderColor = dm ? '#71717a' : '#bbb'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = actionIcon; e.currentTarget.style.borderColor = actionBorder; }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {deleteConfirm === svc.id ? (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <button onClick={() => deleteMutation.mutate(svc.id)}
                     className="px-2.5 py-1.5 text-[0.6rem] font-medium uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
                     Delete
@@ -141,16 +135,23 @@ export default function ServicesList({ darkMode: dm }) {
                   </button>
                 </div>
               ) : (
-                <button onClick={() => setDeleteConfirm(svc.id)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ border: `1px solid ${actionBorder}`, color: dm ? '#52525b' : '#ccc' }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = '#fca5a5'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = dm ? '#52525b' : '#ccc'; e.currentTarget.style.borderColor = actionBorder; }}>
+                <button onClick={e => { e.stopPropagation(); setDeleteConfirm(svc.id); }}
+                  aria-label="Delete service"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all sm:opacity-0 sm:group-hover:opacity-100"
+                  style={{ color: dm ? '#52525b' : '#ccc' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = dm ? '#3a3a48' : '#fef2f2'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = dm ? '#52525b' : '#ccc'; e.currentTarget.style.background = 'transparent'; }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                   </svg>
                 </button>
               )}
+              {/* Chevron — affordance that the row opens */}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
+                style={{ color: dm ? '#52525b' : '#cfc7bf' }}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
             </div>
           </div>
         ))}

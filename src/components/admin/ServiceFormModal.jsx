@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { lenisStop, lenisStart } from '@/lib/lenis';
 import ServicePreview from './ServicePreview';
 
 const CATEGORIES = [
@@ -27,18 +28,31 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
   });
   const [includeInput, setIncludeInput] = useState('');
   const [featureInput, setFeatureInput] = useState('');
-  const [photoInput, setPhotoInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoDragOver, setPhotoDragOver] = useState(false);
+  const [baUploading, setBaUploading] = useState(false);
+  const [baDragOver, setBaDragOver] = useState(false);
   const photoInputRef = useRef(null);
+  const baInputRef = useRef(null);
+  const scrollRef = useRef(null);
   const [showPreview, setShowPreview] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const catRef = useRef(null);
 
+  // Lock the page behind the modal. Lenis owns scrolling site-wide, so
+  // `overflow: hidden` alone won't stop wheel scrolling — pause Lenis too,
+  // and compensate for the scrollbar width so the page doesn't shift.
   useEffect(() => {
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    lenisStop();
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      lenisStart();
+    };
   }, []);
 
   useEffect(() => {
@@ -46,6 +60,13 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,25 +79,45 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
   const removeInclude = (idx) => setForm(f => ({ ...f, includes: f.includes.filter((_, i) => i !== idx) }));
   const addFeature = () => { if (!featureInput.trim()) return; setForm(f => ({ ...f, key_features: [...f.key_features, featureInput.trim()] })); setFeatureInput(''); };
   const removeFeature = (idx) => setForm(f => ({ ...f, key_features: f.key_features.filter((_, i) => i !== idx) }));
-  const addPhoto = () => { if (!photoInput.trim()) return; setForm(f => ({ ...f, before_after_photos: [...f.before_after_photos, photoInput.trim()] })); setPhotoInput(''); };
   const removePhoto = (idx) => setForm(f => ({ ...f, before_after_photos: f.before_after_photos.filter((_, i) => i !== idx) }));
+
+  // Shared uploader — hits the same endpoint the rest of the admin uses.
+  const uploadImage = useCallback(async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/upload-photo', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.url;
+  }, []);
 
   const uploadServicePhoto = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/')) return;
     setPhotoUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch('/api/upload-photo', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
-      setForm(f => ({ ...f, photo: data.url }));
+      const url = await uploadImage(file);
+      setForm(f => ({ ...f, photo: url }));
     } catch (err) {
       alert('Upload failed: ' + err.message);
     } finally {
       setPhotoUploading(false);
     }
-  }, []);
+  }, [uploadImage]);
+
+  const uploadBeforeAfter = useCallback(async (files) => {
+    const list = Array.from(files || []).filter(f => f.type.startsWith('image/'));
+    if (!list.length) return;
+    setBaUploading(true);
+    try {
+      const urls = [];
+      for (const f of list) urls.push(await uploadImage(f));
+      setForm(f => ({ ...f, before_after_photos: [...f.before_after_photos, ...urls] }));
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setBaUploading(false);
+    }
+  }, [uploadImage]);
 
   const handlePhotoDrop = useCallback((e) => {
     e.preventDefault();
@@ -85,85 +126,124 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
     if (file) uploadServicePhoto(file);
   }, [uploadServicePhoto]);
 
+  const handleBaDrop = useCallback((e) => {
+    e.preventDefault();
+    setBaDragOver(false);
+    if (e.dataTransfer.files?.length) uploadBeforeAfter(e.dataTransfer.files);
+  }, [uploadBeforeAfter]);
+
   // Theme tokens
   const modalBg = dm ? '#27272a' : '#ffffff';
-  const headerBg = dm ? '#27272a' : '#ffffff';
-  const borderColor = dm ? '#3f3f46' : '#e8e2dc';
+  const borderColor = dm ? '#3f3f46' : '#ece6e0';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
   const textMuted = dm ? '#71717a' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
   const inputBorder = dm ? '#3f3f46' : '#e4ddd7';
-  const inputFocus = '#D4A0B0';
-  const sectionLabelColor = dm ? '#52525b' : '#c4bab2';
+  const sectionLabelColor = dm ? '#71717a' : '#b5a99a';
   const tagBg = dm ? '#18181b' : '#FAF8F6';
   const tagColor = dm ? '#a1a1aa' : '#666';
   const addBtnBg = dm ? '#3f3f46' : '#111111';
   const addBtnColor = dm ? '#f4f4f5' : '#ffffff';
+  const subtleBg = dm ? '#1e1e24' : '#FAF8F6';
 
-  const inputStyle = {
-    background: inputBg,
-    border: `1px solid ${inputBorder}`,
-    color: textPrimary,
-  };
-
-  const inputClass = `w-full px-3.5 py-2.5 rounded-lg text-[0.85rem] outline-none transition-all placeholder:opacity-40`;
+  const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
+  const inputClass = `w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]`;
 
   const labelStyle = {
-    display: 'block',
-    fontSize: '0.6rem',
-    fontWeight: 600,
-    letterSpacing: '0.14em',
-    textTransform: 'uppercase',
-    marginBottom: '6px',
-    color: dm ? '#a1a1aa' : '#111111',
+    display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em',
+    textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#8a7f76',
   };
 
-  const sectionStyle = {
-    fontSize: '0.6rem',
-    fontWeight: 600,
-    letterSpacing: '0.14em',
-    textTransform: 'uppercase',
-    color: sectionLabelColor,
-  };
+  const Section = ({ children }) => (
+    <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: sectionLabelColor }}>
+      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#e4ddd7' }} />
+      {children}
+    </p>
+  );
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(10px)' }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="fixed inset-0 z-[500] flex items-stretch sm:items-center justify-center sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-[560px] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl shadow-2xl"
-        style={{ background: modalBg, border: `1px solid ${borderColor}`, animation: 'fadeSlideDown 0.3s ease-out' }}
+        className="w-full sm:max-w-[600px] h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl sm:rounded-[24px]"
+        style={{ background: modalBg, border: dm ? `1px solid ${borderColor}` : 'none', animation: 'fadeSlideDown 0.3s ease-out' }}
       >
-        {/* Header */}
-        <div
-          className="sticky top-0 z-10 flex justify-between items-center px-6 py-4"
-          style={{ background: headerBg, borderBottom: `1px solid ${borderColor}` }}
-        >
+        {/* ── Header ── */}
+        <div className="flex-none flex justify-between items-center px-5 sm:px-6 border-b"
+          style={{ borderColor, paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#f5f0ec' }}>
-              <span className="text-[#D4A0B0] text-sm">✦</span>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#f8f1ee' }}>
+              <span className="text-[#D4A0B0] text-base">✦</span>
             </div>
-            <h3 className="font-serif text-[1.2rem]" style={{ color: textPrimary }}>
-              {service ? 'Edit Service' : 'New Service'}
-            </h3>
+            <div>
+              <h3 className="font-serif text-[1.25rem] leading-none" style={{ color: textPrimary }}>
+                {service ? 'Edit Service' : 'New Service'}
+              </h3>
+              <p className="text-[0.66rem] mt-1 tracking-wide" style={{ color: textMuted }}>
+                {service ? 'Update how this appears on your site' : 'Add a new offering to your site'}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-            style={{ background: dm ? '#3f3f46' : '#f4f4f5', color: textMuted }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+          <button onClick={onClose} type="button"
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: dm ? '#3f3f46' : '#f4f0ec', color: textMuted }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+        {/* ── Scrollable body ── */}
+        <form id="service-form" onSubmit={handleSubmit}
+          ref={scrollRef} data-lenis-prevent
+          className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-4"
+          style={{ scrollbarWidth: 'thin' }}>
+
+          {/* Cover photo — photo-forward, like the live service card */}
+          <div
+            onDrop={handlePhotoDrop}
+            onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
+            onDragLeave={() => setPhotoDragOver(false)}
+            onClick={() => photoInputRef.current?.click()}
+            className="relative w-full rounded-2xl overflow-hidden cursor-pointer transition-all group"
+            style={{
+              aspectRatio: '16 / 7',
+              border: `1.5px dashed ${photoDragOver ? '#D4A0B0' : inputBorder}`,
+              background: form.photo ? '#000' : (photoDragOver ? 'rgba(212,160,176,0.06)' : subtleBg),
+            }}
+          >
+            {photoUploading ? (
+              <div className="absolute inset-0 flex items-center justify-center gap-2 text-[#D4A0B0] text-[0.8rem]">
+                <span className="w-4 h-4 border-2 border-[#D4A0B0] border-t-transparent rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+                Uploading…
+              </div>
+            ) : form.photo ? (
+              <>
+                <img src={form.photo} alt="Service" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                  <span className="px-3 py-1.5 rounded-full text-white text-[0.7rem] font-medium" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                    Drop or click to replace
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.5" className="w-7 h-7 mb-2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p className="text-[0.78rem] font-medium" style={{ color: textMuted }}>Drop the service photo here or click to upload</p>
+                <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted, opacity: 0.6 }}>PNG or JPG, up to 10MB</p>
+              </div>
+            )}
+            <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) uploadServicePhoto(f); e.target.value = ''; }} />
+          </div>
 
           {/* BASICS */}
-          <p style={sectionStyle}>Basic Info</p>
+          <Section>Basic Info</Section>
 
           <div>
             <label style={labelStyle}>Service Name *</label>
@@ -175,12 +255,8 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
             {/* Category custom dropdown */}
             <div ref={catRef} className="relative">
               <label style={labelStyle}>Category *</label>
-              <button
-                type="button"
-                onClick={() => setCatOpen(!catOpen)}
-                className={`${inputClass} text-left flex items-center justify-between cursor-pointer`}
-                style={inputStyle}
-              >
+              <button type="button" onClick={() => setCatOpen(!catOpen)}
+                className={`${inputClass} text-left flex items-center justify-between cursor-pointer`} style={inputStyle}>
                 <span style={{ color: textPrimary }}>{CATEGORIES.find(c => c.value === form.category)?.label}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2"
                   className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`}>
@@ -188,10 +264,8 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
                 </svg>
               </button>
               {catOpen && (
-                <div
-                  className="absolute left-0 right-0 top-full mt-1.5 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] py-1.5 z-50 overflow-hidden"
-                  style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${borderColor}`, animation: 'fadeSlideDown 0.15s ease-out' }}
-                >
+                <div className="absolute left-0 right-0 top-full mt-1.5 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] py-1.5 z-50 overflow-hidden"
+                  style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${borderColor}`, animation: 'fadeSlideDown 0.15s ease-out' }}>
                   {CATEGORIES.map(c => (
                     <button key={c.value} type="button"
                       onClick={() => { setForm({ ...form, category: c.value }); setCatOpen(false); }}
@@ -202,8 +276,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
                         fontWeight: form.category === c.value ? 600 : 400,
                       }}
                       onMouseEnter={e => { if (form.category !== c.value) e.currentTarget.style.background = dm ? '#3f3f46' : '#f9f6f3'; }}
-                      onMouseLeave={e => { if (form.category !== c.value) e.currentTarget.style.background = 'transparent'; }}
-                    >
+                      onMouseLeave={e => { if (form.category !== c.value) e.currentTarget.style.background = 'transparent'; }}>
                       {c.label}
                       {form.category === c.value && (
                         <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-3.5 h-3.5">
@@ -222,10 +295,8 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
             </div>
           </div>
 
-          <div className="w-full h-px" style={{ background: borderColor }} />
-
           {/* PRICING */}
-          <p style={sectionStyle}>Pricing &amp; Duration</p>
+          <Section>Pricing &amp; Duration</Section>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -253,10 +324,8 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
             </div>
           </div>
 
-          <div className="w-full h-px" style={{ background: borderColor }} />
-
           {/* CONTENT */}
-          <p style={sectionStyle}>Content</p>
+          <Section>Content</Section>
 
           <div>
             <label style={labelStyle}>Description</label>
@@ -270,51 +339,8 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
               placeholder="Describe the process and what clients should expect…" className={`${inputClass} resize-none h-[70px]`} style={inputStyle} />
           </div>
 
-          <div>
-            <label style={labelStyle}>Service Photo</label>
-            <div
-              onDrop={handlePhotoDrop}
-              onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
-              onDragLeave={() => setPhotoDragOver(false)}
-              onClick={() => photoInputRef.current?.click()}
-              style={{
-                border: `2px dashed ${photoDragOver ? '#D4A0B0' : inputBorder}`,
-                borderRadius: '10px',
-                padding: '16px',
-                cursor: 'pointer',
-                background: photoDragOver ? 'rgba(212,160,176,0.06)' : inputBg,
-                transition: 'all 0.15s',
-                textAlign: 'center',
-              }}
-            >
-              {photoUploading ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#D4A0B0', fontSize: '0.8rem' }}>
-                  <div style={{ width: '14px', height: '14px', border: '2px solid #D4A0B0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                  Uploading…
-                </div>
-              ) : form.photo ? (
-                <div style={{ position: 'relative' }}>
-                  <img src={form.photo} alt="Service" style={{ width: '100%', maxHeight: '140px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }} />
-                  <p style={{ fontSize: '0.65rem', color: textMuted, margin: 0 }}>Drop a new image or click to replace</p>
-                </div>
-              ) : (
-                <div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.5" style={{ width: '28px', height: '28px', margin: '0 auto 8px' }}>
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                  <p style={{ fontSize: '0.78rem', color: textMuted, margin: '0 0 3px', fontWeight: 500 }}>Drop image here or click to upload</p>
-                  <p style={{ fontSize: '0.65rem', color: textMuted, margin: 0, opacity: 0.6 }}>PNG, JPG up to 10MB</p>
-                </div>
-              )}
-              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) uploadServicePhoto(f); e.target.value = ''; }} />
-            </div>
-          </div>
-
-          <div className="w-full h-px" style={{ background: borderColor }} />
-
           {/* LISTS */}
-          <p style={sectionStyle}>Lists</p>
+          <Section>Highlights &amp; Inclusions</Section>
 
           {/* Includes */}
           <div>
@@ -324,7 +350,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addInclude())}
                 placeholder="Add an item…" className={`${inputClass} flex-1`} style={inputStyle} />
               <button type="button" onClick={addInclude}
-                className="px-3.5 py-2 text-[0.7rem] font-medium rounded-lg transition-colors"
+                className="px-4 text-[0.7rem] font-medium rounded-xl transition-colors active:scale-95"
                 style={{ background: addBtnBg, color: addBtnColor }}>Add</button>
             </div>
             {form.includes.length > 0 && (
@@ -348,7 +374,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
                 placeholder="e.g., Detailed Consultation…" className={`${inputClass} flex-1`} style={inputStyle} />
               <button type="button" onClick={addFeature}
-                className="px-3.5 py-2 text-[0.7rem] font-medium rounded-lg transition-colors"
+                className="px-4 text-[0.7rem] font-medium rounded-xl transition-colors active:scale-95"
                 style={{ background: addBtnBg, color: addBtnColor }}>Add</button>
             </div>
             {form.key_features.length > 0 && (
@@ -364,25 +390,45 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
             )}
           </div>
 
-          {/* Before & After Photos */}
+          {/* Before & After Photos — drag & drop uploads */}
           <div>
-            <label style={labelStyle}>Before &amp; After Photo URLs</label>
-            <div className="flex gap-2 mb-2">
-              <input value={photoInput} onChange={e => setPhotoInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addPhoto())}
-                placeholder="https://…" className={`${inputClass} flex-1`} style={inputStyle} />
-              <button type="button" onClick={addPhoto}
-                className="px-3.5 py-2 text-[0.7rem] font-medium rounded-lg transition-colors"
-                style={{ background: addBtnBg, color: addBtnColor }}>Add</button>
+            <label style={labelStyle}>Before &amp; After Photos</label>
+            <div
+              onDrop={handleBaDrop}
+              onDragOver={e => { e.preventDefault(); setBaDragOver(true); }}
+              onDragLeave={() => setBaDragOver(false)}
+              onClick={() => baInputRef.current?.click()}
+              className="rounded-xl px-4 py-5 text-center cursor-pointer transition-all"
+              style={{
+                border: `1.5px dashed ${baDragOver ? '#D4A0B0' : inputBorder}`,
+                background: baDragOver ? 'rgba(212,160,176,0.06)' : inputBg,
+              }}
+            >
+              {baUploading ? (
+                <div className="flex items-center justify-center gap-2 text-[#D4A0B0] text-[0.8rem]">
+                  <span className="w-4 h-4 border-2 border-[#D4A0B0] border-t-transparent rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+                  Uploading…
+                </div>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.5" className="w-6 h-6 mx-auto mb-1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <p className="text-[0.76rem] font-medium" style={{ color: textMuted }}>Drop photos here or click to upload</p>
+                  <p className="text-[0.64rem] mt-0.5" style={{ color: textMuted, opacity: 0.6 }}>You can add several at once</p>
+                </>
+              )}
+              <input ref={baInputRef} type="file" accept="image/*" multiple className="hidden"
+                onChange={e => { if (e.target.files?.length) uploadBeforeAfter(e.target.files); e.target.value = ''; }} />
             </div>
             {form.before_after_photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 {form.before_after_photos.map((photo, i) => (
                   <div key={i} className="relative group aspect-square rounded-lg overflow-hidden"
                     style={{ background: tagBg, border: `1px solid ${borderColor}` }}>
-                    <img src={photo} alt={`Before & After ${i}`} className="w-full h-full object-cover" />
+                    <img src={photo} alt={`Before & After ${i + 1}`} className="w-full h-full object-cover" />
                     <button type="button" onClick={() => removePhoto(i)}
-                      className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-lg text-lg">
+                      className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity text-lg">
                       ✕
                     </button>
                   </div>
@@ -391,54 +437,57 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
             )}
           </div>
 
-          <div className="w-full h-px" style={{ background: borderColor }} />
+          {/* SETTINGS */}
+          <Section>Visibility</Section>
 
-          {/* Active toggle */}
-          <div className="flex items-center justify-between px-4 py-3 rounded-lg"
-            style={{ background: dm ? '#18181b' : '#f9f7f5', border: `1px solid ${borderColor}` }}>
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+            style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
             <div>
               <p className="text-[0.8rem] font-medium" style={{ color: textPrimary }}>Active Service</p>
               <p className="text-[0.72rem]" style={{ color: textMuted }}>
                 {form.is_active ? 'Visible to clients on the site' : 'Hidden from clients'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
+            <button type="button" onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
               className="relative w-11 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
-              style={{ background: form.is_active ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}
-            >
-              <div
-                className="w-5 h-5 rounded-full shadow transition-transform duration-200"
-                style={{ background: '#fff', transform: form.is_active ? 'translateX(20px)' : 'translateX(0px)' }}
-              />
+              style={{ background: form.is_active ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
+              <div className="w-5 h-5 rounded-full shadow transition-transform duration-200"
+                style={{ background: '#fff', transform: form.is_active ? 'translateX(20px)' : 'translateX(0px)' }} />
             </button>
           </div>
 
           {/* Preview toggle */}
           <button type="button" onClick={() => setShowPreview(!showPreview)}
-            className="w-full py-2.5 text-[0.75rem] font-medium tracking-[0.04em] rounded-lg border transition-all"
+            className="w-full py-2.5 text-[0.75rem] font-medium tracking-[0.04em] rounded-xl border transition-all"
             style={showPreview
               ? { background: dm ? '#3f3f46' : '#FAF8F6', borderColor: '#D4A0B0', color: '#D4A0B0' }
-              : { background: 'transparent', borderColor: borderColor, color: textMuted }
+              : { background: 'transparent', borderColor, color: textMuted }
             }>
             {showPreview ? 'Hide Preview ↑' : 'Preview Card ↓'}
           </button>
 
           {showPreview && (
-            <div className="rounded-xl p-4" style={{ background: dm ? '#18181b' : '#FAF8F6', border: `1px solid ${borderColor}` }}>
+            <div className="rounded-xl p-4" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
               <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a] mb-3">How it looks on the homepage</p>
               <ServicePreview form={form} />
             </div>
           )}
+        </form>
 
-          {/* Submit */}
-          <button type="submit" disabled={saving}
-            className="w-full py-3 text-[0.8rem] font-medium rounded-lg transition-all shadow-sm disabled:opacity-50 mt-1"
+        {/* ── Pinned footer ── */}
+        <div className="flex-none px-5 sm:px-6 py-3.5 border-t flex items-center gap-3"
+          style={{ borderColor, background: modalBg, paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}>
+          <button type="button" onClick={onClose}
+            className="px-5 py-3 text-[0.78rem] font-medium rounded-xl border transition-all active:scale-[0.98]"
+            style={{ borderColor: inputBorder, color: textMuted, background: 'transparent' }}>
+            Cancel
+          </button>
+          <button type="submit" form="service-form" disabled={saving}
+            className="flex-1 py-3 text-[0.82rem] font-medium tracking-[0.04em] rounded-xl transition-all shadow-sm disabled:opacity-50 active:scale-[0.99]"
             style={{ background: dm ? '#f4f4f5' : '#111111', color: dm ? '#111111' : '#ffffff' }}>
             {saving ? 'Saving…' : service ? 'Update Service' : 'Create Service'}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
