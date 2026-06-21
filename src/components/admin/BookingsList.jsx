@@ -1,9 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, daysUntil } from './timeline';
 import { openZoomHost, parseMeetingId } from '@/lib/zoomHost';
+
+// SSR-safe layout effect — measures the active tab to position the underline
+// without a first-paint flash, while staying quiet during server render.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
 
@@ -94,41 +98,63 @@ function MonthSelect({ value, onChange, options, dm }) {
   );
 }
 
-// Bridal / Non-Bridal / Both toggle — segmented control with a sliding indicator.
+// Both / Bridal / Non-Bridal picker — minimalist underline tabs. A thin plum
+// bar slides to hug the active label; no pill, no fill, just type and motion.
 function TypeSegment({ value, onChange, dm }) {
   const segs = [
     { key: 'both', label: 'Both' },
     { key: 'bridal', label: 'Bridal' },
     { key: 'nonbridal', label: 'Non-Bridal' },
   ];
-  const activeIndex = Math.max(0, segs.findIndex(s => s.key === value));
+  const btnRefs = useRef({});
+  const [bar, setBar] = useState({ left: 0, width: 0 });
+
+  useIsoLayoutEffect(() => {
+    const el = btnRefs.current[value];
+    if (el) setBar({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [value]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const el = btnRefs.current[value];
+      if (el) setBar({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [value]);
+
   return (
-    <div className="relative grid grid-cols-3 p-1 rounded-full w-full sm:w-[280px]"
-      style={{
-        background: dm ? '#26262d' : '#F4F1EE',
-        border: `1px solid ${dm ? '#3a3a44' : '#E7E0D9'}`,
-        boxShadow: dm ? 'inset 0 1px 2px rgba(0,0,0,0.25)' : 'inset 0 1px 2px rgba(60,45,35,0.05)',
-      }}>
-      <div className="absolute rounded-full pointer-events-none"
-        style={{
-          top: 4, bottom: 4, left: 4, width: 'calc((100% - 8px) / 3)',
-          transform: `translateX(${activeIndex * 100}%)`,
-          transition: 'transform 0.34s cubic-bezier(0.34,1.4,0.5,1)',
-          background: 'linear-gradient(165deg, #A0607A 0%, #6B4055 100%)',
-          boxShadow: dm
-            ? '0 1px 3px rgba(0,0,0,0.35)'
-            : '0 1px 3px rgba(107,64,85,0.32), 0 2px 8px rgba(107,64,85,0.18)',
-        }} />
+    <div className="relative inline-flex items-center gap-6 sm:gap-7">
       {segs.map(s => {
         const isActive = s.key === value;
         return (
-          <button key={s.key} type="button" onClick={() => onChange(s.key)}
-            className="relative z-10 py-2 text-[0.7rem] font-semibold tracking-[0.02em] transition-colors duration-200 whitespace-nowrap text-center"
-            style={{ color: isActive ? '#fff' : (dm ? '#8a8a93' : '#9b8e88') }}>
+          <button
+            key={s.key}
+            ref={el => { btnRefs.current[s.key] = el; }}
+            type="button"
+            onClick={() => onChange(s.key)}
+            className="relative pb-2 pt-0.5 text-[0.8rem] tracking-[0.01em] whitespace-nowrap transition-colors duration-200"
+            style={{
+              color: isActive ? (dm ? '#f0ebe6' : '#1a1a1a') : (dm ? '#6f6f78' : '#b3a89f'),
+              fontWeight: isActive ? 600 : 500,
+            }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = dm ? '#a1a1aa' : '#8a7e84'; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = dm ? '#6f6f78' : '#b3a89f'; }}
+          >
             {s.label}
           </button>
         );
       })}
+      <span
+        className="absolute bottom-0 h-[2px] rounded-full pointer-events-none"
+        style={{
+          left: bar.left,
+          width: bar.width,
+          background: 'linear-gradient(90deg, #A0607A, #6B4055)',
+          opacity: bar.width ? 1 : 0,
+          transition: 'left 0.32s cubic-bezier(0.4,0,0.2,1), width 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.2s',
+        }}
+      />
     </div>
   );
 }

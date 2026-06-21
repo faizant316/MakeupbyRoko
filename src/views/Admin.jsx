@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import AdminStats from '../components/admin/AdminStats';
 import AdminCalendar from '../components/admin/AdminCalendar';
 import BookingsList from '../components/admin/BookingsList';
 import BookingDetail from '../components/admin/BookingDetail';
@@ -416,8 +415,7 @@ export default function Admin() {
 
         {activeTab === 'bookings' && !selectedBooking && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-5 mb-8">
-              <AdminStats today={todayCount} pending={pendingCount} confirmed={confirmedCount} completed={completedCount} darkMode={dm} onFilterClick={(filter) => { setStatusFilter(filter); setTimeout(() => document.getElementById('bookings-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} />
+            <div className="mb-8">
               <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
             </div>
             {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
