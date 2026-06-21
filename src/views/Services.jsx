@@ -233,62 +233,57 @@ export default function ServicesPage() {
                 Each service is tailored to you, from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
 
-              {/* Filter — editorial underline tabs (horizontally scrollable on mobile) */}
-              <div className="relative">
-              <div
-                ref={filterScrollRef}
-                onScroll={updateFilterEdges}
-                className="flex items-center gap-7 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {CATEGORIES.map(cat => (
-                  <button
-                    key={cat.key}
-                    onClick={() => handleCategorySelect(cat.key)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      borderBottom: activeCategory === cat.key ? '1px solid #111' : '1px solid transparent',
-                      padding: '10px 0 6px 0',
-                      fontSize: '0.68rem',
-                      fontFamily: 'var(--font-sans)',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      color: activeCategory === cat.key ? '#111' : '#bbb',
-                      fontWeight: activeCategory === cat.key ? 500 : 400,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      transition: 'color 0.2s, border-color 0.2s',
-                      minHeight: '44px',
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                    }}
-                    onMouseEnter={e => { if (activeCategory !== cat.key) e.currentTarget.style.color = '#888'; }}
-                    onMouseLeave={e => { if (activeCategory !== cat.key) e.currentTarget.style.color = '#bbb'; }}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-                {/* Left fade — appears once the strip is scrolled */}
+              {/* Filter — editorial underline tabs inside a soft pill track (scrollable on mobile).
+                  The pill bundles the categories visually and signals they scroll; no animation. */}
+              <div className="relative inline-flex max-w-full align-middle rounded-full" style={{ background: '#f3eee9' }}>
                 <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-8 transition-opacity duration-300 lg:hidden"
-                  style={{ background: 'linear-gradient(to right, #fff 35%, rgba(255,255,255,0))', opacity: filterEdges.atStart ? 0 : 1 }}
-                />
-
-                {/* Right fade + soft-gray gliding disc — signals there are more categories to swipe through */}
-                <div
-                  className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end pr-1 transition-opacity duration-300 lg:hidden"
-                  style={{ width: '74px', background: 'linear-gradient(to left, #fff 30%, rgba(255,255,255,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
+                  ref={filterScrollRef}
+                  onScroll={updateFilterEdges}
+                  className="flex items-center overflow-x-auto rounded-full [&::-webkit-scrollbar]:hidden"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  <span className="swipe-hint flex items-center justify-center rounded-full" style={{ width: 26, height: 26, background: 'rgba(60,50,55,0.06)', boxShadow: '0 1px 4px rgba(60,50,55,0.08)' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9a8e93" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 6l6 6-6 6" />
-                    </svg>
-                  </span>
+                  {CATEGORIES.map(cat => {
+                    const active = activeCategory === cat.key;
+                    return (
+                      <button
+                        key={cat.key}
+                        onClick={() => handleCategorySelect(cat.key)}
+                        className="flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'none', border: 'none', padding: '0 15px', minHeight: '40px', cursor: 'pointer' }}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '0.68rem',
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                            color: active ? '#111' : '#a89f97',
+                            fontWeight: active ? 600 : 400,
+                            paddingBottom: '3px',
+                            borderBottom: active ? '1.5px solid #111' : '1.5px solid transparent',
+                            transition: 'color 0.2s, border-color 0.2s',
+                          }}
+                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#7a7068'; }}
+                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#a89f97'; }}
+                        >
+                          {cat.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {/* Soft edge fades in the pill's own color — static cue that there's more to scroll */}
+                <div
+                  className="pointer-events-none absolute inset-y-0 left-0 w-8 rounded-l-full transition-opacity duration-300 lg:hidden"
+                  style={{ background: 'linear-gradient(to right, #f3eee9 38%, rgba(243,238,233,0))', opacity: filterEdges.atStart ? 0 : 1 }}
+                />
+                <div
+                  className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-full transition-opacity duration-300 lg:hidden"
+                  style={{ background: 'linear-gradient(to left, #f3eee9 38%, rgba(243,238,233,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
+                />
               </div>
             </div>
 
