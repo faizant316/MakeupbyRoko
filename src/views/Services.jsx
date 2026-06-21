@@ -278,13 +278,13 @@ export default function ServicesPage() {
                   style={{ background: 'linear-gradient(to right, #fff 35%, rgba(255,255,255,0))', opacity: filterEdges.atStart ? 0 : 1 }}
                 />
 
-                {/* Right fade + soft-gray nudging disc — signals there are more categories to swipe through */}
+                {/* Right fade + soft-gray gliding disc — signals there are more categories to swipe through */}
                 <div
-                  className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end transition-opacity duration-300 lg:hidden"
-                  style={{ width: '62px', background: 'linear-gradient(to left, #fff 34%, rgba(255,255,255,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
+                  className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end pr-1 transition-opacity duration-300 lg:hidden"
+                  style={{ width: '74px', background: 'linear-gradient(to left, #fff 30%, rgba(255,255,255,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
                 >
-                  <span className="swipe-hint flex items-center justify-center rounded-full" style={{ width: 22, height: 22, background: 'rgba(60,50,55,0.07)' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c7f85" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <span className="swipe-hint flex items-center justify-center rounded-full" style={{ width: 26, height: 26, background: 'rgba(60,50,55,0.06)', boxShadow: '0 1px 4px rgba(60,50,55,0.08)' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9a8e93" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 6l6 6-6 6" />
                     </svg>
                   </span>

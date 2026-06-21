@@ -243,14 +243,17 @@
   transform: translateY(0) !important;
 }
 
-/* "Scroll" hint chevron — gentle right-nudge to signal horizontal scroll */
+/* "Scroll" hint chevron — slow glide + breathe to signal horizontal scroll.
+   Smooth in/out drift (no twitch) reads as an intentional, premium cue. */
 @keyframes swipeNudge {
-  0%, 55%, 100% { transform: translateX(0); }
-  72% { transform: translateX(4px); }
-  86% { transform: translateX(1px); }
+  0%, 100% { transform: translateX(0); opacity: 0.55; }
+  50%      { transform: translateX(3px); opacity: 1; }
 }
 .swipe-hint {
-  animation: swipeNudge 2.1s ease-in-out infinite;
+  animation: swipeNudge 1.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipe-hint { animation: none; opacity: 0.85; }
 }
 
 /* Hide scrollbar for filter bars */
