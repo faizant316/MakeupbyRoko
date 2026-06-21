@@ -63,7 +63,7 @@ function SectionHead({ label, desc, dm }) {
 
 function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm }) {
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
+  const bd = dm ? '#3a3a48' : '#e4ddd7';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
@@ -98,7 +98,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
   }, []);
 
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#ede8e3';
+  const bd = dm ? '#3a3a48' : '#e4ddd7';
   const sb = dm ? '#1e1e24' : '#FAF8F6';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
@@ -351,7 +351,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
           <p className="text-[0.57rem] font-semibold tracking-[0.14em] uppercase mb-0.5" style={{ color: mu }}>
             Measurement ID
           </p>
-          <p className="text-[0.82rem] font-mono font-medium" style={{ color: dm ? '#D4A0B0' : '#A0785A' }}>
+          <p className="text-[0.82rem] font-mono font-medium" style={{ color: dm ? '#D4A0B0' : '#8A4A63' }}>
             G-HE25CGQHH4
           </p>
         </div>
