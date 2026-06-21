@@ -41,12 +41,12 @@ function MonthSelect({ value, onChange, options, dm }) {
   const label = hasFilter ? selected.label : 'Filter by month';
 
   const triggerStyle = hasFilter
-    ? { background: dm ? 'rgba(196,132,154,0.16)' : '#FBF5F7', border: `1px solid ${dm ? '#5a4750' : '#E2C4D2'}`, color: dm ? '#e7c9d5' : '#A0607A' }
-    : { background: dm ? '#2e2e38' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`, color: dm ? '#a1a1aa' : '#8a7e84' };
+    ? { color: dm ? '#e7c9d5' : '#A0607A' }
+    : { color: dm ? '#a1a1aa' : '#8a7e84' };
 
   const trigger = (
     <button type="button" onClick={() => { if (!isIOS) setOpen(o => !o); }}
-      className="inline-flex items-center gap-2 rounded-lg pl-2.5 pr-2 py-2 text-[0.72rem] font-semibold tracking-[0.01em] transition-all hover:opacity-90 active:scale-[0.98]"
+      className="inline-flex items-center gap-1.5 px-1 py-2 text-[0.72rem] font-semibold tracking-[0.01em] bg-transparent border-0 transition-all hover:opacity-70 active:scale-[0.98]"
       style={triggerStyle}>
       <CalendarIcon />
       <span className="whitespace-nowrap">{label}</span>
