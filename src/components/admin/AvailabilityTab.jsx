@@ -162,13 +162,30 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
     mutationFn: async (date) => { const ex = overrideRecByDate[date]; if (ex) await api.entities.DayCapacity.delete(ex.id); },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['day-capacities'] }),
   });
+  // Block / unblock update optimistically so the panel flips to its new state
+  // instantly instead of waiting on the server round-trip, then reconcile.
   const blockDay = useMutation({
     mutationFn: (date) => api.entities.BlockedDate.create({ date, reason: '' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
+    onMutate: async (date) => {
+      await qc.cancelQueries({ queryKey: ['blocked-dates'] });
+      const prev = qc.getQueryData(['blocked-dates']);
+      qc.setQueryData(['blocked-dates'], (old = []) =>
+        old.some(b => b.date === date) ? old : [...old, { id: `temp-${date}`, date, reason: '' }]);
+      return { prev };
+    },
+    onError: (_e, _date, ctx) => { if (ctx?.prev) qc.setQueryData(['blocked-dates'], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
   });
   const unblockDay = useMutation({
     mutationFn: (date) => { const ex = blockedRecByDate[date]; return ex ? api.entities.BlockedDate.delete(ex.id) : Promise.resolve(); },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
+    onMutate: async (date) => {
+      await qc.cancelQueries({ queryKey: ['blocked-dates'] });
+      const prev = qc.getQueryData(['blocked-dates']);
+      qc.setQueryData(['blocked-dates'], (old = []) => old.filter(b => b.date !== date));
+      return { prev };
+    },
+    onError: (_e, _date, ctx) => { if (ctx?.prev) qc.setQueryData(['blocked-dates'], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
   });
 
   const jumpTo = (key) => { setSelectedDate(key); setMonth(new Date(key + 'T00:00:00')); };
@@ -282,22 +299,26 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                 </div>
               )}
 
-              {/* Close / reopen day */}
+              {/* Close / reopen day — clearly outlined so it reads as tappable */}
               <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
                 {selBlocked ? (
                   <button
                     onClick={() => unblockDay.mutate(selectedDate)}
-                    className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all"
-                    style={{ background: dm ? 'rgba(212,160,176,0.12)' : '#FDF5F8', color: '#A0607A', border: `1px solid ${dm ? '#4a3a48' : '#f0d8e4'}` }}>
+                    className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
+                    style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#FDF5F8', color: '#A0607A', border: `1.5px solid ${dm ? 'rgba(212,160,176,0.5)' : '#EFD0DE'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                      <path d="M8 11V7a4 4 0 0 1 8 0M5 11h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/>
+                    </svg>
                     Reopen this day
                   </button>
                 ) : (
                   <button
                     onClick={() => blockDay.mutate(selectedDate)}
-                    className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all"
-                    style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#b5a99a', border: `1px solid ${dm ? '#3a3a48' : '#ece4dc'}` }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = dm ? 'rgba(239,68,68,0.5)' : '#f5c2c2'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#b5a99a'; e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece4dc'; }}>
+                    className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
+                    style={{ background: dm ? 'rgba(239,68,68,0.1)' : '#FFF6F5', color: '#E05549', border: `1.5px solid ${dm ? 'rgba(239,68,68,0.45)' : '#F3CBC6'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                      <rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                    </svg>
                     Close this day off
                   </button>
                 )}

@@ -77,18 +77,18 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
           ) : (
             <>
               <p className="text-[0.8rem] text-[#999] leading-relaxed mb-4">
-                Blocking this date will mark it as unavailable. Clients won't be able to book appointments on this day.
+                Blocking this date will mark it as unavailable. Clients won't be able to book appointments on this day. Just tap Block — a reason is optional.
               </p>
               <div className="mb-5">
                 <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A0785A] mb-1.5">
                   Reason <span className="text-[#ccc] font-normal normal-case tracking-normal">(optional)</span>
                 </label>
                 <input
+                  type="text"
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="e.g. Personal day, Travel, Holiday…"
-                  className="w-full px-3.5 py-2.5 border border-[#e8e2dc] rounded-lg text-[0.85rem] focus:border-[#D4A0B0] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all bg-white text-[#111] placeholder:text-[#c5bdb5]"
-                  autoFocus
+                  className="w-full px-3.5 py-2.5 border border-[#e8e2dc] rounded-lg text-base sm:text-[0.85rem] focus:border-[#D4A0B0] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all bg-white text-[#111] placeholder:text-[#c5bdb5]"
                   onKeyDown={e => { if (e.key === 'Enter') onBlock(reason); }}
                 />
               </div>
