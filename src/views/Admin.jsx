@@ -11,6 +11,7 @@ import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
+import TodayAgenda from '../components/admin/TodayAgenda';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
@@ -418,6 +419,14 @@ export default function Admin() {
               <AdminStats today={todayCount} pending={pendingCount} confirmed={confirmedCount} completed={completedCount} darkMode={dm} onFilterClick={(filter) => { setStatusFilter(filter); setTimeout(() => document.getElementById('bookings-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} />
               <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
             </div>
+            {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
+            <TodayAgenda
+              bookings={bookings}
+              classRegs={classRegs}
+              onSelectBooking={setSelectedBooking}
+              onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+              darkMode={dm}
+            />
             {/* Class Sign-Ups quick access — sits above bookings list */}
             {classRegs.length > 0 && (
               <button
