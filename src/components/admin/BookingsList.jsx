@@ -399,16 +399,31 @@ export default function BookingsList({
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
+          type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, email, or service..."
-          className="w-full pl-11 pr-4 py-3 rounded-xl text-[0.85rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
+          className="w-full pl-11 pr-11 py-3 rounded-xl text-base sm:text-[0.85rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
           style={{
             background: dm ? '#27272a' : '#fff',
             border: `1px solid ${dm ? '#3f3f46' : '#e8e2dc'}`,
             color: dm ? '#e4e4e7' : '#111',
           }}
         />
+        {/* Clear button — appears once there's text to wipe out */}
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            aria-label="Clear search"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
+            style={{ background: dm ? '#3f3f46' : '#f0ebe6', touchAction: 'manipulation' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#8a7e84'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Status pills + service type pills */}

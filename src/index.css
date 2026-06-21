@@ -254,10 +254,17 @@
     border-radius: 8px;
   }
 
+  /* 16px is the threshold below which iOS auto-zooms on focus. Cover every
+     text-entry field, including bare <input> (no type attr) and search/url/
+     password, so focusing a field never zooms the page in on mobile. */
   input[type="text"],
   input[type="email"],
   input[type="tel"],
-  input[type="number"] {
+  input[type="number"],
+  input[type="search"],
+  input[type="password"],
+  input[type="url"],
+  input:not([type]) {
     font-size: 16px;
   }
 }
