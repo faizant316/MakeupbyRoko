@@ -103,23 +103,31 @@ function TypeSegment({ value, onChange, dm }) {
   ];
   const activeIndex = Math.max(0, segs.findIndex(s => s.key === value));
   return (
-    <div className="relative grid grid-cols-3 p-0.5 rounded-lg w-full sm:w-[268px]"
-      style={{ background: dm ? '#2e2e38' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#EAD7E0'}` }}>
-      <div className="absolute rounded-md pointer-events-none"
+    <div className="relative grid grid-cols-3 p-1 rounded-full w-full sm:w-[280px]"
+      style={{
+        background: dm ? '#26262d' : '#F4EBEF',
+        border: `1px solid ${dm ? '#3a3a44' : '#EBDCE4'}`,
+        boxShadow: dm ? 'inset 0 1px 2px rgba(0,0,0,0.25)' : 'inset 0 1px 2px rgba(160,96,122,0.06)',
+      }}>
+      <div className="absolute rounded-full pointer-events-none"
         style={{
-          top: 2, bottom: 2, left: 2, width: 'calc((100% - 4px) / 3)',
+          top: 4, bottom: 4, left: 4, width: 'calc((100% - 8px) / 3)',
           transform: `translateX(${activeIndex * 100}%)`,
-          transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1)',
-          background: dm ? '#1e1e24' : '#F8ECF2',
-          border: dm ? 'none' : '1px solid #E8CBDA',
-          boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+          transition: 'transform 0.34s cubic-bezier(0.34,1.4,0.5,1)',
+          background: dm
+            ? 'linear-gradient(180deg, #3b3b46 0%, #313139 100%)'
+            : 'linear-gradient(180deg, #FFFFFF 0%, #FFF6FA 100%)',
+          border: dm ? '1px solid #4a4a55' : '1px solid #F1D9E5',
+          boxShadow: dm
+            ? '0 1px 3px rgba(0,0,0,0.3)'
+            : '0 1px 2px rgba(160,96,122,0.10), 0 2px 6px rgba(160,96,122,0.07)',
         }} />
       {segs.map(s => {
         const isActive = s.key === value;
         return (
           <button key={s.key} type="button" onClick={() => onChange(s.key)}
-            className="relative z-10 py-2 text-[0.68rem] font-semibold tracking-[0.01em] transition-colors whitespace-nowrap text-center"
-            style={{ color: isActive ? (dm ? '#e7c9d5' : '#A0607A') : (dm ? '#8a8a93' : '#B59AA6') }}>
+            className="relative z-10 py-2 text-[0.7rem] font-semibold tracking-[0.02em] transition-colors duration-200 whitespace-nowrap text-center"
+            style={{ color: isActive ? (dm ? '#f0d2de' : '#A0607A') : (dm ? '#7c7c87' : '#B7A1AB') }}>
             {s.label}
           </button>
         );
