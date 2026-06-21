@@ -329,9 +329,25 @@ export default function ServicesPage() {
                     <div className="flex-shrink-0 w-4" />
                   </div>
                 </div>
-                {/* Subtle right-edge fade — hints there's more to scroll */}
+                {/* Swipe hint — clear cue the row scrolls; gently nudges, fades once scrolled */}
                 {bridalServices.length > 1 && (
-                  <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-14" style={{ background: 'linear-gradient(to left, rgba(255,255,255,0.92), rgba(255,255,255,0))' }} />
+                  <div
+                    className="swipe-hint pointer-events-none absolute right-3.5 z-10 flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full"
+                    style={{
+                      top: '30vw',
+                      background: 'rgba(22,19,18,0.58)',
+                      backdropFilter: 'blur(6px)',
+                      WebkitBackdropFilter: 'blur(6px)',
+                      boxShadow: '0 6px 18px rgba(0,0,0,0.22)',
+                      opacity: bridalIdx === 0 ? 1 : 0,
+                      transition: 'opacity 0.45s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#fff' }}>Swipe</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </div>
                 )}
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}
@@ -399,9 +415,25 @@ export default function ServicesPage() {
                     <div className="flex-shrink-0 w-4" />
                   </div>
                 </div>
-                {/* Subtle right-edge fade — hints there's more to scroll */}
+                {/* Swipe hint — clear cue the row scrolls; gently nudges, fades once scrolled */}
                 {otherServices.length > 1 && (
-                  <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-14" style={{ background: 'linear-gradient(to left, rgba(255,255,255,0.92), rgba(255,255,255,0))' }} />
+                  <div
+                    className="swipe-hint pointer-events-none absolute right-3.5 z-10 flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full"
+                    style={{
+                      top: '110px',
+                      background: 'rgba(22,19,18,0.58)',
+                      backdropFilter: 'blur(6px)',
+                      WebkitBackdropFilter: 'blur(6px)',
+                      boxShadow: '0 6px 18px rgba(0,0,0,0.22)',
+                      opacity: otherIdx === 0 ? 1 : 0,
+                      transition: 'opacity 0.45s ease',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#fff' }}>Swipe</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </div>
                 )}
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}

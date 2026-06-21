@@ -243,6 +243,16 @@
   transform: translateY(0) !important;
 }
 
+/* Carousel "swipe" hint — gentle right-nudge to signal horizontal scroll */
+@keyframes swipeNudge {
+  0%, 55%, 100% { transform: translate(0, -50%); }
+  72% { transform: translate(7px, -50%); }
+  86% { transform: translate(2px, -50%); }
+}
+.swipe-hint {
+  animation: swipeNudge 2.1s ease-in-out infinite;
+}
+
 /* Hide scrollbar for filter bars */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
