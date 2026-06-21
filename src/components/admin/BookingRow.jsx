@@ -22,10 +22,10 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   // page (same #fff / #1e1e24 as the background) without competing with bridal.
   const skin = bridal
     ? {
-        bg: dm ? 'rgba(212,160,176,0.1)' : '#FDF6F9',
-        border: dm ? 'rgba(212,160,176,0.24)' : '#F0D9E3',
-        shadow: dm ? 'inset 3px 0 0 0 #C47A92' : 'inset 3px 0 0 0 #D4A0B0, 0 1px 2px rgba(160,96,122,0.06), 0 2px 6px rgba(160,96,122,0.05)',
-        hoverBg: dm ? 'rgba(212,160,176,0.16)' : '#FBEDF3',
+        bg: dm ? 'rgba(154,84,116,0.12)' : '#FCF8FA',
+        border: dm ? 'rgba(196,122,146,0.26)' : '#ECDCE3',
+        shadow: dm ? 'inset 3px 0 0 0 #B06A85' : 'inset 3px 0 0 0 #9A5474, 0 1px 2px rgba(107,64,85,0.06), 0 2px 6px rgba(107,64,85,0.05)',
+        hoverBg: dm ? 'rgba(154,84,116,0.18)' : '#FAF3F7',
       }
     : {
         bg: dm ? '#26262d' : '#FBF9F7',
@@ -51,7 +51,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
         style={bridal
-          ? { background: dm ? 'rgba(212,160,176,0.2)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#A0607A', boxShadow: `0 0 0 1.5px ${dm ? 'rgba(212,160,176,0.35)' : 'rgba(196,132,154,0.45)'}` }
+          ? { background: dm ? 'rgba(154,84,116,0.22)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#8A4A63', boxShadow: `0 0 0 1.5px ${dm ? 'rgba(176,106,133,0.4)' : 'rgba(154,84,116,0.4)'}` }
           : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#b0a59c' }}
       >
         {initial}
@@ -66,7 +66,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           {bridal && (
             <span
               className="inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.28)' : '#EFCEDD', color: dm ? '#f0d5e1' : '#9A5474' }}
+              style={{ background: dm ? 'rgba(154,84,116,0.3)' : '#F0D9E3', color: dm ? '#f0d5e1' : '#7A4055' }}
             >
               Bridal
             </span>

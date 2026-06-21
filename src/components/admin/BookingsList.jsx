@@ -105,29 +105,26 @@ function TypeSegment({ value, onChange, dm }) {
   return (
     <div className="relative grid grid-cols-3 p-1 rounded-full w-full sm:w-[280px]"
       style={{
-        background: dm ? '#26262d' : '#F4EBEF',
-        border: `1px solid ${dm ? '#3a3a44' : '#EBDCE4'}`,
-        boxShadow: dm ? 'inset 0 1px 2px rgba(0,0,0,0.25)' : 'inset 0 1px 2px rgba(160,96,122,0.06)',
+        background: dm ? '#26262d' : '#F4F1EE',
+        border: `1px solid ${dm ? '#3a3a44' : '#E7E0D9'}`,
+        boxShadow: dm ? 'inset 0 1px 2px rgba(0,0,0,0.25)' : 'inset 0 1px 2px rgba(60,45,35,0.05)',
       }}>
       <div className="absolute rounded-full pointer-events-none"
         style={{
           top: 4, bottom: 4, left: 4, width: 'calc((100% - 8px) / 3)',
           transform: `translateX(${activeIndex * 100}%)`,
           transition: 'transform 0.34s cubic-bezier(0.34,1.4,0.5,1)',
-          background: dm
-            ? 'linear-gradient(180deg, #3b3b46 0%, #313139 100%)'
-            : 'linear-gradient(180deg, #FFFFFF 0%, #FFF6FA 100%)',
-          border: dm ? '1px solid #4a4a55' : '1px solid #F1D9E5',
+          background: 'linear-gradient(165deg, #A0607A 0%, #6B4055 100%)',
           boxShadow: dm
-            ? '0 1px 3px rgba(0,0,0,0.3)'
-            : '0 1px 2px rgba(160,96,122,0.10), 0 2px 6px rgba(160,96,122,0.07)',
+            ? '0 1px 3px rgba(0,0,0,0.35)'
+            : '0 1px 3px rgba(107,64,85,0.32), 0 2px 8px rgba(107,64,85,0.18)',
         }} />
       {segs.map(s => {
         const isActive = s.key === value;
         return (
           <button key={s.key} type="button" onClick={() => onChange(s.key)}
             className="relative z-10 py-2 text-[0.7rem] font-semibold tracking-[0.02em] transition-colors duration-200 whitespace-nowrap text-center"
-            style={{ color: isActive ? (dm ? '#f0d2de' : '#A0607A') : (dm ? '#7c7c87' : '#B7A1AB') }}>
+            style={{ color: isActive ? '#fff' : (dm ? '#8a8a93' : '#9b8e88') }}>
             {s.label}
           </button>
         );
