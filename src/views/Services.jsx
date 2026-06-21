@@ -235,7 +235,7 @@ export default function ServicesPage() {
 
               {/* Filter — editorial underline tabs inside a soft pill track (scrollable on mobile).
                   The pill bundles the categories visually and signals they scroll; no animation. */}
-              <div className="relative inline-flex max-w-full align-middle rounded-full" style={{ background: '#f3eee9' }}>
+              <div className="relative inline-flex max-w-full align-middle rounded-full" style={{ background: '#eef0f2' }}>
                 <div
                   ref={filterScrollRef}
                   onScroll={updateFilterEdges}
@@ -249,24 +249,24 @@ export default function ServicesPage() {
                         key={cat.key}
                         onClick={() => handleCategorySelect(cat.key)}
                         className="flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'none', border: 'none', padding: '0 15px', minHeight: '40px', cursor: 'pointer' }}
+                        style={{ background: 'none', border: 'none', padding: '0 13px', minHeight: '32px', cursor: 'pointer' }}
                       >
                         <span
                           style={{
                             display: 'inline-block',
                             fontFamily: 'var(--font-sans)',
-                            fontSize: '0.68rem',
+                            fontSize: '0.63rem',
                             letterSpacing: '0.1em',
                             textTransform: 'uppercase',
                             whiteSpace: 'nowrap',
-                            color: active ? '#111' : '#a89f97',
-                            fontWeight: active ? 600 : 400,
-                            paddingBottom: '3px',
-                            borderBottom: active ? '1.5px solid #111' : '1.5px solid transparent',
+                            color: active ? '#111' : '#9aa0a6',
+                            fontWeight: active ? 500 : 400,
+                            paddingBottom: '2px',
+                            borderBottom: active ? '1px solid #111' : '1px solid transparent',
                             transition: 'color 0.2s, border-color 0.2s',
                           }}
-                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#7a7068'; }}
-                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#a89f97'; }}
+                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#5f6368'; }}
+                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#9aa0a6'; }}
                         >
                           {cat.label}
                         </span>
@@ -277,12 +277,12 @@ export default function ServicesPage() {
 
                 {/* Soft edge fades in the pill's own color — static cue that there's more to scroll */}
                 <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-8 rounded-l-full transition-opacity duration-300 lg:hidden"
-                  style={{ background: 'linear-gradient(to right, #f3eee9 38%, rgba(243,238,233,0))', opacity: filterEdges.atStart ? 0 : 1 }}
+                  className="pointer-events-none absolute inset-y-0 left-0 w-7 rounded-l-full transition-opacity duration-300 lg:hidden"
+                  style={{ background: 'linear-gradient(to right, #eef0f2 38%, rgba(238,240,242,0))', opacity: filterEdges.atStart ? 0 : 1 }}
                 />
                 <div
-                  className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-full transition-opacity duration-300 lg:hidden"
-                  style={{ background: 'linear-gradient(to left, #f3eee9 38%, rgba(243,238,233,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
+                  className="pointer-events-none absolute inset-y-0 right-0 w-7 rounded-r-full transition-opacity duration-300 lg:hidden"
+                  style={{ background: 'linear-gradient(to left, #eef0f2 38%, rgba(238,240,242,0))', opacity: filterEdges.atEnd ? 0 : 1 }}
                 />
               </div>
             </div>
