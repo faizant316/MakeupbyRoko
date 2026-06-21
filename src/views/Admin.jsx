@@ -10,7 +10,7 @@ import BookingDetail from '../components/admin/BookingDetail';
 import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
-import CapacitySettings from '../components/admin/CapacitySettings';
+import AvailabilityTab from '../components/admin/AvailabilityTab';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
 import AnalyticsTab from '../components/admin/AnalyticsTab';
@@ -416,9 +416,6 @@ export default function Admin() {
               <AdminStats today={todayCount} pending={pendingCount} confirmed={confirmedCount} completed={completedCount} darkMode={dm} onFilterClick={(filter) => { setStatusFilter(filter); setTimeout(() => document.getElementById('bookings-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} />
               <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
             </div>
-            <div className="mb-6">
-              <CapacitySettings selectedDate={selectedDate} darkMode={dm} />
-            </div>
             {/* Class Sign-Ups quick access — sits above bookings list */}
             {classRegs.length > 0 && (
               <button
@@ -516,6 +513,10 @@ export default function Admin() {
             allBookings={bookings}
             darkMode={dm}
           />
+        )}
+
+        {activeTab === 'availability' && (
+          <AvailabilityTab bookings={bookings} classRegs={classRegs} darkMode={dm} />
         )}
 
         {activeTab === 'services' && (
