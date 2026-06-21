@@ -68,7 +68,7 @@ export default function Testimonials() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-3">
             <span className="w-6 h-px bg-[#D4A0B0]" />
-            <span className="label" style={{ color: '#D4A0B0' }}>Client Love 🫶</span>
+            <span className="label" style={{ color: '#D4A0B0' }}>Client Love</span>
             <span className="w-6 h-px bg-[#D4A0B0]" />
           </div>
           <h2
@@ -80,6 +80,24 @@ export default function Testimonials() {
           <p className="text-[0.85rem] text-[#6d6460] max-w-[420px] mx-auto leading-[1.7]">
             Real messages from real clients. Nothing speaks louder than love in the inbox.
           </p>
+
+          {/* Social proof strip */}
+          <div className="flex items-center justify-center flex-wrap gap-x-3 gap-y-2 mt-5">
+            <div className="flex items-center gap-1.5">
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <svg key={i} viewBox="0 0 24 24" fill="#D4A0B0" className="w-3.5 h-3.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-[0.72rem] font-semibold text-[#111]">5.0</span>
+            </div>
+            <span className="w-1 h-1 rounded-full bg-[#e0d6cf]" />
+            <span className="text-[0.72rem] text-[#6d6460]">Loved by brides &amp; clients</span>
+            <span className="w-1 h-1 rounded-full bg-[#e0d6cf]" />
+            <span className="text-[0.72rem] text-[#6d6460]">Bay Area &amp; beyond</span>
+          </div>
         </div>
 
         {/* Desktop: Phone left + Review form right */}
@@ -126,7 +144,7 @@ export default function Testimonials() {
                   key={i}
                   onClick={() => goTo(i)}
                   className={`rounded-full transition-all duration-300 ${
-                    activeIndex === i ? 'w-6 h-2 bg-[#A0785A]' : 'w-2 h-2 bg-[#e8e2dc] hover:bg-[#d5cdc5]'
+                    activeIndex === i ? 'w-6 h-2 bg-[#D4A0B0]' : 'w-2 h-2 bg-[#e8e2dc] hover:bg-[#d5cdc5]'
                   }`}
                 />
               ))}
@@ -138,7 +156,7 @@ export default function Testimonials() {
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[#D4A0B0] text-sm">✦</span>
-                <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#A0785A]">Share Your Experience</span>
+                <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#8A4A63]">Share Your Experience</span>
               </div>
               <h3 className="font-serif text-[1.5rem] text-[#111]" style={{ fontWeight: 300 }}>
                 Leave a <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>Review</em>
@@ -192,7 +210,7 @@ export default function Testimonials() {
                   key={i}
                   onClick={() => goTo(i)}
                   className={`rounded-full transition-all duration-300 ${
-                    activeIndex === i ? 'w-5 h-1.5 bg-[#A0785A]' : 'w-1.5 h-1.5 bg-[#e8e2dc]'
+                    activeIndex === i ? 'w-5 h-1.5 bg-[#D4A0B0]' : 'w-1.5 h-1.5 bg-[#e8e2dc]'
                   }`}
                 />
               ))}
@@ -204,7 +222,7 @@ export default function Testimonials() {
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[#D4A0B0] text-sm">✦</span>
-                <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#A0785A]">Share Your Experience</span>
+                <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#8A4A63]">Share Your Experience</span>
               </div>
               <h3 className="font-serif text-[1.3rem] text-[#111]" style={{ fontWeight: 300 }}>
                 Leave a <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>Review</em>

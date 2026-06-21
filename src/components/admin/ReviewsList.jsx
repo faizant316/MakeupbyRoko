@@ -91,6 +91,14 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
         <div className="min-w-0">
           <h4 className="font-serif text-[1.02rem] truncate" style={{ color: tx }}>{review.name}</h4>
           {review.service && <p className="text-[0.7rem] mt-0.5 truncate" style={{ color: '#D4A0B0' }}>{review.service}</p>}
+          {review.location && (
+            <p className="flex items-center gap-1 text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#a89f97' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-3 h-3 flex-shrink-0">
+                <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span className="truncate">{review.location}</span>
+            </p>
+          )}
         </div>
         <span className="px-2.5 py-1 text-[0.55rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0"
           style={isApproved
@@ -107,10 +115,29 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
         ))}
       </div>
 
+      {/* Client photo */}
+      {review.photo && (
+        <a href={review.photo} target="_blank" rel="noopener noreferrer" className="block mb-3 rounded-lg overflow-hidden" style={{ border: `1px solid ${bd}` }}>
+          <img src={review.photo} alt="Client look" className="w-full max-h-[150px] object-cover" />
+        </a>
+      )}
+
       {/* Message */}
-      <p className="text-[0.82rem] leading-relaxed flex-1 mb-4" style={{ color: dm ? '#a1a1aa' : '#777' }}>
+      <p className="text-[0.82rem] leading-relaxed flex-1 mb-3" style={{ color: dm ? '#a1a1aa' : '#777' }}>
         "{review.message}"
       </p>
+
+      {/* Highlights */}
+      {review.highlights?.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {review.highlights.map((h, i) => (
+            <span key={i} className="px-2 py-0.5 rounded-full text-[0.62rem] font-medium"
+              style={{ background: dm ? 'rgba(212,160,176,0.16)' : 'rgba(212,160,176,0.12)', color: dm ? '#e7c9d5' : '#8A4A63' }}>
+              {h}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Date */}
       <p className="text-[0.65rem] mb-4" style={{ color: di }}>
