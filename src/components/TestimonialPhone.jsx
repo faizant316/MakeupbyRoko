@@ -22,6 +22,14 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
 
   return (
     <div className="relative mx-auto select-none" style={{ width: '100%', maxWidth: 280 }}>
+      {/* Soft pink ambient glow — gives the phone a warm, alive halo */}
+      <div className="absolute pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at 50% 45%, rgba(212,160,176,0.38) 0%, transparent 62%)',
+        filter: 'blur(44px)',
+        inset: '-46px',
+        zIndex: 0,
+      }} />
+
       {/* Subtle shadow */}
       <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.15) 0%, transparent 65%)',
@@ -30,8 +38,8 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
         zIndex: 0,
       }} />
 
-      {/* iPhone container */}
-      <div className="relative z-10" style={{ aspectRatio: '9/19.5' }}>
+      {/* iPhone container — gentle float to feel alive */}
+      <div className="relative z-10 phone-float" style={{ aspectRatio: '9/19.5' }}>
 
         {/* Screen content — screenshots carousel inside phone */}
         <div

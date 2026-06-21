@@ -20,11 +20,20 @@ export async function POST(req) {
   try {
     const supabase = createClient();
     const body = await req.json();
-    const { name, email, rating, text, service } = body;
-    if (!name || !text) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const { name, rating, message, service, highlights, location, photo } = body;
+    if (!name || !message) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     const { data, error } = await supabase
       .from('reviews')
-      .insert({ name, email, rating, text, service, status: 'pending' })
+      .insert({
+        name,
+        message,
+        rating: rating || 5,
+        service: service || null,
+        highlights: Array.isArray(highlights) ? highlights.slice(0, 8) : [],
+        location: location || null,
+        photo: photo || null,
+        status: 'pending',
+      })
       .select().single();
     if (error) throw error;
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });

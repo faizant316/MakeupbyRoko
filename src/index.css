@@ -243,6 +243,16 @@
   transform: translateY(0) !important;
 }
 
+/* Gentle float for the testimonial phone — slow, subtle, "alive" */
+@keyframes phoneFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+.phone-float { animation: phoneFloat 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .phone-float { animation: none; }
+}
+
 /* Hide scrollbar for filter bars */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
