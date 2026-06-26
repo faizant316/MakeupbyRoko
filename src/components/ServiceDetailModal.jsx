@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { lenisStop, lenisStart } from '@/lib/lenis';
+import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 
 function dedupeText(text, phrases) {
   if (!text) return text;
@@ -82,6 +83,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const [dotsVisible, setDotsVisible] = useState(true);
   const mobileScrollRef  = useRef(null);
   const desktopScrollRef = useRef(null);
+  useModalLenis(desktopScrollRef);
   const modalCardRef     = useRef(null);
   const mobileInnerRef   = useRef(null);
   const photosRef        = useRef([]);
@@ -195,7 +197,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   const handleClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
-    if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
+    scrollModalTop(desktopScrollRef.current);
     const exit = 'transform 0.26s cubic-bezier(0.4, 0, 1, 1), opacity 0.18s ease';
     for (const r of [modalCardRef, mobileInnerRef]) {
       if (!r.current) continue;
@@ -213,7 +215,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   // reads as one continuous swap rather than a "close, then reopen" sequence.
   const handleActionClose = () => {
     if (mobileScrollRef.current)  mobileScrollRef.current.scrollTop  = 0;
-    if (desktopScrollRef.current) desktopScrollRef.current.scrollTop = 0;
+    scrollModalTop(desktopScrollRef.current);
     const exit = 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease';
     for (const r of [modalCardRef, mobileInnerRef]) {
       if (!r.current) continue;
@@ -410,7 +412,6 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             {/* Scrollable content */}
             <div
               ref={desktopScrollRef}
-              data-lenis-prevent
               className="flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'none' }}
             >
