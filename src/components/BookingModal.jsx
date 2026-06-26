@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { lenisStop, lenisStart } from '@/lib/lenis';
+import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 
 function useBookingCounts() {
@@ -272,12 +273,11 @@ export default function BookingModal({ service: initialService, onClose }) {
   }, []);
 
   const scrollRef = useRef(null);
+  useModalLenis(scrollRef);
 
   // Scroll to top when step changes to done
   useEffect(() => {
-    if (step === 'done' && scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
+    if (step === 'done') scrollModalTop(scrollRef.current);
   }, [step]);
 
 
@@ -300,40 +300,52 @@ export default function BookingModal({ service: initialService, onClose }) {
         }}
       >
         {/* Header */}
-        <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm z-10 flex items-center px-4 sm:px-8 py-3.5 sm:py-4 gap-3" style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+        <div
+          className="flex-shrink-0 backdrop-blur-sm z-10 flex items-center px-4 sm:px-8 py-3.5 sm:py-[1.1rem] gap-3 relative"
+          style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #FCF8F5 100%)' }}
+        >
+          {/* Tapered blush hairline */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(212,160,176,0.5) 50%, transparent)' }}
+          />
+
           {/* ← Back */}
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0 touch-manipulation"
-            style={{ background: '#f0ebe6' }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
+            style={{ background: '#fff', border: '1px solid rgba(212,160,176,0.3)', boxShadow: '0 1px 4px rgba(140,90,110,0.07)' }}
             aria-label="Back"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
 
-          {/* Title — centered */}
-          <div className="flex-1 flex items-center justify-center gap-2.5 min-w-0">
-            <span className="text-[#D4A0B0] text-xs flex-shrink-0">✦</span>
-            <div className="min-w-0">
-              <span className="font-serif text-[1.05rem] tracking-tight text-[#111] block leading-tight truncate">
+          {/* Title — centered, flanked by delicate rules + sparkle */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 px-2">
+            <div className="flex items-center justify-center gap-2.5 min-w-0 max-w-full">
+              <span className="hidden sm:block h-px w-6 flex-shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,160,176,0.75))' }} />
+              <span className="text-[#D4A0B0] text-[0.62rem] flex-shrink-0 leading-none">✦</span>
+              <span className="font-serif text-[1.05rem] sm:text-[1.15rem] tracking-[0.01em] text-[#2C1A14] leading-tight truncate">
                 {service.category === 'bridal' ? 'Bridal Inquiry' : step === 'done' ? 'Request Sent!' : `Book: ${service.title}`}
               </span>
-              {service.category !== 'bridal' && step !== 'done' && service.duration && (
-                <span className="text-[0.6rem] text-[#c5bdb5] tracking-wide block">{service.duration}</span>
-              )}
+              <span className="text-[#D4A0B0] text-[0.62rem] flex-shrink-0 leading-none">✦</span>
+              <span className="hidden sm:block h-px w-6 flex-shrink-0" style={{ background: 'linear-gradient(90deg, rgba(212,160,176,0.75), transparent)' }} />
             </div>
+            {service.category !== 'bridal' && step !== 'done' && service.duration && (
+              <span className="text-[0.58rem] text-[#b9aca2] tracking-[0.1em] uppercase">{service.duration}</span>
+            )}
           </div>
 
           {/* × Close */}
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0 touch-manipulation"
-            style={{ background: '#f0ebe6' }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
+            style={{ background: '#fff', border: '1px solid rgba(212,160,176,0.3)', boxShadow: '0 1px 4px rgba(140,90,110,0.07)' }}
             aria-label="Close"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" className="w-3.5 h-3.5">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
@@ -373,7 +385,7 @@ export default function BookingModal({ service: initialService, onClose }) {
         )}
 
         {/* Scrollable content */}
-        <div ref={scrollRef} data-modal-scroll data-lenis-prevent className="flex-1 overflow-y-auto min-h-0 overscroll-contain flex flex-col bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div ref={scrollRef} data-modal-scroll className="flex-1 overflow-y-auto min-h-0 overscroll-contain flex flex-col bg-white" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="w-full sm:max-w-[1200px] sm:mx-auto flex-1 flex flex-col bg-white">
 
         {/* BRIDAL: Special inquiry form */}

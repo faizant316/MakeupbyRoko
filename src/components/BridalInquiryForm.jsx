@@ -12,6 +12,7 @@ function useBookingCounts() {
   }, []);
   return counts;
 }
+import { scrollModalTop } from '@/lib/modalLenis';
 import CustomSelect from './CustomSelect';
 import { compressImage } from '@/lib/compressImage';
 import FullDayIncludes from './FullDayIncludes';
@@ -227,9 +228,8 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
   const firstName = (brideName || '').split(' ')[0] || 'there';
 
   useEffect(() => {
-    // Scroll the nearest scrollable ancestor to top
-    const el = document.querySelector('[data-modal-scroll]');
-    if (el) el.scrollTop = 0;
+    // Scroll the modal's scroll container to top (respects its Lenis instance)
+    scrollModalTop(document.querySelector('[data-modal-scroll]'));
   }, []);
 
   return (
