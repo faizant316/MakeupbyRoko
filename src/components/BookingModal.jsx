@@ -100,6 +100,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   const [formData, setFormData] = useState({ fname: '', lname: '', email: '', phone: '', notes: '', early_arrival: null, travel_requested: null });
   const [newBookingId, setNewBookingId] = useState(null);
   const [uploadToken, setUploadToken] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const isEarlyArrival = formData.early_arrival === true;
 
@@ -185,23 +186,33 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // guard against double-submit (creates duplicate booking + admin email)
     if (!formData.fname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
+    setSubmitting(true);
     const earlySurcharge = isEarlyArrival ? ' | ⏰ Early arrival surcharge: +$100 (before 7 AM)' : '';
     const readyByNote = formData.ready_by_time ? ` | Ready by: ${formData.ready_by_time}` : '';
     const travelNote = formData.travel_requested === true ? ' | ✈️ Travel requested — bridal pricing ($750+) applies' : '';
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const newBooking = await api.entities.Booking.create({
-      name: `${formData.fname} ${formData.lname}`,
-      email: formData.email,
-      phone: formData.phone,
-      service: service.title,
-      date: selectedDate,
-      time: '',
-      notes: `${formData.notes}${earlySurcharge}${readyByNote}${travelNote}`.trim(),
-      status: 'pending',
-      upload_token: token,
-    });
+    let newBooking;
+    try {
+      newBooking = await api.entities.Booking.create({
+        name: `${formData.fname} ${formData.lname}`,
+        email: formData.email,
+        phone: formData.phone,
+        service: service.title,
+        date: selectedDate,
+        time: '',
+        notes: `${formData.notes}${earlySurcharge}${readyByNote}${travelNote}`.trim(),
+        status: 'pending',
+        upload_token: token,
+      });
+    } catch (err) {
+      console.error('Failed to create booking:', err);
+      alert('Something went wrong submitting your booking. Please try again.');
+      setSubmitting(false); // allow retry
+      return;
+    }
     setNewBookingId(newBooking.id);
     setUploadToken(token);
 
@@ -709,13 +720,13 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
                   )}
                   <button type="submit"
-                    disabled={!selectedDate}
+                    disabled={!selectedDate || submitting}
                     className={`w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] transition-all ${
-                      selectedDate
+                      selectedDate && !submitting
                         ? 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}>
-                    {selectedDate ? 'Submit Booking Request →' : 'Select a date to continue'}
+                    {submitting ? 'Submitting…' : selectedDate ? 'Submit Booking Request →' : 'Select a date to continue'}
                   </button>
                   <p className="text-[0.65rem] text-center text-gray-400 mt-2">Roko will confirm your time within 24–48 hrs · Deposit via Zelle secures your date <span className="text-[#D4A0B0]">✦</span></p>
                 </div>
