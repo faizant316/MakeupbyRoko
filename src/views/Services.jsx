@@ -41,26 +41,17 @@ const CATEGORIES = [
   { key: 'lessons', label: 'Makeup Courses', icon: '💄' },
 ];
 
-// Placeholder gallery photos — replace with real photos once uploaded
-const SAMPLE_GALLERY = [
-  'https://picsum.photos/id/1005/900/1100',
-  'https://picsum.photos/id/1011/900/1100',
-  'https://picsum.photos/id/1060/900/1100',
-  'https://picsum.photos/id/1027/900/1100',
-];
-
-// Cover photo for the Makeup Courses card — always this, regardless of DB.
-const COURSES_PHOTO = '/makeup-courses.jpg';
+// Local cover photos that always override whatever is set in the DB.
+const PHOTO_OVERRIDES = {
+  'Makeup Courses': '/makeup-courses.jpg',
+  'Full Day Service': '/full-day-service.jpg',
+  'Bridal Trial': '/bridal-trial.jpg',
+};
 
 function mapService(svc) {
-  const isLessons = svc.category === 'lessons';
-  const mainPhoto = isLessons ? COURSES_PHOTO : (svc.photo || '');
-  const gallery = Array.isArray(svc.gallery_photos) ? svc.gallery_photos.filter(Boolean) : [];
-  const photos = isLessons
-    ? [COURSES_PHOTO]
-    : gallery.length > 0
-      ? gallery
-      : [mainPhoto, ...SAMPLE_GALLERY].filter(Boolean);
+  const mainPhoto = PHOTO_OVERRIDES[svc.title] || svc.photo || '';
+  // One cover photo per card — no gallery carousel.
+  const photos = [mainPhoto].filter(Boolean);
 
   return {
     key: svc.id,
@@ -255,12 +246,12 @@ export default function ServicesPage() {
                       <button
                         key={cat.key}
                         onClick={() => handleCategorySelect(cat.key)}
+                        className="text-[0.66rem] lg:text-[0.8rem]"
                         style={{
                           background: 'none',
                           border: 'none',
                           borderBottom: active ? '1px solid #111' : '1px solid transparent',
                           padding: '10px 0 6px 0',
-                          fontSize: '0.66rem',
                           fontFamily: 'var(--font-sans)',
                           letterSpacing: '0.1em',
                           textTransform: 'uppercase',
