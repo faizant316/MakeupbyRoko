@@ -54,11 +54,13 @@ export async function POST(req) {
     ).join('');
 
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
+    const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
+    const REPLY_TO = process.env.REPLY_TO_EMAIL || 'makeupbyroko22@gmail.com';
 
     await resend.emails.send({
       from: FROM,
       to: [reg.email],
+      replyTo: REPLY_TO,
       subject: "You're officially booked! 🎨",
       html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
         <h2 style="font-family:Georgia,serif;font-weight:300;color:#2C1A14;">Hey ${firstName}! 🎨</h2>
@@ -74,6 +76,7 @@ export async function POST(req) {
     await resend.emails.send({
       from: FROM,
       to: [ADMIN_EMAIL],
+      replyTo: reg.email,
       subject: `💳 New Class Payment — ${reg.full_name} ($${totalPaid.toLocaleString()})`,
       html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
         <p><strong>${reg.full_name}</strong> paid <strong>$${totalPaid.toLocaleString()}</strong> for: ${bookedClasses.map(k => CLASS_CATALOG[k].title).join(', ')}</p>

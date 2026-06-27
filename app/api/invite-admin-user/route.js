@@ -18,7 +18,7 @@ export async function POST(req) {
 
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
       data: { role: 'admin' },
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupbyroko.com'}/admin`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app'}/admin`,
     });
 
     if (error) throw error;

@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 
-const FROM = `Roqia Moshref <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
-const ADMIN_URL = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupbyroko.com'}/admin`;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
+const REPLY_TO = process.env.REPLY_TO_EMAIL || 'makeupbyroko22@gmail.com';
+const ADMIN_URL = `${SITE_URL}/admin`;
 
 function base(content) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -45,7 +47,7 @@ function step(n, title, sub) {
 
 export async function sendEmail({ to, subject, html }) {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const result = await resend.emails.send({ from: FROM, to: [to], subject, html });
+  const result = await resend.emails.send({ from: FROM, to: [to], replyTo: REPLY_TO, subject, html });
   if (result.error) throw new Error(result.error.message);
   return result;
 }
@@ -54,7 +56,7 @@ export async function sendEmailPair(emails) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const results = await Promise.allSettled(
     emails.map(({ to, subject, html }) =>
-      resend.emails.send({ from: FROM, to: [to], subject, html })
+      resend.emails.send({ from: FROM, to: [to], replyTo: REPLY_TO, subject, html })
         .then(r => { if (r.error) throw new Error(r.error.message); return r; })
     )
   );
@@ -177,7 +179,7 @@ export function bookingCancelledEmail({ name, service, date }) {
     ${card(`
       <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 10px;">Booking Cancelled</h2>
       <p style="font-size:13px;color:#444444;margin:0 0 8px;line-height:1.7;">Hey <strong>${name}</strong>, your <strong>${service}</strong> appointment on <strong>${date}</strong> has been cancelled.</p>
-      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;">If you'd like to rebook, visit <a href="https://makeupbyroko.com" style="color:#C4849A;">makeupbyroko.com</a> or reach out directly.</p>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;">If you'd like to rebook, visit <a href="${SITE_URL}" style="color:#C4849A;">makeupbyroko.org</a> or reach out directly.</p>
     `)}
   `);
 }
@@ -203,7 +205,7 @@ export function feedbackRequestEmail({ name, service }) {
       <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 10px;">How did it go? ✨</h2>
       <p style="font-size:13px;color:#444444;margin:0 0 12px;line-height:1.7;">Hey <strong>${name}</strong>! I hope you loved your <strong>${service}</strong>. I'd love to hear how it went. Would you mind leaving a quick review?</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-        <a href="https://makeupbyroko.com/#reviews" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">Leave a Review ✦</a>
+        <a href="${SITE_URL}/#reviews" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">Leave a Review ✦</a>
       </td></tr></table>
     `)}
   `);
