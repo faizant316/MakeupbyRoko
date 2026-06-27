@@ -497,6 +497,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
   const [calDate, setCalDate] = useState(new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [newBookingId, setNewBookingId] = useState(null);
   const [uploadToken, setUploadToken] = useState(null);
   const [inspoPhotos, setInspoPhotos] = useState([]);
@@ -533,6 +534,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // guard against double-submit (creates duplicate inquiry + admin email)
     if (!form.bride_name) { alert('Please enter the bride\'s name.'); return; }
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
@@ -542,6 +544,8 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     if (!form.event_start_time) { alert('Please enter the event start time.'); return; }
     if (!form.venue_access_time) { alert('Please enter the venue access time.'); return; }
 
+    setSubmitting(true);
+    try {
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
     // Create bridal inquiry record (carries all the wedding details shown in admin)
@@ -608,6 +612,11 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     }).catch(err => console.error('bridal email error:', err));
 
     setSubmitted(true);
+    } catch (err) {
+      console.error('Bridal submit failed:', err);
+      alert('Something went wrong submitting your inquiry. Please try again.');
+      setSubmitting(false); // allow retry
+    }
   };
 
   if (submitted) return <BridalSuccess onClose={onClose} brideName={form.bride_name} email={form.email} bookingId={newBookingId} uploadToken={uploadToken} />;
@@ -1048,8 +1057,8 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           </div>
 
           <div className="mt-auto pt-2">
-            <button type="submit" className="w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)] transition-all">
-              Submit Bridal Inquiry →
+            <button type="submit" disabled={submitting} className={`w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] transition-all ${submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'}`}>
+              {submitting ? 'Submitting…' : 'Submit Bridal Inquiry →'}
             </button>
             <p className="text-[0.65rem] text-center text-gray-400 mt-2">
               Roko will confirm within 24–48 hours · {bridalDeposit} secures your date <span className="text-[#D4A0B0]">✦</span>
