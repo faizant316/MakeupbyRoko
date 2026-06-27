@@ -159,7 +159,7 @@ values
     '50% Zelle deposit to secure spot'
   ],
   'Come ready to learn, ask questions, and practice in real time. Each session ends with a personalized product list and technique notes so you can recreate your looks at home.',
-  '',
+  '/makeup-courses.jpg',
   6,
   true
 );
