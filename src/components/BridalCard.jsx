@@ -14,7 +14,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
         <div className="aspect-[4/3] overflow-hidden bg-[#f5f5f5] flex-shrink-0 relative">
           <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-            style={{ objectPosition: svc.title === 'Bridal Trial' ? 'center 22%' : 'top' }} />
+            style={{ objectPosition: svc.title === 'Bridal Trial' ? 'center 42%' : 'top' }} />
           {svc.photos?.length > 1 && (
             <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
               style={{ background: 'rgba(0,0,0,0.48)', backdropFilter: 'blur(4px)' }}>
