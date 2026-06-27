@@ -49,15 +49,18 @@ const SAMPLE_GALLERY = [
   'https://picsum.photos/id/1027/900/1100',
 ];
 
-// Default cover photo for the Makeup Courses card when no DB photo is set.
+// Cover photo for the Makeup Courses card — always this, regardless of DB.
 const COURSES_PHOTO = '/makeup-courses.jpg';
 
 function mapService(svc) {
-  const mainPhoto = svc.photo || (svc.category === 'lessons' ? COURSES_PHOTO : '');
+  const isLessons = svc.category === 'lessons';
+  const mainPhoto = isLessons ? COURSES_PHOTO : (svc.photo || '');
   const gallery = Array.isArray(svc.gallery_photos) ? svc.gallery_photos.filter(Boolean) : [];
-  const photos = gallery.length > 0
-    ? gallery
-    : [mainPhoto, ...SAMPLE_GALLERY].filter(Boolean);
+  const photos = isLessons
+    ? [COURSES_PHOTO]
+    : gallery.length > 0
+      ? gallery
+      : [mainPhoto, ...SAMPLE_GALLERY].filter(Boolean);
 
   return {
     key: svc.id,
