@@ -2,7 +2,7 @@
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 
-const AVAILABLE_DAYS = [2, 3, 5, 6]; // Tue, Wed, Fri, Sat (closed Sun/Mon/Thu)
+const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 const UNAVAILABLE_DATES = [];
 const TIMES = ['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM', '7:00 PM'];
 

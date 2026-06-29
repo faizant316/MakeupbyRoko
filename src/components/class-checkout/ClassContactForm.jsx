@@ -207,7 +207,7 @@ export default function ClassContactForm({ form, setForm, selectedClasses, total
             )}
           </button>
           <p className="text-[0.65rem] text-center text-gray-400 mt-2">
-            Roko will confirm within 24–48 hrs · Mon–Thu 10AM–8PM <span className="text-[#D4A0B0]">✦</span>
+            Roko will confirm within 24–48 hrs · Wednesdays 10AM–8PM <span className="text-[#D4A0B0]">✦</span>
           </p>
         </div>
       </div>
