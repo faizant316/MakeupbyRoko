@@ -18,7 +18,7 @@ import BridalInquiryForm from './BridalInquiryForm';
 import ServiceFAQ from './ServiceFAQ';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 
-const AVAILABLE_DAYS = [1, 2, 3, 4, 5, 6];
+const AVAILABLE_DAYS = [2, 3, 5, 6]; // Tue, Wed, Fri, Sat (closed Sun/Mon/Thu)
 
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -187,7 +187,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return; // guard against double-submit (creates duplicate booking + admin email)
-    if (!formData.fname || !formData.email) { alert('Please fill in required fields.'); return; }
+    if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
     setSubmitting(true);
     const earlySurcharge = isEarlyArrival ? ' | ⏰ Early arrival surcharge: +$100 (before 7 AM)' : '';
@@ -583,8 +583,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                       placeholder="Amara" className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Last Name</label>
-                    <input value={formData.lname} onChange={e => setFormData({ ...formData, lname: e.target.value })}
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Last Name *</label>
+                    <input required value={formData.lname} onChange={e => setFormData({ ...formData, lname: e.target.value })}
                       placeholder="Jones" className={inputClass} />
                   </div>
                 </div>

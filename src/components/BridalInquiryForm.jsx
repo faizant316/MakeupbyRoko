@@ -19,7 +19,7 @@ import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
 
-const AVAILABLE_DAYS = [1, 2, 3, 4, 5, 6];
+const AVAILABLE_DAYS = [2, 3, 5, 6]; // Tue, Wed, Fri, Sat (closed Sun/Mon/Thu)
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
@@ -661,12 +661,12 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
               <div className="w-px h-8 bg-gray-200" />
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Coverage</p>
-                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">All Day</p>
+                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">Four Hours</p>
               </div>
               <div className="w-px h-8 bg-gray-200" />
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Travel</p>
-                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">Included</p>
+                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">$200+</p>
               </div>
             </div>
             <p className="text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Private consultation 1 month before</p>
@@ -894,7 +894,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
           <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className={labelClass}>Makeup Artist Arrive By *</label>
+              <label className={labelClass}>Hairstylist Arrive By *</label>
               <input value={form.ready_by_time} onChange={e => set('ready_by_time', e.target.value)} placeholder="e.g. 10:00 AM" className={inputClass} />
             </div>
             <div>
@@ -902,6 +902,10 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
               <input value={form.photographer_arrival_time} onChange={e => set('photographer_arrival_time', e.target.value)} placeholder="e.g. 11:00 AM" className={inputClass} />
             </div>
           </div>
+
+          <p className="text-[0.62rem] text-[#b08d9c] leading-relaxed -mt-1">
+            Heads up: if your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline">@hairbyshak</a>, Roko doesn't glam at the same time as other hairstylists, so she'll plan her timing around when yours arrives.
+          </p>
 
           <div>
             <label className={labelClass}>Event Location *</label>
@@ -914,7 +918,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
               <input value={form.photographer} onChange={e => set('photographer', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Hairstylist</label>
+              <label className={labelClass}>Hairstylist (Instagram)</label>
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
           </div>
@@ -940,7 +944,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           {/* Before & After Photos — moved here, right next to makeup vision */}
           <div>
             <label className={labelClass}>Photos of You (With & Without Makeup) <span className="text-gray-300 normal-case tracking-normal font-normal">— optional</span></label>
-            <p className="text-[0.68rem] text-gray-400 mb-3">Send a couple of recent photos of yourself with and without makeup so I can get a feel for your features.</p>
+            <p className="text-[0.68rem] text-gray-400 mb-3">Send recent photos of yourself with and without makeup. Before and after photos are needed so I can carefully study your unique features and understand your face better. This lets me hand-select the products and techniques best suited to you, for a personalized, flawless result on your wedding day.</p>
 
             {inspoPhotos.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mb-3">
