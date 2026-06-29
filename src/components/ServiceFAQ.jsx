@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 const GENERAL_FAQ = [
-  { q: "How do I book an appointment?", a: "Email makeupbyroko22@gmail.com with your appointment date as the subject line (MM/DD/YYYY), full name, phone number, time you need to be ready by, occasion, and location. Please allow 24–48 hours for a response." },
-  { q: "How do I pay the deposit?", a: "Deposits are accepted through Zelle only. After you book, the Zelle details are sent to your email with your booking confirmation. Include your name and appointment date in the Zelle note, then send a screenshot as proof of payment." },
+  { q: "How do I book an appointment?", a: "Book right here on the site: pick your service, choose an available date, and fill out the booking form. Once you submit, you'll get a confirmation email with the Zelle deposit details and a private link to upload your screenshot. Roko confirms within 24–48 hours." },
+  { q: "How do I pay the deposit?", a: "Deposits are accepted through Zelle. After you book, the Zelle details arrive in your confirmation email. Send your deposit, include your full name and appointment date in the Zelle note, then upload a screenshot using the private link in that email to receive your booking confirmation." },
   { q: "How do I pay the remaining balance?", a: "The remaining balance must be paid in CASH. Please bring it in an envelope labeled with your name and the payment amount." },
   { q: "When is my appointment confirmed?", a: "Appointments are first come, first serve and are NOT confirmed until: the deposit is sent, a screenshot is received, and you receive a confirmation text/email." },
   { q: "What is the cancellation policy?", a: "Deposits are non-refundable and non-transferable. If you cancel, the deposit will not be refunded. If Roko cancels due to an emergency, you will be refunded." },
@@ -26,13 +26,13 @@ const EVENT_FAQ = [
 ];
 
 const SHOOT_FAQ = [
-  { q: "What counts as a photoshoot?", a: "Engagement shoots, maternity shoots, birthday shoots, and similar. The Photoshoot Makeup service is $600 with a $300 deposit (1 hr 45 min)." },
+  { q: "What counts as a photoshoot?", a: "Engagement shoots, maternity shoots, birthday shoots, and similar. The Photoshoot Makeup service is $500 with a $250 deposit (1 hr 45 min)." },
   { q: "Where are photoshoot appointments held?", a: "All photoshoot makeup appointments are held exclusively at the studio in Mountain House, CA." },
   ...GENERAL_FAQ,
 ];
 
 const LESSON_FAQ = [
-  { q: "When are classes held?", a: "Classes are held Monday through Thursday between 10:00 AM and 8:00 PM." },
+  { q: "When are classes held?", a: "Classes are held on Wednesdays between 10:00 AM and 8:00 PM." },
   { q: "How do I sign up for a class?", a: "Visit the class selection form, choose your class, then email back after submitting a 50% deposit via Zelle to secure your spot." },
   { q: "Do I need to bring my own makeup?", a: "You're welcome to bring products you already own so I can show you how to use them better, but it's not required. You'll also receive a personalized product recommendation list." },
   ...GENERAL_FAQ.slice(0, 3),
