@@ -201,8 +201,13 @@ function PhotoZone({ icon, title, hint, items, onAdd, onRemove, disabled }) {
       <div className="flex items-center gap-2 mb-1">
         <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.6" className="w-3.5 h-3.5 flex-shrink-0">{icon}</svg>
         <p className="text-[0.68rem] font-bold tracking-[0.1em] uppercase" style={{ color: PLUM_DARK }}>{title}</p>
-        {items.length > 0 && (
-          <span className="ml-auto text-[0.6rem] font-semibold" style={{ color: PLUM }}>{items.length} added</span>
+        {items.length > 0 ? (
+          <span className="ml-auto inline-flex items-center gap-1 text-[0.56rem] font-bold tracking-[0.08em] uppercase" style={{ color: '#3FA66A' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3FA66A" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12" /></svg>
+            {items.length} added
+          </span>
+        ) : (
+          <span className="ml-auto text-[0.5rem] font-bold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded" style={{ color: PLUM, background: HEAD_BG, border: `1px solid ${HEAD_BORDER}` }}>Required</span>
         )}
       </div>
       <p className="text-[0.72rem] leading-[1.55] mb-2.5" style={{ color: LABEL }}>{hint}</p>
@@ -238,6 +243,8 @@ export default function UploadZelle() {
   const bookingId = params.get('id');
   const token = params.get('token');
   const depositAmount = params.get('deposit') || null;
+  // Links may pass the deposit as "$375 deposit"; show just the amount in the hero.
+  const depositDisplay = depositAmount ? depositAmount.replace(/\s*deposit\s*$/i, '').trim() : null;
   const servicePrice = params.get('price') || null;
 
   const [booking, setBooking] = useState(null);
@@ -288,12 +295,14 @@ export default function UploadZelle() {
     ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : '';
 
-  // Bridal clients are invited (via their email) to also upload their
-  // with/without makeup photos. Detect via the link flag, falling back to the
-  // service name for older links.
-  const isBridal = params.get('bridal') === '1' || /bridal|full.?day/i.test(booking?.service || '');
+  // Only the bridal upload link (built with bridal=1) collects with/without
+  // makeup photos. Every other service is a deposit-only, single-step upload —
+  // so detection is driven purely by the link flag, never the service name.
+  const isBridal = params.get('bridal') === '1';
   const steps = isBridal ? ['deposit', 'photos'] : ['deposit'];
   const isLast = step === steps.length - 1;
+  // Bridal requires at least one photo in each category before submitting.
+  const photosComplete = withoutItems.length > 0 && withItems.length > 0;
 
   const pageBg = { background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF6F8 100%)' };
 
@@ -458,7 +467,7 @@ export default function UploadZelle() {
           <div className="flex-1 max-w-5xl mx-auto w-full px-5 pb-10">
             {/* Desktop layout */}
             <div className="hidden lg:grid grid-cols-3 gap-5 items-stretch">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} />
 
               {booking?.screenshot_url && (
                 <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
@@ -494,7 +503,7 @@ export default function UploadZelle() {
 
             {/* Mobile layout */}
             <div className="lg:hidden flex flex-col gap-4">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositAmount} servicePrice={servicePrice} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} />
 
               {booking?.screenshot_url && (
                 <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
@@ -539,7 +548,7 @@ export default function UploadZelle() {
 
   // ── FIRST-TIME WIZARD ──
   const noise = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
-  const primaryDisabled = !zelleFile || submitting;
+  const primaryDisabled = submitting || !zelleFile || (isLast && isBridal && !photosComplete);
   const primaryLabel = isLast
     ? (submitting ? 'Submitting…' : (isBridal ? 'Submit & reserve my date' : 'Reserve my date'))
     : 'Continue';
@@ -581,8 +590,8 @@ export default function UploadZelle() {
                   <div className="flex flex-col gap-5">
                     <div className="text-center">
                       <p className="text-[0.58rem] font-bold tracking-[0.2em] uppercase mb-2" style={{ color: PLUM }}>Reserve your date</p>
-                      {depositAmount ? (
-                        <p className="font-serif text-[2.6rem] leading-none font-light" style={{ color: VALUE }}>{depositAmount}</p>
+                      {depositDisplay ? (
+                        <p className="font-serif text-[2.6rem] leading-none font-light" style={{ color: VALUE }}>{depositDisplay}</p>
                       ) : (
                         <h2 className="font-serif text-[1.9rem] leading-tight font-light" style={{ color: VALUE }}>
                           Secure your <em className="italic" style={{ color: PLUM }}>date</em>
@@ -653,7 +662,7 @@ export default function UploadZelle() {
                         Share your <em className="italic" style={{ color: PLUM }}>looks</em>
                       </h2>
                       <p className="text-[0.8rem] mt-2 leading-[1.6]" style={{ color: LABEL }}>
-                        So Roko can plan your bridal look, add a couple of recent photos, with makeup and without. This step is optional, but it really helps.
+                        So Roko can plan your bridal look, add at least one recent photo with makeup and one without. Both are required to submit.
                       </p>
                     </div>
 
@@ -685,8 +694,11 @@ export default function UploadZelle() {
 
             {/* Footer: buttons + dots */}
             <div className="px-6 sm:px-7 pb-6 pt-1">
-              {step === 0 && !zelleFile && (
-                <p className="text-center text-[0.66rem] mb-3" style={{ color: LABEL }}>Add your screenshot to continue</p>
+              {!zelleFile && (
+                <p className="text-center text-[0.66rem] mb-3" style={{ color: LABEL }}>Add your Zelle screenshot to continue</p>
+              )}
+              {isLast && isBridal && zelleFile && !photosComplete && (
+                <p className="text-center text-[0.66rem] mb-3" style={{ color: LABEL }}>Add at least one photo to each section to submit</p>
               )}
               <div className="flex items-center gap-3">
                 {step > 0 && (
@@ -724,11 +736,6 @@ export default function UploadZelle() {
                   )}
                 </button>
               </div>
-
-              {/* Step on step 2: a gentle nudge if no photos yet */}
-              {step === 1 && withoutItems.length === 0 && withItems.length === 0 && (
-                <p className="text-center text-[0.66rem] mt-3" style={{ color: LABEL }}>You can submit now and add photos later if you'd like.</p>
-              )}
 
               <div className="mt-5">
                 <Dots count={steps.length} active={step} onJump={jumpTo} />
