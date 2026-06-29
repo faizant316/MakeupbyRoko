@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import StatusBadge from './StatusBadge';
@@ -179,6 +179,41 @@ const CONSULT_COLOR = '#A855F7';
 const CONSULT_BG = 'rgba(168,85,247,0.08)';
 const CONSULT_BORDER = 'rgba(168,85,247,0.25)';
 
+// The notes field mashes several things into one string, in two formats:
+//   bridal:      "Ready by: 11 AM. <free-text comment>"
+//   non-bridal:  "<comment> | ⏰ surcharge | Ready by: 9 AM | ✈️ travel"
+// Split it back out so each piece can be laid out (and labeled) on its own.
+function parseBookingNotes(raw) {
+  const empty = { readyBy: '', comment: '', flags: [] };
+  if (!raw) return empty;
+  const text = raw.replace(/^\s*\|\s*/, '').trim();
+  if (!text) return empty;
+
+  if (text.includes('|')) {
+    let readyBy = '';
+    const flags = [];
+    const rest = [];
+    for (const seg of text.split('|').map(s => s.trim()).filter(Boolean)) {
+      const m = seg.match(/^Ready by:\s*(.+)$/i);
+      if (m) readyBy = m[1].trim();
+      else if (/early arrival|⏰/i.test(seg)) flags.push(seg.replace(/^⏰\s*/, '').trim());
+      else if (/travel/i.test(seg) || seg.includes('✈️')) flags.push(seg.replace(/^✈️\s*/, '').trim());
+      else rest.push(seg);
+    }
+    return { readyBy, comment: rest.join(' ').trim(), flags };
+  }
+
+  // bridal / plain: "Ready by: X. <comment>" — greedy [^.]+ stops at the first
+  // period (ready-by times never contain one), so the time and the free-text
+  // comment land in separate groups.
+  const m = text.match(/^Ready by:\s*([^.]+)\.?\s*([\s\S]*)$/i);
+  if (m) {
+    const readyBy = /not specified/i.test(m[1]) ? '' : m[1].trim();
+    return { readyBy, comment: (m[2] || '').trim(), flags: [] };
+  }
+  return { readyBy: '', comment: text, flags: [] };
+}
+
 function parseConsultNotes(raw) {
   if (!raw) return { link: '', meetingId: '', notes: '' };
   let link = '', meetingId = '';
@@ -193,10 +228,9 @@ function parseConsultNotes(raw) {
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
-function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
+function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, dateFormatted, expanded, setExpanded }) {
   const hasConsult = !!booking.consultation_date;
   const parsed = parseConsultNotes(booking.consultation_notes);
-  const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);
   const [showConfirmSend, setShowConfirmSend] = useState(false);
@@ -252,9 +286,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
     if (!form.date || !form.time) { alert('Please select a date and time.'); return; }
     setSaving(true);
     try {
-      const dateFormatted = new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      const consultDateFormatted = new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
       const activeLink = form.type === 'Zoom' ? meetLink : '';
-      const res = await fetch('/api/send-consultation', {
+      // Bridal merges confirm + consultation into one email (and flips status to
+      // confirmed); everyone else uses the standalone consultation email.
+      const endpoint = bridal ? '/api/confirm-bridal' : '/api/send-consultation';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -262,11 +299,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
           clientEmail: booking.email,
           clientName: booking.name,
           serviceName: booking.service,
-          consultationDate: dateFormatted,
+          consultationDate: consultDateFormatted,
           consultationTime: form.time,
           consultationType: form.type,
           zoomLink: activeLink,
           consultationNotes: form.notes,
+          ...(bridal ? { dateFormatted, time: booking.time } : {}),
         }),
       });
       if (!res.ok) throw new Error('Failed');
@@ -275,7 +313,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
         form.type === 'Zoom' && meetingId ? `MeetingId: ${meetingId}` : null,
         form.notes || null,
       ].filter(Boolean).join('\n');
-      onUpdateBooking({ consultation_date: form.date, consultation_time: form.time, consultation_type: form.type, consultation_notes: storedNotes });
+      onUpdateBooking({
+        consultation_date: form.date, consultation_time: form.time,
+        consultation_type: form.type, consultation_notes: storedNotes,
+        ...(bridal ? { status: 'confirmed' } : {}),
+      });
       setSent(true);
       setExpanded(false);
       onSent?.();
@@ -293,8 +335,10 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
   const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
 
   return (
-    <div className="mb-6">
-      <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Consultation</p>
+    <div className={bridal ? '' : 'mb-6'}>
+      {!bridal && (
+        <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Consultation</p>
+      )}
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
@@ -351,8 +395,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent }) {
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Schedule Consultation</p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>Set date, time &amp; meeting type</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{bridal ? 'Confirm & Schedule Consultation' : 'Schedule Consultation'}</p>
+              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>{bridal ? 'Sends one email: confirmation + consultation + upload link' : 'Set date, time & meeting type'}</p>
             </div>
           </div>
           <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className="w-3.5 h-3.5 opacity-40">
@@ -539,6 +583,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pendingTime, setPendingTime] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
+  const [consultExpanded, setConsultExpanded] = useState(false);
+  const consultRef = useRef(null);
 
   const showToast = (msg, color) => {
     setToast({ message: msg, color });
@@ -549,6 +595,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
   const handleStatusChange = (s) => {
     if (booking.status === s) return;
+    // Bridal: confirming happens by scheduling the consultation, which sends one
+    // combined email. Tapping "Confirmed" just opens the scheduler — no status
+    // change and no email until "Confirm & Notify Client" is pressed.
+    if (isBridal && s === 'confirmed') {
+      setConsultExpanded(true);
+      setTimeout(() => { if (consultRef.current) lenisScrollTo(consultRef.current, { offset: -80 }); }, 60);
+      return;
+    }
     setPendingStatus(s);
   };
 
@@ -563,7 +617,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setTimeout(() => setCelebrate(false), 2200);
     } else if (s === 'confirmed') {
       showToast(isReconfirm ? 'Reconfirmed, client notified' : 'Appointment confirmed', '#3b82f6');
-      if (booking.email) {
+      // Bridal confirmations go out through the combined consultation email, so
+      // never fire the standalone confirmation email for them.
+      if (booking.email && !isBridal) {
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -585,6 +641,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const dateFormatted = booking.date
     ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
+
+  const notes = parseBookingNotes(booking.notes);
+  const hasNotes = !!(notes.readyBy || notes.comment || notes.flags.length);
 
   const totalVisits = allBookings.filter(b => b.email === booking.email).length;
   const completedVisits = allBookings.filter(b => b.email === booking.email && b.status === 'completed').length;
@@ -659,7 +718,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       const editDate = data.date
         ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
         : dateFormatted;
-      if (newStatus === 'confirmed') {
+      if (newStatus === 'confirmed' && !isBridal) {
         showToast('Appointment confirmed', '#3b82f6');
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
@@ -738,14 +797,39 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </div>
         </div>
 
-        {booking.notes && (
+        {hasNotes && (
           <div className="mb-6">
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
-            <div className="px-4 py-3" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
-              <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>
-                {booking.notes.replace(/^\s*\|\s*/, '').trim()}
-              </p>
-            </div>
+
+            {/* Ready-by + flags as their own labeled chips */}
+            {(notes.readyBy || notes.flags.length > 0) && (
+              <div className="flex flex-wrap gap-2 mb-2.5">
+                {notes.readyBy && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                    style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.3)'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Ready by</span>
+                    <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#2C1A14' }}>{notes.readyBy}</span>
+                  </span>
+                )}
+                {notes.flags.map((f, i) => (
+                  <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
+                    style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#9A6B2F' }}>
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Free-text comment, clearly labeled as the client's own note */}
+            {notes.comment && (
+              <div className="px-4 py-3" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
+                <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM }}>Additional Comments</p>
+                <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>
+                  {notes.comment}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -1020,9 +1104,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           )}
         </div>
 
-        {/* Update Status */}
+        {/* Status & Consultation — for bridal these act as one unit: confirming a
+            bridal booking happens by scheduling the consultation (one combined email). */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Update Status</p>
+          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">
+            {isBridal ? 'Status & Consultation' : 'Update Status'}
+          </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {STATUSES.map(s => {
               const isActive = booking.status === s;
@@ -1036,6 +1123,26 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 >{s}</button>
               );
             })}
+          </div>
+
+          {isBridal && booking.status !== 'confirmed' && !booking.consultation_date && (
+            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+              Tap <span className="font-semibold" style={{ color: '#3B82F6' }}>Confirmed</span> or schedule below — one email goes out with their confirmation, consultation details &amp; upload link.
+            </p>
+          )}
+
+          {/* Consultation scheduler lives right under status */}
+          <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ece8'}` }}>
+            <ConsultationScheduler
+              booking={booking}
+              onUpdateBooking={onUpdateBooking}
+              dm={dm}
+              bridal={isBridal}
+              dateFormatted={dateFormatted}
+              expanded={consultExpanded}
+              setExpanded={setConsultExpanded}
+              onSent={() => showToast(isBridal ? 'Confirmed — client notified' : 'Consultation sent', '#22c55e')}
+            />
           </div>
         </div>
 
@@ -1058,12 +1165,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 style={{ color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>Cancel</button>
             </div>
           )}
-        </div>
-
-        {/* Consultation Scheduler — moved to bottom after status */}
-        <div className="mt-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <ConsultationScheduler booking={booking} onUpdateBooking={onUpdateBooking} dm={dm}
-            onSent={() => showToast('Consultation sent', '#22c55e')} />
         </div>
       </div>
 
