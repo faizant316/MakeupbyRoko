@@ -44,7 +44,7 @@ export default function ClassSelector({ classes, selected, onToggle, onClose, on
             </p>
             <div className="mt-3 flex items-center gap-2 text-[0.72rem] text-[#A0785A]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]" />
-              Mon–Thu · 10 AM – 8 PM · 50% deposit secures your spot
+              Wednesdays · 10 AM – 8 PM · 50% deposit secures your spot
             </div>
           </div>
 
