@@ -15,7 +15,7 @@ const ROWS = [
     category: 'Service Scope',
     icon: '✨',
     rows: [
-      { label: 'Duration', luxury: '2 hours', fullday: 'Full day' },
+      { label: 'Duration', luxury: '2 hours', fullday: 'Four hours' },
       { label: 'Full Bridal Makeup', luxury: true, fullday: true },
       { label: 'Lash Application', luxury: true, fullday: true },
       { label: 'Touch-up Kit', luxury: true, fullday: true },
@@ -28,7 +28,7 @@ const ROWS = [
     icon: '🚗',
     rows: [
       { label: 'Studio (Mountain House, CA)', luxury: true, fullday: true },
-      { label: 'On-Location Travel', luxury: '+$200 fee', fullday: 'Included' },
+      { label: 'On-Location Travel', luxury: '+$200 fee', fullday: '+$200 fee' },
       { label: 'Start Before 7 AM', luxury: 'Upgrade required', fullday: 'Included' },
       { label: 'Location Over 1 hr Away', luxury: 'Upgrade required', fullday: 'Included' },
     ],
