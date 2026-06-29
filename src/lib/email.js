@@ -365,6 +365,40 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
   });
 }
 
+// Bridal: one concise email that merges the appointment confirmation, the
+// scheduled consultation, and (when the deposit isn't in yet) the Zelle + photo
+// upload link — so a bride gets a single email instead of three.
+export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived }) {
+  const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
+  const showDeposit = !depositReceived && uploadUrl;
+  return clientShell({
+    preheader: `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} — consultation details inside.`,
+    content: `
+      ${clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day ✦" })}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially confirmed${dateFormatted ? ` for <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}, and I've scheduled your consultation. Everything you need is right here.`)}
+      ${cpanel(`${ctitle('Appointment Details')}${crows(
+        crow('Service', serviceName) +
+        (dateFormatted ? crow('Date', dateFormatted) : '') +
+        (time ? crow('Time', `<strong>${time}</strong>`) : '') +
+        crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
+      )}`)}
+      ${cpanel(`${ctitle('Your Consultation')}${crows(
+        crow('Date', `<strong>${consultationDate}</strong>`) +
+        crow('Time', `<strong>${consultationTime}</strong>`) +
+        crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
+        (consultationNotes ? crow('Notes', consultationNotes) : '')
+      )}${zoomLink ? cZoom(zoomLink) : ''}`)}
+      ${showDeposit ? cdeposit({ amount: 'Deposit', uploadUrl, photos: true }) : ''}
+      ${!showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
+      ${cstepsPanel('To Prepare', [
+        ['1', 'Save your inspiration', 'Screenshots, Pinterest boards, anything you love'],
+        ['2', 'Think about your vibe', 'Soft glam, bold, natural, anything goes!'],
+        ['3', 'Write down any questions', "I'm here to answer everything on our call"],
+      ])}
+    `,
+  });
+}
+
 export function enrolledLessonEmail({ firstName, className, lessonDate, lessonTime, meetingType, zoomLink, clientPhone, notes }) {
   const fmt = meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType;
   let connect = '';
