@@ -13,10 +13,11 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const {
-      bookingType, to, firstName, serviceName, servicePrice, serviceDeposit,
-      dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal,
+      bookingType, to, firstName, lastName, serviceName, servicePrice, serviceDeposit,
+      dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, notes,
       bridalTitle, bridalDeposit, bridalDateFormatted,
-      phone, eventLocation, eventStartTime, venueAccessTime, numPeopleGlam, outOfState, weddingDate,
+      phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
+      photographer, hairstylist, numPeopleGlam, outOfState, weddingDate, additionalDetails, howHeard,
     } = body;
 
     const isBridal = bookingType === 'bridal';
@@ -34,8 +35,16 @@ export async function POST(req) {
       : `New Booking — ${firstName} · ${serviceName} · ${dateFormatted}`;
 
     const adminHtml = isBridal
-      ? adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDateFormatted, email: to, phone, eventLocation, eventStartTime, venueAccessTime, numPeopleGlam, outOfState })
-      : adminBookingEmail({ name: firstName, service: serviceName, date: dateFormatted, email: to, phone: phone || 'N/A', bookingType });
+      ? adminBridalEmail({
+          firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email: to, phone, instagram,
+          eventLocation, eventStartTime, venueAccessTime, artistArriveBy: readyByTime, photographerArrival,
+          photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard,
+        })
+      : adminBookingEmail({
+          name: [firstName, lastName].filter(Boolean).join(' ') || firstName,
+          service: serviceName, date: dateFormatted, email: to, phone,
+          servicePrice, deposit: serviceDeposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes,
+        });
 
     await sendEmailPair([
       { to, subject: clientSubject, html: clientHtml },

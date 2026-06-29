@@ -232,6 +232,8 @@ export default function BookingModal({ service: initialService, onClose }) {
         bookingType: 'nonbridal',
         to: formData.email,
         firstName: formData.fname,
+        lastName: formData.lname,
+        phone: formData.phone,
         serviceName: service.title,
         servicePrice: service.price,
         serviceDeposit: service.deposit,
@@ -239,6 +241,8 @@ export default function BookingModal({ service: initialService, onClose }) {
         uploadUrl,
         isEarlyArrival,
         hasTravelFee,
+        readyByTime: formData.ready_by_time,
+        notes: formData.notes,
         estimatedTotal: hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : isEarlyArrival ? `${service.price} + $100` : null,
       });
     } catch (err) {
