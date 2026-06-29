@@ -832,14 +832,21 @@ export default function BookingModal({ service: initialService, onClose }) {
                   <p className="text-[0.72rem] text-[#888888]">Send your deposit to lock in your date</p>
                 </div>
                 <div className="px-5 py-4 flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[0.95rem] font-serif font-light text-[#111111]">Ruqia Moshref</p>
-                      <p className="text-[0.75rem] text-[#888888] mt-0.5">510-491-6497</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#FDF0F5] flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-4 h-4">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[0.82rem] font-medium text-[#111111] leading-tight">Zelle details sent to your email</p>
+                        <p className="text-[0.7rem] text-[#888888] mt-0.5 leading-tight">Check your inbox to send your deposit</p>
+                      </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p className="text-[0.68rem] text-[#888888]">Deposit amount</p>
-                      <p className="text-[1rem] font-semibold text-[#111111]">{service.deposit || 'See deposit'}</p>
+                      <p className="text-[1rem] font-semibold text-[#111111]">{service.deposit || 'See email'}</p>
                     </div>
                   </div>
                   <div className="bg-[#FDF8FA] rounded-xl px-4 py-3 border border-[#F0E0E9]">
