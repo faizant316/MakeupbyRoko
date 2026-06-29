@@ -173,7 +173,7 @@ function cZoom(zoomLink) {
   </td></tr></table>`;
 }
 
-function cdeposit({ amount, uploadUrl, hideAmount }) {
+function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
   return `<tr><td style="padding:16px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
       <tr><td style="padding:26px 22px;text-align:center;">
@@ -186,7 +186,11 @@ function cdeposit({ amount, uploadUrl, hideAmount }) {
             <tr><td style="font-size:13px;color:#9A8E94;">Phone</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">510-491-6497</td></tr>
           </table>
         </td></tr></table>
-        ${clientButton(uploadUrl, 'Upload Zelle Screenshot')}
+        ${clientButton(uploadUrl, photos ? 'Upload Screenshot & Photos' : 'Upload Zelle Screenshot')}
+        ${photos ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
+          <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:#C4849A;margin:0 0 4px;">Also upload your photos</p>
+          <p style="font-size:12px;color:#6B636A;margin:0;line-height:1.55;">Use this same link to add photos of yourself <strong style="color:#16110F;">with makeup</strong> and <strong style="color:#16110F;">without makeup</strong> so Roko can prep for your consultation.</p>
+        </td></tr></table>` : ''}
         <p style="font-size:12px;color:#A99FA4;margin:14px 0 0;line-height:1.5;">Include your name + appointment date in the Zelle note. Remaining balance in cash on the day.</p>
       </td></tr>
     </table>
@@ -246,12 +250,16 @@ export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateForm
   return clientShell({
     preheader: `Your bridal inquiry for ${bridalTitle} has been received ✦`,
     content: `
-      ${clientHero({ emoji: '💍', eyebrow: 'Bridal Inquiry Received', title: "You're on", titleAccent: 'the list!', subtitle: "I can't wait to be part of your big day ✦" })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong> 👰 your inquiry for <strong style="color:#16110F;">${bridalTitle}</strong> on <strong style="color:#16110F;">${bridalDateFormatted}</strong> is in. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong>.`)}
-      ${cdeposit({ amount: bridalDeposit, uploadUrl })}
+      ${clientHero({ eyebrow: 'Bridal Inquiry Received', title: "You're on", titleAccent: 'the list!', subtitle: "I can't wait to be part of your big day ✦" })}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>, your bridal inquiry is in! I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm everything and schedule your consultation.`)}
+      ${cpanel(`${ctitle('Inquiry Summary')}${crows(
+        crow('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`) +
+        crow('Preferred Date', bridalDateFormatted)
+      )}`)}
+      ${cdeposit({ amount: bridalDeposit, uploadUrl, photos: true })}
       ${cstepsPanel('What Happens Next', [
         ['1', 'Send your Zelle deposit', 'Ruqia Moshref · 510-491-6497'],
-        ['2', 'Upload your screenshot', 'Use the secure button above'],
+        ['2', 'Upload your screenshot & photos', 'Use your personal link above'],
         ['3', 'Roko reaches out for your consultation', 'To go over your vision and bridal look'],
       ])}
     `,
