@@ -18,7 +18,7 @@ import BridalInquiryForm from './BridalInquiryForm';
 import ServiceFAQ from './ServiceFAQ';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 
-const AVAILABLE_DAYS = [2, 3, 5, 6]; // Tue, Wed, Fri, Sat (closed Sun/Mon/Thu)
+const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;

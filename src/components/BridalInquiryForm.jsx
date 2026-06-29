@@ -14,12 +14,11 @@ function useBookingCounts() {
 }
 import { scrollModalTop } from '@/lib/modalLenis';
 import CustomSelect from './CustomSelect';
-import { compressImage } from '@/lib/compressImage';
 import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
 
-const AVAILABLE_DAYS = [2, 3, 5, 6]; // Tue, Wed, Fri, Sat (closed Sun/Mon/Thu)
+const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
@@ -500,8 +499,6 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
   const [submitting, setSubmitting] = useState(false);
   const [newBookingId, setNewBookingId] = useState(null);
   const [uploadToken, setUploadToken] = useState(null);
-  const [inspoPhotos, setInspoPhotos] = useState([]);
-  const [inspoUploading, setInspoUploading] = useState(false);
   const [form, setForm] = useState({
     bride_name: '', soon_to_be_last_name: '', email: '', phone: '',
     instagram_handle: '', wedding_date: '', event_location: '',
@@ -573,7 +570,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
         notes: `Ready by: ${form.ready_by_time || 'Not specified'}. ${form.additional_details || ''}`.trim(),
         status: 'pending',
         upload_token: token,
-        reference_photos: inspoPhotos,
+        reference_photos: [],
       }),
     });
     const newBooking = await bookingRes.json();
@@ -941,65 +938,16 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="What do I need to know about your day? Your makeup vision? Any inspo images?" className={`${inputClass} resize-none h-[80px] border-b`} />
           </div>
 
-          {/* Before & After Photos — moved here, right next to makeup vision */}
+          {/* Before & after photos are collected later, through the client's
+              personal upload link — not on this form. We only set expectations here. */}
           <div>
-            <label className={labelClass}>Photos of You (With & Without Makeup) <span className="text-gray-300 normal-case tracking-normal font-normal">— optional</span></label>
-            <p className="text-[0.68rem] text-gray-400 mb-3">Send recent photos of yourself with and without makeup. Before and after photos are needed so I can carefully study your unique features and understand your face better. This lets me hand-select the products and techniques best suited to you, for a personalized, flawless result on your wedding day.</p>
-
-            {inspoPhotos.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                {inspoPhotos.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                    <img src={url} alt={`Inspo ${idx + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setInspoPhotos(p => p.filter((_, i) => i !== idx))}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: 'rgba(0,0,0,0.6)' }}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <label className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed cursor-pointer transition-colors w-fit ${inspoUploading ? 'opacity-50 pointer-events-none' : 'hover:border-[#D4A0B0] hover:text-[#A0785A]'}`}
-              style={{ borderColor: '#e8e2dc', color: '#aaa' }}>
-              {inspoUploading ? (
-                <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /><span className="text-[0.72rem]">Uploading…</span></>
-              ) : (
-                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span className="text-[0.72rem] font-medium">Add photos</span></>
-              )}
-              <input type="file" accept="image/*" multiple className="hidden" disabled={inspoUploading}
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files);
-                  if (!files.length) return;
-                  setInspoUploading(true);
-                  try {
-                    const urls = await Promise.all(files.map(async (f) => {
-                      // Shrink large photos so they stay under the upload size limit.
-                      const compressed = await compressImage(f);
-                      const fd = new FormData();
-                      fd.append('file', compressed);
-                      const res = await fetch('/api/upload-inspo-photo', { method: 'POST', body: fd });
-                      if (!res.ok) {
-                        const data = await res.json().catch(() => ({}));
-                        throw new Error(data.error || `Upload failed (${res.status})`);
-                      }
-                      const data = await res.json();
-                      return data.url;
-                    }));
-                    setInspoPhotos(p => [...p, ...urls]);
-                  } catch (err) {
-                    alert('Photo upload failed. Please try again.');
-                  } finally {
-                    setInspoUploading(false);
-                    e.target.value = '';
-                  }
-                }}
-              />
-            </label>
+            <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
+            <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <p className="text-[0.72rem] leading-[1.7]" style={{ color: '#6B4055' }}>
+                After you reserve, you'll get a personal upload link to send recent photos of yourself <strong style={{ color: '#2C1A14' }}>with makeup</strong> and <strong style={{ color: '#2C1A14' }}>without makeup</strong>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
+              </p>
+            </div>
           </div>
 
           <div>
