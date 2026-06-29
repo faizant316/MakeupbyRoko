@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { createClient } from '../../../src/lib/supabase/server';
 
 import { CLASS_CATALOG, CLASS_KEYS } from '../../../src/lib/classCatalog';
+import { adminClassPaymentEmail } from '../../../src/lib/email';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
 
@@ -78,10 +79,7 @@ export async function POST(req) {
       to: [ADMIN_EMAIL],
       replyTo: reg.email,
       subject: `💳 New Class Payment — ${reg.full_name} ($${totalPaid.toLocaleString()})`,
-      html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
-        <p><strong>${reg.full_name}</strong> paid <strong>$${totalPaid.toLocaleString()}</strong> for: ${bookedClasses.map(k => CLASS_CATALOG[k].title).join(', ')}</p>
-        <p>Email: ${reg.email} · Phone: ${reg.phone}</p>
-      </div>`,
+      html: adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog: CLASS_CATALOG, sessionId: session.id }),
     });
   } catch (err) {
     console.error('stripe-webhook handler:', err);

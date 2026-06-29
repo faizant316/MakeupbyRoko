@@ -276,19 +276,49 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
   `);
 }
 
-export function adminBookingEmail({ name, service, date, email, phone, bookingType }) {
+export function adminBookingEmail({ name, service, date, email, phone, servicePrice, deposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes }) {
+  const bookingRows = [
+    row('Service', `<strong style="color:#C4849A;">${service}</strong>`),
+    row('Requested Date', `<strong>${date}</strong>`),
+    readyByTime ? row('Ready by (preference)', readyByTime) : '',
+    row('Location', hasTravelFee ? '✈️ Travel to client' : "Roko's studio", hasTravelFee ? '#C4849A' : '#111111'),
+    row('Done before 7 AM?', isEarlyArrival ? 'Yes — early arrival' : 'No', isEarlyArrival ? '#C4849A' : '#111111'),
+  ].filter(Boolean).join('');
+
+  const pricingRows = [
+    row('Base Price', hasTravelFee ? '$750+ (travel · bridal pricing)' : (servicePrice || '—')),
+    isEarlyArrival ? row('Early Arrival (before 7 AM)', '+$100', '#C4849A') : '',
+    deposit ? row('Deposit to Book', deposit) : '',
+    estimatedTotal ? row('Estimated Total', `<strong>${estimatedTotal}</strong>`) : '',
+  ].filter(Boolean).join('');
+
   return base(`
     ${card(`
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 10px;">New Booking</h2>
+      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">New Booking</h2>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.6;">New booking request from <strong>${name}</strong>. Here's everything they submitted:</p>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
       <table style="width:100%;border-collapse:collapse;">
         ${row('Name', name)}
-        ${row('Service', service)}
-        ${row('Date', date)}
-        ${row('Email', email)}
-        ${row('Phone', phone || 'N/A')}
+        ${row('Email', `<a href="mailto:${email}" style="color:#C4849A;text-decoration:none;">${email}</a>`)}
+        ${row('Phone', phone ? `<a href="tel:${phone}" style="color:#C4849A;text-decoration:none;">${phone}</a>` : 'Not provided')}
       </table>
     `)}
     ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Booking Details</p>
+      <table style="width:100%;border-collapse:collapse;">${bookingRows}</table>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Pricing</p>
+      <table style="width:100%;border-collapse:collapse;">${pricingRows}</table>
+    `)}
+    ${notes ? card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Client Notes</p>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;white-space:pre-wrap;">${notes}</p>
+    `) : ''}
+    ${card(`
+      <p style="font-size:13px;color:#444444;margin:0 0 14px;">Reach out within <strong>24–48 hours</strong> to confirm their appointment time.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
         <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
@@ -296,34 +326,58 @@ export function adminBookingEmail({ name, service, date, email, phone, bookingTy
   `);
 }
 
-export function adminBridalEmail({ firstName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, eventLocation, eventStartTime, venueAccessTime, numPeopleGlam, outOfState }) {
+export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, artistArriveBy, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard }) {
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
+
+  const clientRows = [
+    row('Name', fullName),
+    row('Email', `<a href="mailto:${email}" style="color:#C4849A;text-decoration:none;">${email}</a>`),
+    row('Phone', phone ? `<a href="tel:${phone}" style="color:#C4849A;text-decoration:none;">${phone}</a>` : 'Not provided'),
+    instagram ? row('Instagram / TikTok', instagram) : '',
+    howHeard ? row('How they heard', howHeard) : '',
+  ].filter(Boolean).join('');
+
+  const eventRows = [
+    row('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),
+    weddingDate ? row('Wedding Date', `<strong>${weddingDate}</strong>`) : '',
+    bridalDateFormatted ? row('Preferred Appt', bridalDateFormatted) : '',
+    eventLocation ? row('Location', eventLocation) : '',
+    outOfState !== undefined ? row('Out of State', outOfState ? 'Yes — out of state' : 'No, local (CA)', outOfState ? '#C4849A' : '#111111') : '',
+    numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : '',
+  ].filter(Boolean).join('');
+
+  const timingRows = [
+    eventStartTime ? row('Event Starts', eventStartTime) : '',
+    venueAccessTime ? row('Venue Access', venueAccessTime) : '',
+    artistArriveBy ? row('Artist Arrive By', artistArriveBy) : '',
+    photographerArrival ? row('Photographer Arrives', photographerArrival) : '',
+    photographer ? row('Photographer', photographer) : '',
+    hairstylist ? row('Hairstylist', hairstylist) : '',
+  ].filter(Boolean).join('');
+
   return base(`
     <div style="background:#C4849A;border-radius:14px;padding:20px;margin-bottom:10px;text-align:center;">
       <p style="font-size:28px;margin:0 0 8px;">💍</p>
       <h2 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#ffffff;margin:0 0 4px;">New Bridal Inquiry</h2>
-      <p style="font-size:13px;color:rgba(255,255,255,0.85);margin:0;"><strong>${firstName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
+      <p style="font-size:13px;color:rgba(255,255,255,0.85);margin:0;"><strong>${fullName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
     </div>
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
-      <table style="width:100%;border-collapse:collapse;">
-        ${row('Name', firstName)}
-        ${row('Email', email)}
-        ${row('Phone', phone || 'N/A')}
-      </table>
+      <table style="width:100%;border-collapse:collapse;">${clientRows}</table>
     `)}
     <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Event Details</p>
-      <table style="width:100%;border-collapse:collapse;">
-        ${row('Service', `<strong style="color:#C4849A;">${bridalTitle}</strong>`)}
-        ${weddingDate ? row('Wedding Date', `<strong>${weddingDate}</strong>`) : ''}
-        ${bridalDateFormatted ? row('Preferred Appt', bridalDateFormatted) : ''}
-        ${eventLocation ? row('Location', eventLocation) : ''}
-        ${eventStartTime ? row('Event Starts', eventStartTime) : ''}
-        ${venueAccessTime ? row('Venue Access', venueAccessTime) : ''}
-        ${numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : ''}
-        ${outOfState !== undefined ? row('Out of State', outOfState ? 'Yes' : 'No, local') : ''}
-      </table>
+      <table style="width:100%;border-collapse:collapse;">${eventRows}</table>
     </div>
+    ${timingRows ? `
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Timing &amp; Vendors</p>
+      <table style="width:100%;border-collapse:collapse;">${timingRows}</table>
+    </div>` : ''}
+    ${additionalDetails ? card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Makeup Vision &amp; Details</p>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>
+    `) : ''}
     ${card(`
       <p style="font-size:13px;color:#444444;margin:0 0 14px;">Reach out within <strong>24–48 hours</strong> to confirm and schedule their consultation.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
