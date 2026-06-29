@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/api/apiClient';
+import { compressImage } from '@/lib/compressImage';
 
 // ── Brand plum palette (matches the admin BookingDetail + bridal cards) ──
 const PLUM = '#C4849A';
@@ -143,6 +144,76 @@ function UploadBody({ filePreview, setFilePreview, fileToUpload, setFileToUpload
   );
 }
 
+// Bridal clients attach their with/without makeup + inspiration photos here.
+// Uploads land on the booking's reference_photos (token-gated, no auth),
+// and surface in the admin client card's own photo section.
+function ClientPhotosCard({ token, booking, setBooking }) {
+  const photos = booking?.reference_photos || [];
+  const [uploading, setUploading] = useState(false);
+
+  const handlePick = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      for (const f of files.slice(0, 10)) {
+        const compressed = await compressImage(f);
+        formData.append('file', compressed);
+      }
+      formData.append('token', token);
+      const res = await fetch('/api/upload-client-photos', { method: 'POST', body: formData });
+      const raw = await res.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      setBooking(b => ({ ...b, reference_photos: data.reference_photos || [...(b?.reference_photos || []), ...(data.urls || [])] }));
+    } catch (err) {
+      alert(err?.message ? `Upload failed: ${err.message}` : 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+      <CardHead icon={ICON.upload}>Your Photos — With &amp; Without Makeup</CardHead>
+      <div className="p-5 flex flex-col gap-4">
+        <p className="text-[0.78rem] leading-[1.7]" style={{ color: PLUM_DARK }}>
+          Upload a few recent photos of yourself <strong style={{ color: VALUE }}>with makeup</strong> and <strong style={{ color: VALUE }}>without makeup</strong> so Roko can prep for your consultation. Inspiration photos are welcome too.
+        </p>
+
+        {photos.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {photos.map((url, i) => (
+              <div key={i} className="aspect-square rounded-lg overflow-hidden" style={{ border: `1px solid ${HEAD_BORDER}` }}>
+                <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <label
+          className="flex flex-col items-center gap-3 px-5 py-7 cursor-pointer transition-all"
+          style={{ borderRadius: 10, border: `1.5px dashed ${HEAD_BORDER}`, background: '#FEFCFD', ...(uploading ? { opacity: 0.6, pointerEvents: 'none' } : {}) }}
+        >
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: HEAD_BG }}>
+            {uploading
+              ? <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(196,132,154,0.3)', borderTopColor: PLUM }} />
+              : <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-5 h-5">{ICON.upload}</svg>}
+          </div>
+          <div className="text-center">
+            <p className="text-[0.8rem] font-semibold" style={{ color: PLUM_DARK }}>{uploading ? 'Uploading…' : (photos.length ? 'Add more photos' : 'Tap to add your photos')}</p>
+            <p className="text-[0.62rem] mt-1" style={{ color: LABEL }}>PNG, JPG — you can select multiple</p>
+          </div>
+          <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={handlePick} />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function UploadZelle() {
   const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const bookingId = params.get('id');
@@ -214,6 +285,11 @@ export default function UploadZelle() {
   const dateFormatted = booking?.date
     ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : '';
+
+  // Bridal clients are invited (via their email) to also upload their
+  // with/without makeup photos here. Detect via the link flag, falling back
+  // to the service name for older links.
+  const isBridal = params.get('bridal') === '1' || /bridal|full.?day/i.test(booking?.service || '');
 
   const pageBg = { background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF6F8 100%)' };
 
@@ -407,6 +483,13 @@ export default function UploadZelle() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Bridal: with/without makeup + inspiration photo upload (both states) */}
+      {isBridal && booking && (
+        <div className="max-w-5xl mx-auto w-full px-5 pb-10">
+          <ClientPhotosCard token={token} booking={booking} setBooking={setBooking} />
         </div>
       )}
 
