@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const GENERAL_FAQ = [
   { q: "How do I book an appointment?", a: "Email makeupbyroko22@gmail.com with your appointment date as the subject line (MM/DD/YYYY), full name, phone number, time you need to be ready by, occasion, and location. Please allow 24–48 hours for a response." },
-  { q: "How do I pay the deposit?", a: "Deposits are accepted through Zelle only.\n\nName: Ruqia Moshref\nPhone: 510-491-6497\n\nInclude your name, phone number, and appointment date in the Zelle note. Send a screenshot as proof of payment." },
+  { q: "How do I pay the deposit?", a: "Deposits are accepted through Zelle only. After you book, the Zelle details are sent to your email with your booking confirmation. Include your name and appointment date in the Zelle note, then send a screenshot as proof of payment." },
   { q: "How do I pay the remaining balance?", a: "The remaining balance must be paid in CASH. Please bring it in an envelope labeled with your name and the payment amount." },
   { q: "When is my appointment confirmed?", a: "Appointments are first come, first serve and are NOT confirmed until: the deposit is sent, a screenshot is received, and you receive a confirmation text/email." },
   { q: "What is the cancellation policy?", a: "Deposits are non-refundable and non-transferable. If you cancel, the deposit will not be refunded. If Roko cancels due to an emergency, you will be refunded." },

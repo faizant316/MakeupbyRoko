@@ -14,7 +14,7 @@ const INFO_CONTENT = {
       },
       {
         title: 'Zelle Payment',
-        body: 'Deposits are sent via Zelle to Ruqia Moshref at (510) 491-6497. Please include your name and appointment date in the note. After sending, text or email a screenshot to makeupbyroko22@gmail.com or 510-491-6497.'
+        body: 'Deposits are sent via Zelle. The Zelle recipient details are sent to your email with your booking confirmation after you submit a request. Please include your name and appointment date in the note, then email a screenshot as proof to makeupbyroko22@gmail.com.'
       },
       {
         title: 'Remaining Balance',
