@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 import { createClient } from '../../../src/lib/supabase/server';
 
 import { CLASS_CATALOG, CLASS_KEYS } from '../../../src/lib/classCatalog';
-import { adminClassPaymentEmail } from '../../../src/lib/email';
+import { adminClassPaymentEmail, classPaymentEmail } from '../../../src/lib/email';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
 
@@ -50,9 +50,6 @@ export async function POST(req) {
     const bookedClasses = CLASS_KEYS.filter(k => reg[k]);
     const totalPaid = bookedClasses.reduce((s, k) => s + CLASS_CATALOG[k].price, 0);
     const firstName = (reg.full_name || '').split(' ')[0] || 'there';
-    const classListHtml = bookedClasses.map(k =>
-      `<li style="margin:6px 0;color:#6E6058;">${CLASS_CATALOG[k].title}</li>`
-    ).join('');
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
@@ -63,15 +60,7 @@ export async function POST(req) {
       to: [reg.email],
       replyTo: REPLY_TO,
       subject: "You're officially booked! 🎨",
-      html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:20px;">
-        <h2 style="font-family:Georgia,serif;font-weight:300;color:#2C1A14;">Hey ${firstName}! 🎨</h2>
-        <p style="color:#6E6058;">Your payment of <strong style="color:#111;">$${totalPaid.toLocaleString()}</strong> has been received. You're officially booked!</p>
-        <p style="color:#6E6058;">I'll reach out within <strong>24–48 hours</strong> to confirm your class date, time, and all the details.</p>
-        <div style="background:#FAF7F4;border-radius:12px;padding:16px;margin:20px 0;border:1px solid #EDE6DF;">
-          <ul style="margin:0;padding-left:16px;">${classListHtml}</ul>
-        </div>
-        <p style="font-family:Georgia,serif;font-style:italic;color:#A0785A;">Xoxo, Roko 💄</p>
-      </div>`,
+      html: classPaymentEmail({ firstName, bookedClasses, totalPaid, catalog: CLASS_CATALOG }),
     });
 
     await resend.emails.send({
