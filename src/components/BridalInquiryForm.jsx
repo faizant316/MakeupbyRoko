@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 
@@ -17,6 +17,7 @@ import CustomSelect from './CustomSelect';
 import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
+import SubmissionRecap from './SubmissionRecap';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 const pad = (n) => String(n).padStart(2, '0');
@@ -203,7 +204,7 @@ function TimePicker({ value, onChange, placeholder = 'Select time' }) {
   );
 }
 
-function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
+function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, recapDate, recapRows }) {
   const firstName = (brideName || '').split(' ')[0] || 'there';
 
   useEffect(() => {
@@ -238,6 +239,9 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken }) {
             </div>
           )}
         </div>
+
+        {/* View submission recap */}
+        <SubmissionRecap dateStr={recapDate} dateLabel="Wedding Date" rows={recapRows || []} />
 
         {/* What's next */}
         <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
@@ -485,6 +489,9 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
   const minDate = getMinBookingDate();
   const [calDate, setCalDate] = useState(new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
+  // Booksy-style stepped flow: date → form → success
+  const [step, setStep] = useState('date');
+  const [direction, setDirection] = useState('forward');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [newBookingId, setNewBookingId] = useState(null);
@@ -513,6 +520,17 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     // a closed day / filling / blocked date. Roko sorts out the rest on confirm.
     if (day.date < minDate) return;
     setSelectedDate(dateKey(year, month, day.d));
+  };
+
+  // ── Step navigation ──
+  const goStep = (next, dir = 'forward') => {
+    setDirection(dir);
+    setStep(next);
+    scrollModalTop(document.querySelector('[data-modal-scroll]'));
+  };
+  const handleContinue = () => {
+    if (!selectedDate) { alert('Please select your wedding date from the calendar.'); return; }
+    goStep('form');
   };
 
   const handleSubmit = async (e) => {
@@ -611,10 +629,35 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     }
   };
 
-  if (submitted) return <BridalSuccess onClose={onClose} brideName={form.bride_name} email={form.email} bookingId={newBookingId} uploadToken={uploadToken} />;
+  if (submitted) {
+    const recapRows = [
+      { label: 'Package', value: bridalTitle },
+      { label: 'Bride', value: `${form.bride_name} ${form.soon_to_be_last_name}`.trim() },
+      { label: 'Email', value: form.email },
+      { label: 'Phone', value: form.phone },
+      { label: 'Instagram / TikTok', value: form.instagram_handle },
+      { label: 'Event location', value: form.event_location },
+      { label: 'Event start time', value: form.event_start_time },
+      { label: 'Hairstylist arrive by', value: form.ready_by_time },
+      { label: 'Photographer arrives', value: form.photographer_arrival_time },
+      { label: 'Venue access time', value: form.venue_access_time },
+      { label: 'How many need glam', value: form.num_people_glam },
+      { label: 'Photographer', value: form.photographer },
+      { label: 'Hairstylist', value: form.hairstylist },
+      { label: 'Out-of-state event', value: form.out_of_state == null ? '' : form.out_of_state ? 'Yes' : 'No' },
+      { label: 'How heard', value: form.how_heard },
+      { label: 'Makeup vision & details', value: form.additional_details },
+    ];
+    return <BridalSuccess onClose={onClose} brideName={form.bride_name} email={form.email} bookingId={newBookingId} uploadToken={uploadToken} recapDate={selectedDate} recapRows={recapRows} />;
+  }
+
+  const stepAnim = `${direction === 'back' ? 'stepInLeft' : 'stepInRight'} 0.4s cubic-bezier(0.22, 1, 0.36, 1)`;
+  const selectedDateLong = selectedDate
+    ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : '';
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col">
+    <form onSubmit={handleSubmit} className="flex flex-col flex-1">
 
       {/* Hero Banner */}
       <div className="relative h-[160px] overflow-hidden flex-shrink-0">
@@ -631,7 +674,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
       {/* Info strip */}
       <div className="bg-gray-50 border-b border-gray-100 px-6 py-3 flex-shrink-0">
         {isFullDay ? (
-          <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-3 max-w-[620px] mx-auto">
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Package Price</p>
@@ -653,10 +696,10 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                 <p className="text-[0.78rem] font-medium text-[#111] leading-tight">$200+</p>
               </div>
             </div>
-            <p className="text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Private consultation 1 month before</p>
+            <p className="hidden sm:block text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Private consultation 1 month before</p>
           </div>
         ) : (
-          <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-3 max-w-[620px] mx-auto">
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Package Price</p>
@@ -668,395 +711,426 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                 <p className="font-serif text-[1.1rem] text-[#D4A0B0] leading-tight">{bridalDeposit}</p>
               </div>
             </div>
-            <p className="text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Consultation 1 month before event</p>
+            <p className="hidden sm:block text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Consultation 1 month before event</p>
           </div>
         )}
       </div>
 
-      {/* Two-column body */}
-      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+      {/* Stepped body */}
+      <div key={step} style={{ animation: stepAnim }} className="flex-1 flex flex-col">
 
-        {/* LEFT — Calendar + Includes */}
-        <div className="lg:w-[48%] p-6 lg:p-7 border-b lg:border-b-0 lg:border-r border-gray-100 bg-gray-50/30 flex flex-col gap-5 relative overflow-hidden" id="bridal-left-panel">
+        {/* ───────── STEP 1: DATE ───────── */}
+        {step === 'date' && (
+          <div className="w-full max-w-[600px] mx-auto p-6 lg:p-7 flex flex-col gap-5 relative overflow-hidden">
 
-          {/* Glow accents */}
-          <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
-          <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
+            {/* Glow accents */}
+            <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
+            <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
-          {/* Calendar heading */}
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="w-11 h-11 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div>
-              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
-              <h3 className="font-serif text-[1.55rem] leading-none text-[#111]">Wedding <em className="not-italic text-[#D4A0B0]">Date</em></h3>
-            </div>
-          </div>
-
-          {/* Lead-time notice */}
-          <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
-            <p className="text-[0.72rem] text-[#888]">
-              Pick your wedding day below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong> — earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
-            </p>
-          </div>
-
-          {/* Calendar */}
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-              <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">‹</button>
-              {/* Month + Year quick-jump (native selects render above the panel's overflow) */}
-              <div className="flex-1 flex items-center justify-center gap-2">
-                <div className="relative">
-                  <select
-                    value={month}
-                    onChange={e => setCalDate(new Date(year, Number(e.target.value)))}
-                    className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5 text-right"
-                    style={{ WebkitAppearance: 'none' }}
-                    aria-label="Month"
-                  >
-                    {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
-                  </select>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div className="relative">
-                  <select
-                    value={year}
-                    onChange={e => setCalDate(new Date(Number(e.target.value), month))}
-                    className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5"
-                    style={{ WebkitAppearance: 'none' }}
-                    aria-label="Year"
-                  >
-                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
+            {/* Calendar heading */}
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-11 h-11 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>
-              <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">›</button>
+              <div>
+                <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
+                <h3 className="font-serif text-[1.55rem] leading-none text-[#111]">Wedding <em className="not-italic text-[#D4A0B0]">Date</em></h3>
+              </div>
             </div>
 
-            {/* Month availability summary */}
-            {(() => {
-              const _today = new Date(); _today.setHours(0, 0, 0, 0);
-              let openCount = 0, fillingCount = 0, fullCount = 0;
-              calDays.forEach(day => {
-                if (!day) return;
-                if (day.date < _today) return;
-                const isTooSoon = day.date < minDate;
-                const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
-                if (!isAvail) return;
-                const key = dateKey(year, month, day.d);
-                if (blockedSet?.has(key)) return;
-                const count = bookedDateMap?.[key] || 0;
-                if (count >= getMaxForDay(key)) fullCount++;
-                else if (count > 0) fillingCount++;
-                else openCount++;
-              });
-              if (openCount + fillingCount + fullCount === 0) return null;
-              return (
-                <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
-                  {openCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />{openCount} open
-                    </span>
-                  )}
-                  {fillingCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(240,194,122,0.15)', color: '#92400e' }}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block" />{fillingCount} filling
-                    </span>
-                  )}
-                  {fullCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#b91c1c' }}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{fullCount} full
-                    </span>
-                  )}
+            {/* Lead-time notice */}
+            <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
+              <p className="text-[0.72rem] text-[#888]">
+                Pick your wedding day below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong> — earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+              </p>
+            </div>
+
+            {/* Calendar */}
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+                <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">‹</button>
+                {/* Month + Year quick-jump (native selects render above the panel's overflow) */}
+                <div className="flex-1 flex items-center justify-center gap-2">
+                  <div className="relative">
+                    <select
+                      value={month}
+                      onChange={e => setCalDate(new Date(year, Number(e.target.value)))}
+                      className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5 text-right"
+                      style={{ WebkitAppearance: 'none' }}
+                      aria-label="Month"
+                    >
+                      {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                    </select>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={year}
+                      onChange={e => setCalDate(new Date(Number(e.target.value), month))}
+                      className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5"
+                      style={{ WebkitAppearance: 'none' }}
+                      aria-label="Year"
+                    >
+                      {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
                 </div>
-              );
-            })()}
+                <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">›</button>
+              </div>
 
-            <div className="grid grid-cols-7 gap-1.5 text-center mt-4 mb-3">
-              {['SU','MO','TU','WE','TH','FR','SA'].map((d, i) => (
-                <div key={i} className="text-[0.6rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
-              ))}
+              {/* Month availability summary */}
+              {(() => {
+                const _today = new Date(); _today.setHours(0, 0, 0, 0);
+                let openCount = 0, fillingCount = 0, fullCount = 0;
+                calDays.forEach(day => {
+                  if (!day) return;
+                  if (day.date < _today) return;
+                  const isTooSoon = day.date < minDate;
+                  const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
+                  if (!isAvail) return;
+                  const key = dateKey(year, month, day.d);
+                  if (blockedSet?.has(key)) return;
+                  const count = bookedDateMap?.[key] || 0;
+                  if (count >= getMaxForDay(key)) fullCount++;
+                  else if (count > 0) fillingCount++;
+                  else openCount++;
+                });
+                if (openCount + fillingCount + fullCount === 0) return null;
+                return (
+                  <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
+                    {openCount > 0 && (
+                      <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />{openCount} open
+                      </span>
+                    )}
+                    {fillingCount > 0 && (
+                      <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(240,194,122,0.15)', color: '#92400e' }}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block" />{fillingCount} filling
+                      </span>
+                    )}
+                    {fullCount > 0 && (
+                      <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#b91c1c' }}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{fullCount} full
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="grid grid-cols-7 gap-1.5 text-center mt-4 mb-3">
+                {['SU','MO','TU','WE','TH','FR','SA'].map((d, i) => (
+                  <div key={i} className="text-[0.6rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 text-center justify-items-center">
+                {calDays.map((day, idx) => !day
+                  ? <div key={`e-${idx}`} className="w-11 h-11" />
+                  : <CalDay key={dateKey(year, month, day.d)} day={day} year={year} month={month} minDate={minDate} selectedDate={selectedDate} handleDayClick={handleDayClick} blockedSet={blockedSet} bookedDateMap={bookedDateMap} maxPerDay={getMaxForDay(dateKey(year, month, day.d))} />
+                )}
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5 mt-5 pt-4 border-t border-gray-100">
+                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Open
+                </span>
+                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block"></span> Filling
+                </span>
+                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block"></span> Booked
+                </span>
+                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-[#111] inline-block"></span> Selected
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-1.5 text-center">
-              {calDays.map((day, idx) => !day
-                ? <div key={`e-${idx}`} className="w-11 h-11" />
-                : <CalDay key={dateKey(year, month, day.d)} day={day} year={year} month={month} minDate={minDate} selectedDate={selectedDate} handleDayClick={handleDayClick} blockedSet={blockedSet} bookedDateMap={bookedDateMap} maxPerDay={getMaxForDay(dateKey(year, month, day.d))} />
+            {/* Includes */}
+            <div className="border-t border-gray-100 pt-5 relative z-10">
+              {isFullDay ? (
+                <FullDayIncludes bridalIncludes={bridalIncludes} />
+              ) : (
+                <>
+                  <span className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-2.5">What's Included</span>
+                  <ul className="flex flex-col gap-1.5">
+                    {bridalIncludes.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-[0.75rem] text-gray-500">
+                        <span className="text-[#D4A0B0] text-[0.65rem] mt-0.5">✦</span>{item}
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
 
-            {/* Legend */}
-            <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5 mt-5 pt-4 border-t border-gray-100">
-              <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Open
-              </span>
-              <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block"></span> Filling
-              </span>
-              <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block"></span> Booked
-              </span>
-              <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                <span className="w-3.5 h-3.5 rounded-sm bg-[#111] inline-block"></span> Selected
-              </span>
-            </div>
-          </div>
-
-          {/* Includes */}
-          <div className="border-t border-gray-100 pt-5 relative z-10">
-            {isFullDay ? (
-              <FullDayIncludes bridalIncludes={bridalIncludes} />
-            ) : (
-              <>
-                <span className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-2.5">What's Included</span>
-                <ul className="flex flex-col gap-1.5">
-                  {bridalIncludes.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-[0.75rem] text-gray-500">
-                      <span className="text-[#D4A0B0] text-[0.65rem] mt-0.5">✦</span>{item}
-                    </li>
-                  ))}
-                </ul>
-              </>
+            {/* FAQ */}
+            {activeService && (
+              <div className="border-t border-gray-100 pt-5 relative z-10">
+                <ServiceFAQ service={activeService} />
+              </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* RIGHT — Form */}
-        <div className="lg:w-[52%] p-6 lg:p-7 flex flex-col gap-4 overflow-y-auto">
+        {/* ───────── STEP 2: FORM ───────── */}
+        {step === 'form' && (
+          <div className="w-full max-w-[600px] mx-auto p-6 lg:p-7 flex flex-col gap-4">
 
-          {/* Selection summary */}
-          {selectedDate ? (
-            <div className="bg-gradient-to-r from-[#D4A0B0]/8 to-[#B8A0D4]/8 border border-[#D4A0B0]/15 rounded-xl px-4 py-3.5 flex items-center gap-3" style={{ boxShadow: '0 0 20px rgba(212,160,176,0.08)' }}>
+            {/* Selected wedding-date chip — tap to change */}
+            <button
+              type="button"
+              onClick={() => goStep('date', 'back')}
+              className="w-full text-left bg-gradient-to-r from-[#D4A0B0]/8 to-[#B8A0D4]/8 border border-[#D4A0B0]/15 rounded-xl px-4 py-3.5 flex items-center gap-3 transition-all hover:border-[#D4A0B0]/35"
+              style={{ boxShadow: '0 0 20px rgba(212,160,176,0.08)' }}
+            >
               <div className="w-9 h-9 rounded-xl bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-0.5">Wedding Date</p>
-                <p className="text-[0.82rem] text-[#333]">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
+                <p className="text-[0.82rem] text-[#333]">{selectedDateLong}</p>
               </div>
-            </div>
-          ) : (
-            <div className="border border-dashed border-[#D4A0B0]/40 rounded-xl px-4 py-3 flex items-center gap-3" style={{ background: '#FDF9FB' }}>
-              <div className="w-8 h-8 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </div>
-              <p className="text-[0.76rem] text-[#9a7d88]">
-                <span className="lg:hidden">Pick your wedding date from the calendar above.</span>
-                <span className="hidden lg:inline">Pick your wedding date from the calendar on the left.</span>
-              </p>
-            </div>
-          )}
+              <span className="text-[0.7rem] font-medium text-[#D4A0B0] flex items-center gap-1 flex-shrink-0">
+                Change
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><polyline points="9 18 15 12 9 6"/></svg>
+              </span>
+            </button>
 
-          <div>
-            <h3 className="font-serif text-[1.4rem] text-[#111] mb-1">
-              {isFullDay
-                ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">full day</em></>
-                : isTrial
-                ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">trial</em></>
-                : <>Tell me about your <em className="text-[#D4A0B0] not-italic">day</em></>
-              }
-            </h3>
-            <div className="mb-3 border-b border-gray-100 pb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[#D4A0B0] text-[0.6rem]">✦</span>
-                <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">{aboutTag}</span>
-              </div>
-              <p className="text-[0.75rem] text-[#555] leading-[1.7] mb-3">{aboutBlurb}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-[0.65rem] text-[#b5a99a]">Package Price</span>
-                <span className="font-serif text-[1.1rem] text-[#111]">{bridalPrice} <span className="text-[0.7rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
-              </div>
-            </div>
-            <p className="text-[0.8rem] text-gray-400">Fields marked * are required.</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className={labelClass}>Bride's First Name *</label>
-              <input value={form.bride_name} onChange={e => set('bride_name', e.target.value)} placeholder="First name" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Last Name</label>
-              <input value={form.soon_to_be_last_name} onChange={e => set('soon_to_be_last_name', e.target.value)} placeholder="Last name" className={inputClass} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className={labelClass}>Email *</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@email.com" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Phone *</label>
-              <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(555) 000-0000" className={inputClass} />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Instagram / TikTok Handle</label>
-            <input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value)} placeholder="@yourusername" className={inputClass} />
-          </div>
-
-          <div className="w-full h-px bg-gray-100" />
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className={labelClass}>Hairstylist Arrive By *</label>
-              <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
-            </div>
-            <div>
-              <label className={labelClass}>Photographer Arrives</label>
-              <TimePicker value={form.photographer_arrival_time} onChange={v => set('photographer_arrival_time', v)} placeholder="Select time" />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Event Start Time *</label>
-            <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
-          </div>
-
-          <div className="flex items-start gap-2 px-3.5 py-3 rounded-xl -mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-            <p className="text-[0.78rem] leading-[1.6]" style={{ color: '#6B4055' }}>
-              <strong style={{ color: '#2C1A14' }}>Heads up:</strong> if your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline">@hairbyshak</a>, Roko doesn't glam at the same time as other hairstylists, so she'll plan her timing around when yours arrives.
-            </p>
-          </div>
-
-          <div>
-            <label className={labelClass}>Event Location *</label>
-            <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className={labelClass}>Photographer</label>
-              <input value={form.photographer} onChange={e => set('photographer', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Hairstylist (Instagram)</label>
-              <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className={labelClass}>Venue Access Time *</label>
-              <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
-            </div>
-            <div>
-              <label className={labelClass}>How Many Need Glam?</label>
-              <input value={form.num_people_glam} onChange={e => set('num_people_glam', e.target.value)} placeholder="Bridal party, MOB, etc." className={inputClass} />
-            </div>
-          </div>
-
-          <div className="w-full h-px bg-gray-100" />
-
-          {/* Before & after photos are collected later, through the client's
-              personal upload link — not on this form. We only set expectations here. */}
-          <div>
-            <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
-            <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              <p className="text-[0.72rem] leading-[1.7]" style={{ color: '#6B4055' }}>
-                After you reserve, you'll get a personal upload link to send recent photos of yourself <strong style={{ color: '#2C1A14' }}>with makeup</strong> and <strong style={{ color: '#2C1A14' }}>without makeup</strong>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <CustomSelect
-              label="How Did You Hear About Me?"
-              labelClass={labelClass}
-              value={form.how_heard}
-              onChange={(v) => set('how_heard', v)}
-              placeholder="Select an option"
-              options={['Instagram','TikTok','Facebook','Vendor Referral','Client Referral','Google','Other']}
-            />
-          </div>
-
-          {/* Out-of-State Section */}
-          <div className="w-full h-px bg-gray-100" />
-
-          <div>
-            <label className={labelClass}>Is this an out-of-state event?</label>
-            <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
-            <div className="flex gap-3 mt-1">
-              {['No', 'Yes'].map(opt => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => set('out_of_state', opt === 'Yes')}
-                  className={`flex-1 py-2.5 rounded-xl text-[0.78rem] font-medium border transition-all ${
-                    (opt === 'Yes' ? form.out_of_state === true : form.out_of_state === false && form.out_of_state !== undefined)
-                      ? 'bg-[#111] text-white border-[#111]'
-                      : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                  }`}
-                >
-                  {opt === 'Yes' ? 'Yes, out of state' : 'No, local event'}
-                </button>
-              ))}
-            </div>
-
-            {form.out_of_state === true && (
-              <div className="mt-3 bg-white border border-[#E2C4D2] rounded-xl p-4 flex flex-col gap-2">
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-0.5">Out-of-State Requirements</p>
-                <p className="text-[0.75rem] text-[#555] leading-[1.7]">
-                  Roko loves destination events! For out-of-state bookings, the following are required and must be covered by the client:
-                </p>
-                <ul className="flex flex-col gap-1.5 mt-1">
-                  <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
-                    <span className="mt-0.5 text-[#D4A0B0]">✦</span>
-                    <span><strong>Round-trip flight</strong> for Roko + 1 add-on person</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
-                    <span className="mt-0.5 text-[#D4A0B0]">✦</span>
-                    <span><strong>Hotel accommodation</strong> — minimum 2 nights</span>
-                  </li>
-                  <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
-                    <span className="mt-0.5 text-[#D4A0B0]">✦</span>
-                    <span><strong>Add-on person fee</strong> — Roko does not travel alone</span>
-                  </li>
-                </ul>
-                <div className="mt-2 pt-2.5 border-t border-[#EDD5E2]">
-                  <p className="text-[0.72rem] text-[#999]">
-                    For pricing & details on out-of-state bookings, email us at{' '}
-                    <a href="mailto:makeupbyroko22@gmail.com" className="text-[#D4A0B0] hover:underline font-medium">makeupbyroko22@gmail.com</a>
-                    {' '}or DM{' '}
-                    <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="text-[#D4A0B0] hover:underline font-medium">@makeupbyroko_</a>
-                  </p>
+              <h3 className="font-serif text-[1.4rem] text-[#111] mb-1">
+                {isFullDay
+                  ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">full day</em></>
+                  : isTrial
+                  ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">trial</em></>
+                  : <>Tell me about your <em className="text-[#D4A0B0] not-italic">day</em></>
+                }
+              </h3>
+              <div className="mb-3 border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[#D4A0B0] text-[0.6rem]">✦</span>
+                  <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">{aboutTag}</span>
+                </div>
+                <p className="text-[0.75rem] text-[#555] leading-[1.7] mb-3">{aboutBlurb}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.65rem] text-[#b5a99a]">Package Price</span>
+                  <span className="font-serif text-[1.1rem] text-[#111]">{bridalPrice} <span className="text-[0.7rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
                 </div>
               </div>
-            )}
-          </div>
+              <p className="text-[0.8rem] text-gray-400">Fields marked * are required.</p>
+            </div>
 
-          <div className="w-full h-px bg-gray-100" />
+            <div className="grid grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelClass}>Bride's First Name *</label>
+                <input value={form.bride_name} onChange={e => set('bride_name', e.target.value)} placeholder="First name" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Last Name</label>
+                <input value={form.soon_to_be_last_name} onChange={e => set('soon_to_be_last_name', e.target.value)} placeholder="Last name" className={inputClass} />
+              </div>
+            </div>
 
-          <div>
-            <label className={labelClass}>Makeup Vision & Additional Details</label>
-            <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="Your makeup vision, anything I should know about your day, and any out-of-state notes. Inspo welcome." className={`${inputClass} resize-none h-[80px] border-b`} />
-          </div>
+            <div className="grid grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelClass}>Email *</label>
+                <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@email.com" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Phone *</label>
+                <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(555) 000-0000" className={inputClass} />
+              </div>
+            </div>
 
-          <div className="mt-auto pt-2">
-            <button type="submit" disabled={submitting} className={`w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] transition-all ${submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'}`}>
-              {submitting ? 'Submitting…' : 'Submit Bridal Inquiry →'}
-            </button>
-            <p className="text-[0.65rem] text-center text-gray-400 mt-2">
+            <div>
+              <label className={labelClass}>Instagram / TikTok Handle</label>
+              <input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value)} placeholder="@yourusername" className={inputClass} />
+            </div>
+
+            <div className="w-full h-px bg-gray-100" />
+
+            <div className="grid grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelClass}>Hairstylist Arrive By *</label>
+                <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
+              </div>
+              <div>
+                <label className={labelClass}>Photographer Arrives</label>
+                <TimePicker value={form.photographer_arrival_time} onChange={v => set('photographer_arrival_time', v)} placeholder="Select time" />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Event Start Time *</label>
+              <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
+            </div>
+
+            <div className="flex items-start gap-2 px-3.5 py-3 rounded-xl -mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+              <p className="text-[0.78rem] leading-[1.6]" style={{ color: '#6B4055' }}>
+                <strong style={{ color: '#2C1A14' }}>Heads up:</strong> if your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline">@hairbyshak</a>, Roko doesn't glam at the same time as other hairstylists, so she'll plan her timing around when yours arrives.
+              </p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Event Location *</label>
+              <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelClass}>Photographer</label>
+                <input value={form.photographer} onChange={e => set('photographer', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Hairstylist (Instagram)</label>
+                <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5">
+              <div>
+                <label className={labelClass}>Venue Access Time *</label>
+                <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
+              </div>
+              <div>
+                <label className={labelClass}>How Many Need Glam?</label>
+                <input value={form.num_people_glam} onChange={e => set('num_people_glam', e.target.value)} placeholder="Bridal party, MOB, etc." className={inputClass} />
+              </div>
+            </div>
+
+            <div className="w-full h-px bg-gray-100" />
+
+            {/* Before & after photos are collected later, through the client's
+                personal upload link — not on this form. We only set expectations here. */}
+            <div>
+              <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <p className="text-[0.72rem] leading-[1.7]" style={{ color: '#6B4055' }}>
+                  After you reserve, you'll get a personal upload link to send recent photos of yourself <strong style={{ color: '#2C1A14' }}>with makeup</strong> and <strong style={{ color: '#2C1A14' }}>without makeup</strong>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <CustomSelect
+                label="How Did You Hear About Me?"
+                labelClass={labelClass}
+                value={form.how_heard}
+                onChange={(v) => set('how_heard', v)}
+                placeholder="Select an option"
+                options={['Instagram','TikTok','Facebook','Vendor Referral','Client Referral','Google','Other']}
+              />
+            </div>
+
+            {/* Out-of-State Section */}
+            <div className="w-full h-px bg-gray-100" />
+
+            <div>
+              <label className={labelClass}>Is this an out-of-state event?</label>
+              <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
+              <div className="flex gap-3 mt-1">
+                {['No', 'Yes'].map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => set('out_of_state', opt === 'Yes')}
+                    className={`flex-1 py-2.5 rounded-xl text-[0.78rem] font-medium border transition-all ${
+                      (opt === 'Yes' ? form.out_of_state === true : form.out_of_state === false && form.out_of_state !== undefined)
+                        ? 'bg-[#111] text-white border-[#111]'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    {opt === 'Yes' ? 'Yes, out of state' : 'No, local event'}
+                  </button>
+                ))}
+              </div>
+
+              {form.out_of_state === true && (
+                <div className="mt-3 bg-white border border-[#E2C4D2] rounded-xl p-4 flex flex-col gap-2">
+                  <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-0.5">Out-of-State Requirements</p>
+                  <p className="text-[0.75rem] text-[#555] leading-[1.7]">
+                    Roko loves destination events! For out-of-state bookings, the following are required and must be covered by the client:
+                  </p>
+                  <ul className="flex flex-col gap-1.5 mt-1">
+                    <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
+                      <span className="mt-0.5 text-[#D4A0B0]">✦</span>
+                      <span><strong>Round-trip flight</strong> for Roko + 1 add-on person</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
+                      <span className="mt-0.5 text-[#D4A0B0]">✦</span>
+                      <span><strong>Hotel accommodation</strong> — minimum 2 nights</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
+                      <span className="mt-0.5 text-[#D4A0B0]">✦</span>
+                      <span><strong>Add-on person fee</strong> — Roko does not travel alone</span>
+                    </li>
+                  </ul>
+                  <div className="mt-2 pt-2.5 border-t border-[#EDD5E2]">
+                    <p className="text-[0.72rem] text-[#999]">
+                      For pricing & details on out-of-state bookings, email us at{' '}
+                      <a href="mailto:makeupbyroko22@gmail.com" className="text-[#D4A0B0] hover:underline font-medium">makeupbyroko22@gmail.com</a>
+                      {' '}or DM{' '}
+                      <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="text-[#D4A0B0] hover:underline font-medium">@makeupbyroko_</a>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="w-full h-px bg-gray-100" />
+
+            <div>
+              <label className={labelClass}>Makeup Vision & Additional Details</label>
+              <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="Your makeup vision, anything I should know about your day, and any out-of-state notes. Inspo welcome." className={`${inputClass} resize-none h-[80px] border-b`} />
+            </div>
+
+            <p className="text-[0.65rem] text-center text-gray-400">
               Roko will confirm within 24–48 hours · {bridalDeposit} secures your date <span className="text-[#D4A0B0]">✦</span>
             </p>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* FAQ Section */}
-      {activeService && (
-        <div className="px-6 lg:px-8 py-6 border-t border-gray-100">
-          <ServiceFAQ service={activeService} />
+      {/* Pinned footer CTA (sticky to bottom of the modal scroll area) */}
+      <div
+        className="sticky bottom-0 z-30 border-t border-[#f0ebe6] bg-white px-6 lg:px-7 py-3.5"
+        style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="max-w-[600px] mx-auto flex items-center gap-4">
+          <div className="flex flex-col leading-tight flex-shrink-0">
+            <span className="font-serif text-[1.25rem] text-[#111]">{bridalPrice}</span>
+            <span className="text-[0.62rem] text-[#b5a99a] uppercase tracking-[0.1em]">{bridalDeposit}</span>
+          </div>
+          {step === 'date' ? (
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={!selectedDate}
+              className={`flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all ${
+                selectedDate
+                  ? 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {selectedDate ? 'Continue →' : 'Select your wedding date'}
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all ${
+                submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'
+              }`}
+            >
+              {submitting ? 'Submitting…' : 'Submit Bridal Inquiry →'}
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </form>
   );
 }
