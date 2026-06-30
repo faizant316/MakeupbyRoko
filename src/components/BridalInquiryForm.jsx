@@ -467,10 +467,20 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
   const activeService = passedService || bridalService;
   const isFullDay = /full.?day/i.test(activeService?.title || '');
+  const isTrial = /trial/i.test(activeService?.title || '');
   const bridalPrice = activeService?.price || '$750';
   const bridalDeposit = activeService?.deposit || '$375 deposit';
   const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','Professional touch-up kit','30-min Zoom consultation included','Bridesmaid add-ons available'];
   const bridalTitle = activeService?.title || 'Bridal Package';
+
+  // Short "about" block shown above the form fields — gives every bridal service
+  // the same thoughtfully-laid-out descriptor + Package Price line that Full Day has.
+  const aboutTag = isFullDay ? 'Full Day Coverage' : isTrial ? 'Bridal Trial' : 'Wedding Day Look';
+  const aboutBlurb = isFullDay
+    ? <>Roko stays with you from <strong>prep through ceremony</strong>, no rushing, no handoffs. Perfect for early start times, bridal switch looks, or venues over 1 hour from the studio.</>
+    : isTrial
+    ? <>A full run-through of your bridal look before the big day, so everything is <strong>perfected ahead of time</strong>. Recommended 1 to 3 months before your wedding.</>
+    : <>Your <strong>wedding-day makeup</strong>, custom-designed for your features and built to last from your first look through the celebration.</>;
 
   const minDate = getMinBookingDate();
   const [calDate, setCalDate] = useState(new Date(minDate.getFullYear(), minDate.getMonth()));
@@ -845,24 +855,22 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             <h3 className="font-serif text-[1.4rem] text-[#111] mb-1">
               {isFullDay
                 ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">full day</em></>
+                : isTrial
+                ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">trial</em></>
                 : <>Tell me about your <em className="text-[#D4A0B0] not-italic">day</em></>
               }
             </h3>
-            {isFullDay && (
-              <div className="mb-3 border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[#D4A0B0] text-[0.6rem]">✦</span>
-                  <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">Full Day Coverage</span>
-                </div>
-                <p className="text-[0.75rem] text-[#555] leading-[1.7] mb-3">
-                  Roko stays with you from <strong>prep through ceremony</strong> — no rushing, no handoffs. Perfect for early start times, bridal switch looks, or venues over 1 hour from the studio.
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[0.65rem] text-[#b5a99a]">Package Price</span>
-                  <span className="font-serif text-[1.1rem] text-[#111]">{bridalPrice} <span className="text-[0.7rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
-                </div>
+            <div className="mb-3 border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[#D4A0B0] text-[0.6rem]">✦</span>
+                <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">{aboutTag}</span>
               </div>
-            )}
+              <p className="text-[0.75rem] text-[#555] leading-[1.7] mb-3">{aboutBlurb}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-[0.65rem] text-[#b5a99a]">Package Price</span>
+                <span className="font-serif text-[1.1rem] text-[#111]">{bridalPrice} <span className="text-[0.7rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
+              </div>
+            </div>
             <p className="text-[0.8rem] text-gray-400">Fields marked * are required.</p>
           </div>
 
