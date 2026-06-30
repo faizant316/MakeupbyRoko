@@ -4,22 +4,12 @@ const BUTTON_LABELS = ['Inquire About Bridal →', 'Inquire About Full Day Servi
 
 // Resting + hover elevation. A tight contact shadow layered over a soft ambient
 // one reads as real depth; the hover state lifts the card and deepens both.
-const CARD_BASE =
-  'group relative bg-white rounded-[var(--radius-lg)] overflow-hidden border transition-all duration-300 ease-out active:scale-[0.985] flex flex-col h-full';
-const CARD_DEFAULT =
-  'border-[#f1e7e2] shadow-[0_1px_2px_rgba(31,20,25,0.04),0_10px_34px_rgba(31,20,25,0.07)] lg:hover:shadow-[0_3px_10px_rgba(31,20,25,0.07),0_28px_60px_rgba(31,20,25,0.15)]';
-// Premium card leans into its gold aura: a champagne hairline + warmer shadow.
-const CARD_PREMIUM =
-  'border-[#E0C78E] shadow-[0_1px_2px_rgba(60,42,18,0.06),0_12px_40px_rgba(150,110,40,0.13)] lg:hover:shadow-[0_3px_10px_rgba(60,42,18,0.09),0_30px_64px_rgba(150,110,40,0.22)]';
+const CARD_CLASS =
+  'group relative bg-white rounded-[var(--radius-lg)] overflow-hidden border border-[#f1e7e2] shadow-[0_1px_2px_rgba(31,20,25,0.04),0_10px_34px_rgba(31,20,25,0.07)] transition-all duration-300 ease-out lg:hover:shadow-[0_3px_10px_rgba(31,20,25,0.07),0_28px_60px_rgba(31,20,25,0.15)] active:scale-[0.985] flex flex-col h-full';
 
 export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
-  const isPremium = svc.title === 'Full Day Service';
   const isTrial = svc.title === 'Bridal Trial';
-  // The trial's bullets are long and verbose, so cap it tighter and let the rest
-  // collapse behind "tap to see all" (keeps the card from towering over the others).
-  const visibleCount = isTrial ? 2 : 3;
-  const remaining = svc.includes.length - visibleCount;
-  const accent = isPremium ? '#B08D57' : '#D4A0B0';
+  const remaining = svc.includes.length - 3;
 
   return (
     <div
@@ -27,7 +17,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
       onClick={(e) => onViewDetail && onViewDetail(svc, e)}
       style={{ touchAction: 'manipulation' }}
     >
-      <div className={`${CARD_BASE} ${isPremium ? CARD_PREMIUM : CARD_DEFAULT}`}>
+      <div className={CARD_CLASS}>
         {/* Photo */}
         <div className="aspect-[4/3] overflow-hidden bg-[#f5f5f5] flex-shrink-0 relative">
           <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
@@ -46,7 +36,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
         {/* Content */}
         <div className="flex flex-col justify-between p-6 flex-1">
           <div>
-            <span className="label block mb-1.5" style={{ color: accent }}>
+            <span className="label block mb-1.5" style={{ color: '#D4A0B0' }}>
               {LABELS[idx] || 'Bridal Service'}
             </span>
             <h3 className="font-serif text-[1.5rem] font-normal text-[#111] leading-tight mb-2">{svc.title}</h3>
@@ -64,7 +54,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                 </div>
               )}
               {svc.title === 'Full Day Service' && (
-                <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF6EC] border-l-2 border-[#C9A55C] text-[0.72rem] text-[#6B5733]">
+                <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.72rem] text-[#6B4055]">
                   Required for: bridal switch, location over <strong>1 hr from studio</strong>, or start time <strong>before 7 AM</strong>
                 </div>
               )}
@@ -80,16 +70,24 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
               )}
             </div>
 
-            <ul className="flex flex-col gap-1 mb-4">
-              {svc.includes.slice(0, visibleCount).map((item) => (
-                <li key={item} className="flex items-start gap-2 text-[0.82rem] text-[#6d6460]">
-                  <span className="mt-px flex-shrink-0" style={{ color: accent }}>✦</span>{item}
-                </li>
-              ))}
-              {remaining > 0 && (
-                <li className="text-[0.75rem] pl-4" style={{ color: accent }}>+{remaining} more (tap to see all)</li>
-              )}
-            </ul>
+            {/* The trial's "what's included" lives in the detail view so the three
+                cards stay the same height. Other cards show their top 3 inline. */}
+            {isTrial ? (
+              <div className="mb-4 text-[0.78rem] text-[#D4A0B0] font-medium">
+                Tap to see what's included →
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-1 mb-4">
+                {svc.includes.slice(0, 3).map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-[0.82rem] text-[#6d6460]">
+                    <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
+                  </li>
+                ))}
+                {remaining > 0 && (
+                  <li className="text-[0.75rem] text-[#D4A0B0] pl-4">+{remaining} more (tap to see all)</li>
+                )}
+              </ul>
+            )}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onSelect(svc); }}

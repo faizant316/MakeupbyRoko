@@ -366,7 +366,7 @@ export default function ServicesPage() {
                   }}
                 >
                   <div
-                    className="flex items-start gap-4 pb-4"
+                    className="flex gap-4 pb-4"
                     style={{
                       paddingLeft: 'clamp(1.25rem,5vw,3rem)',
                       paddingRight: 'clamp(1.25rem,5vw,3rem)',
@@ -377,7 +377,12 @@ export default function ServicesPage() {
                         <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
                       </div>
                     ))}
-                    <div className="flex-shrink-0 w-4" />
+                    {/* Trailing space so the last card can snap fully to the left
+                        edge instead of getting stuck pushed off the right. */}
+                    <div
+                      className="flex-shrink-0"
+                      style={{ width: 'max(1rem, calc(100vw - min(82vw, 340px) - 2 * clamp(1.25rem,5vw,3rem)))' }}
+                    />
                   </div>
                 </div>
                 {/* Pagination dots — one per card, active card highlighted */}
