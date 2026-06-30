@@ -18,6 +18,7 @@ import BridalInquiryForm from './BridalInquiryForm';
 import ServiceFAQ from './ServiceFAQ';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import SubmissionRecap from './SubmissionRecap';
+import TimePicker from './TimePicker';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 
@@ -55,7 +56,7 @@ function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick
         : unavailable ? 'Unavailable'
         : undefined
       }
-      className={`w-full aspect-square max-w-[2.75rem] flex flex-col items-center justify-center text-[0.875rem] transition-all relative rounded-none ${
+      className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-all relative rounded-none ${
         isBlocked
           ? 'text-red-300 cursor-not-allowed line-through decoration-red-300'
           : isFull
@@ -93,6 +94,10 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Booksy-style stepped flow: date → form → done
   const [step, setStep] = useState('date');
   const [direction, setDirection] = useState('forward');
+  // Bridal manages its own steps internally; it reports them up so the shared
+  // modal header can show "Step X of 2" and drive its back arrow.
+  const [bridalStep, setBridalStep] = useState('date');
+  const bridalBackRef = useRef(null);
 
   const minDate = getMinBookingDate();
   // Start calendar on the month of the minimum booking date
@@ -162,19 +167,25 @@ export default function BookingModal({ service: initialService, onClose }) {
     if (blockedSet.has(key)) return;
     const count = bookedDateMap[key] || 0;
     if (count >= getMaxForDay(key)) return;
-    setSelectedDate(key);
+    // Tap the already-selected day to clear it.
+    setSelectedDate(prev => prev === key ? null : key);
   };
 
   // ── Step navigation ──
   const goStep = (next, dir = 'forward') => { setDirection(dir); setStep(next); };
   const handleContinue = () => { if (!selectedDate) return; goStep('form'); };
   const handleHeaderBack = () => {
-    if (!isBridal && step === 'form') goStep('date', 'back');
-    else onClose();
+    if (isBridal) {
+      if (bridalStep === 'form' && bridalBackRef.current) { bridalBackRef.current(); return; }
+      onClose();
+      return;
+    }
+    if (step === 'form') { goStep('date', 'back'); return; }
+    onClose();
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (submitting) return; // guard against double-submit (creates duplicate booking + admin email)
     if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
@@ -301,9 +312,21 @@ export default function BookingModal({ service: initialService, onClose }) {
           height: 'calc(100% - 52px)',
         }}
       >
-        {/* Header */}
+        {/* Header — slim & sleek */}
+        {(() => {
+          // Step subtitle, shared by bridal (driven by bridalStep) and non-bridal (step)
+          const activeStep = isBridal ? bridalStep : step;
+          const isDone = activeStep === 'done';
+          const title = isBridal
+            ? (isDone ? 'Request Sent!' : 'Bridal Inquiry')
+            : (step === 'done' ? 'Request Sent!' : `Book: ${service.title}`);
+          const subtitle = isDone ? null : activeStep === 'form'
+            ? 'Step 2 of 2 · Your details'
+            : `Step 1 of 2 · ${isBridal ? 'Wedding date' : 'Choose date'}${!isBridal && service.duration ? ' · ' + service.duration : ''}`;
+          const canBack = isBridal ? bridalStep === 'form' : step === 'form';
+          return (
         <div
-          className="flex-shrink-0 backdrop-blur-sm z-10 flex items-center px-4 sm:px-8 py-3.5 sm:py-[1.1rem] gap-3 relative"
+          className="flex-shrink-0 backdrop-blur-sm z-10 flex items-center px-3 sm:px-6 py-2 sm:py-2.5 gap-3 relative"
           style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #FCF8F5 100%)' }}
         >
           {/* Tapered blush hairline */}
@@ -315,45 +338,45 @@ export default function BookingModal({ service: initialService, onClose }) {
           {/* ← Back (step-aware: form → date, otherwise close) */}
           <button
             onClick={(e) => { e.stopPropagation(); handleHeaderBack(); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
             style={{ background: '#fff', border: '1px solid rgba(212,160,176,0.3)', boxShadow: '0 1px 4px rgba(140,90,110,0.07)' }}
-            aria-label={!isBridal && step === 'form' ? 'Back to date' : 'Back'}
+            aria-label={canBack ? 'Back to date' : 'Close'}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
 
           {/* Title — centered, flanked by delicate rules + sparkle */}
           <div className="flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 px-2">
-            <div className="flex items-center justify-center gap-2.5 min-w-0 max-w-full">
-              <span className="hidden sm:block h-px w-6 flex-shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,160,176,0.75))' }} />
-              <span className="text-[#D4A0B0] text-[0.62rem] flex-shrink-0 leading-none">✦</span>
-              <span className="font-serif text-[1.05rem] sm:text-[1.15rem] tracking-[0.01em] text-[#2C1A14] leading-tight truncate">
-                {isBridal ? 'Bridal Inquiry' : step === 'done' ? 'Request Sent!' : `Book: ${service.title}`}
+            <div className="flex items-center justify-center gap-2 min-w-0 max-w-full">
+              <span className="hidden sm:block h-px w-5 flex-shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(212,160,176,0.75))' }} />
+              <span className="text-[#D4A0B0] text-[0.55rem] flex-shrink-0 leading-none">✦</span>
+              <span className="font-serif text-[0.95rem] sm:text-[1.05rem] tracking-[0.01em] text-[#2C1A14] leading-tight truncate">
+                {title}
               </span>
-              <span className="text-[#D4A0B0] text-[0.62rem] flex-shrink-0 leading-none">✦</span>
-              <span className="hidden sm:block h-px w-6 flex-shrink-0" style={{ background: 'linear-gradient(90deg, rgba(212,160,176,0.75), transparent)' }} />
+              <span className="text-[#D4A0B0] text-[0.55rem] flex-shrink-0 leading-none">✦</span>
+              <span className="hidden sm:block h-px w-5 flex-shrink-0" style={{ background: 'linear-gradient(90deg, rgba(212,160,176,0.75), transparent)' }} />
             </div>
-            {!isBridal && step !== 'done' && (
-              <span className="text-[0.58rem] text-[#b9aca2] tracking-[0.1em] uppercase">
-                {step === 'date' ? `Step 1 of 2 · Choose date${service.duration ? ' · ' + service.duration : ''}` : 'Step 2 of 2 · Your details'}
-              </span>
+            {subtitle && (
+              <span className="text-[0.55rem] text-[#b9aca2] tracking-[0.1em] uppercase">{subtitle}</span>
             )}
           </div>
 
           {/* × Close */}
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
             style={{ background: '#fff', border: '1px solid rgba(212,160,176,0.3)', boxShadow: '0 1px 4px rgba(140,90,110,0.07)' }}
             aria-label="Close"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" className="w-3 h-3">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
+          );
+        })()}
 
         {/* Price strip — non-bridal, on date + form steps (the "header + package price") */}
         {!isBridal && step !== 'done' && (
@@ -393,13 +416,18 @@ export default function BookingModal({ service: initialService, onClose }) {
 
           {/* BRIDAL: special inquiry form (manages its own stepped flow) */}
           {isBridal ? (
-            <BridalInquiryForm onClose={onClose} service={service} />
+            <BridalInquiryForm
+              onClose={onClose}
+              service={service}
+              onStepChange={setBridalStep}
+              registerBack={(fn) => { bridalBackRef.current = fn; }}
+            />
           ) : (
             <div key={step} style={{ animation: stepAnim }} className="w-full flex-1 flex flex-col">
 
               {/* ───────── STEP 1: DATE ───────── */}
               {step === 'date' && (
-                <div className="w-full max-w-[600px] mx-auto px-6 lg:px-7 py-6 flex flex-col relative overflow-hidden">
+                <div className="w-full max-w-[600px] lg:max-w-[720px] mx-auto px-6 lg:px-7 py-6 flex flex-col relative overflow-hidden">
                   {/* Soft glow background */}
                   <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.08] pointer-events-none"
                     style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
@@ -415,7 +443,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
                     <div>
                       <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
-                      <h3 className="font-serif text-[1.55rem] leading-none text-[#111]">Appointment <em className="not-italic text-[#D4A0B0]">Date</em></h3>
+                      <h3 className="font-serif text-[1.55rem] lg:text-[1.85rem] leading-none text-[#111]">Appointment <em className="not-italic text-[#D4A0B0]">Date</em></h3>
                     </div>
                   </div>
 
@@ -478,16 +506,16 @@ export default function BookingModal({ service: initialService, onClose }) {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center mb-2">
                       {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((d, i) => (
-                        <div key={i} className="text-[0.55rem] font-semibold text-gray-300 uppercase py-2 tracking-[0.1em]">{d}</div>
+                        <div key={i} className="text-[0.55rem] sm:text-[0.65rem] font-semibold text-gray-300 uppercase py-2 tracking-[0.1em]">{d}</div>
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1 text-center justify-items-center">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center justify-items-center">
                       {calDays.map((day, idx) => (
                         !day
-                          ? <div key={`e-${idx}`} className="w-11 h-11" />
+                          ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
                           : <BookingCalDay
                             key={dateKey(year, month, day.d)}
                             day={day}
@@ -573,23 +601,23 @@ export default function BookingModal({ service: initialService, onClose }) {
                     <p className="text-[0.8rem] text-gray-400">Fill in your info. Roko will confirm your time.</p>
                   </div>
 
-                  <form id="nonbridal-booking-form" onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
+                  <form id="nonbridal-booking-form" onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4 flex-1">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={labelClass}>First Name *</label>
-                        <input required value={formData.fname} onChange={e => setFormData({ ...formData, fname: e.target.value })}
+                        <input value={formData.fname} onChange={e => setFormData({ ...formData, fname: e.target.value })}
                           placeholder="Amara" className={inputClass} />
                       </div>
                       <div>
                         <label className={labelClass}>Last Name *</label>
-                        <input required value={formData.lname} onChange={e => setFormData({ ...formData, lname: e.target.value })}
+                        <input value={formData.lname} onChange={e => setFormData({ ...formData, lname: e.target.value })}
                           placeholder="Jones" className={inputClass} />
                       </div>
                     </div>
 
                     <div>
                       <label className={labelClass}>Email Address *</label>
-                      <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
                         placeholder="you@email.com" className={inputClass} />
                     </div>
 
@@ -633,12 +661,10 @@ export default function BookingModal({ service: initialService, onClose }) {
 
                     <div>
                       <label className={labelClass}>What time would you like to be ready by?</label>
-                      <input
-                        type="text"
+                      <TimePicker
                         value={formData.ready_by_time || ''}
-                        onChange={e => setFormData({ ...formData, ready_by_time: e.target.value })}
-                        placeholder="e.g. 10:00 AM"
-                        className={inputClass}
+                        onChange={v => setFormData({ ...formData, ready_by_time: v })}
+                        placeholder="Select time"
                       />
                       <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                         This is your preference — Roko will do her best to have you ready by this time. Your actual appointment time will be confirmed separately.
@@ -902,6 +928,7 @@ export default function BookingModal({ service: initialService, onClose }) {
               </div>
               {step === 'date' ? (
                 <button
+                  key="nb-continue"
                   type="button"
                   onClick={handleContinue}
                   disabled={!selectedDate}
@@ -915,8 +942,9 @@ export default function BookingModal({ service: initialService, onClose }) {
                 </button>
               ) : (
                 <button
-                  type="submit"
-                  form="nonbridal-booking-form"
+                  key="nb-submit"
+                  type="button"
+                  onClick={() => handleSubmit()}
                   disabled={submitting}
                   className={`flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all ${
                     submitting
