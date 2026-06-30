@@ -40,18 +40,52 @@ export async function POST(req) {
 
     const token = await getZoomToken();
 
+    // Preferred path: read the meeting. Its start_url carries a fresh host ZAK,
+    // so opening it starts the meeting with Roko as the host.
+    let startUrl = null;
+    let joinUrl = null;
+
     const res = await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!res.ok) {
+    if (res.ok) {
+      const meeting = await res.json();
+      startUrl = meeting.start_url || null;
+      joinUrl = meeting.join_url || null;
+    } else {
       const err = await res.json().catch(() => ({}));
-      console.error('zoom-host-link fetch failed:', JSON.stringify(err));
-      return NextResponse.json({ error: err.message || `Zoom error ${res.status}` }, { status: res.status });
+      console.error('zoom-host-link meeting read failed:', res.status, JSON.stringify(err));
     }
 
-    const meeting = await res.json();
-    return NextResponse.json({ start_url: meeting.start_url, join_url: meeting.join_url });
+    // Fallback: build the host link from a fresh ZAK token. This works even when
+    // the app can't read the meeting (e.g. missing meeting:read scope), so Roko
+    // never gets silently dropped in as a plain participant.
+    if (!startUrl) {
+      try {
+        const zakRes = await fetch('https://api.zoom.us/v2/users/me/token?type=zak', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (zakRes.ok) {
+          const { token: zak } = await zakRes.json();
+          if (zak) startUrl = `https://zoom.us/s/${meetingId}?zak=${encodeURIComponent(zak)}`;
+        } else {
+          const zerr = await zakRes.json().catch(() => ({}));
+          console.error('zoom-host-link zak failed:', zakRes.status, JSON.stringify(zerr));
+        }
+      } catch (e) {
+        console.error('zoom-host-link zak error:', e);
+      }
+    }
+
+    if (!startUrl) {
+      return NextResponse.json(
+        { error: 'Could not generate a host link for this meeting. Check Zoom app scopes (meeting:read / user:read).' },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ start_url: startUrl, join_url: joinUrl });
   } catch (err) {
     console.error('zoom-host-link:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
