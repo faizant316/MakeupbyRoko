@@ -15,7 +15,7 @@ const BRIDAL_FAQ = [
   { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
   { q: "When is a Full Day Service required?", a: "The Full Day Service ($1,700, $850 deposit) is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a start time before 7 AM." },
   { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid add-ons are available. Let me know how many people need glam in your inquiry so timing can be planned accordingly." },
-  { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state or locations more than 2 hours from Mountain House, include the location in your booking email for accurate pricing." },
+  { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
   ...GENERAL_FAQ.slice(0, 3),
 ];
 
@@ -24,7 +24,7 @@ const FULL_DAY_FAQ = [
   { q: "When is the Full Day Service required?", a: "The Full Day Service is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a ceremony start time before 7 AM. It's also ideal for anyone who wants a calm, unhurried morning." },
   { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
   { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid & MOB add-ons are available. Let me know how many people need glam in your inquiry so timing can be planned accordingly." },
-  { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state or locations more than 2 hours from Mountain House, include the location in your booking email for accurate pricing." },
+  { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
   ...GENERAL_FAQ.slice(0, 3),
 ];
 
