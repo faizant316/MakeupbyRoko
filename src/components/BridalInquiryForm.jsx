@@ -371,11 +371,20 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     bride_name: '', soon_to_be_last_name: '', email: '', phone: '',
     instagram_handle: '', wedding_date: '', event_location: '',
     event_start_time: '', photographer: '', hairstylist: '',
-    venue_access_time: '', num_people_glam: '', additional_details: '', how_heard: '',
+    venue_access_time: '', bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
     ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // One human-readable answer for "who needs glam", stored + emailed so Roko always
+  // sees either the bridal-party count or an explicit "Just the bride".
+  const glamSummary =
+    form.bridal_party_glam === true
+      ? (form.num_people_glam.trim() || 'Yes — final count to confirm')
+      : form.bridal_party_glam === false
+      ? 'Just the bride'
+      : (form.num_people_glam || '');
 
   // ── Step navigation ──
   const goStep = (next, dir = 'forward') => {
@@ -433,7 +442,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // The calendar selection IS the wedding date now (one date, no duplicate field).
-      body: JSON.stringify({ ...form, wedding_date: selectedDate || '', preferred_date: selectedDate || '', preferred_time: '', status: 'new', upload_token: token }),
+      body: JSON.stringify({ ...form, num_people_glam: glamSummary, wedding_date: selectedDate || '', preferred_date: selectedDate || '', preferred_time: '', status: 'new', upload_token: token }),
     });
     if (!inquiryRes.ok) {
       // Don't block the booking, but make the failure loud instead of silent.
@@ -492,7 +501,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         photographerArrival: form.photographer_arrival_time,
         photographer: form.photographer,
         hairstylist: form.hairstylist,
-        numPeopleGlam: form.num_people_glam,
+        numPeopleGlam: glamSummary,
         outOfState: form.out_of_state,
         weddingDate: selectedDate,
         additionalDetails: form.additional_details,
@@ -520,7 +529,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
       { label: 'Venue access time', value: form.venue_access_time },
-      { label: 'How many need glam', value: form.num_people_glam },
+      { label: 'Who needs glam', value: glamSummary },
       { label: 'Photographer', value: form.photographer },
       { label: 'Hairstylist', value: form.hairstylist },
       { label: 'Out-of-state event', value: form.out_of_state == null ? '' : form.out_of_state ? 'Yes' : 'No' },
@@ -879,8 +888,43 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             </div>
 
             <div>
-              <label className={labelClass}>How Many Need Glam?</label>
-              <input value={form.num_people_glam} onChange={e => set('num_people_glam', e.target.value)} placeholder="Bridal party, MOB, etc." className={inputClass} />
+              <label className={labelClass}>Does your bridal party need glam too?</label>
+              <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
+              <div className="flex gap-3 mt-1">
+                {['No', 'Yes'].map(opt => {
+                  const active = opt === 'Yes' ? form.bridal_party_glam === true : form.bridal_party_glam === false;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => {
+                        const yes = opt === 'Yes';
+                        set('bridal_party_glam', yes);
+                        if (!yes) set('num_people_glam', '');
+                      }}
+                      className={`flex-1 py-2.5 rounded-xl text-[0.78rem] font-medium border transition-all ${
+                        active
+                          ? 'bg-[#111] text-white border-[#111]'
+                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      {opt === 'Yes' ? 'Yes, add glam' : 'No, just me'}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {form.bridal_party_glam === true && (
+                <div className="mt-3" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
+                  <label className={labelClass}>How Many Need Glam? (Besides You)</label>
+                  <input
+                    value={form.num_people_glam}
+                    onChange={e => set('num_people_glam', e.target.value)}
+                    placeholder="e.g. 3 bridesmaids + mom"
+                    className={inputClass}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="w-full h-px bg-gray-100" />
