@@ -34,45 +34,38 @@ const labelClass = "block text-[0.6rem] font-semibold tracking-[0.14em] text-[#9
 
 function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const isPast = day.date < today;
-  const isTooSoon = day.date < minDate;
+  const isTooSoon = day.date < minDate; // also covers past dates
   const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
   const key = dateKey(year, month, day.d);
   const isSel = selectedDate === key;
-  const isBlocked = !isPast && blockedSet?.has(key);
+  const isBlocked = !isTooSoon && blockedSet?.has(key);
   const bookingCount = bookedDateMap?.[key] || 0;
-  const isFull = bookingCount >= maxPerDay;
+  const isFull = !isTooSoon && bookingCount >= maxPerDay;
   const isPartial = bookingCount > 0 && !isFull;
-  const unavailable = isTooSoon || !isAvail || isBlocked || isFull;
-
   const isToday = day.date.getTime() === today.getTime();
+
+  // A wedding date is fixed, so any future date (past the 2-week minimum) is
+  // selectable. The dots stay purely informational about Roko's existing load.
+  const disabled = isTooSoon;
 
   return (
     <button type="button" onClick={() => handleDayClick(day)}
-      title={
-        isBlocked ? 'Blocked'
-        : isFull ? 'Fully booked'
-        : unavailable ? 'Unavailable'
-        : undefined
-      }
+      title={isBlocked ? 'Roko has this date blocked — she\'ll confirm' : isFull ? 'Filling up — she\'ll confirm availability' : undefined}
       className={`w-full aspect-square max-w-[2.75rem] flex flex-col items-center justify-center text-[0.875rem] transition-all relative rounded-none ${
-        isBlocked ? 'text-red-300 cursor-not-allowed line-through decoration-red-300'
-        : isFull ? 'text-red-300 cursor-not-allowed'
-        : unavailable ? 'text-gray-200 cursor-not-allowed'
+        disabled ? 'text-gray-200 cursor-not-allowed'
         : isSel ? 'bg-[#111] text-white font-semibold rounded-sm'
-        : isToday ? 'text-[#D4A0B0] font-bold'
-        : isPartial ? 'text-[#555] font-medium hover:text-[#111]'
-        : 'text-[#888] hover:text-[#111]'
+        : isToday ? 'text-[#D4A0B0] font-bold cursor-pointer'
+        : 'text-[#888] hover:text-[#111] cursor-pointer'
       }`}>
       <span>{day.d}</span>
-      {!unavailable && !isSel && isPartial && (
+      {!disabled && !isSel && (isBlocked || isFull) && (
+        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" />
+      )}
+      {!disabled && !isSel && !isBlocked && !isFull && isPartial && (
         <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#F0C27A]" />
       )}
-      {!unavailable && !isSel && !isPartial && isAvail && (
+      {!disabled && !isSel && !isBlocked && !isFull && !isPartial && isAvail && (
         <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
-      )}
-      {isFull && !isBlocked && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" />
       )}
     </button>
   );
@@ -88,11 +81,21 @@ function DateDropdown({ value, placeholder, options, onChange, width }) {
   // Sync internal value when external value changes
   useEffect(() => { setInternalValue(value); }, [value]);
 
+  const listRef = useRef(null);
+
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // When opened with a value already chosen, center it in view so long lists
+  // (e.g. the time picker) don't always start scrolled to the top.
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const el = listRef.current.querySelector('[data-selected="true"]');
+    if (el) listRef.current.scrollTop = el.offsetTop - listRef.current.clientHeight / 2 + el.clientHeight / 2;
+  }, [open]);
 
   const selected = options.find(o => String(o.value) === String(internalValue));
 
@@ -121,10 +124,11 @@ function DateDropdown({ value, placeholder, options, onChange, width }) {
           style={{ animation: 'fadeSlideDown 0.15s ease-out' }}
           onMouseDown={e => e.preventDefault()}
         >
-          <div data-lenis-prevent className="max-h-[220px] overflow-y-auto overscroll-contain py-1.5">
+          <div ref={listRef} data-lenis-prevent className="max-h-[220px] overflow-y-auto overscroll-contain py-1.5">
             {options.map(o => (
               <div
                 key={o.value}
+                data-selected={String(o.value) === String(internalValue)}
                 onMouseDown={e => { e.preventDefault(); setInternalValue(o.value); onChange(o.value); setOpen(false); }}
                 className={`w-full text-left px-4 py-2.5 text-[0.8rem] transition-colors cursor-pointer select-none
                   ${String(o.value) === String(internalValue)
@@ -142,84 +146,60 @@ function DateDropdown({ value, placeholder, options, onChange, width }) {
   );
 }
 
-// Detect iOS
-const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-function WeddingDatePicker({ value, onChange }) {
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 6 }, (_, i) => currentYear + i);
-
-  const [selMonth, setSelMonth] = useState('');
-  const [selDay, setSelDay] = useState('');
-  const [selYear, setSelYear] = useState('');
-
-  const daysInMonth = (selMonth !== '' && selYear) ? new Date(Number(selYear), Number(selMonth) + 1, 0).getDate() : 31;
-
-  const monthOptions = MONTHS.map((m, i) => ({ value: String(i), label: m }));
-  const dayOptions = Array.from({ length: daysInMonth }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
-  const yearOptions = years.map(y => ({ value: String(y), label: String(y) }));
-
-  const handleChange = (newMonth, newDay, newYear) => {
-    if (newMonth !== '' && newDay !== '' && newYear !== '') {
-      const mm = String(Number(newMonth) + 1).padStart(2, '0');
-      const dd = String(newDay).padStart(2, '0');
-      onChange(`${newYear}-${mm}-${dd}`);
-    } else {
-      onChange('partial');
+// Time options across a sensible event window (5 AM – 11:45 PM, 15-min steps).
+const TIME_OPTIONS = (() => {
+  const out = [];
+  for (let h = 5; h <= 23; h++) {
+    for (const m of [0, 15, 30, 45]) {
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      out.push(`${h12}:${String(m).padStart(2, '0')} ${ampm}`);
     }
-  };
-
-  // iOS: use native <select> elements — triggers the iOS drum-roll scroll wheel picker
-  if (isIOS()) {
-    return (
-      <div className="flex gap-2">
-        <div className="relative" style={{ width: '42%' }}>
-          <select
-            value={selMonth}
-            onChange={e => { setSelMonth(e.target.value); handleChange(e.target.value, selDay, selYear); }}
-            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
-            style={{ WebkitAppearance: 'none' }}
-          >
-            <option value="">Month</option>
-            {MONTHS.map((m, i) => <option key={i} value={String(i)}>{m}</option>)}
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div className="relative" style={{ width: '25%' }}>
-          <select
-            value={selDay}
-            onChange={e => { setSelDay(e.target.value); handleChange(selMonth, e.target.value, selYear); }}
-            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
-            style={{ WebkitAppearance: 'none' }}
-          >
-            <option value="">Day</option>
-            {dayOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div className="relative" style={{ width: '33%' }}>
-          <select
-            value={selYear}
-            onChange={e => { setSelYear(e.target.value); handleChange(selMonth, selDay, e.target.value); }}
-            className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] appearance-none"
-            style={{ WebkitAppearance: 'none' }}
-          >
-            <option value="">Year</option>
-            {yearOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-    );
   }
+  return out;
+})();
 
-  // Desktop / Android: custom dropdowns
+// "2:00 PM" → "14:00" (for native <input type="time">)
+function timeTo24(val) {
+  if (!val) return '';
+  const m = val.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return '';
+  let h = parseInt(m[1], 10) % 12;
+  if (/pm/i.test(m[3])) h += 12;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
+}
+
+// "14:00" → "2:00 PM"
+function timeFrom24(val) {
+  if (!val) return '';
+  const [hs, ms = '00'] = val.split(':');
+  const h = parseInt(hs, 10);
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${ms} ${ampm}`;
+}
+
+// Tap-to-pick time selector: native time wheel on mobile (iOS/Android),
+// a styled scroll dropdown on desktop. Stores a display string like "2:00 PM".
+function TimePicker({ value, onChange, placeholder = 'Select time' }) {
+  const options = TIME_OPTIONS.map(t => ({ value: t, label: t }));
   return (
-    <div className="flex gap-2">
-      <DateDropdown width="42%" value={selMonth} placeholder="Month" options={monthOptions} onChange={v => { setSelMonth(v); handleChange(v, selDay, selYear); }} />
-      <DateDropdown width="25%" value={selDay} placeholder="Day" options={dayOptions} onChange={v => { setSelDay(v); handleChange(selMonth, v, selYear); }} />
-      <DateDropdown width="33%" value={selYear} placeholder="Year" options={yearOptions} onChange={v => { setSelYear(v); handleChange(selMonth, selDay, v); }} />
-    </div>
+    <>
+      {/* Mobile — native time wheel */}
+      <div className="block sm:hidden">
+        <input
+          type="time"
+          value={timeTo24(value)}
+          onChange={e => onChange(timeFrom24(e.target.value))}
+          className={inputClass}
+          style={{ WebkitAppearance: 'none', appearance: 'none' }}
+        />
+      </div>
+      {/* Desktop — styled dropdown */}
+      <div className="hidden sm:block">
+        <DateDropdown width="100%" value={value} placeholder={placeholder} options={options} onChange={onChange} />
+      </div>
+    </>
   );
 }
 
@@ -511,7 +491,6 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
-  const monthName = calDate.toLocaleString('default', { month: 'long', year: 'numeric' });
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const calDays = [];
@@ -520,13 +499,10 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
   const handleDayClick = (day) => {
     if (!day) return;
-    const isTooSoon = day.date < minDate;
-    const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
-    if (!isAvail) return;
-    const key = dateKey(year, month, day.d);
-    if (blockedSet.has(key)) return;
-    if ((bookedDateMap[key] || 0) >= getMaxForDay(key)) return;
-    setSelectedDate(key);
+    // Wedding dates are fixed — accept any date past the 2-week minimum, even on
+    // a closed day / filling / blocked date. Roko sorts out the rest on confirm.
+    if (day.date < minDate) return;
+    setSelectedDate(dateKey(year, month, day.d));
   };
 
   const handleSubmit = async (e) => {
@@ -535,11 +511,11 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     if (!form.bride_name) { alert('Please enter the bride\'s name.'); return; }
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
-    if (!form.wedding_date || form.wedding_date === 'partial') { alert('Please select a complete wedding date (month, day, and year).'); return; }
-    if (!selectedDate) { alert('Please select a preferred appointment date from the calendar.'); return; }
+    if (!selectedDate) { alert('Please select your wedding date from the calendar.'); return; }
     if (!form.event_location) { alert('Please enter the event location.'); return; }
-    if (!form.event_start_time) { alert('Please enter the event start time.'); return; }
-    if (!form.venue_access_time) { alert('Please enter the venue access time.'); return; }
+    if (!form.event_start_time) { alert('Please select the event start time.'); return; }
+    if (!form.venue_access_time) { alert('Please select the venue access time.'); return; }
+    if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
 
     setSubmitting(true);
     try {
@@ -549,7 +525,8 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
     const inquiryRes = await fetch('/api/bridal-inquiries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, preferred_date: selectedDate || '', preferred_time: '', status: 'new', upload_token: token }),
+      // The calendar selection IS the wedding date now (one date, no duplicate field).
+      body: JSON.stringify({ ...form, wedding_date: selectedDate || '', preferred_date: selectedDate || '', preferred_time: '', status: 'new', upload_token: token }),
     });
     if (!inquiryRes.ok) {
       // Don't block the booking, but make the failure loud instead of silent.
@@ -610,7 +587,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
         hairstylist: form.hairstylist,
         numPeopleGlam: form.num_people_glam,
         outOfState: form.out_of_state,
-        weddingDate: form.wedding_date,
+        weddingDate: selectedDate,
         additionalDetails: form.additional_details,
         howHeard: form.how_heard,
       }),
@@ -701,22 +678,48 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center">
               <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
-            <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#888]">Preferred Appointment Date</span>
+            <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#888]">Wedding Date</span>
           </div>
 
-          {/* 30-day notice */}
+          {/* Lead-time notice */}
           <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
             <p className="text-[0.72rem] text-[#888]">
-              Bridal bookings must be at least <strong className="text-[#555]">2 weeks in advance</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+              Pick your wedding day below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong> — earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
             </p>
           </div>
 
           {/* Calendar */}
           <div className="relative z-10">
-            <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-              <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl">‹</button>
-              <span className="font-serif text-[1.2rem] text-[#111] tracking-tight">{monthName}</span>
-              <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl">›</button>
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+              <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">‹</button>
+              {/* Month + Year quick-jump (native selects render above the panel's overflow) */}
+              <div className="flex-1 flex items-center justify-center gap-2">
+                <div className="relative">
+                  <select
+                    value={month}
+                    onChange={e => setCalDate(new Date(year, Number(e.target.value)))}
+                    className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5 text-right"
+                    style={{ WebkitAppearance: 'none' }}
+                    aria-label="Month"
+                  >
+                    {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                  </select>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div className="relative">
+                  <select
+                    value={year}
+                    onChange={e => setCalDate(new Date(Number(e.target.value), month))}
+                    className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5"
+                    style={{ WebkitAppearance: 'none' }}
+                    aria-label="Year"
+                  >
+                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">›</button>
             </div>
 
             {/* Month availability summary */}
@@ -811,17 +814,27 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
         <div className="lg:w-[52%] p-6 lg:p-7 flex flex-col gap-4 overflow-y-auto">
 
           {/* Selection summary */}
-          {selectedDate && (
+          {selectedDate ? (
             <div className="bg-gradient-to-r from-[#D4A0B0]/8 to-[#B8A0D4]/8 border border-[#D4A0B0]/15 rounded-xl px-4 py-3.5 flex items-center gap-3" style={{ boxShadow: '0 0 20px rgba(212,160,176,0.08)' }}>
               <div className="w-9 h-9 rounded-xl bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>
               <div>
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-0.5">Preferred Date</p>
+                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-0.5">Wedding Date</p>
                 <p className="text-[0.82rem] text-[#333]">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
+            </div>
+          ) : (
+            <div className="border border-dashed border-[#D4A0B0]/40 rounded-xl px-4 py-3 flex items-center gap-3" style={{ background: '#FDF9FB' }}>
+              <div className="w-8 h-8 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <p className="text-[0.76rem] text-[#9a7d88]">
+                <span className="lg:hidden">Pick your wedding date from the calendar above.</span>
+                <span className="hidden lg:inline">Pick your wedding date from the calendar on the left.</span>
+              </p>
             </div>
           )}
 
@@ -879,25 +892,20 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
 
           <div className="w-full h-px bg-gray-100" />
 
-          <div>
-            <label className={labelClass}>Wedding Date *</label>
-            <WeddingDatePicker value={form.wedding_date} onChange={v => set('wedding_date', v)} />
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className={labelClass}>Hairstylist Arrive By *</label>
+              <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
+            </div>
+            <div>
+              <label className={labelClass}>Photographer Arrives</label>
+              <TimePicker value={form.photographer_arrival_time} onChange={v => set('photographer_arrival_time', v)} placeholder="Select time" />
+            </div>
           </div>
 
           <div>
             <label className={labelClass}>Event Start Time *</label>
-            <input value={form.event_start_time} onChange={e => set('event_start_time', e.target.value)} placeholder="e.g. 2:00 PM" className={inputClass} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className={labelClass}>Hairstylist Arrive By *</label>
-              <input value={form.ready_by_time} onChange={e => set('ready_by_time', e.target.value)} placeholder="e.g. 10:00 AM" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Photographer Arrives</label>
-              <input value={form.photographer_arrival_time} onChange={e => set('photographer_arrival_time', e.target.value)} placeholder="e.g. 11:00 AM" className={inputClass} />
-            </div>
+            <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
           </div>
 
           <div className="flex items-start gap-2 px-3.5 py-3 rounded-xl -mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
@@ -926,7 +934,7 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           <div className="grid grid-cols-2 gap-3.5">
             <div>
               <label className={labelClass}>Venue Access Time *</label>
-              <input value={form.venue_access_time} onChange={e => set('venue_access_time', e.target.value)} placeholder="e.g. 10:00 AM" className={inputClass} />
+              <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
             </div>
             <div>
               <label className={labelClass}>How Many Need Glam?</label>
