@@ -121,7 +121,7 @@ function DateDropdown({ value, placeholder, options, onChange, width }) {
           style={{ animation: 'fadeSlideDown 0.15s ease-out' }}
           onMouseDown={e => e.preventDefault()}
         >
-          <div className="max-h-[220px] overflow-y-auto py-1.5">
+          <div data-lenis-prevent className="max-h-[220px] overflow-y-auto overscroll-contain py-1.5">
             {options.map(o => (
               <div
                 key={o.value}
@@ -900,9 +900,12 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
             </div>
           </div>
 
-          <p className="text-[0.62rem] text-[#b08d9c] leading-relaxed -mt-1">
-            Heads up: if your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline">@hairbyshak</a>, Roko doesn't glam at the same time as other hairstylists, so she'll plan her timing around when yours arrives.
-          </p>
+          <div className="flex items-start gap-2 px-3.5 py-3 rounded-xl -mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+            <p className="text-[0.78rem] leading-[1.6]" style={{ color: '#6B4055' }}>
+              <strong style={{ color: '#2C1A14' }}>Heads up:</strong> if your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline">@hairbyshak</a>, Roko doesn't glam at the same time as other hairstylists, so she'll plan her timing around when yours arrives.
+            </p>
+          </div>
 
           <div>
             <label className={labelClass}>Event Location *</label>
@@ -932,11 +935,6 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           </div>
 
           <div className="w-full h-px bg-gray-100" />
-
-          <div>
-            <label className={labelClass}>Makeup Vision & Additional Details</label>
-            <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="What do I need to know about your day? Your makeup vision? Any inspo images?" className={`${inputClass} resize-none h-[80px] border-b`} />
-          </div>
 
           {/* Before & after photos are collected later, through the client's
               personal upload link — not on this form. We only set expectations here. */}
@@ -1014,6 +1012,13 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="w-full h-px bg-gray-100" />
+
+          <div>
+            <label className={labelClass}>Makeup Vision & Additional Details</label>
+            <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="Your makeup vision, anything I should know about your day, and any out-of-state notes. Inspo welcome." className={`${inputClass} resize-none h-[80px] border-b`} />
           </div>
 
           <div className="mt-auto pt-2">
