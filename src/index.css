@@ -215,6 +215,16 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Booksy-style stepped flow — slide + fade between steps (Stripe Link feel) */
+@keyframes stepInRight {
+  from { opacity: 0; transform: translateX(26px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes stepInLeft {
+  from { opacity: 0; transform: translateX(-26px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 /* Mobile bottom sheet slide-up */
 @keyframes slideUpSheet {
   from { transform: translateY(100%); }
@@ -259,14 +269,15 @@
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
+  /* 16px is the threshold below which iOS auto-zooms on focus. !important so
+     Tailwind text-size utilities (e.g. text-[0.85rem]) can't pull a field back
+     below 16px and re-trigger the zoom. Covers every text-entry field,
+     including bare <input> (no type attr). */
   select, textarea {
-    font-size: 16px;
+    font-size: 16px !important;
     border-radius: 8px;
   }
 
-  /* 16px is the threshold below which iOS auto-zooms on focus. Cover every
-     text-entry field, including bare <input> (no type attr) and search/url/
-     password, so focusing a field never zooms the page in on mobile. */
   input[type="text"],
   input[type="email"],
   input[type="tel"],
@@ -275,7 +286,7 @@
   input[type="password"],
   input[type="url"],
   input:not([type]) {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 
