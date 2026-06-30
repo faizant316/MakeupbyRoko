@@ -5,7 +5,7 @@ import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
 import { lenisScrollTo } from '@/lib/lenis';
-import { openZoomHost } from '@/lib/zoomHost';
+import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
@@ -225,6 +225,8 @@ function parseConsultNotes(raw) {
     else if (mm) meetingId = mm[1];
     else rest.push(line);
   }
+  // Recover a host-capable id from the join link when none was stored explicitly.
+  if (!meetingId) meetingId = meetingIdFromUrl(link);
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 

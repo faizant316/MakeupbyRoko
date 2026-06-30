@@ -13,6 +13,17 @@ export function parseMeetingId(notes) {
   return m ? m[1] : '';
 }
 
+// A Zoom join link embeds the meeting id in its /j/<id> path, e.g.
+// https://us05web.zoom.us/j/12345678901?pwd=… -> 12345678901. We use this to
+// recover a host-capable meeting id for older / manually-scheduled consultations
+// that only stored a "Link:" line (no explicit "MeetingId:"), so "Join as host"
+// works for them too instead of dropping Roko in as a waiting participant.
+export function meetingIdFromUrl(url) {
+  if (!url) return '';
+  const m = String(url).match(/\/j\/(\d+)/);
+  return m ? m[1] : '';
+}
+
 // Opens the meeting as host. Mints a fresh start_url from the meeting id, then
 // navigates a tab to it. We open the blank tab synchronously (inside the click)
 // so the browser's popup blocker lets it through, then redirect once we have the

@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { openZoomHost } from '@/lib/zoomHost';
+import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 
 const TIME_SLOTS = (() => {
   const slots = [];
@@ -30,6 +30,8 @@ function parseNotes(raw) {
     else if (mm) meetingId = mm[1];
     else rest.push(line);
   }
+  // Recover a host-capable id from the join link when none was stored explicitly.
+  if (!meetingId) meetingId = meetingIdFromUrl(link);
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 

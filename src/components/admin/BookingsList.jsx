@@ -3,7 +3,7 @@ import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, daysUntil } from './timeline';
-import { openZoomHost, parseMeetingId } from '@/lib/zoomHost';
+import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 
 // SSR-safe layout effect — measures the active tab to position the underline
 // without a first-paint flash, while staying quiet during server render.
@@ -611,8 +611,8 @@ export default function BookingsList({
                   </p>
                 </div>
                 {(() => {
-                  const meetingId = parseMeetingId(b.consultation_notes);
                   const join = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1];
+                  const meetingId = parseMeetingId(b.consultation_notes) || meetingIdFromUrl(join);
                   if (!meetingId && !join) return null;
                   return (
                     <a
@@ -663,7 +663,7 @@ export default function BookingsList({
             const classList = Object.keys(CLASS_LABELS).filter(k => r[k]);
             const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Lesson';
             const zoomMatch = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/m);
-            const meetingId = parseMeetingId(r.lesson_notes);
+            const meetingId = parseMeetingId(r.lesson_notes) || meetingIdFromUrl(zoomMatch?.[1]);
             const isZoom = r.consultation_type === 'Zoom';
             const isPhone = r.consultation_type === 'Phone';
             return (
@@ -801,8 +801,8 @@ export default function BookingsList({
           ) : (
             <div className="flex flex-col gap-2">
               {consultationBookings.map(b => {
-                const meetingId = parseMeetingId(b.consultation_notes);
                 const join = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1];
+                const meetingId = parseMeetingId(b.consultation_notes) || meetingIdFromUrl(join);
                 return (
                   <button
                     key={b.id}
