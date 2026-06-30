@@ -69,7 +69,8 @@ export default function CustomSelect({ value, onChange, options, placeholder = '
 
       {open && (
         <div
-          className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-gray-100 py-1.5 z-50 max-h-[240px] overflow-y-auto"
+          data-lenis-prevent
+          className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-gray-100 py-1.5 z-50 max-h-[240px] overflow-y-auto overscroll-contain"
           style={{ animation: 'fadeSlideDown 0.15s ease-out' }}
         >
           {options.map((opt) => {
