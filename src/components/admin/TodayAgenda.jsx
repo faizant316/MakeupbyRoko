@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 
 // Always-on "Today" card for the Home overview. Surfaces everything happening
 // today in one place — regular appointments, Zoom/phone consultations, AND
@@ -47,7 +48,9 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
         list.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', status: b.status || 'pending', dot: STATUS_META[b.status]?.bg || '#3B82F6', onClick: () => onSelectBooking?.(b) });
       }
       if (b.consultation_date === todayKey) {
-        list.push({ id: `c-${b.id}`, time: b.consultation_time, name: b.name || 'Client', label: `${b.consultation_type || 'Zoom'} consultation`, status: b.status || 'pending', dot: '#A855F7', tag: 'Consult', onClick: () => onSelectBooking?.(b) });
+        const joinUrl = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1] || '';
+        const isZoom = (b.consultation_type || 'Zoom') === 'Zoom';
+        list.push({ id: `c-${b.id}`, time: b.consultation_time, name: b.name || 'Client', label: `${b.consultation_type || 'Zoom'} consultation`, status: b.status || 'pending', dot: '#A855F7', tag: 'Consult', onClick: () => onSelectBooking?.(b), joinUrl: isZoom ? joinUrl : '', meetingId: isZoom ? (parseMeetingId(b.consultation_notes) || meetingIdFromUrl(joinUrl)) : '' });
       }
     });
     (classRegs || []).forEach(r => {
@@ -55,7 +58,9 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
       if (r.appointment_date === todayKey) {
         const cls = Object.keys(CLASS_LABELS).filter(k => r[k]);
         const label = cls.length ? cls.map(k => CLASS_LABELS[k]).join(' · ') : 'Makeup Class';
-        list.push({ id: `l-${r.id}`, time: r.appointment_time, name: r.full_name || 'Client', label, status: r.status || 'pending', dot: '#D4A0B0', tag: 'Class', onClick: () => onSelectClassReg?.(r) });
+        const joinUrl = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1] || '';
+        const isZoom = r.consultation_type === 'Zoom';
+        list.push({ id: `l-${r.id}`, time: r.appointment_time, name: r.full_name || 'Client', label, status: r.status || 'pending', dot: '#D4A0B0', tag: 'Class', onClick: () => onSelectClassReg?.(r), joinUrl: isZoom ? joinUrl : '', meetingId: isZoom ? (parseMeetingId(r.lesson_notes) || meetingIdFromUrl(joinUrl)) : '' });
       }
     });
     return list.sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
@@ -82,11 +87,15 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
         <div className="flex flex-col gap-1.5">
           {items.map(item => {
             const meta = STATUS_META[item.status] || STATUS_META.pending;
+            const canJoin = !!(item.meetingId || item.joinUrl);
             return (
-              <button
+              <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={item.onClick}
-                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors"
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.onClick?.(); } }}
+                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
                 style={{ background: dm ? '#1e1e24' : '#FAF8F6' }}
                 onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2a2a31' : '#F4EFEC'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = dm ? '#1e1e24' : '#FAF8F6'; }}
@@ -105,10 +114,23 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                     {item.tag}
                   </span>
                 )}
+                {canJoin && (
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); if (item.meetingId) openZoomHost(item.meetingId, item.joinUrl); else window.open(item.joinUrl, '_blank'); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.6rem] font-bold tracking-[0.06em] uppercase flex-shrink-0 transition-all hover:opacity-85 active:scale-95"
+                    style={{ background: '#D4A0B0', color: '#fff' }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                      <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                    </svg>
+                    Join
+                  </button>
+                )}
                 <span className="px-2.5 py-1 text-[0.55rem] font-semibold tracking-[0.08em] uppercase rounded-lg flex-shrink-0" style={{ background: meta.bg, color: '#fff' }}>
                   {meta.label}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
