@@ -674,11 +674,14 @@ export default function BridalInquiryForm({ onClose, service: passedService }) {
           <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
           {/* Calendar heading */}
-          <div className="flex items-center gap-2 relative z-10">
-            <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="w-11 h-11 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
-            <span className="text-[0.65rem] font-semibold tracking-[0.14em] uppercase text-[#888]">Wedding Date</span>
+            <div>
+              <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
+              <h3 className="font-serif text-[1.55rem] leading-none text-[#111]">Wedding <em className="not-italic text-[#D4A0B0]">Date</em></h3>
+            </div>
           </div>
 
           {/* Lead-time notice */}
