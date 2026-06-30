@@ -19,6 +19,15 @@ const BRIDAL_FAQ = [
   ...GENERAL_FAQ.slice(0, 3),
 ];
 
+const FULL_DAY_FAQ = [
+  { q: "What does the Full Day Service include?", a: "The Full Day Service is $1,700 (4 hours of coverage) with an $850 deposit. Roko stays with you from prep through ceremony, no rushing and no handoffs. It includes full bridal makeup, lash application, a bridal switch (second look) when needed, a professional touch-up kit, and a 30-min Zoom consultation. Bridesmaid & MOB add-ons are available." },
+  { q: "When is the Full Day Service required?", a: "The Full Day Service is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a ceremony start time before 7 AM. It's also ideal for anyone who wants a calm, unhurried morning." },
+  { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
+  { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid & MOB add-ons are available. Let me know how many people need glam in your inquiry so timing can be planned accordingly." },
+  { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state or locations more than 2 hours from Mountain House, include the location in your booking email for accurate pricing." },
+  ...GENERAL_FAQ.slice(0, 3),
+];
+
 const EVENT_FAQ = [
   { q: "What is the non-bridal booking policy?", a: "Non-bridal bookings can only be made up to one month before your event, as bridal clients are prioritized. If you book earlier than one month in advance, bridal pricing will apply." },
   { q: "Where are non-bridal appointments held?", a: "All non-bridal appointments are held exclusively at the studio in Mountain House, unless included as part of a bridal travel service package." },
@@ -54,6 +63,7 @@ function getFAQs(service) {
 
   if (key === 'bridal' || category === 'bridal') {
     if (title.includes('trial')) return BRIDAL_TRIAL_FAQ;
+    if (/full.?day/.test(title)) return FULL_DAY_FAQ;
     return BRIDAL_FAQ;
   }
   if (category === 'lessons' || title.includes('course') || title.includes('lesson')) return LESSON_FAQ;
