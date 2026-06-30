@@ -366,7 +366,7 @@ export default function ServicesPage() {
                   }}
                 >
                   <div
-                    className="flex gap-4 pb-4"
+                    className="flex items-start gap-4 pb-4"
                     style={{
                       paddingLeft: 'clamp(1.25rem,5vw,3rem)',
                       paddingRight: 'clamp(1.25rem,5vw,3rem)',
