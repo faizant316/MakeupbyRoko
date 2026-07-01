@@ -332,8 +332,21 @@ export default function ServicesPage() {
             </div>
           )}
 
+          {/* Filtered results — re-keyed on the active category so every tab
+              switch replays a quick sweep + rise-in, confirming the tap landed
+              even when the top of the list looks the same as before. */}
+          {!servicesLoading && !servicesError && serviceEntities.length > 0 && (
+          <div key={activeCategory} className="services-switch-in relative flex flex-col gap-6">
+            {/* Sweep bar — thin accent line runs across, just under the tabs */}
+            <span aria-hidden className="pointer-events-none absolute left-0 right-0 -top-3 h-[2px] overflow-hidden">
+              <span
+                className="block h-full w-1/3 rounded-full"
+                style={{ background: 'linear-gradient(90deg, transparent, #D4A0B0 50%, transparent)', animation: 'svcSweep 0.6s var(--ease)' }}
+              />
+            </span>
+
           {/* Bridal — featured cards side by side */}
-          {!servicesLoading && bridalServices.length > 0 && (
+          {bridalServices.length > 0 && (
             <div className="flex flex-col gap-4">
               {/* Section label */}
               <div className="flex items-center gap-3">
@@ -410,7 +423,7 @@ export default function ServicesPage() {
           )}
 
           {/* Other services (non-bridal, non-lessons) */}
-          {!servicesLoading && otherServices.length > 0 && (
+          {otherServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <div className="w-[3px] h-[14px] rounded-full bg-[#555] flex-shrink-0" />
@@ -469,7 +482,7 @@ export default function ServicesPage() {
           )}
 
           {/* Courses — own section */}
-          {!servicesLoading && lessonServices.length > 0 && (
+          {lessonServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
@@ -488,6 +501,8 @@ export default function ServicesPage() {
                 ))}
               </div>
             </div>
+          )}
+          </div>
           )}
 
         </div>
