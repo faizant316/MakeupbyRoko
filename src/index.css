@@ -215,6 +215,17 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Category tab switch — content refresh cue. The results block is re-keyed on
+   the active category, so each switch replays this rise-in plus a thin accent
+   bar that sweeps across, confirming the tap even when the list looks the same. */
+.services-switch-in { animation: fadeRiseIn 0.42s var(--ease) both; }
+@keyframes svcSweep {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(400%); opacity: 0; }
+}
+
 /* Booksy-style stepped flow — slide + fade between steps (Stripe Link feel) */
 @keyframes stepInRight {
   from { opacity: 0; transform: translateX(26px); }
