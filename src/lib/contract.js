@@ -12,6 +12,25 @@
 
 export const CONTRACT_VERSION = 'v1';
 
+// app_settings key holding Roko's editable contract values (guided fields).
+export const CONTRACT_SETTINGS_KEY = 'contract_settings';
+
+// Parse the stored JSON value into a clean overrides object for buildContract.
+// Safe on bad/missing input (returns {}), so the contract always renders.
+export function parseContractSettings(raw) {
+  if (!raw) return {};
+  try {
+    const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const days = o.cancellationNoticeDays;
+    return {
+      artistName: o.artistName || undefined,
+      cancellationNoticeDays: days === 0 || days ? Number(days) || undefined : undefined,
+      travelFeeStart: o.travelFeeStart || undefined,
+      extraClause: o.extraClause || undefined,
+    };
+  } catch { return {}; }
+}
+
 // The legal/business name shown as the artist party on the contract.
 // Keep in sync with Stripe + Zelle. (Confirm spelling: Roqia vs Ruqia.)
 export const ARTIST_NAME = 'Roqia Moshref';
@@ -42,10 +61,14 @@ export function buildContract({
   priceAmount,
   locationType = 'studio',
   kind = 'appointment', // 'appointment' | 'class'
+  overrides = {}, // Roko-editable values from admin: { artistName, cancellationNoticeDays, travelFeeStart, extraClause }
 } = {}) {
   const deposit = money(depositAmount);
   const price = money(priceAmount);
-  const days = CONTRACT_POLICIES.cancellationNoticeDays;
+  const artistName = (overrides.artistName || '').trim() || ARTIST_NAME;
+  const days = overrides.cancellationNoticeDays ?? CONTRACT_POLICIES.cancellationNoticeDays;
+  const travelStart = (overrides.travelFeeStart || '').toString().trim() || CONTRACT_POLICIES.travelFeeStart;
+  const extraClause = (overrides.extraClause || '').trim();
   const isStudio = locationType === 'studio';
 
   const depositLine = deposit
@@ -57,13 +80,13 @@ export function buildContract({
     : `The remaining balance is due in cash on the day of your appointment. No digital payments are accepted for the balance.`;
 
   const travelBody = isStudio
-    ? `This appointment is booked as an in-studio service at the studio in ${CONTRACT_POLICIES.studioLocation}, so no travel fee applies. If the location changes to on-location (the artist traveling to you), a travel fee starting at ${CONTRACT_POLICIES.travelFeeStart} will apply.`
-    : `On-location services (the artist traveling to you) are subject to a travel fee starting at ${CONTRACT_POLICIES.travelFeeStart}, regardless of distance. In-studio appointments at ${CONTRACT_POLICIES.studioLocation} have no travel fee.`;
+    ? `This appointment is booked as an in-studio service at the studio in ${CONTRACT_POLICIES.studioLocation}, so no travel fee applies. If the location changes to on-location (the artist traveling to you), a travel fee starting at ${travelStart} will apply.`
+    : `On-location services (the artist traveling to you) are subject to a travel fee starting at ${travelStart}, regardless of distance. In-studio appointments at ${CONTRACT_POLICIES.studioLocation} have no travel fee.`;
 
   const isClass = kind === 'class';
 
   const bookingSection = { heading: 'Booking & Confirmation', body: isClass
-    ? `Submitting this form and completing checkout reserves your seat in the class. Seats are limited and are confirmed once payment is received. ${ARTIST_NAME} reserves the right to reschedule a class if needed, in which case you may attend the new date or receive a refund.`
+    ? `Submitting this form and completing checkout reserves your seat in the class. Seats are limited and are confirmed once payment is received. ${artistName} reserves the right to reschedule a class if needed, in which case you may attend the new date or receive a refund.`
     : `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.` };
 
   const paymentSection = isClass
@@ -93,6 +116,7 @@ export function buildContract({
       heading: 'Photography & Portfolio Use',
       body: `The Artist may photograph the completed look. Your photos will only be used for portfolio and promotional purposes (including Instagram, TikTok, and this website) if you consent below. Your consent choice is recorded with this agreement.`,
     },
+    ...(extraClause ? [{ heading: 'Additional Terms', body: extraClause }] : []),
     {
       heading: 'Electronic Signature',
       body: `By typing your full name and submitting this form, you are signing this agreement electronically. You agree that your electronic signature is the legal equivalent of your handwritten signature and that this agreement is binding.`,
@@ -102,7 +126,7 @@ export function buildContract({
   return {
     version: CONTRACT_VERSION,
     title: 'Service Agreement',
-    intro: `This Service Agreement is entered into between ${ARTIST_NAME} ("Artist," ${BUSINESS_NAME}) and ${clientName || 'the client named below'} ("Client") for ${serviceName}${isClass ? '' : ` on ${dateFormatted}`}. By signing below, the Client confirms they have read, understood, and agree to the following terms.`,
+    intro: `This Service Agreement is entered into between ${artistName} ("Artist," ${BUSINESS_NAME}) and ${clientName || 'the client named below'} ("Client") for ${serviceName}${isClass ? '' : ` on ${dateFormatted}`}. By signing below, the Client confirms they have read, understood, and agree to the following terms.`,
     sections,
     // The explicit yes/no the Client must choose for photo use.
     photoConsentQuestion: 'Do you give permission for your photos to be posted online (portfolio, Instagram, TikTok, website)?',

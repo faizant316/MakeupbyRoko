@@ -83,8 +83,8 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
 // and Roko so each has a record in their inbox. Renders the full agreement text
 // plus the signature block. Same builder as the on-site sign step, so the words
 // always match exactly what was signed.
-export function contractCopyEmail({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', signedName, signedAt, photoConsent, forAdmin = false }) {
-  const c = buildContract({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType, kind });
+export function contractCopyEmail({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent, forAdmin = false }) {
+  const c = buildContract({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType, kind, overrides });
   const signedAtLabel = signedAt
     ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
     : '';
