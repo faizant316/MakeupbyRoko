@@ -527,9 +527,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         weddingDate: selectedDate,
         additionalDetails: form.additional_details,
         howHeard: form.how_heard,
-        photoConsent: sig.photoConsent,
         contractSignedName: sig.name,
-        contractVersion: sig.version,
+        contractSignedAt: sig.signedAt,
+        contractPhotoConsent: sig.photoConsent,
       }),
     }).catch(err => console.error('bridal email error:', err));
 

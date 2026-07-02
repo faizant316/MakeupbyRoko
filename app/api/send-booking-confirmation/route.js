@@ -5,6 +5,7 @@ import {
   bridalConfirmationEmail,
   adminBookingEmail,
   adminBridalEmail,
+  contractCopyEmail,
 } from '../../../src/lib/email';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
@@ -18,6 +19,7 @@ export async function POST(req) {
       bridalTitle, bridalDeposit, bridalDateFormatted,
       phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
       photographer, hairstylist, numPeopleGlam, outOfState, weddingDate, additionalDetails, howHeard,
+      contractSignedName, contractSignedAt, contractPhotoConsent,
     } = body;
 
     const isBridal = bookingType === 'bridal';
@@ -46,10 +48,32 @@ export async function POST(req) {
           servicePrice, deposit: serviceDeposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes,
         });
 
-    await sendEmailPair([
+    const emails = [
       { to, subject: clientSubject, html: clientHtml },
       { to: ADMIN_EMAIL, subject: adminSubject, html: adminHtml },
-    ]);
+    ];
+
+    // If they signed the service agreement, send a standalone copy to both the
+    // client and Roko so each has the signed contract in their inbox.
+    if (contractSignedName) {
+      const clientName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
+      const contractArgs = {
+        clientName,
+        serviceName: isBridal ? bridalTitle : serviceName,
+        dateFormatted: isBridal ? bridalDateFormatted : dateFormatted,
+        depositAmount: isBridal ? bridalDeposit : serviceDeposit,
+        priceAmount: isBridal ? undefined : servicePrice,
+        locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
+        kind: 'appointment',
+        signedName: contractSignedName,
+        signedAt: contractSignedAt,
+        photoConsent: contractPhotoConsent,
+      };
+      emails.push({ to, subject: 'Your Signed Service Agreement — Makeup by Roko', html: contractCopyEmail({ ...contractArgs, forAdmin: false }) });
+      emails.push({ to: ADMIN_EMAIL, subject: `Signed Agreement — ${clientName}`, html: contractCopyEmail({ ...contractArgs, forAdmin: true }) });
+    }
+
+    await sendEmailPair(emails);
 
     return NextResponse.json({ success: true });
   } catch (err) {

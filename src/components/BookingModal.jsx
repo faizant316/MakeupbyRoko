@@ -259,6 +259,9 @@ export default function BookingModal({ service: initialService, onClose }) {
         readyByTime: formData.ready_by_time,
         notes: formData.notes,
         estimatedTotal: hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : isEarlyArrival ? `${service.price} + $100` : null,
+        contractSignedName: sig.name,
+        contractSignedAt: sig.signedAt,
+        contractPhotoConsent: sig.photoConsent,
       });
     } catch (err) {
       console.error('Failed to send confirmation email:', err);
