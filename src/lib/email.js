@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { buildContract } from './contract';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
 const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
@@ -76,6 +77,37 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
   </table>
 </td></tr></table>
 </body></html>`;
+}
+
+// Standalone copy of the signed service agreement, emailed to both the client
+// and Roko so each has a record in their inbox. Renders the full agreement text
+// plus the signature block. Same builder as the on-site sign step, so the words
+// always match exactly what was signed.
+export function contractCopyEmail({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', signedName, signedAt, photoConsent, forAdmin = false }) {
+  const c = buildContract({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType, kind });
+  const signedAtLabel = signedAt
+    ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+    : '';
+  const sectionsHtml = c.sections.map((s, i) => `
+    <p style="font-size:13px;font-weight:700;color:#16110F;margin:14px 0 4px;">${i + 1}. ${s.heading}</p>
+    <p style="font-size:12px;line-height:1.65;color:#6b6169;margin:0;">${s.body}</p>
+  `).join('');
+  const content = `
+    <tr><td style="padding:26px 28px 6px;">
+      <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">${forAdmin ? 'Signed Agreement — Copy' : 'Your Signed Service Agreement'}</p>
+      <p style="font-size:13px;line-height:1.6;color:#4b434a;margin:0;">${c.intro}</p>
+    </td></tr>
+    <tr><td style="padding:0 28px;">${sectionsHtml}</td></tr>
+    <tr><td style="padding:18px 28px 26px;">
+      <div style="background:#F7F1F4;border-radius:12px;padding:16px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Signature</p>
+        <p style="font-family:Georgia,serif;font-style:italic;font-size:19px;color:#16110F;margin:0 0 6px;">${signedName || clientName || ''}</p>
+        <p style="font-size:12px;color:#6b6169;margin:0;">Signed electronically${signedAtLabel ? ` on ${signedAtLabel}` : ''} · Agreement ${c.version}</p>
+        <p style="font-size:12px;color:#6b6169;margin:6px 0 0;">Photo permission: <strong style="color:#16110F;">${photoConsent ? 'Yes, may post' : 'No, keep private'}</strong></p>
+      </div>
+    </td></tr>
+  `;
+  return clientShell({ preheader: 'Signed service agreement — Makeup by Roko', content });
 }
 
 function clientHero({ eyebrow, title, titleAccent, subtitle, emoji }) {
