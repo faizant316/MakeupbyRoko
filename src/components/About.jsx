@@ -134,13 +134,13 @@ export default function About() {
             </h2>
 
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
-              I picked up my first makeup brush at 12 and was instantly hooked. By 14, I had already completed my first bridal client. She trusted me with one of the most important days of her life without knowing how young I was, and that moment sparked a passion that has shaped the past 17 years of my career.
+              With over 17 years of experience and thousands of faces behind my brush, I've learned that makeup is never one-size-fits-all.
             </p>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '1rem' }}>
-              For me, makeup has never been about changing someone's face. It's about enhancing what already makes them beautiful and creating a look that feels like an extension of who they are. I want every woman in my chair to feel comfortable, heard, and like she's getting ready with a trusted friend, not just a makeup artist.
+              Every client who sits in my chair is a reflection of my artistry, which is why I approach each face with intention, precision, and genuine care. I take the time to understand your features, personality, and vision to create a look that feels elevated, timeless, and authentically you.
             </p>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', color: '#6d6460', lineHeight: 1.85, marginBottom: '2rem' }}>
-              I don't just provide a service, I create an experience. Every client receives my full attention, care, and dedication. The most rewarding part isn't the makeup itself, it's watching someone look in the mirror and light up. Those moments never get old, and they're why I still love what I do.
+              My goal has never been to change who you are, but to enhance what already makes you beautiful. On your special day, you're trusting me with one of life's biggest moments, and I don't take that responsibility lightly. Every face matters to me, and every client leaves my chair representing the standard I've proudly built for over 17 years.
             </p>
 
             {/* Instagram CTA */}
