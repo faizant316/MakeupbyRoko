@@ -110,6 +110,24 @@ export function contractCopyEmail({ clientName, serviceName, dateFormatted, depo
   return clientShell({ preheader: 'Signed service agreement — Makeup by Roko', content });
 }
 
+// Full signed agreement rendered as a panel to fold into the client's ONE
+// confirmation email (so they get their copy without a second email).
+export function contractClientPanel({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent }) {
+  const c = buildContract({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType, kind, overrides });
+  const signedAtLabel = signedAt
+    ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+    : '';
+  const sectionsHtml = c.sections.map((s, i) => `<p style="font-size:12px;font-weight:700;color:#16110F;margin:12px 0 3px;">${i + 1}. ${s.heading}</p><p style="font-size:11.5px;line-height:1.6;color:#6b6169;margin:0;">${s.body}</p>`).join('');
+  return cpanel(`${ctitle('Your Signed Agreement')}
+    <p style="font-size:12px;line-height:1.6;color:#5A5258;margin:0 0 4px;">${c.intro}</p>
+    ${sectionsHtml}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF5F8;border-radius:10px;"><tr><td style="padding:12px 14px;">
+      <p style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#16110F;margin:0 0 4px;">${signedName || clientName || ''}</p>
+      <p style="font-size:11px;color:#6b6169;margin:0;">Signed electronically${signedAtLabel ? ` on ${signedAtLabel}` : ''} · Photo permission: <strong style="color:#16110F;">${photoConsent ? 'Yes' : 'No'}</strong></p>
+    </td></tr></table>
+  `);
+}
+
 function clientHero({ eyebrow, title, titleAccent, subtitle, emoji }) {
   return `<tr><td style="padding:40px 28px 32px;background:#FBF5F8;border-bottom:1px solid #F0E6EC;text-align:center;">
     ${emoji ? `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;"><tr><td width="54" height="54" align="center" valign="middle" bgcolor="#ffffff" style="border-radius:50%;font-size:24px;box-shadow:0 2px 10px rgba(196,132,154,0.20);">${emoji}</td></tr></table>` : ''}
@@ -251,7 +269,7 @@ export async function sendEmailPair(emails) {
   });
 }
 
-export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal }) {
+export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, contractSection = '' }) {
   const basePrice = hasTravelFee ? '$750+' : servicePrice;
   const summaryRows = [
     crow('Service', serviceName),
@@ -274,11 +292,12 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
         ['2', 'Upload your screenshot', 'Use the secure button above'],
         ['3', 'Roko confirms your appointment', 'Within 24–48 hours'],
       ])}
+      ${contractSection}
     `,
   });
 }
 
-export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl }) {
+export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl, contractSection = '' }) {
   return clientShell({
     preheader: `Your bridal inquiry for ${bridalTitle} has been received ✦`,
     content: `
@@ -294,6 +313,7 @@ export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateForm
         ['2', 'Upload your screenshot & photos', 'Use your personal link above'],
         ['3', 'Roko reaches out for your consultation', 'To go over your vision and bridal look'],
       ])}
+      ${contractSection}
     `,
   });
 }
@@ -523,7 +543,7 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
   `);
 }
 
-export function adminBookingEmail({ name, service, date, email, phone, servicePrice, deposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes }) {
+export function adminBookingEmail({ name, service, date, email, phone, servicePrice, deposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const bookingRows = [
     row('Service', `<strong style="color:#C4849A;">${service}</strong>`),
     row('Requested Date', `<strong>${date}</strong>`),
@@ -564,6 +584,15 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Client Notes</p>
       <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;white-space:pre-wrap;">${notes}</p>
     `) : ''}
+    ${contractSignedName ? card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Service Agreement</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
+        ${row('Signed by', contractSignedName)}
+        ${row('Photo permission', contractPhotoConsent ? 'Yes — may post' : 'No — keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
+      </table>
+      <p style="font-size:12px;color:#888888;margin:10px 0 0;">Full signed agreement is on the booking in your dashboard.</p>
+    `) : ''}
     ${card(`
       <p style="font-size:13px;color:#444444;margin:0 0 14px;">Reach out within <strong>24–48 hours</strong> to confirm their appointment time.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
@@ -573,7 +602,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
   `);
 }
 
-export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, artistArriveBy, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard }) {
+export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, artistArriveBy, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
 
   const clientRows = [
@@ -624,6 +653,15 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
     ${additionalDetails ? card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Makeup Vision &amp; Details</p>
       <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>
+    `) : ''}
+    ${contractSignedName ? card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Service Agreement</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
+        ${row('Signed by', contractSignedName)}
+        ${row('Photo permission', contractPhotoConsent ? 'Yes — may post' : 'No — keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
+      </table>
+      <p style="font-size:12px;color:#888888;margin:10px 0 0;">Full signed agreement is on the booking in your dashboard.</p>
     `) : ''}
     ${card(`
       <p style="font-size:13px;color:#444444;margin:0 0 14px;">Reach out within <strong>24–48 hours</strong> to confirm and schedule their consultation.</p>
