@@ -71,6 +71,16 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
               Bridal
             </span>
           )}
+          {booking.contract_signed && (
+            <span
+              className="inline-flex items-center gap-1 text-[0.5rem] font-bold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dm ? 'rgba(34,197,94,0.15)' : '#e8f7ee', color: dm ? '#4ade80' : '#15803d' }}
+              title={`Agreement signed${booking.contract_signed_name ? ` by ${booking.contract_signed_name}` : ''}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" className="w-2 h-2"><polyline points="20 6 9 17 4 12"/></svg>
+              Signed
+            </span>
+          )}
         </div>
         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
           {booking.service || 'Service not set'}

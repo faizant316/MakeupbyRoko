@@ -696,6 +696,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     ? (biOos ? 'Yes, out of state' : 'No, local')
     : null;
 
+  // Signed service agreement (contract) shown on the booking.
+  const contractSignedAt = booking.contract_signed_at
+    ? new Date(booking.contract_signed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : null;
+
   // Scroll to top when detail view mounts. Lenis owns the scroll position
   // site-wide, so we must reset Lenis too — a plain window.scrollTo is ignored.
   useEffect(() => {
@@ -903,6 +908,46 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Signed Service Agreement (contract) */}
+        {!isBridal && (
+          <div className="mb-6">
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Service Agreement</p>
+            {booking.contract_signed ? (
+              <div className="rounded-[6px] p-4" style={{ background: dm ? 'rgba(34,197,94,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.25)'}` }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#22c55e' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#4ade80' : '#15803d' }}>Signed</span>
+                  <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#71717a' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <BField dm={dm} label="Signed By" value={booking.contract_signed_name} />
+                  <BField dm={dm} label="Signed On" value={contractSignedAt} />
+                  <BField dm={dm} label="Photo Permission"
+                    value={booking.contract_photo_consent === true ? 'Yes — may post' : booking.contract_photo_consent === false ? 'No — keep private' : null}
+                    accent={booking.contract_photo_consent === false} />
+                </div>
+                {booking.contract_pdf_url && (
+                  <a href={booking.contract_pdf_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
+                    style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download PDF
+                  </a>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-[6px] p-4 flex items-center gap-2.5" style={{ background: dm ? '#27272a' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#3a3a48' : '#e5e5e5' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#9ca3af'} strokeWidth="2" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <span className="text-[0.76rem]" style={{ color: dm ? '#a1a1aa' : '#9ca3af' }}>No signed agreement on file (booked before the contract was added).</span>
+              </div>
+            )}
           </div>
         )}
 
