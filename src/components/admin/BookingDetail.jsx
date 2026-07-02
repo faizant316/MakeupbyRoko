@@ -7,6 +7,7 @@ import BookingReferencePhotos from './BookingReferencePhotos';
 import { lenisScrollTo } from '@/lib/lenis';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
+import { buildContract } from '@/lib/contract';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -701,6 +702,36 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     ? new Date(booking.contract_signed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null;
 
+  // Re-render the signed agreement in a print window (Save as PDF). Rebuilds the
+  // contract from the booking so it always matches the signed version + terms.
+  const printAgreement = () => {
+    const onLocation = isBridal || /travel|✈️/i.test(booking.notes || '');
+    const c = buildContract({
+      clientName: booking.contract_signed_name || booking.name,
+      serviceName: booking.service,
+      dateFormatted,
+      locationType: onLocation ? 'onlocation' : 'studio',
+      kind: 'appointment',
+    });
+    const esc = (s) => String(s ?? '').replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    const sections = c.sections.map((s, i) => `<h3 style="font-size:13px;margin:16px 0 4px;">${i + 1}. ${esc(s.heading)}</h3><p style="font-size:12px;line-height:1.6;color:#333;margin:0;">${esc(s.body)}</p>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Service Agreement — ${esc(booking.name)}</title>
+      <style>body{font-family:Georgia,'Times New Roman',serif;max-width:680px;margin:40px auto;padding:0 24px;color:#111;}h1{font-size:22px;} .sig{margin-top:24px;padding:16px;border:1px solid #ddd;border-radius:8px;background:#faf6f8;} .sig p{margin:4px 0;font-size:12px;} .name{font-style:italic;font-size:18px;} @media print{body{margin:0;}}</style></head>
+      <body onload="window.print()">
+        <h1>Service Agreement</h1>
+        <p style="font-size:12px;line-height:1.6;color:#333;">${esc(c.intro)}</p>
+        ${sections}
+        <div class="sig">
+          <p style="text-transform:uppercase;letter-spacing:0.1em;font-size:10px;color:#a06;">Signature</p>
+          <p class="name">${esc(booking.contract_signed_name || '')}</p>
+          <p>Signed electronically${contractSignedAt ? ` on ${esc(contractSignedAt)}` : ''} · Agreement ${esc(booking.contract_version || c.version)}</p>
+          <p>Photo permission: <strong>${booking.contract_photo_consent === true ? 'Yes, may post' : booking.contract_photo_consent === false ? 'No, keep private' : 'Not specified'}</strong></p>
+        </div>
+      </body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  };
+
   // Scroll to top when detail view mounts. Lenis owns the scroll position
   // site-wide, so we must reset Lenis too — a plain window.scrollTo is ignored.
   useEffect(() => {
@@ -931,14 +962,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     value={booking.contract_photo_consent === true ? 'Yes — may post' : booking.contract_photo_consent === false ? 'No — keep private' : null}
                     accent={booking.contract_photo_consent === false} />
                 </div>
-                {booking.contract_pdf_url && (
-                  <a href={booking.contract_pdf_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
-                    style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download PDF
-                  </a>
-                )}
+                <button onClick={printAgreement}
+                  className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
+                  style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  View / Print Agreement (Save as PDF)
+                </button>
               </div>
             ) : (
               <div className="rounded-[6px] p-4 flex items-center gap-2.5" style={{ background: dm ? '#27272a' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
