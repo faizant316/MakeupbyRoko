@@ -178,7 +178,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   const handleContinue = () => { if (!selectedDate) return; goStep('form'); };
   const handleHeaderBack = () => {
     if (isBridal) {
-      if (bridalStep === 'form' && bridalBackRef.current) { bridalBackRef.current(); return; }
+      if ((bridalStep === 'form' || bridalStep === 'sign') && bridalBackRef.current) { bridalBackRef.current(); return; }
       onClose();
       return;
     }
@@ -351,11 +351,13 @@ export default function BookingModal({ service: initialService, onClose }) {
             : (step === 'done' ? 'Request Sent!' : `Book: ${service.title}`);
           const subtitle = isDone ? null
             : isBridal
-              ? (bridalStep === 'form' ? 'Step 2 of 2 · Your details' : 'Step 1 of 2 · Wedding date')
+              ? (bridalStep === 'sign' ? 'Step 3 of 3 · Review & sign'
+                : bridalStep === 'form' ? 'Step 2 of 3 · Your details'
+                : 'Step 1 of 3 · Wedding date')
               : (step === 'sign' ? 'Step 3 of 3 · Review & sign'
                 : step === 'form' ? 'Step 2 of 3 · Your details'
                 : `Step 1 of 3 · Choose date${service.duration ? ' · ' + service.duration : ''}`);
-          const canBack = isBridal ? bridalStep === 'form' : (step === 'form' || step === 'sign');
+          const canBack = isBridal ? (bridalStep === 'form' || bridalStep === 'sign') : (step === 'form' || step === 'sign');
           return (
         <div
           className="flex-shrink-0 backdrop-blur-sm z-10 flex items-center px-3 sm:px-6 py-2 sm:py-2.5 gap-3 relative"

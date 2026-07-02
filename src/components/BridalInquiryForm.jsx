@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
+import ContractSign from './ContractSign';
+import { buildContract } from '@/lib/contract';
 
 function useBookingCounts() {
   const [counts, setCounts] = useState(null);
@@ -392,11 +394,19 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     setStep(next);
     scrollModalTop(document.querySelector('[data-modal-scroll]'));
   };
+  // Track the live step so the (once-registered) back handler stays accurate.
+  const stepRef = useRef('date');
+  useEffect(() => { stepRef.current = step; }, [step]);
   // Keep the modal header's step indicator + back arrow in sync with our step.
   useEffect(() => { onStepChange?.(step); }, [step, onStepChange]);
   useEffect(() => { if (submitted) onStepChange?.('done'); }, [submitted, onStepChange]);
-  // Let the modal header's back arrow drive us from step 2 → step 1.
-  useEffect(() => { registerBack?.(() => goStep('date', 'back')); }, [registerBack]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Let the modal header's back arrow step us back: sign → form → date.
+  useEffect(() => {
+    registerBack?.(() => {
+      if (stepRef.current === 'sign') goStep('form', 'back');
+      else goStep('date', 'back');
+    });
+  }, [registerBack]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
@@ -421,9 +431,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     goStep('form');
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault?.();
-    if (submitting) return; // guard against double-submit (creates duplicate inquiry + admin email)
+  // Validate the details, then advance to the Review & Sign step.
+  const handleGoToSign = () => {
     if (!form.bride_name) { alert('Please enter the bride\'s name.'); return; }
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
@@ -432,6 +441,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     if (!form.event_start_time) { alert('Please select the event start time.'); return; }
     if (!form.venue_access_time) { alert('Please select the venue access time.'); return; }
     if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
+    goStep('sign');
+  };
+
+  const handleSubmit = async (sig) => {
+    if (submitting) return; // guard against double-submit (creates duplicate inquiry + admin email)
+    if (!form.bride_name || !form.email || !form.phone || !selectedDate) { goStep('form', 'back'); return; }
+    if (!sig || !sig.name) { alert('Please sign the agreement to continue.'); return; }
 
     setSubmitting(true);
     try {
@@ -460,10 +476,15 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         service: bridalTitle,
         date: selectedDate || '',
         time: '',
-        notes: `Ready by: ${form.ready_by_time || 'Not specified'}. ${form.additional_details || ''}`.trim(),
+        notes: `Ready by: ${form.ready_by_time || 'Not specified'}. ${form.additional_details || ''} | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`.trim(),
         status: 'pending',
         upload_token: token,
         reference_photos: [],
+        contract_signed: true,
+        contract_signed_name: sig.name,
+        contract_signed_at: sig.signedAt,
+        contract_version: sig.version,
+        contract_photo_consent: sig.photoConsent,
       }),
     });
     const newBooking = await bookingRes.json();
@@ -506,6 +527,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         weddingDate: selectedDate,
         additionalDetails: form.additional_details,
         howHeard: form.how_heard,
+        photoConsent: sig.photoConsent,
+        contractSignedName: sig.name,
+        contractVersion: sig.version,
       }),
     }).catch(err => console.error('bridal email error:', err));
 
@@ -543,6 +567,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const selectedDateLong = selectedDate
     ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
+
+  // Filled service agreement for the bridal Review & Sign step. Bridal is an
+  // on-location service (Roko travels to the venue), so the travel clause applies.
+  const bridalContract = buildContract({
+    clientName: `${form.bride_name} ${form.soon_to_be_last_name}`.trim(),
+    serviceName: bridalTitle,
+    dateFormatted: selectedDateLong || 'your wedding date',
+    depositAmount: bridalDeposit,
+    priceAmount: bridalPrice,
+    locationType: 'onlocation',
+  });
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1">
@@ -1019,9 +1054,24 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             </p>
           </div>
         )}
+
+        {/* ───────── STEP 3: REVIEW & SIGN ───────── */}
+        {step === 'sign' && (
+          <div style={{ animation: stepAnim }} className="w-full flex flex-col flex-1">
+            <ContractSign
+              contract={bridalContract}
+              clientName={`${form.bride_name} ${form.soon_to_be_last_name}`.trim()}
+              submitting={submitting}
+              ctaLabel="Sign & Submit Bridal Inquiry"
+              onSign={handleSubmit}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Pinned footer CTA (sticky to bottom of the modal scroll area) */}
+      {/* Pinned footer CTA (sticky to bottom of the modal scroll area).
+          Hidden on the sign step, which carries its own Sign & Submit button. */}
+      {step !== 'sign' && (
       <div
         className="sticky bottom-0 z-30 border-t border-[#f0ebe6] bg-white px-6 lg:px-7 py-3.5"
         style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom, 0px))' }}
@@ -1047,19 +1097,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             </button>
           ) : (
             <button
-              key="bridal-submit"
+              key="bridal-review"
               type="button"
-              onClick={() => handleSubmit()}
-              disabled={submitting}
-              className={`flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all ${
-                submitting ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'
-              }`}
+              onClick={handleGoToSign}
+              className="flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]"
             >
-              {submitting ? 'Submitting…' : 'Submit Bridal Inquiry →'}
+              Review &amp; Sign →
             </button>
           )}
         </div>
       </div>
+      )}
     </form>
   );
 }

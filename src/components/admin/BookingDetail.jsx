@@ -912,7 +912,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         )}
 
         {/* Signed Service Agreement (contract) */}
-        {!isBridal && (
+        {(
           <div className="mb-6">
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Service Agreement</p>
             {booking.contract_signed ? (
