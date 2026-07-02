@@ -431,13 +431,13 @@ export default function UploadZelle() {
     <div className="relative flex-shrink-0 px-4 sm:px-6 py-3 flex items-center" style={{ borderBottom: `1px solid ${HEAD_BORDER}`, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
       <a
         href="/"
-        className="group relative z-10 inline-flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full transition-all touch-manipulation"
+        className="group relative z-10 inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full transition-all touch-manipulation"
         style={{ border: `1px solid ${HEAD_BORDER}`, color: PLUM, background: '#fff' }}
       >
-        <span className="flex items-center justify-center w-5 h-5 rounded-full transition-colors" style={{ background: HEAD_BG }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.2" className="w-3 h-3"><polyline points="15 18 9 12 15 6" /></svg>
+        <span className="flex items-center justify-center w-4 h-4 rounded-full transition-colors" style={{ background: HEAD_BG }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.2" className="w-2.5 h-2.5"><polyline points="15 18 9 12 15 6" /></svg>
         </span>
-        <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase">Back to site</span>
+        <span className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase">Back to site</span>
       </a>
       <p className="absolute left-1/2 -translate-x-1/2 text-[0.62rem] font-bold tracking-[0.22em] uppercase" style={{ color: PLUM }}>Makeup by Roko</p>
     </div>
