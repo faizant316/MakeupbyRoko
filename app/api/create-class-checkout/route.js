@@ -9,7 +9,8 @@ export async function POST(req) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     const supabase = createClient();
 
-    const { full_name, email, phone, additional_notes, selected_classes, success_url, cancel_url } = await req.json();
+    const body = await req.json();
+    const { full_name, email, phone, additional_notes, selected_classes, success_url, cancel_url } = body;
 
     if (!full_name || !email || !phone || !selected_classes?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -67,6 +68,23 @@ export async function POST(req) {
       .from('class_registrations')
       .update({ stripe_session_id: session.id })
       .eq('id', reg.id);
+
+    // Best-effort: store the signed agreement. Kept separate from the required
+    // updates so a missing contract column (migration 0002 not yet applied to
+    // class_registrations) never blocks checkout. The signature is also in
+    // additional_notes as a fallback.
+    if (body.contract_signed) {
+      await supabase
+        .from('class_registrations')
+        .update({
+          contract_signed: true,
+          contract_signed_name: body.contract_signed_name,
+          contract_signed_at: body.contract_signed_at,
+          contract_version: body.contract_version,
+          contract_photo_consent: body.contract_photo_consent,
+        })
+        .eq('id', reg.id);
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

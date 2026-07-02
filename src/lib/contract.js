@@ -41,6 +41,7 @@ export function buildContract({
   depositAmount,
   priceAmount,
   locationType = 'studio',
+  kind = 'appointment', // 'appointment' | 'class'
 } = {}) {
   const deposit = money(depositAmount);
   const price = money(priceAmount);
@@ -59,44 +60,50 @@ export function buildContract({
     ? `This appointment is booked as an in-studio service at the studio in ${CONTRACT_POLICIES.studioLocation}, so no travel fee applies. If the location changes to on-location (the artist traveling to you), a travel fee starting at ${CONTRACT_POLICIES.travelFeeStart} will apply.`
     : `On-location services (the artist traveling to you) are subject to a travel fee starting at ${CONTRACT_POLICIES.travelFeeStart}, regardless of distance. In-studio appointments at ${CONTRACT_POLICIES.studioLocation} have no travel fee.`;
 
+  const isClass = kind === 'class';
+
+  const bookingSection = { heading: 'Booking & Confirmation', body: isClass
+    ? `Submitting this form and completing checkout reserves your seat in the class. Seats are limited and are confirmed once payment is received. ${ARTIST_NAME} reserves the right to reschedule a class if needed, in which case you may attend the new date or receive a refund.`
+    : `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.` };
+
+  const paymentSection = isClass
+    ? { heading: 'Payment', body: price
+        ? `Your class fee (total ${price}) is paid in full at checkout by card to reserve your seat.`
+        : `Your class fee is paid in full at checkout by card to reserve your seat.` }
+    : { heading: 'Deposit & Payment', body: `${depositLine} ${balanceLine}` };
+
+  const cancellationSection = { heading: 'Cancellation & Rescheduling', body: isClass
+    ? `You must give at least ${days} days notice to cancel or reschedule. Class payments are non-refundable, but with at least ${days} days notice your payment may be transferred one time to a future class date. Cancellations with less than ${days} days notice, and no-shows, forfeit the payment.`
+    : `The Client must give at least ${days} days notice to cancel or reschedule. Deposits are non-refundable. With at least ${days} days notice, your deposit may be transferred one time to a new appointment date. Cancellations or changes made with less than ${days} days notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.` };
+
+  const sections = [
+    bookingSection,
+    paymentSection,
+    cancellationSection,
+    ...(isClass ? [] : [{ heading: 'Travel Fee', body: travelBody }]),
+    {
+      heading: 'Health, Skin & Allergies',
+      body: `It is the Client's responsibility to disclose any skin conditions, allergies, sensitivities, or medical concerns before the appointment. The Artist will not be held liable for reactions resulting from undisclosed conditions. Service may be refused if the Client presents with a contagious condition (for example, an active cold sore or conjunctivitis).`,
+    },
+    {
+      heading: 'Punctuality',
+      body: `Please arrive on time. Arrivals more than 15 minutes late may result in a shortened ${isClass ? 'class' : 'service'} or cancellation at the Artist's discretion, without a refund.`,
+    },
+    {
+      heading: 'Photography & Portfolio Use',
+      body: `The Artist may photograph the completed look. Your photos will only be used for portfolio and promotional purposes (including Instagram, TikTok, and this website) if you consent below. Your consent choice is recorded with this agreement.`,
+    },
+    {
+      heading: 'Electronic Signature',
+      body: `By typing your full name and submitting this form, you are signing this agreement electronically. You agree that your electronic signature is the legal equivalent of your handwritten signature and that this agreement is binding.`,
+    },
+  ];
+
   return {
     version: CONTRACT_VERSION,
     title: 'Service Agreement',
-    intro: `This Service Agreement is entered into between ${ARTIST_NAME} ("Artist," ${BUSINESS_NAME}) and ${clientName || 'the client named below'} ("Client") for ${serviceName} on ${dateFormatted}. By signing below, the Client confirms they have read, understood, and agree to the following terms.`,
-    sections: [
-      {
-        heading: 'Booking & Confirmation',
-        body: `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.`,
-      },
-      {
-        heading: 'Deposit & Payment',
-        body: `${depositLine} ${balanceLine}`,
-      },
-      {
-        heading: 'Cancellation & Rescheduling',
-        body: `The Client must give at least ${days} days notice to cancel or reschedule. Deposits are non-refundable. With at least ${days} days notice, your deposit may be transferred one time to a new appointment date. Cancellations or changes made with less than ${days} days notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.`,
-      },
-      {
-        heading: 'Travel Fee',
-        body: travelBody,
-      },
-      {
-        heading: 'Health, Skin & Allergies',
-        body: `It is the Client's responsibility to disclose any skin conditions, allergies, sensitivities, or medical concerns before the appointment. The Artist will not be held liable for reactions resulting from undisclosed conditions. Service may be refused if the Client presents with a contagious condition (for example, an active cold sore or conjunctivitis).`,
-      },
-      {
-        heading: 'Punctuality',
-        body: `Please arrive on time. Arrivals more than 15 minutes late may result in a shortened service or cancellation at the Artist's discretion, without a refund of the deposit.`,
-      },
-      {
-        heading: 'Photography & Portfolio Use',
-        body: `The Artist may photograph the completed look. Your photos will only be used for portfolio and promotional purposes (including Instagram, TikTok, and this website) if you consent below. Your consent choice is recorded with this agreement.`,
-      },
-      {
-        heading: 'Electronic Signature',
-        body: `By typing your full name and submitting this form, you are signing this agreement electronically. You agree that your electronic signature is the legal equivalent of your handwritten signature and that this agreement is binding.`,
-      },
-    ],
+    intro: `This Service Agreement is entered into between ${ARTIST_NAME} ("Artist," ${BUSINESS_NAME}) and ${clientName || 'the client named below'} ("Client") for ${serviceName}${isClass ? '' : ` on ${dateFormatted}`}. By signing below, the Client confirms they have read, understood, and agree to the following terms.`,
+    sections,
     // The explicit yes/no the Client must choose for photo use.
     photoConsentQuestion: 'Do you give permission for your photos to be posted online (portfolio, Instagram, TikTok, website)?',
   };
