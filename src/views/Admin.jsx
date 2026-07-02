@@ -8,6 +8,7 @@ import BookingsList from '../components/admin/BookingsList';
 import BookingDetail from '../components/admin/BookingDetail';
 import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
+import ContractSettings from '../components/admin/ContractSettings';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
 import TodayAgenda from '../components/admin/TodayAgenda';
@@ -479,7 +480,10 @@ export default function Admin() {
         )}
 
         {activeTab === 'services' && (
-          <ServicesList darkMode={dm} />
+          <>
+            <ContractSettings darkMode={dm} />
+            <ServicesList darkMode={dm} />
+          </>
         )}
 
         {activeTab === 'reviews' && (

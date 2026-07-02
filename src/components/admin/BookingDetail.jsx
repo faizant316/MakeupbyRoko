@@ -8,6 +8,7 @@ import { lenisScrollTo } from '@/lib/lenis';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 import { buildContract } from '@/lib/contract';
+import { useContractOverrides } from '@/lib/useContractOverrides';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -698,6 +699,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     : null;
 
   // Signed service agreement (contract) shown on the booking.
+  const contractOverrides = useContractOverrides();
   const contractSignedAt = booking.contract_signed_at
     ? new Date(booking.contract_signed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null;
@@ -712,6 +714,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       dateFormatted,
       locationType: onLocation ? 'onlocation' : 'studio',
       kind: 'appointment',
+      overrides: contractOverrides,
     });
     const esc = (s) => String(s ?? '').replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     const sections = c.sections.map((s, i) => `<h3 style="font-size:13px;margin:16px 0 4px;">${i + 1}. ${esc(s.heading)}</h3><p style="font-size:12px;line-height:1.6;color:#333;margin:0;">${esc(s.body)}</p>`).join('');

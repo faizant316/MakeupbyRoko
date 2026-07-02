@@ -21,6 +21,7 @@ import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
 import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
+import { useContractOverrides } from '@/lib/useContractOverrides';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 
@@ -114,6 +115,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   const isBridal = service.category === 'bridal';
   const isEarlyArrival = formData.early_arrival === true;
   const hasTravelFee = formData.travel_requested === true;
+  const contractOverrides = useContractOverrides();
 
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates'],
@@ -324,6 +326,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     depositAmount: service.deposit,
     priceAmount: service.price,
     locationType: hasTravelFee ? 'onlocation' : 'studio',
+    overrides: contractOverrides,
   });
 
   return (

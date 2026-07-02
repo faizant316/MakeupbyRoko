@@ -6,6 +6,7 @@ import ClassContactForm from './class-checkout/ClassContactForm';
 import ClassSuccessScreen from './ClassSuccessScreen';
 import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
+import { useContractOverrides } from '@/lib/useContractOverrides';
 
 const CLASSES = [
   {
@@ -55,6 +56,7 @@ export default function ClassCheckoutFlow({ onClose }) {
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', additional_notes: '' });
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  const contractOverrides = useContractOverrides();
 
   // Lock body scroll
   useEffect(() => {
@@ -108,6 +110,7 @@ export default function ClassCheckoutFlow({ onClose }) {
     priceAmount: `$${totalFull}`,
     depositAmount: `$${totalDeposit}`,
     locationType: 'studio',
+    overrides: contractOverrides,
   });
 
   const handleCheckout = async (sig) => {

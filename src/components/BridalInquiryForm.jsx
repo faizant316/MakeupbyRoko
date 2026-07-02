@@ -3,6 +3,7 @@ import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
+import { useContractOverrides } from '@/lib/useContractOverrides';
 
 function useBookingCounts() {
   const [counts, setCounts] = useState(null);
@@ -378,6 +379,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const contractOverrides = useContractOverrides();
 
   // One human-readable answer for "who needs glam", stored + emailed so Roko always
   // sees either the bridal-party count or an explicit "Just the bride".
@@ -577,6 +579,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     depositAmount: bridalDeposit,
     priceAmount: bridalPrice,
     locationType: 'onlocation',
+    overrides: contractOverrides,
   });
 
   return (

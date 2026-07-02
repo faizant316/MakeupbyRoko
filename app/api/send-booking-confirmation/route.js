@@ -7,8 +7,19 @@ import {
   adminBridalEmail,
   contractCopyEmail,
 } from '../../../src/lib/email';
+import { createClient } from '../../../src/lib/supabase/server';
+import { CONTRACT_SETTINGS_KEY, parseContractSettings } from '../../../src/lib/contract';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
+
+// Load Roko's editable contract overrides so emailed agreements match the site.
+async function loadContractOverrides() {
+  try {
+    const supabase = createClient();
+    const { data } = await supabase.from('app_settings').select('value').eq('key', CONTRACT_SETTINGS_KEY).maybeSingle();
+    return parseContractSettings(data?.value);
+  } catch { return {}; }
+}
 
 export async function POST(req) {
   try {
@@ -57,6 +68,7 @@ export async function POST(req) {
     // client and Roko so each has the signed contract in their inbox.
     if (contractSignedName) {
       const clientName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
+      const overrides = await loadContractOverrides();
       const contractArgs = {
         clientName,
         serviceName: isBridal ? bridalTitle : serviceName,
@@ -65,6 +77,7 @@ export async function POST(req) {
         priceAmount: isBridal ? undefined : servicePrice,
         locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
         kind: 'appointment',
+        overrides,
         signedName: contractSignedName,
         signedAt: contractSignedAt,
         photoConsent: contractPhotoConsent,
