@@ -5,7 +5,7 @@ import {
   bridalConfirmationEmail,
   adminBookingEmail,
   adminBridalEmail,
-  contractCopyEmail,
+  contractClientPanel,
 } from '../../../src/lib/email';
 import { createClient } from '../../../src/lib/supabase/server';
 import { CONTRACT_SETTINGS_KEY, parseContractSettings } from '../../../src/lib/contract';
@@ -34,10 +34,32 @@ export async function POST(req) {
     } = body;
 
     const isBridal = bookingType === 'bridal';
+    const clientName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
+
+    // Build the signed-agreement panel once and fold it into the client's ONE
+    // confirmation email (no separate email). Roko's admin email gets a compact
+    // "signed" summary instead, since she has the full copy in her dashboard.
+    let contractSection = '';
+    if (contractSignedName) {
+      const overrides = await loadContractOverrides();
+      contractSection = contractClientPanel({
+        clientName,
+        serviceName: isBridal ? bridalTitle : serviceName,
+        dateFormatted: isBridal ? bridalDateFormatted : dateFormatted,
+        depositAmount: isBridal ? bridalDeposit : serviceDeposit,
+        priceAmount: isBridal ? undefined : servicePrice,
+        locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
+        kind: 'appointment',
+        overrides,
+        signedName: contractSignedName,
+        signedAt: contractSignedAt,
+        photoConsent: contractPhotoConsent,
+      });
+    }
 
     const clientHtml = isBridal
-      ? bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl })
-      : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal });
+      ? bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl, contractSection })
+      : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, contractSection });
 
     const clientSubject = isBridal
       ? `Bridal Inquiry Received — ${bridalTitle} ✦`
@@ -52,41 +74,19 @@ export async function POST(req) {
           firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email: to, phone, instagram,
           eventLocation, eventStartTime, venueAccessTime, artistArriveBy: readyByTime, photographerArrival,
           photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard,
+          contractSignedName, contractSignedAt, contractPhotoConsent,
         })
       : adminBookingEmail({
-          name: [firstName, lastName].filter(Boolean).join(' ') || firstName,
+          name: clientName,
           service: serviceName, date: dateFormatted, email: to, phone,
           servicePrice, deposit: serviceDeposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes,
+          contractSignedName, contractSignedAt, contractPhotoConsent,
         });
 
-    const emails = [
+    await sendEmailPair([
       { to, subject: clientSubject, html: clientHtml },
       { to: ADMIN_EMAIL, subject: adminSubject, html: adminHtml },
-    ];
-
-    // If they signed the service agreement, send a standalone copy to both the
-    // client and Roko so each has the signed contract in their inbox.
-    if (contractSignedName) {
-      const clientName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
-      const overrides = await loadContractOverrides();
-      const contractArgs = {
-        clientName,
-        serviceName: isBridal ? bridalTitle : serviceName,
-        dateFormatted: isBridal ? bridalDateFormatted : dateFormatted,
-        depositAmount: isBridal ? bridalDeposit : serviceDeposit,
-        priceAmount: isBridal ? undefined : servicePrice,
-        locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
-        kind: 'appointment',
-        overrides,
-        signedName: contractSignedName,
-        signedAt: contractSignedAt,
-        photoConsent: contractPhotoConsent,
-      };
-      emails.push({ to, subject: 'Your Signed Service Agreement — Makeup by Roko', html: contractCopyEmail({ ...contractArgs, forAdmin: false }) });
-      emails.push({ to: ADMIN_EMAIL, subject: `Signed Agreement — ${clientName}`, html: contractCopyEmail({ ...contractArgs, forAdmin: true }) });
-    }
-
-    await sendEmailPair(emails);
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (err) {
