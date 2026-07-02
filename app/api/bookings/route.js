@@ -37,6 +37,31 @@ export async function POST(req) {
 
     const { data, error } = await supabase.from('bookings').insert(insert).select().single();
     if (error) throw error;
+
+    // Attach signed-contract fields as a separate, best-effort update. Kept
+    // apart from the core insert so that if the contract columns are not yet
+    // present (migration 0002 not applied), the booking itself still succeeds.
+    // The signature is also embedded in `notes`, so it is never lost.
+    if (body.contract_signed) {
+      try {
+        const { data: updated, error: cErr } = await supabase
+          .from('bookings')
+          .update({
+            contract_signed: true,
+            contract_signed_name: body.contract_signed_name,
+            contract_signed_at: body.contract_signed_at,
+            contract_version: body.contract_version,
+            contract_photo_consent: body.contract_photo_consent,
+          })
+          .eq('id', data.id)
+          .select()
+          .single();
+        if (!cErr && updated) {
+          return NextResponse.json({ ...updated, created_date: updated.created_at }, { status: 201 });
+        }
+      } catch { /* columns not present yet; booking already saved */ }
+    }
+
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });
   } catch (err) {
     console.error('POST /api/bookings:', err);

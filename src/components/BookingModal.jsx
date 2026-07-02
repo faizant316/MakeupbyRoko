@@ -19,6 +19,8 @@ import ServiceFAQ from './ServiceFAQ';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
+import ContractSign from './ContractSign';
+import { buildContract } from '@/lib/contract';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 
@@ -180,19 +182,29 @@ export default function BookingModal({ service: initialService, onClose }) {
       onClose();
       return;
     }
+    if (step === 'sign') { goStep('form', 'back'); return; }
     if (step === 'form') { goStep('date', 'back'); return; }
     onClose();
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault?.();
+  // Form step → advance to Review & Sign (validate required fields first).
+  const handleGoToSign = () => {
+    if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
+    if (!selectedDate) { alert('Please select a date.'); return; }
+    goStep('sign');
+  };
+
+  // Called by the ContractSign step with the signature payload.
+  const handleSubmit = async (sig) => {
     if (submitting) return; // guard against double-submit (creates duplicate booking + admin email)
     if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
+    if (!sig || !sig.name) { alert('Please sign the agreement to continue.'); return; }
     setSubmitting(true);
     const earlySurcharge = isEarlyArrival ? ' | ⏰ Early arrival surcharge: +$100 (before 7 AM)' : '';
     const readyByNote = formData.ready_by_time ? ` | Ready by: ${formData.ready_by_time}` : '';
     const travelNote = hasTravelFee ? ' | ✈️ Travel requested — bridal pricing ($750+) applies' : '';
+    const signedContractNote = ` | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`;
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     let newBooking;
     try {
@@ -203,9 +215,14 @@ export default function BookingModal({ service: initialService, onClose }) {
         service: service.title,
         date: selectedDate,
         time: '',
-        notes: `${formData.notes}${earlySurcharge}${readyByNote}${travelNote}`.trim(),
+        notes: `${formData.notes}${earlySurcharge}${readyByNote}${travelNote}${signedContractNote}`.trim(),
         status: 'pending',
         upload_token: token,
+        contract_signed: true,
+        contract_signed_name: sig.name,
+        contract_signed_at: sig.signedAt,
+        contract_version: sig.version,
+        contract_photo_consent: sig.photoConsent,
       });
     } catch (err) {
       console.error('Failed to create booking:', err);
@@ -294,6 +311,18 @@ export default function BookingModal({ service: initialService, onClose }) {
     ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : '';
 
+  // Filled service agreement for the Review & Sign step.
+  const bookingContract = buildContract({
+    clientName: `${formData.fname} ${formData.lname}`.trim(),
+    serviceName: service.title,
+    dateFormatted: selectedDate
+      ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      : 'your selected date',
+    depositAmount: service.deposit,
+    priceAmount: service.price,
+    locationType: hasTravelFee ? 'onlocation' : 'studio',
+  });
+
   return (
     <div
       className="fixed inset-0 z-[500] flex items-end sm:items-start sm:justify-center"
@@ -320,10 +349,13 @@ export default function BookingModal({ service: initialService, onClose }) {
           const title = isBridal
             ? (isDone ? 'Request Sent!' : 'Bridal Inquiry')
             : (step === 'done' ? 'Request Sent!' : `Book: ${service.title}`);
-          const subtitle = isDone ? null : activeStep === 'form'
-            ? 'Step 2 of 2 · Your details'
-            : `Step 1 of 2 · ${isBridal ? 'Wedding date' : 'Choose date'}${!isBridal && service.duration ? ' · ' + service.duration : ''}`;
-          const canBack = isBridal ? bridalStep === 'form' : step === 'form';
+          const subtitle = isDone ? null
+            : isBridal
+              ? (bridalStep === 'form' ? 'Step 2 of 2 · Your details' : 'Step 1 of 2 · Wedding date')
+              : (step === 'sign' ? 'Step 3 of 3 · Review & sign'
+                : step === 'form' ? 'Step 2 of 3 · Your details'
+                : `Step 1 of 3 · Choose date${service.duration ? ' · ' + service.duration : ''}`);
+          const canBack = isBridal ? bridalStep === 'form' : (step === 'form' || step === 'sign');
           return (
         <div
           className="flex-shrink-0 backdrop-blur-sm z-10 flex items-center px-3 sm:px-6 py-2 sm:py-2.5 gap-3 relative"
@@ -751,7 +783,18 @@ export default function BookingModal({ service: initialService, onClose }) {
                 </div>
               )}
 
-              {/* ───────── STEP 3: DONE ───────── */}
+              {/* ───────── STEP 3: REVIEW & SIGN ───────── */}
+              {step === 'sign' && (
+                <ContractSign
+                  contract={bookingContract}
+                  clientName={`${formData.fname} ${formData.lname}`.trim()}
+                  submitting={submitting}
+                  ctaLabel="Sign & Confirm Booking"
+                  onSign={handleSubmit}
+                />
+              )}
+
+              {/* ───────── STEP 4: DONE ───────── */}
               {step === 'done' && (
                 <div className="bg-white p-6 sm:p-8 overflow-y-auto flex-1">
                   <div className="max-w-[520px] mx-auto flex flex-col gap-4">
@@ -915,8 +958,9 @@ export default function BookingModal({ service: initialService, onClose }) {
           )}
         </div>{/* end scrollable content */}
 
-        {/* Pinned footer CTA — non-bridal date + form steps (Booksy-style bottom bar) */}
-        {!isBridal && step !== 'done' && (
+        {/* Pinned footer CTA — non-bridal date + form steps (Booksy-style bottom bar).
+            Hidden on the sign step, which carries its own Sign & Confirm button. */}
+        {!isBridal && step !== 'done' && step !== 'sign' && (
           <div
             className="flex-shrink-0 border-t border-[#f0ebe6] bg-white px-5 sm:px-8 py-3.5"
             style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom, 0px))' }}
@@ -942,17 +986,12 @@ export default function BookingModal({ service: initialService, onClose }) {
                 </button>
               ) : (
                 <button
-                  key="nb-submit"
+                  key="nb-review"
                   type="button"
-                  onClick={() => handleSubmit()}
-                  disabled={submitting}
-                  className={`flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all ${
-                    submitting
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]'
-                  }`}
+                  onClick={handleGoToSign}
+                  className="flex-1 py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.2)]"
                 >
-                  {submitting ? 'Submitting…' : 'Submit Booking Request →'}
+                  Review &amp; Sign →
                 </button>
               )}
             </div>
