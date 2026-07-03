@@ -2,6 +2,24 @@
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
+import { CLASS_DISPLAY } from '@/lib/classCatalog';
+import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
+
+// Strip the legacy "| ✍️ Agreement … · Photos: …" suffix some older rows still
+// carry in additional_notes, so the Notes section shows only real client notes.
+function stripAgreementNote(raw) {
+  return (raw || '').replace(/\s*\|\s*✍️[^]*$/u, '').trim();
+}
+
+// "2026-07-15" → "Wednesday, July 15, 2026"
+function formatDate(raw) {
+  if (!raw) return '';
+  try {
+    return new Date(raw + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    });
+  } catch { return ''; }
+}
 
 const TIME_SLOTS = (() => {
   const slots = [];
@@ -46,7 +64,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const [meetingId, setMeetingId] = useState(parsed.meetingId);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
-    date: reg.appointment_date || '',
+    date: reg.appointment_date || reg.preferred_date || '',
     time: reg.appointment_time || TIME_SLOTS[2],
     type: reg.consultation_type || 'Zoom',
     notes: parsed.notes,
@@ -223,17 +241,11 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
-                <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                  className="w-full px-4 rounded-xl outline-none appearance-none"
-                  style={{ ...inputStyle, minHeight: '48px' }} />
+                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={LESSON_COLOR} />
               </div>
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Time</label>
-                <select value={form.time} onChange={e => set('time', e.target.value)}
-                  className="w-full px-4 rounded-xl outline-none appearance-none"
-                  style={{ ...inputStyle, minHeight: '48px' }}>
-                  {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <AdminTimeSelect value={form.time} onChange={v => set('time', v)} dm={dm} slots={TIME_SLOTS} accent={LESSON_COLOR} />
               </div>
             </div>
 
@@ -330,22 +342,6 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   );
 }
 
-const CLASS_LABELS = {
-  private_basic_lesson: 'Basic Makeup Lesson',
-  masterclass: 'Advanced Makeup Lesson',
-  virtual_lesson: 'Virtual Makeup Lesson',
-  intermediate_lesson: 'Intermediate Makeup Lesson',
-  glam_class: 'Glam Makeup Class',
-};
-
-const CLASS_PRICES = {
-  private_basic_lesson: 300,
-  masterclass: 1500,
-  virtual_lesson: 400,
-  intermediate_lesson: 500,
-  glam_class: 600,
-};
-
 const ENROLLMENT_STATUSES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
   confirmed: { bg: '#3B82F6', text: '#fff', label: 'Confirmed' },
@@ -431,8 +427,12 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
     },
   });
 
-  const selectedClasses = Object.entries(CLASS_LABELS).filter(([key]) => reg[key]);
-  const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
+  const selectedClasses = Object.entries(CLASS_DISPLAY).filter(([key]) => reg[key]);
+  const classLabel = selectedClasses.map(([, m]) => m.title).join(' · ');
+  const computedTotal = selectedClasses.reduce((sum, [, m]) => sum + (m.price || 0), 0);
+  // Prefer what Stripe actually charged; fall back to the catalog sum for
+  // manually-added rows that never went through checkout.
+  const totalPrice = reg.amount_paid ?? computedTotal;
   // Sign-ups reach this page because they paid through Stripe at checkout, so
   // "paid" is the baseline truth — the only meaningful payment action left is a
   // refund. Exception: a client added manually (no Stripe session) never went
@@ -508,8 +508,24 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
               {reg.full_name || 'Unknown'}
             </h2>
             <p className="text-[0.8rem]" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
-              {selectedClasses.map(([, l]) => l).join(' · ') || 'No class selected'}
+              {classLabel || 'No class selected'}
             </p>
+            {/* Agreement + photo-consent chips, near the name (not in Notes). */}
+            {reg.contract_signed && (
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.6rem] font-semibold tracking-[0.04em]"
+                  style={{ background: dm ? 'rgba(34,197,94,0.14)' : 'rgba(34,197,94,0.1)', color: dm ? '#86efac' : '#15803d' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Agreement signed
+                </span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[0.6rem] font-semibold tracking-[0.04em]"
+                  style={reg.contract_photo_consent
+                    ? { background: dm ? 'rgba(212,160,176,0.18)' : 'rgba(212,160,176,0.16)', color: dm ? '#e7c9d5' : '#A0607A' }
+                    : { background: dm ? '#33333c' : '#F1EEEA', color: dm ? '#a1a1aa' : '#8a7e84' }}>
+                  Photos: {reg.contract_photo_consent ? 'Yes' : 'No'}
+                </span>
+              </div>
+            )}
           </div>
           <span
             className="px-3 py-1.5 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0 mt-1"
@@ -532,6 +548,11 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                     {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type}
                   </p>
                 )}
+              </>
+            ) : reg.preferred_date ? (
+              <>
+                <p className="text-[0.95rem] font-semibold" style={{ color: textMain }}>{formatDate(reg.preferred_date)}</p>
+                <p className="text-[0.72rem] mt-1 font-medium" style={{ color: dm ? '#c47a92' : '#A0607A' }}>Requested by client · not yet confirmed</p>
               </>
             ) : (
               <p className="text-[0.82rem] italic" style={{ color: dm ? '#52525b' : '#ccc' }}>Not scheduled yet</p>
@@ -572,12 +593,12 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           </div>
         )}
 
-        {/* Notes */}
-        {reg.additional_notes && (
+        {/* Notes — real client notes only (agreement lives in the chips above). */}
+        {stripAgreementNote(reg.additional_notes) && (
           <div className="mb-8">
             <SectionLabel>Notes</SectionLabel>
             <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#555' }}>
-              {reg.additional_notes}
+              {stripAgreementNote(reg.additional_notes)}
             </p>
           </div>
         )}
@@ -585,7 +606,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
         {/* Lesson Scheduler */}
         <LessonScheduler
           reg={reg}
-          className={selectedClasses.map(([, l]) => l).join(' · ') || 'Makeup Lesson'}
+          className={classLabel || 'Makeup Lesson'}
           phone={reg.phone}
           dm={dm}
           confirmFn={confirm}
