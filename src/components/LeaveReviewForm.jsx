@@ -65,7 +65,9 @@ export default function LeaveReviewForm() {
   const [submitting, setSubmitting] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [lockedHeight, setLockedHeight] = useState(null);
   const photoRef = useRef(null);
+  const formRef = useRef(null);
 
   const { data: serviceEntities = [] } = useQuery({
     queryKey: ['public-services-review'],
@@ -102,9 +104,13 @@ export default function LeaveReviewForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
+    // Capture the form's current height so the thank-you state keeps the same
+    // footprint — prevents the page from jumping when the layout shortens.
+    const h = formRef.current?.offsetHeight;
     setSubmitting(true);
     try {
       await api.entities.Review.create({ ...form, status: 'pending' });
+      if (h) setLockedHeight(h);
       setSubmitted(true);
     } catch (err) {
       alert('Could not submit your review. Please try again.');
@@ -115,7 +121,8 @@ export default function LeaveReviewForm() {
 
   if (submitted) {
     return (
-      <div className="flex flex-col items-center justify-center text-center py-10">
+      <div className="flex flex-col items-center justify-center text-center py-10"
+        style={lockedHeight ? { minHeight: lockedHeight } : undefined}>
         <div className="w-14 h-14 rounded-full bg-[#FBF5F7] flex items-center justify-center mb-4">
           <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-6 h-6">
             <polyline points="20 6 9 17 4 12" />
@@ -130,7 +137,7 @@ export default function LeaveReviewForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 relative z-10 pointer-events-auto">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4 relative z-10 pointer-events-auto">
       {/* Star rating with live label */}
       <div>
         <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2">Your Rating</label>

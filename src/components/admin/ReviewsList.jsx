@@ -162,10 +162,17 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
             Delete
           </button>
         ) : (
-          <button onClick={() => onDelete(review.id)}
-            className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all active:scale-[0.98]">
-            Confirm Delete
-          </button>
+          <>
+            <button onClick={() => onDelete(review.id)}
+              className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all active:scale-[0.98]">
+              Confirm Delete
+            </button>
+            <button onClick={() => setConfirmDelete(false)}
+              className="px-3 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all"
+              style={{ color: dm ? '#a1a1aa' : '#999', border: `1px solid ${bd}` }}>
+              Cancel
+            </button>
+          </>
         )}
       </div>
     </div>
