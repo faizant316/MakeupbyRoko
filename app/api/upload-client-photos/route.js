@@ -30,7 +30,7 @@ export async function POST(req) {
       .maybeSingle();
     if (!booking) return NextResponse.json({ error: 'This link is invalid or has expired.' }, { status: 404 });
 
-    const mimeToExt = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic' };
+    const mimeToExt = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heic' };
     const urls = [];
     for (const file of files) {
       const ext = mimeToExt[file.type] || 'jpg';

@@ -135,21 +135,28 @@ function ClientPhotosCard({ token, booking, setBooking }) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setUploading(true);
+    // Upload one photo per request so we stay under Vercel's ~4.5MB body
+    // limit — a single multi-file request with a few phone photos blows past
+    // it and fails silently. A single failed file won't lose the others.
+    let failed = 0;
     try {
-      const formData = new FormData();
-      for (const f of files.slice(0, 10)) {
-        const compressed = await compressImage(f);
-        formData.append('file', compressed);
+      for (const f of files.slice(0, 20)) {
+        try {
+          const compressed = await compressImage(f);
+          const formData = new FormData();
+          formData.append('file', compressed);
+          formData.append('token', token);
+          const res = await fetch('/api/upload-client-photos', { method: 'POST', body: formData });
+          const raw = await res.text();
+          let data = {};
+          try { data = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
+          if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+          setBooking(b => ({ ...b, reference_photos: data.reference_photos || [...(b?.reference_photos || []), ...(data.urls || [])] }));
+        } catch {
+          failed += 1;
+        }
       }
-      formData.append('token', token);
-      const res = await fetch('/api/upload-client-photos', { method: 'POST', body: formData });
-      const raw = await res.text();
-      let data = {};
-      try { data = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
-      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-      setBooking(b => ({ ...b, reference_photos: data.reference_photos || [...(b?.reference_photos || []), ...(data.urls || [])] }));
-    } catch (err) {
-      alert(err?.message ? `Upload failed: ${err.message}` : 'Upload failed. Please try again.');
+      if (failed) alert(`${failed} photo${failed > 1 ? 's' : ''} could not be uploaded. Please try those again.`);
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -354,25 +361,27 @@ export default function UploadZelle() {
       if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
 
       // 2) Bridal photos — encouraged, but never block a saved deposit.
+      // Upload ONE photo per request. A single multi-file request easily
+      // exceeds Vercel's ~4.5MB serverless body limit (just a few phone
+      // photos is enough), and the platform rejects it before our route even
+      // runs — which is what was silently failing every photo upload. One at
+      // a time keeps each request small and lets a single bad file fail on
+      // its own instead of taking the whole batch down.
       let refPhotos = Array.isArray(booking?.reference_photos) ? booking.reference_photos : [];
       let photoError = null;
       const allPhotos = [...withoutItems, ...withItems];
-      if (isBridal && allPhotos.length) {
+      for (const it of (isBridal ? allPhotos : [])) {
         try {
-          const compressed = [];
-          for (const it of allPhotos) compressed.push(await compressImage(it.file));
-          // Endpoint accepts max 10 files per request — send in batches.
-          for (let i = 0; i < compressed.length; i += 10) {
-            const pf = new FormData();
-            compressed.slice(i, i + 10).forEach(f => pf.append('file', f));
-            pf.append('token', token);
-            const pres = await fetch('/api/upload-client-photos', { method: 'POST', body: pf });
-            const praw = await pres.text();
-            let pdata = {};
-            try { pdata = praw ? JSON.parse(praw) : {}; } catch { /* not JSON */ }
-            if (!pres.ok) throw new Error(pdata.error || `Photo upload failed (${pres.status})`);
-            refPhotos = pdata.reference_photos || [...refPhotos, ...(pdata.urls || [])];
-          }
+          const compressed = await compressImage(it.file);
+          const pf = new FormData();
+          pf.append('file', compressed);
+          pf.append('token', token);
+          const pres = await fetch('/api/upload-client-photos', { method: 'POST', body: pf });
+          const praw = await pres.text();
+          let pdata = {};
+          try { pdata = praw ? JSON.parse(praw) : {}; } catch { /* not JSON */ }
+          if (!pres.ok) throw new Error(pdata.error || `Photo upload failed (${pres.status})`);
+          refPhotos = pdata.reference_photos || [...refPhotos, ...(pdata.urls || [])];
         } catch (e) {
           photoError = e;
         }

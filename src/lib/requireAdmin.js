@@ -19,7 +19,7 @@ export async function requireAdmin() {
 }
 
 // Allowed image MIME types and max size for uploads
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic'];
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 
 export function validateImageFile(file) {
