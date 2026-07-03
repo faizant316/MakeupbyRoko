@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useModalLenis } from '@/lib/modalLenis';
 
 export default function ClassSuccessScreen({ onClose, registrationData }) {
-  const { full_name, email, selectedClasses = [], totalPaid = 0 } = registrationData || {};
+  const scrollRef = useRef(null);
+  useModalLenis(scrollRef);
+  const { full_name, email, selectedClasses = [], totalPaid = 0, preferredDate = '' } = registrationData || {};
   const firstName = (full_name || '').split(' ')[0] || 'there';
   const receiptDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -11,7 +14,7 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
   useEffect(() => { setTimeout(() => setShow(true), 80); }, []);
 
   return (
-    <div className={`flex flex-col flex-1 overflow-y-auto transition-opacity duration-500 ${show ? 'opacity-100' : 'opacity-0'}`}>
+    <div ref={scrollRef} className={`flex flex-col flex-1 overflow-y-auto overscroll-contain transition-opacity duration-500 ${show ? 'opacity-100' : 'opacity-0'}`}>
       <div className="w-full sm:max-w-[680px] sm:mx-auto px-6 sm:px-10 py-10 flex flex-col gap-6">
 
         {/* Hero confirmation */}
@@ -46,10 +49,17 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
             <div className="text-right">
               <p className="text-[0.58rem] font-semibold tracking-[0.1em] uppercase text-gray-400 mb-0.5">Status</p>
               <span className="text-[0.65rem] font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
-                Paid ✓
+                Paid in full ✓
               </span>
             </div>
           </div>
+
+          {preferredDate && (
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[#F5F0EC]">
+              <span className="text-[0.68rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Class date (requested)</span>
+              <span className="text-[0.8rem] font-medium text-[#111]">{preferredDate}</span>
+            </div>
+          )}
 
           <div className="bg-white divide-y divide-[#F5F0EC]">
             {selectedClasses.map((cls, i) => (
@@ -77,8 +87,8 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
           <div className="bg-white divide-y divide-[#F5F0EC]">
             {[
               { n: 1, title: 'Roko reaches out within 24–48 hrs', sub: 'To confirm your class date, time & location' },
-              { n: 2, title: 'Prepare any inspiration photos', sub: 'Optional but helpful — share looks you love' },
-              { n: 3, title: 'Show up and learn!', sub: 'All supplies are provided — just bring yourself' },
+              { n: 2, title: 'Prepare any inspiration photos', sub: 'Optional but helpful, share looks you love' },
+              { n: 3, title: 'Show up and learn!', sub: 'All supplies are provided, just bring yourself' },
             ].map(({ n, title, sub }) => (
               <div key={n} className="flex items-start gap-3 px-5 py-3.5">
                 <div className="w-5 h-5 rounded-full bg-[#F7EEF2] flex items-center justify-center flex-shrink-0 mt-0.5">

@@ -10,7 +10,7 @@ export async function POST(req) {
     const supabase = createClient();
 
     const body = await req.json();
-    const { full_name, email, phone, additional_notes, selected_classes, success_url, cancel_url } = body;
+    const { full_name, email, phone, additional_notes, selected_classes, success_url, cancel_url, preferred_date } = body;
 
     if (!full_name || !email || !phone || !selected_classes?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -68,6 +68,20 @@ export async function POST(req) {
       .from('class_registrations')
       .update({ stripe_session_id: session.id })
       .eq('id', reg.id);
+
+    // Best-effort: store the client's chosen Wednesday. Wrapped so a lagging
+    // preferred_date column (migration 0003) never blocks checkout, but awaited
+    // so the row has the date before the webhook/confirm route reads it.
+    if (preferred_date) {
+      try {
+        await supabase
+          .from('class_registrations')
+          .update({ preferred_date })
+          .eq('id', reg.id);
+      } catch (e) {
+        console.error('preferred_date write skipped:', e?.message);
+      }
+    }
 
     // Best-effort: store the signed agreement. Kept separate from the required
     // updates so a missing contract column (migration 0002 not yet applied to

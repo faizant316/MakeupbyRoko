@@ -3,22 +3,7 @@ import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import Collapse from './Collapse';
 import { groupByTime, relativeDate, daysUntil } from './timeline';
-
-const CLASS_LABELS = {
-  private_basic_lesson: 'Basic Makeup Lesson',
-  masterclass: 'Advanced Makeup Lesson',
-  virtual_lesson: 'Virtual Makeup Lesson',
-  intermediate_lesson: 'Intermediate Makeup Lesson',
-  glam_class: 'Glam Makeup Class',
-};
-
-const CLASS_PRICES = {
-  private_basic_lesson: 300,
-  masterclass: 1500,
-  virtual_lesson: 400,
-  intermediate_lesson: 500,
-  glam_class: 600,
-};
+import { CLASS_DISPLAY } from '@/lib/classCatalog';
 
 const ENROLLMENT_STYLES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
@@ -42,9 +27,10 @@ function normalizePaymentStatus(raw) {
 
 // Compact one-line row, mirroring the appointments list.
 function ClassRow({ reg, onSelect, dm }) {
-  const selectedClasses = Object.entries(CLASS_LABELS).filter(([key]) => reg[key]);
-  const totalPrice = selectedClasses.reduce((sum, [key]) => sum + (CLASS_PRICES[key] || 0), 0);
-  const classLabel = selectedClasses.length > 0 ? selectedClasses.map(([, l]) => l).join(' · ') : 'No classes selected';
+  const selectedClasses = Object.entries(CLASS_DISPLAY).filter(([key]) => reg[key]);
+  const computedTotal = selectedClasses.reduce((sum, [, m]) => sum + (m.price || 0), 0);
+  const totalPrice = reg.amount_paid ?? computedTotal;
+  const classLabel = selectedClasses.length > 0 ? selectedClasses.map(([, m]) => m.title).join(' · ') : 'No classes selected';
   const meta = ENROLLMENT_STYLES[reg.status || 'pending'] || ENROLLMENT_STYLES.pending;
   const payState = normalizePaymentStatus(reg.payment_status);
   const isRefunded = payState === 'refunded';

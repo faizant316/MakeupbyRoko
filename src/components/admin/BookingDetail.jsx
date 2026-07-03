@@ -9,6 +9,7 @@ import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
+import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -431,17 +432,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
-                <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                  className="w-full px-4 rounded-[6px] outline-none appearance-none"
-                  style={{ ...inputStyle, minHeight: '48px' }} />
+                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR} />
               </div>
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Time</label>
-                <select value={form.time} onChange={e => set('time', e.target.value)}
-                  className="w-full px-4 rounded-[6px] outline-none appearance-none"
-                  style={{ ...inputStyle, minHeight: '48px' }}>
-                  {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <AdminTimeSelect value={form.time} onChange={v => set('time', v)} dm={dm} slots={TIME_SLOTS} accent={CONSULT_COLOR} />
               </div>
             </div>
 

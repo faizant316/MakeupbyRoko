@@ -1,12 +1,21 @@
 ﻿import { useState, useEffect } from 'react';
-import { api } from '@/api/apiClient';
+import { useScrollLock } from '@/lib/useScrollLock';
 import ClassSelector from './class-checkout/ClassSelector';
-import ClassCart from './class-checkout/ClassCart';
 import ClassContactForm from './class-checkout/ClassContactForm';
 import ClassSuccessScreen from './ClassSuccessScreen';
 import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
+
+// "2026-07-15" → "Wednesday, July 15, 2026"
+function formatChosenDate(raw) {
+  if (!raw) return '';
+  try {
+    return new Date(raw + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    });
+  } catch { return ''; }
+}
 
 const CLASSES = [
   {
@@ -52,17 +61,16 @@ const STORAGE_KEY = 'roko_class_checkout';
 
 export default function ClassCheckoutFlow({ onClose }) {
   const [step, setStep] = useState('select');
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState(null); // single class key
+  const [selectedDate, setSelectedDate] = useState(null); // 'YYYY-MM-DD' Wednesday
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', additional_notes: '' });
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const contractOverrides = useContractOverrides();
 
-  // Lock body scroll
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
+  // Lock the page behind the modal + stop page-level Lenis so the modal's own
+  // scroll containers can take over the wheel.
+  useScrollLock();
 
   // Check for success/cancel return from Stripe
   useEffect(() => {
@@ -94,21 +102,15 @@ export default function ClassCheckoutFlow({ onClose }) {
     }
   }, []);
 
-  const toggleClass = (key) => {
-    setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-  };
-
-  const selectedClasses = CLASSES.filter(c => selected.includes(c.key));
-  const totalDeposit = selectedClasses.reduce((sum, c) => sum + c.deposit, 0);
-  const totalFull = selectedClasses.reduce((sum, c) => sum + c.price, 0);
+  const selectedClass = CLASSES.find(c => c.key === selected) || null;
+  const totalFull = selectedClass?.price || 0;
 
   // Filled class agreement for the Review & Sign step (paid in full at checkout).
   const classContract = buildContract({
     kind: 'class',
     clientName: `${form.first_name} ${form.last_name}`.trim(),
-    serviceName: selectedClasses.map(c => c.title).join(', ') || 'your class',
+    serviceName: selectedClass?.title || 'your class',
     priceAmount: `$${totalFull}`,
-    depositAmount: `$${totalDeposit}`,
     locationType: 'studio',
     overrides: contractOverrides,
   });
@@ -119,8 +121,6 @@ export default function ClassCheckoutFlow({ onClose }) {
       const origin = window.location.origin;
       const path = window.location.pathname;
 
-      const signedNote = sig ? ` | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}` : '';
-
       const res = await fetch('/api/create-class-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,8 +128,9 @@ export default function ClassCheckoutFlow({ onClose }) {
           full_name: `${form.first_name} ${form.last_name}`.trim(),
           email: form.email,
           phone: form.phone,
-          additional_notes: `${form.additional_notes || ''}${signedNote}`.trim(),
-          selected_classes: selected,
+          additional_notes: (form.additional_notes || '').trim() || null,
+          selected_classes: selected ? [selected] : [],
+          preferred_date: selectedDate || null,
           success_url: `${origin}/payment-success`,
           cancel_url: `${origin}${path}`,
           contract_signed: sig ? true : undefined,
@@ -145,7 +146,8 @@ export default function ClassCheckoutFlow({ onClose }) {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
           full_name: `${form.first_name} ${form.last_name}`.trim(),
           email: form.email,
-          selectedClasses: selectedClasses.map(c => ({ name: c.title, duration: c.duration, price: c.price })),
+          preferredDate: formatChosenDate(selectedDate),
+          selectedClasses: selectedClass ? [{ name: selectedClass.title, duration: selectedClass.duration, price: selectedClass.price }] : [],
           totalPaid: totalFull,
         }));
         window.location.href = data.url;
@@ -182,31 +184,20 @@ export default function ClassCheckoutFlow({ onClose }) {
           <ClassSelector
             classes={CLASSES}
             selected={selected}
-            onToggle={toggleClass}
+            onSelect={setSelected}
             onClose={onClose}
-            onNext={() => selected.length > 0 && setStep('cart')}
+            onNext={() => selected && setStep('details')}
           />
         )}
 
-        {step === 'cart' && (
-          <ClassCart
-            selectedClasses={selectedClasses}
-            totalDeposit={totalDeposit}
-            totalFull={totalFull}
-            onBack={() => setStep('select')}
-            onClose={onClose}
-            onNext={() => setStep('contact')}
-          />
-        )}
-
-        {step === 'contact' && (
+        {step === 'details' && (
           <ClassContactForm
             form={form}
             setForm={setForm}
-            selectedClasses={selectedClasses}
-            totalDeposit={totalDeposit}
-            totalFull={totalFull}
-            onBack={() => setStep('cart')}
+            selectedClass={selectedClass}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            onBack={() => setStep('select')}
             onClose={onClose}
             onCheckout={() => setStep('sign')}
             isRedirecting={isRedirecting}
@@ -219,7 +210,7 @@ export default function ClassCheckoutFlow({ onClose }) {
               className="flex-shrink-0 bg-white/95 backdrop-blur-sm flex justify-between items-center px-6 sm:px-10 py-4 sm:py-5"
               style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}
             >
-              <button onClick={() => setStep('contact')}
+              <button onClick={() => setStep('details')}
                 className="flex items-center gap-2 text-[0.72rem] font-semibold tracking-[0.08em] uppercase text-[#D4A0B0] hover:text-[#b8849a] transition-colors">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Back
@@ -231,7 +222,7 @@ export default function ClassCheckoutFlow({ onClose }) {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain">
               <ContractSign
                 contract={classContract}
                 clientName={`${form.first_name} ${form.last_name}`.trim()}

@@ -52,6 +52,7 @@ export default function PaymentSuccessPage() {
   const firstName = (data?.full_name || '').split(' ')[0] || 'there';
   const selectedClasses = data?.selectedClasses || [];
   const totalPaid = data?.totalPaid || selectedClasses.reduce((s, c) => s + (c.price || 0), 0);
+  const preferredDate = data?.preferredDate || '';
 
   if (status === 'loading') {
     return (
@@ -104,8 +105,8 @@ export default function PaymentSuccessPage() {
             <p className="font-serif italic text-[#D4A0B0] text-[1rem]">Your spot is officially secured ✦</p>
           </div>
           <p className="text-[0.85rem] text-gray-500 max-w-[420px] leading-[1.85]">
-            Your payment has been received and a confirmation email is on its way to your inbox.
-            Roko will reach out within <strong className="text-[#111]">24–48 hours</strong> to confirm your class details.
+            Your payment has been received{preferredDate ? <> for <strong className="text-[#111]">{preferredDate}</strong></> : ''} and a confirmation email is on its way to your inbox.
+            Roko will reach out within <strong className="text-[#111]">24–48 hours</strong> to confirm your class time.
           </p>
           {data?.email && (
             <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
@@ -126,9 +127,17 @@ export default function PaymentSuccessPage() {
               <p className="text-[0.72rem] text-gray-400">{receiptDate}</p>
             </div>
             <span className="text-[0.65rem] font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
-              Paid ✓
+              Paid in full ✓
             </span>
           </div>
+
+          {/* Requested class date */}
+          {preferredDate && (
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#F5F0EC]">
+              <span className="text-[0.72rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Class date (requested)</span>
+              <span className="text-[0.82rem] font-medium text-[#111]">{preferredDate}</span>
+            </div>
+          )}
 
           {/* Line items */}
           {selectedClasses.length > 0 ? (
@@ -165,7 +174,7 @@ export default function PaymentSuccessPage() {
             {[
               { n: 1, title: 'Check your email', sub: 'A receipt and confirmation is headed to your inbox' },
               { n: 2, title: 'Roko reaches out within 24–48 hrs', sub: 'To confirm your class date, time & location' },
-              { n: 3, title: 'Show up and learn!', sub: 'All supplies provided — just bring yourself ✨' },
+              { n: 3, title: 'Show up and learn!', sub: 'All supplies provided, just bring yourself ✨' },
             ].map(({ n, title, sub }) => (
               <div key={n} className="flex items-start gap-4 px-6 py-4">
                 <div className="w-6 h-6 rounded-full bg-[#F7EEF2] flex items-center justify-center flex-shrink-0 mt-0.5">
