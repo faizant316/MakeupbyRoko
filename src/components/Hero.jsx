@@ -21,7 +21,7 @@ export default function Hero() {
           </h1>
 
           <p className="reveal reveal-delay-2 max-w-[480px] text-base text-[var(--text-muted)] leading-[1.7] mb-11">
-            Precision, artistry, and intention — for brides, editorial shoots, special occasions, and every moment that deserves to feel extraordinary.
+            Precision, artistry, and intention for brides, editorial shoots, special occasions, and every moment that deserves to feel extraordinary.
           </p>
 
           <div className="reveal reveal-delay-3 flex gap-4 flex-wrap items-center">

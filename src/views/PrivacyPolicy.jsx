@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 const SECTIONS = [
   {
     title: 'Information We Collect',
-    body: `When you use this website to request a booking or inquiry, we collect personal information you voluntarily provide, including your full name, email address, phone number, wedding or event date, and any notes or details you share in the form. We do not collect payment information through this website — deposits are handled via Zelle directly.`
+    body: `When you use this website to request a booking or inquiry, we collect personal information you voluntarily provide, including your full name, email address, phone number, wedding or event date, and any notes or details you share in the form. We do not collect payment information through this website. Deposits are handled via Zelle directly.`
   },
   {
     title: 'How We Use Your Information',

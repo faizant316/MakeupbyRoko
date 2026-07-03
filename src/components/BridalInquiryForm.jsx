@@ -34,8 +34,8 @@ function getMinBookingDate() {
   return d;
 }
 
-const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.825rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
-const labelClass = "block text-[0.6rem] font-semibold tracking-[0.14em] text-[#999] uppercase mb-1.5";
+const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
+const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#999] uppercase mb-2";
 
 function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -87,7 +87,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
   }, []);
 
   return (
-    <div className="bg-white p-6 sm:p-8 overflow-y-auto flex-1">
+    <div className="bg-white p-6 sm:p-8">
       <div className="max-w-[520px] mx-auto flex flex-col gap-4">
 
         {/* Header */}
@@ -167,7 +167,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
           </div>
           <div className="px-5 pb-4 pt-2">
             <p className="text-[0.75rem] text-[#6E6058] leading-[1.7] mb-3">
-              If you uploaded photos in the form, you're all set! If you haven't yet — or want to add more — send them here:
+              If you uploaded photos in the form, you're all set! If you haven't yet, or want to add more, send them here:
             </p>
             <div className="flex flex-col gap-2.5">
               <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
@@ -272,7 +272,7 @@ function LocationAutocomplete({ value, onChange }) {
           onChange={handleInput}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder="Venue name & city"
-          className="flex-1 py-2.5 border-0 text-base sm:text-[0.825rem] outline-none bg-transparent text-[#111] placeholder:text-gray-300"
+          className="flex-1 py-3 border-0 text-base sm:text-[0.95rem] outline-none bg-transparent text-[#111] placeholder:text-gray-300"
           autoComplete="off"
         />
         {loading && (
@@ -385,7 +385,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // sees either the bridal-party count or an explicit "Just the bride".
   const glamSummary =
     form.bridal_party_glam === true
-      ? (form.num_people_glam.trim() || 'Yes — final count to confirm')
+      ? (form.num_people_glam.trim() || 'Yes, final count to confirm')
       : form.bridal_party_glam === false
       ? 'Just the bride'
       : (form.num_people_glam || '');
@@ -590,7 +590,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         <img src="/IMG_9891.jpeg" alt="Bridal" className="w-full h-full object-cover object-[center_30%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <p className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mb-1 text-white/60">{bridalTitle} — {bridalPrice}</p>
+          <p className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mb-1 text-white/60">{bridalTitle} · {bridalPrice}</p>
           <h2 className="font-serif text-[1.3rem] leading-tight font-normal">
             {isFullDay ? 'Your full day, flawlessly covered.' : 'Your big day deserves perfection.'}
           </h2>
@@ -667,7 +667,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             {/* Lead-time notice */}
             <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
               <p className="text-[0.72rem] text-[#888]">
-                Pick your wedding day below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong> — earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                Pick your wedding day below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
             </div>
 
@@ -775,7 +775,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
               {/* Wedding dates aren't limited to Roko's regular open days — make that clear. */}
               <p className="text-center text-[0.66rem] text-gray-400 mt-3 leading-[1.6]">
-                Any day works for weddings — the dots just show Roko's current load. Tap a selected date again to clear it.
+                Any day works for weddings. The dots just show Roko's current load. Tap a selected date again to clear it.
               </p>
             </div>
 
@@ -808,7 +808,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
         {/* ───────── STEP 2: FORM ───────── */}
         {step === 'form' && (
-          <div className="w-full max-w-[600px] mx-auto p-6 lg:p-7 flex flex-col gap-4">
+          <div className="w-full max-w-[680px] lg:max-w-[740px] mx-auto p-6 lg:p-9 flex flex-col gap-5">
 
             {/* Selected wedding-date chip — tap to change */}
             <button
@@ -831,7 +831,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             </button>
 
             <div>
-              <h3 className="font-serif text-[1.4rem] text-[#111] mb-1">
+              <h3 className="font-serif text-[1.7rem] lg:text-[1.9rem] text-[#111] mb-2 leading-tight">
                 {isFullDay
                   ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">full day</em></>
                   : isTrial
@@ -839,21 +839,21 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   : <>Tell me about your <em className="text-[#D4A0B0] not-italic">day</em></>
                 }
               </h3>
-              <div className="mb-3 border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[#D4A0B0] text-[0.6rem]">✦</span>
-                  <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">{aboutTag}</span>
+              <div className="mb-3.5 border-b border-gray-100 pb-5">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="text-[#D4A0B0] text-[0.7rem]">✦</span>
+                  <span className="text-[0.68rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">{aboutTag}</span>
                 </div>
-                <p className="text-[0.75rem] text-[#555] leading-[1.7] mb-3">{aboutBlurb}</p>
+                <p className="text-[0.92rem] text-[#555] leading-[1.75] mb-4">{aboutBlurb}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-[0.65rem] text-[#b5a99a]">Package Price</span>
-                  <span className="font-serif text-[1.1rem] text-[#111]">{bridalPrice} <span className="text-[0.7rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
+                  <span className="text-[0.72rem] text-[#b5a99a]">Package Price</span>
+                  <span className="font-serif text-[1.3rem] text-[#111]">{bridalPrice} <span className="text-[0.78rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
                 </div>
               </div>
-              <p className="text-[0.8rem] text-gray-400">Fields marked * are required.</p>
+              <p className="text-[0.85rem] text-gray-400">Fields marked * are required.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Bride's First Name *</label>
                 <input value={form.bride_name} onChange={e => set('bride_name', e.target.value)} placeholder="First name" className={inputClass} />
@@ -864,7 +864,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Email *</label>
                 <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@email.com" className={inputClass} />
@@ -882,15 +882,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
             <div className="w-full h-px bg-gray-100" />
 
-            {/* Timing — each on its own line so nothing feels crammed */}
+            {/* Timing — each on its own line so nothing feels crammed. Hairstylist
+                Arrive By sits directly above the heads-up note so the note reads in
+                context. */}
             <div>
               <label className={labelClass}>Event Start Time *</label>
               <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
-            </div>
-
-            <div>
-              <label className={labelClass}>Hairstylist Arrive By *</label>
-              <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
             </div>
 
             <div>
@@ -898,11 +895,22 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <TimePicker value={form.photographer_arrival_time} onChange={v => set('photographer_arrival_time', v)} placeholder="Select time" />
             </div>
 
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-3.5 h-3.5 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-              <p className="text-[0.68rem] leading-[1.55]" style={{ color: '#6B4055' }}>
-                <strong style={{ color: '#2C1A14' }}>Heads up:</strong> if your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline">@hairbyshak</a>, Roko plans her timing around when yours arrives (she doesn't glam at the same time as other hairstylists).
-              </p>
+            <div>
+              <label className={labelClass}>Hairstylist Arrive By *</label>
+              <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
+            </div>
+
+            {/* Heads-up note (refined card) */}
+            <div className="rounded-2xl p-4 sm:p-[1.15rem] flex items-start gap-3.5" style={{ background: 'linear-gradient(135deg, #FCF6F8, #FBF1F5)', border: '1px solid #F0E0E9' }}>
+              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 mt-0.5" style={{ border: '1px solid #F0E0E9' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+              </div>
+              <div>
+                <p className="text-[0.62rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-1.5">Heads up</p>
+                <p className="text-[0.84rem] leading-[1.7]" style={{ color: '#6B4055' }}>
+                  If your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2">@hairbyshak</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
+                </p>
+              </div>
             </div>
 
             <div>
@@ -927,7 +935,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
             <div>
               <label className={labelClass}>Does your bridal party need glam too?</label>
-              <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
+              <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
               <div className="flex gap-3 mt-1">
                 {['No', 'Yes'].map(opt => {
                   const active = opt === 'Yes' ? form.bridal_party_glam === true : form.bridal_party_glam === false;
@@ -940,7 +948,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                         set('bridal_party_glam', yes);
                         if (!yes) set('num_people_glam', '');
                       }}
-                      className={`flex-1 py-2.5 rounded-xl text-[0.78rem] font-medium border transition-all ${
+                      className={`flex-1 py-3 rounded-xl text-[0.82rem] font-medium border transition-all ${
                         active
                           ? 'bg-[#111] text-white border-[#111]'
                           : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
@@ -971,11 +979,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 personal upload link — not on this form. We only set expectations here. */}
             <div>
               <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
-              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl mt-1" style={{ background: '#FBF5F7', border: '1px solid #F0E0E9' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                <p className="text-[0.72rem] leading-[1.7]" style={{ color: '#6B4055' }}>
-                  After you reserve, you'll get a personal upload link to send recent photos of yourself <strong style={{ color: '#2C1A14' }}>with makeup</strong> and <strong style={{ color: '#2C1A14' }}>without makeup</strong>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
-                </p>
+              <div className="rounded-2xl p-4 sm:p-[1.15rem] flex items-start gap-3.5 mt-1" style={{ background: 'linear-gradient(135deg, #FCF6F8, #FBF1F5)', border: '1px solid #F0E0E9' }}>
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 mt-0.5" style={{ border: '1px solid #F0E0E9' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div>
+                  <p className="text-[0.62rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-1.5">After you reserve</p>
+                  <p className="text-[0.84rem] leading-[1.7]" style={{ color: '#6B4055' }}>
+                    You'll get a personal upload link to send recent photos of yourself <strong style={{ color: '#2C1A14' }}>with makeup</strong> and <strong style={{ color: '#2C1A14' }}>without makeup</strong>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -995,7 +1008,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
             <div>
               <label className={labelClass}>Is this an out-of-state event?</label>
-              <p className="text-[0.68rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
+              <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
               <div className="flex gap-3 mt-1">
                 {['No', 'Yes'].map(opt => (
                   <button
@@ -1026,11 +1039,11 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     </li>
                     <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
                       <span className="mt-0.5 text-[#D4A0B0]">✦</span>
-                      <span><strong>Hotel accommodation</strong> — minimum 2 nights</span>
+                      <span><strong>Hotel accommodation</strong> (minimum 2 nights)</span>
                     </li>
                     <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
                       <span className="mt-0.5 text-[#D4A0B0]">✦</span>
-                      <span><strong>Add-on person fee</strong> — Roko does not travel alone</span>
+                      <span><strong>Add-on person fee</strong> (Roko does not travel alone)</span>
                     </li>
                   </ul>
                   <div className="mt-2 pt-2.5 border-t border-[#EDD5E2]">
@@ -1079,7 +1092,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         className="sticky bottom-0 z-30 border-t border-[#f0ebe6] bg-white px-6 lg:px-7 py-3.5"
         style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="max-w-[600px] mx-auto flex items-center gap-4">
+        <div className="max-w-[680px] lg:max-w-[740px] mx-auto flex items-center gap-4">
           <div className="flex flex-col leading-tight flex-shrink-0">
             <span className="font-serif text-[1.25rem] text-[#111]">{bridalPrice}</span>
             <span className="text-[0.62rem] text-[#b5a99a] uppercase tracking-[0.1em]">{bridalDeposit}</span>

@@ -598,7 +598,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                       </div>
                       <div>
                         <p className="text-[0.75rem] font-medium text-[#333] mb-1">What about the time?</p>
-                        <p className="text-[0.72rem] text-[#999] leading-[1.6]">Just pick a date — Roko will reach out to confirm your appointment time based on availability.</p>
+                        <p className="text-[0.72rem] text-[#999] leading-[1.6]">Just pick a date. Roko will reach out to confirm your appointment time based on availability.</p>
                       </div>
                     </div>
                   </div>
@@ -692,7 +692,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                           </svg>
                           <div>
-                            <p className="text-[0.72rem] font-semibold text-[#B0708A]">Early Arrival Surcharge — +$100</p>
+                            <p className="text-[0.72rem] font-semibold text-[#B0708A]">Early Arrival Surcharge (+$100)</p>
                             <p className="text-[0.68rem] text-[#C090A8] mt-0.5">Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.</p>
                           </div>
                         </div>
@@ -707,7 +707,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                         placeholder="Select time"
                       />
                       <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                        This is your preference — Roko will do her best to have you ready by this time. Your actual appointment time will be confirmed separately.
+                        This is your preference. Roko will do her best to have you ready by this time. Your actual appointment time will be confirmed separately.
                       </p>
                     </div>
 
@@ -740,7 +740,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                           </svg>
                           <div>
-                            <p className="text-[0.72rem] font-semibold text-[#B0708A]">Travel — Bridal Pricing Applies ($750+)</p>
+                            <p className="text-[0.72rem] font-semibold text-[#B0708A]">Travel · Bridal Pricing Applies ($750+)</p>
                             <p className="text-[0.68rem] text-[#C090A8] mt-0.5">For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.</p>
                           </div>
                         </div>
@@ -804,7 +804,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
               {/* ───────── STEP 4: DONE ───────── */}
               {step === 'done' && (
-                <div className="bg-white p-6 sm:p-8 overflow-y-auto flex-1">
+                <div className="bg-white p-6 sm:p-8">
                   <div className="max-w-[520px] mx-auto flex flex-col gap-4">
 
                     {/* Header */}

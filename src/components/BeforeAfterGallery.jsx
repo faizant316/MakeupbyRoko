@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import MediaModal from './MediaModal';
 
 const TRANSFORMATIONS = [
   {
@@ -77,144 +78,17 @@ const IconInstagram = () => (
   </svg>
 );
 
-function LightboxModal({ items, index, setIndex, onClose }) {
-  const item = items[index];
-  const count = items.length;
-  const goPrev = useCallback(() => setIndex(i => (i - 1 + count) % count), [count, setIndex]);
-  const goNext = useCallback(() => setIndex(i => (i + 1) % count), [count, setIndex]);
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-      document.documentElement.style.overflow = '';
-    };
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft') goPrev();
-      else if (e.key === 'ArrowRight') goNext();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, goPrev, goNext]);
-
-  if (!item) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-6"
-      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(14px)' }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col sm:flex-row w-full"
-        style={{ maxWidth: '880px', maxHeight: '92dvh' }}
-      >
-        {/* Image */}
-        <div className="relative flex-shrink-0 bg-[#0a0a0a] flex items-center justify-center w-full sm:w-[55%] h-[40dvh] sm:h-auto sm:self-stretch">
-          <img
-            src={item.image}
-            alt={item.title}
-            className="w-full h-full object-contain"
-          />
-          {/* Carousel arrows */}
-          {count > 1 && (
-            <>
-              <button onClick={goPrev} aria-label="Previous"
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <button onClick={goNext} aria-label="Next"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" className="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-              {/* Counter */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full text-[0.6rem] font-medium text-white tracking-wider"
-                style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
-                {index + 1} / {count}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Details */}
-        <div className="flex flex-col flex-1 min-h-0 sm:w-[45%]">
-          <div className="flex flex-col flex-1 min-h-0 overflow-y-auto" style={{ padding: 'clamp(1.1rem, 3vw, 2rem)' }}>
-            {/* Close */}
-            <button
-              onClick={onClose}
-              className="mb-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600 ml-auto flex-shrink-0"
-              aria-label="Close"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-
-            <span className="inline-block px-2.5 py-1 bg-[#D4A0B0]/15 rounded-full text-[0.58rem] font-semibold tracking-[0.12em] uppercase text-[#8A4A63] mb-3 self-start">
-              {item.label}
-            </span>
-
-            <h3 className="font-serif text-[#111] leading-tight mb-1.5" style={{ fontSize: 'clamp(1.25rem, 2.6vw, 1.7rem)', fontWeight: 300 }}>
-              {item.title}
-            </h3>
-
-            {item.occasion && (
-              <div className="flex items-center gap-1.5 mb-3.5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-3.5 h-3.5">
-                  <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                </svg>
-                <span className="text-[0.72rem] tracking-[0.04em] text-[#998d85]">{item.occasion}</span>
-              </div>
-            )}
-
-            <p className="text-[#666] leading-[1.75] mb-4" style={{ fontSize: 'clamp(0.78rem, 1.2vw, 0.85rem)' }}>
-              {item.description}
-            </p>
-
-            {item.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {item.tags.map(t => (
-                  <span key={t} className="px-2.5 py-1 rounded-full text-[0.68rem] font-medium bg-[#FAF5F2] text-[#8a7f78] border border-[#efe4dd]">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-auto pt-5">
-              <a
-                href="https://www.instagram.com/makeupbyroko_/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
-              >
-                <IconInstagram />
-                See More on Instagram
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function BeforeAfterGallery() {
   const [filter, setFilter] = useState('all');
-  const [lightboxIdx, setLightboxIdx] = useState(null);
+  const [idx, setIdx] = useState(null);
 
   const filtered = filter === 'all' ? TRANSFORMATIONS : TRANSFORMATIONS.filter(t => t.label === filter);
+  const selectFilter = (key) => { setFilter(key); setIdx(null); };
 
-  // Close the lightbox if the filter changes underneath it
-  const selectFilter = (key) => { setFilter(key); setLightboxIdx(null); };
+  const item = idx !== null ? filtered[idx] : null;
+  const count = filtered.length;
+  const goPrev = () => setIdx(i => (i - 1 + count) % count);
+  const goNext = () => setIdx(i => (i + 1) % count);
 
   return (
     <section id="before-after" className="bg-[#F5F5F5]">
@@ -265,18 +139,18 @@ export default function BeforeAfterGallery() {
 
           {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {filtered.map((item, i) => {
-              const isWide = item.type === 'side-by-side';
+            {filtered.map((t, i) => {
+              const isWide = t.type === 'side-by-side';
               return (
                 <button
-                  key={item.id}
-                  onClick={() => setLightboxIdx(i)}
+                  key={t.id}
+                  onClick={() => setIdx(i)}
                   className={`group relative overflow-hidden rounded-[var(--radius-lg)] bg-[#eee] cursor-pointer text-left ${isWide ? 'col-span-2' : 'col-span-1'}`}
                 >
                   <div className={`relative overflow-hidden ${isWide ? 'aspect-[4/3] sm:aspect-[16/10]' : 'aspect-[3/4]'}`}>
                     <img
-                      src={item.image}
-                      alt={item.title}
+                      src={t.image}
+                      alt={t.title}
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
@@ -285,7 +159,7 @@ export default function BeforeAfterGallery() {
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end"
                       style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 45%, transparent 70%)' }}>
                       <div className="p-3">
-                        <p className="text-white font-serif leading-tight" style={{ fontSize: 'clamp(0.85rem, 1.5vw, 1.05rem)' }}>{item.title}</p>
+                        <p className="text-white font-serif leading-tight" style={{ fontSize: 'clamp(0.85rem, 1.5vw, 1.05rem)' }}>{t.title}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" className="w-3 h-3">
                             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -297,7 +171,7 @@ export default function BeforeAfterGallery() {
                     {/* Label */}
                     <div className="absolute top-2 left-2 px-2.5 py-0.5 bg-white/90 backdrop-blur-sm rounded-full group-hover:opacity-0 transition-opacity">
                       <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#111' }}>
-                        {item.label}
+                        {t.label}
                       </span>
                     </div>
                   </div>
@@ -309,8 +183,54 @@ export default function BeforeAfterGallery() {
         </div>
       </div>
 
-      {lightboxIdx !== null && (
-        <LightboxModal items={filtered} index={lightboxIdx} setIndex={setLightboxIdx} onClose={() => setLightboxIdx(null)} />
+      {item && (
+        <MediaModal
+          photo={item.image}
+          imageFit="contain"
+          index={idx}
+          count={count}
+          onPrev={goPrev}
+          onNext={goNext}
+          onClose={() => setIdx(null)}
+          footer={
+            <a
+              href="https://www.instagram.com/makeupbyroko_/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
+            >
+              <IconInstagram />
+              See More on Instagram
+            </a>
+          }
+        >
+          <span className="inline-block px-2.5 py-1 bg-[#D4A0B0]/15 rounded-full text-[0.58rem] font-semibold tracking-[0.12em] uppercase text-[#8A4A63] mb-3">
+            {item.label}
+          </span>
+          <h3 className="font-serif text-[#111] leading-tight mb-1.5" style={{ fontSize: 'clamp(1.3rem, 2.6vw, 1.7rem)', fontWeight: 300 }}>
+            {item.title}
+          </h3>
+          {item.occasion && (
+            <div className="flex items-center gap-1.5 mb-3.5">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-3.5 h-3.5">
+                <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <span className="text-[0.72rem] tracking-[0.04em] text-[#998d85]">{item.occasion}</span>
+            </div>
+          )}
+          <p className="text-[#666] leading-[1.75] mb-4" style={{ fontSize: 'clamp(0.82rem, 1.2vw, 0.88rem)' }}>
+            {item.description}
+          </p>
+          {item.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {item.tags.map(t => (
+                <span key={t} className="px-2.5 py-1 rounded-full text-[0.68rem] font-medium bg-[#FAF5F2] text-[#8a7f78] border border-[#efe4dd]">
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+        </MediaModal>
       )}
     </section>
   );
