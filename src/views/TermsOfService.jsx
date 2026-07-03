@@ -13,7 +13,7 @@ const SECTIONS = [
   },
   {
     title: 'Deposits & Payment',
-    body: `A non-refundable deposit is required to secure your appointment date. Deposits are paid via Zelle to Ruqia Moshref at (510) 491-6497. The remaining balance is due in CASH on the day of your appointment — no digital payments are accepted for the balance. Prices are subject to change without notice; confirmed bookings will honor the quoted rate.`
+    body: `A non-refundable deposit is required to secure your appointment date. Deposits are paid via Zelle to Ruqia Moshref. The remaining balance is due in CASH on the day of your appointment. No digital payments are accepted for the balance. Prices are subject to change without notice; confirmed bookings will honor the quoted rate.`
   },
   {
     title: 'Cancellations & Rescheduling',

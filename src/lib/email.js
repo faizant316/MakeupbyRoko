@@ -233,7 +233,7 @@ function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr><td style="font-size:13px;color:#9A8E94;padding:0 0 6px;">Zelle to</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;padding:0 0 6px;">Ruqia Moshref</td></tr>
-            <tr><td style="font-size:13px;color:#9A8E94;">Phone</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">510-491-6497</td></tr>
+            <tr><td style="font-size:13px;color:#9A8E94;">Email</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">makeupbyroko22@gmail.com</td></tr>
           </table>
         </td></tr></table>
         ${clientButton(uploadUrl, photos ? 'Upload Screenshot & Photos' : 'Upload Zelle Screenshot')}
@@ -288,7 +288,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
       ${cpanel(`${ctitle('Booking Summary')}${crows(summaryRows + ctotalRow('Estimated Total', total))}`)}
       ${cdeposit({ amount: serviceDeposit || 'Deposit', uploadUrl })}
       ${cstepsPanel('What Happens Next', [
-        ['1', 'Send your Zelle deposit', 'Ruqia Moshref · 510-491-6497'],
+        ['1', 'Send your Zelle deposit', 'Ruqia Moshref · makeupbyroko22@gmail.com'],
         ['2', 'Upload your screenshot', 'Use the secure button above'],
         ['3', 'Roko confirms your appointment', 'Within 24–48 hours'],
       ])}
@@ -309,7 +309,7 @@ export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateForm
       )}`)}
       ${cdeposit({ amount: bridalDeposit, uploadUrl, photos: true })}
       ${cstepsPanel('What Happens Next', [
-        ['1', 'Send your Zelle deposit', 'Ruqia Moshref · 510-491-6497'],
+        ['1', 'Send your Zelle deposit', 'Ruqia Moshref · makeupbyroko22@gmail.com'],
         ['2', 'Upload your screenshot & photos', 'Use your personal link above'],
         ['3', 'Roko reaches out for your consultation', 'To go over your vision and bridal look'],
       ])}
@@ -374,20 +374,27 @@ export function feedbackRequestEmail({ name, service }) {
   });
 }
 
-export function classPaymentEmail({ firstName, bookedClasses, totalPaid, catalog }) {
+export function classPaymentEmail({ firstName, bookedClasses, totalPaid, catalog, preferredDate }) {
   const classRows = bookedClasses.map(k =>
     crow(`${catalog[k].title}<br><span style="font-size:12px;color:#9A8E94;">${catalog[k].duration}</span>`, `$${catalog[k].price.toLocaleString()}`)
   ).join('');
 
+  const receiptRows = [
+    preferredDate ? crow('Requested date', `<strong style="color:#16110F;">${preferredDate}</strong>`) : '',
+    crow('Payment method', 'Card · Stripe'),
+    crow('Status', '<span style="color:#15803d;font-weight:700;">Paid in full ✓</span>'),
+  ].filter(Boolean).join('');
+
   return clientShell({
-    preheader: `Payment received. You're officially booked! 🎨`,
+    preheader: `Payment received — you're officially booked!`,
     content: `
       ${clientHero({ emoji: '✓', eyebrow: 'Payment Confirmed', title: 'Your spot is', titleAccent: 'secured!' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received. I'll reach out within <strong style="color:#16110F;">24–48 hours</strong> to confirm your class schedule and all the details.`)}
-      ${cheadline('Total Paid', `$${totalPaid.toLocaleString()}`, 'Paid via Stripe')}
-      ${cpanel(`${ctitle('Your Classes')}${crows(classRows)}`)}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received${preferredDate ? ` for <strong style="color:#16110F;">${preferredDate}</strong>` : ''}. I'll reach out within <strong style="color:#16110F;">24–48 hours</strong> to confirm your time and all the details.`)}
+      ${cheadline('Total Paid', `$${totalPaid.toLocaleString()}`, 'Paid in full via Stripe')}
+      ${cpanel(`${ctitle('Your Class')}${crows(classRows)}`)}
+      ${cpanel(`${ctitle('Payment Receipt')}${crows(receiptRows)}`)}
       ${cstepsPanel('What Happens Next', [
-        ['1', 'Roko reaches out within 24–48 hrs', 'To confirm your class date, time & location'],
+        ['1', 'Roko confirms your time within 24–48 hrs', 'Your class is on the Wednesday you chose above'],
         ['2', 'Prepare any inspiration photos', 'Optional but helpful'],
         ['3', 'Show up and learn!', 'All supplies provided, just bring yourself'],
       ])}
@@ -508,15 +515,19 @@ export function lessonScheduledEmail({ firstName, className, lessonDate, lessonT
 
 // ─── Admin Templates (kept simple & info-dense) ────────────────────────────────
 
-export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog, sessionId }) {
+export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog, sessionId, preferredDate }) {
   const classRows = bookedClasses.map(k =>
     `<tr><td style="padding:7px 0;font-size:13px;color:#444444;border-bottom:1px solid #F5E8EF;">${catalog[k].title}</td><td style="padding:7px 0;font-size:13px;font-weight:600;color:#111111;text-align:right;border-bottom:1px solid #F5E8EF;">$${catalog[k].price.toLocaleString()}</td></tr>`
   ).join('');
 
+  // Real client notes only — the signed-agreement summary now lives in its own
+  // block below (and in the dedicated contract columns), not stuffed in notes.
+  const cleanNotes = (reg.additional_notes || '').replace(/\s*\|\s*✍️[^]*$/u, '').trim();
+
   return base(`
     ${card(`
       <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 10px;">New Class Booking</h2>
-      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;"><strong>${reg.full_name}</strong> just paid <strong>$${totalPaid.toLocaleString()}</strong> via Stripe.</p>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;"><strong>${reg.full_name}</strong> just paid <strong>$${totalPaid.toLocaleString()}</strong> in full via Stripe.</p>
     `)}
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Client Details</p>
@@ -524,18 +535,27 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
         ${row('Name', reg.full_name)}
         ${row('Email', reg.email)}
         ${row('Phone', reg.phone)}
-        ${reg.additional_notes ? row('Notes', reg.additional_notes) : ''}
+        ${preferredDate ? row('Requested Date', `<strong>${preferredDate}</strong>`, '#C4849A') : ''}
+        ${cleanNotes ? row('Notes', cleanNotes) : ''}
       </table>
     `)}
     ${card(`
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Classes Booked</p>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Class Booked</p>
       <table style="width:100%;border-collapse:collapse;">${classRows}</table>
       <table style="width:100%;border-collapse:collapse;margin-top:8px;">
         <tr><td style="padding:8px 0;font-size:14px;font-weight:700;color:#111111;">Total Paid</td><td style="padding:8px 0;font-size:14px;font-weight:700;color:#111111;text-align:right;">$${totalPaid.toLocaleString()}</td></tr>
       </table>
     `)}
+    ${reg.contract_signed ? card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Service Agreement</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
+        ${row('Signed by', reg.contract_signed_name || reg.full_name)}
+        ${row('Photo permission', reg.contract_photo_consent ? 'Yes — may post' : 'No — keep private', reg.contract_photo_consent ? '#111111' : '#C4849A')}
+      </table>
+    `) : ''}
     ${card(`
-      <p style="font-size:13px;color:#444444;margin:0 0 14px;">Please reach out within 24–48 hours to confirm their class schedule.</p>
+      <p style="font-size:13px;color:#444444;margin:0 0 14px;">Please reach out within 24–48 hours to confirm their class time.</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
         <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>

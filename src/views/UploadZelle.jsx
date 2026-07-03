@@ -437,18 +437,21 @@ export default function UploadZelle() {
 
   // ── Shared chrome (nav + footer) ──
   const Nav = (
-    <div className="relative flex-shrink-0 px-4 sm:px-6 py-3 flex items-center" style={{ borderBottom: `1px solid ${HEAD_BORDER}`, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
+    <div className="relative flex-shrink-0 px-4 sm:px-6 py-2.5 flex items-center" style={{ borderBottom: `1px solid ${HEAD_BORDER}`, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
+      {/* Anchor sits above the centered title (z-20) and the title ignores pointer
+          events, so a single tap on the pill always registers on mobile. */}
       <a
         href="/"
-        className="group relative z-10 inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full transition-all touch-manipulation"
-        style={{ border: `1px solid ${HEAD_BORDER}`, color: PLUM, background: '#fff' }}
+        aria-label="Back to site"
+        className="group relative z-20 inline-flex items-center gap-1.5 pl-1.5 pr-3 py-2 rounded-full transition-all active:scale-95 touch-manipulation"
+        style={{ border: `1px solid ${HEAD_BORDER}`, color: PLUM, background: '#fff', WebkitTapHighlightColor: 'transparent' }}
       >
-        <span className="flex items-center justify-center w-4 h-4 rounded-full transition-colors" style={{ background: HEAD_BG }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.2" className="w-2.5 h-2.5"><polyline points="15 18 9 12 15 6" /></svg>
+        <span className="flex items-center justify-center w-5 h-5 rounded-full transition-colors" style={{ background: HEAD_BG }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.2" className="w-3 h-3"><polyline points="15 18 9 12 15 6" /></svg>
         </span>
-        <span className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase">Back to site</span>
+        <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase">Back to site</span>
       </a>
-      <p className="absolute left-1/2 -translate-x-1/2 text-[0.62rem] font-bold tracking-[0.22em] uppercase" style={{ color: PLUM }}>Makeup by Roko</p>
+      <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[0.62rem] font-bold tracking-[0.22em] uppercase" style={{ color: PLUM }}>Makeup by Roko</p>
     </div>
   );
 
@@ -615,7 +618,7 @@ export default function UploadZelle() {
                     <div className="overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
                       <div className="divide-y" style={{ borderColor: DIVIDER }}>
                         <SummaryRow label="Zelle to" value="Ruqia Moshref" />
-                        <SummaryRow label="Phone" value="510-491-6497" />
+                        <SummaryRow label="Email" value="makeupbyroko22@gmail.com" />
                         <SummaryRow label="Date" value={dateFormatted} />
                       </div>
                     </div>
