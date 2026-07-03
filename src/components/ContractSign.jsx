@@ -42,9 +42,13 @@ export default function ContractSign({ contract, clientName = '', submitting = f
         <p className="text-[0.8rem] text-gray-400">Please read your service agreement and sign to confirm.</p>
       </div>
 
-      {/* Scrollable contract body */}
+      {/* Scrollable contract body.
+          data-lenis-prevent lets this inner box scroll natively with the wheel:
+          the modal's own Lenis instance would otherwise capture the wheel and
+          scroll the whole sheet instead of this box. */}
       <div
-        className="rounded-2xl border border-[#F0E0E9] bg-[#FDFBFC] px-5 py-4 mb-5 max-h-[42vh] overflow-y-auto"
+        data-lenis-prevent
+        className="rounded-2xl border border-[#F0E0E9] bg-[#FDFBFC] px-5 py-4 mb-5 max-h-[42vh] overflow-y-auto overscroll-contain"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <p className="text-[0.62rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-2">{contract.title}</p>
