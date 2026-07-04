@@ -83,8 +83,8 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
 // and Roko so each has a record in their inbox. Renders the full agreement text
 // plus the signature block. Same builder as the on-site sign step, so the words
 // always match exactly what was signed.
-export function contractCopyEmail({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent, forAdmin = false }) {
-  const c = buildContract({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType, kind, overrides });
+export function contractCopyEmail({ clientName, serviceName, dateFormatted, time = '', depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent, forAdmin = false }) {
+  const c = buildContract({ clientName, serviceName, dateFormatted, time, depositAmount, priceAmount, locationType, kind, overrides });
   const signedAtLabel = signedAt
     ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
     : '';
@@ -112,8 +112,8 @@ export function contractCopyEmail({ clientName, serviceName, dateFormatted, depo
 
 // Full signed agreement rendered as a panel to fold into the client's ONE
 // confirmation email (so they get their copy without a second email).
-export function contractClientPanel({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent }) {
-  const c = buildContract({ clientName, serviceName, dateFormatted, depositAmount, priceAmount, locationType, kind, overrides });
+export function contractClientPanel({ clientName, serviceName, dateFormatted, time = '', depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent }) {
+  const c = buildContract({ clientName, serviceName, dateFormatted, time, depositAmount, priceAmount, locationType, kind, overrides });
   const signedAtLabel = signedAt
     ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
     : '';
@@ -338,6 +338,51 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
       ])}
     `,
   });
+}
+
+// Personal note Roko types from the admin client card. Optionally shows an
+// "updated appointment" panel and a Review & Sign button when she's proposing a
+// new time and wants the client to re-sign the agreement.
+export function contactClientEmail({ firstName, message, serviceName, dateFormatted, time, resignUrl }) {
+  const safeMsg = String(message || '').replace(/\r\n/g, '\n').replace(/\n/g, '<br>');
+  const detailRows = [
+    serviceName ? crow('Service', serviceName) : '',
+    dateFormatted ? crow('Date', dateFormatted) : '',
+    time ? crow('Time', `<strong style="color:#16110F;">${time}</strong>`, '#C4849A') : '',
+  ].filter(Boolean).join('');
+  return clientShell({
+    preheader: message ? String(message).slice(0, 120) : `A note from Makeup by Roko`,
+    content: `
+      ${clientHero({ eyebrow: 'A Note from Roko', title: `Hi ${firstName || 'there'},`, subtitle: resignUrl ? 'A quick update on your appointment ✦' : '' })}
+      ${cintro(safeMsg)}
+      ${detailRows ? cpanel(`${ctitle(resignUrl ? 'Updated Appointment' : 'Appointment Details')}${crows(detailRows)}`) : ''}
+      ${resignUrl ? cpanel(`${ctitle('Please Review & Re-Sign')}
+        <p style="font-size:13px;color:#5A5258;line-height:1.65;margin:0 0 16px;">Since your appointment time changed, please review and sign the updated service agreement so everything's locked in. It only takes a moment.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">${clientButton(resignUrl, 'Review & Sign Updated Agreement')}</td></tr></table>
+      `) : ''}
+    `,
+  });
+}
+
+// Admin heads-up when a client re-signs the updated agreement (after a time change).
+export function adminContractResignedEmail({ name, service, date, time, signedName, photoConsent }) {
+  return base(`
+    <div style="text-align:center;margin-bottom:14px;">
+      <p style="font-size:15px;font-weight:700;color:#16110F;margin:0;">Updated agreement re-signed ✍️</p>
+      <p style="font-size:12px;color:#888;margin:4px 0 0;">${name || 'A client'} signed the new time.</p>
+    </div>
+    ${card(`<table width="100%" cellpadding="0" cellspacing="0">
+      ${row('Client', name || '—')}
+      ${row('Service', service || '—')}
+      ${row('Date', date || '—')}
+      ${time ? row('New time', time, '#C4849A') : ''}
+      ${row('Signed by', signedName || name || '—')}
+      ${row('Photo permission', photoConsent ? 'Yes, may post' : 'No, keep private')}
+    </table>`)}
+    <div style="text-align:center;margin-top:8px;">
+      <a href="${ADMIN_URL}" style="display:inline-block;padding:11px 26px;font-size:13px;font-weight:700;color:#fff;text-decoration:none;background:#16110F;border-radius:10px;">Open Admin</a>
+    </div>
+  `);
 }
 
 export function bookingCancelledEmail({ name, service, date }) {

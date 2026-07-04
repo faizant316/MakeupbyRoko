@@ -57,6 +57,7 @@ export function buildContract({
   clientName = '',
   serviceName = 'your service',
   dateFormatted = 'your selected date',
+  time = '', // appointment time / window, e.g. "11:00 AM – 1:00 PM" (optional)
   depositAmount,
   priceAmount,
   locationType = 'studio',
@@ -84,6 +85,7 @@ export function buildContract({
     : `On-location services (the artist traveling to you) are subject to a travel fee starting at ${travelStart}, regardless of distance. In-studio appointments at ${CONTRACT_POLICIES.studioLocation} have no travel fee.`;
 
   const isClass = kind === 'class';
+  const timeText = (time || '').toString().trim();
 
   const bookingSection = { heading: 'Booking & Confirmation', body: isClass
     ? `Submitting this form and completing checkout reserves your seat in the class. Seats are limited and are confirmed once payment is received. ${artistName} reserves the right to reschedule a class if needed, in which case you may attend the new date or receive a refund.`
@@ -126,7 +128,7 @@ export function buildContract({
   return {
     version: CONTRACT_VERSION,
     title: 'Service Agreement',
-    intro: `This Service Agreement is entered into between ${artistName} ("Artist," ${BUSINESS_NAME}) and ${clientName || 'the client named below'} ("Client") for ${serviceName}${isClass ? '' : ` on ${dateFormatted}`}. By signing below, the Client confirms they have read, understood, and agree to the following terms.`,
+    intro: `This Service Agreement is entered into between ${artistName} ("Artist," ${BUSINESS_NAME}) and ${clientName || 'the client named below'} ("Client") for ${serviceName}${isClass ? '' : ` on ${dateFormatted}${timeText ? ` at ${timeText}` : ''}`}. By signing below, the Client confirms they have read, understood, and agree to the following terms.`,
     sections,
     // The explicit yes/no the Client must choose for photo use.
     photoConsentQuestion: 'Do you give permission for your photos to be posted online (portfolio, Instagram, TikTok, website)?',

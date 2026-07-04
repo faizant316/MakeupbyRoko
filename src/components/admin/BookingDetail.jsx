@@ -152,6 +152,40 @@ function from24h(val) {
   return `${h12}:${mStr} ${ampm}`;
 }
 
+// ── Appointment time WINDOW (start → end) helpers ─────────────────────────────
+// The appointment time is stored as a single string so every consumer (card
+// header, calendar, agenda, emails, contract) keeps working unchanged. A window
+// is "11:00 AM – 1:00 PM"; a single time is just "11:00 AM".
+const RANGE_SEP = ' – ';
+
+// "11:00 AM" → minutes since midnight, so the second tap can be ordered after
+// the first (and an earlier tap resets the start).
+function apptToMin(val) {
+  if (!val) return null;
+  const m = String(val).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3] && m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+// Split a stored value into { start, end }. Accepts en/em dash, hyphen, or "to".
+function parseRange(val) {
+  if (!val) return { start: '', end: '' };
+  const parts = String(val).split(/\s*(?:–|—|-|to)\s*/i).map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 2) return { start: parts[0], end: parts[1] };
+  return { start: parts[0] || '', end: '' };
+}
+
+// Build the stored/displayed value from a start (+ optional end).
+function formatRange(start, end) {
+  if (start && end) return `${start}${RANGE_SEP}${end}`;
+  return start || '';
+}
+
 // Brand plum (matches the front-end bridal cards)
 const PLUM = '#C4849A';
 
@@ -580,10 +614,92 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [toastVisible, setToastVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [pendingTime, setPendingTime] = useState(booking.time || '');
+  const initialRange = parseRange(booking.time || '');
+  const [startTime, setStartTime] = useState(initialRange.start);
+  const [endTime, setEndTime] = useState(initialRange.end);
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
+
+  // Two-tap window: first tap sets the start, second sets the end. Tapping a
+  // time at or before the current start resets it as the new start (no autofill,
+  // full manual control per Roko's ask).
+  const pickTime = (t) => {
+    if (!startTime || endTime) { setStartTime(t); setEndTime(''); return; }
+    const s = apptToMin(startTime), n = apptToMin(t);
+    if (n != null && s != null && n > s) setEndTime(t);
+    else { setStartTime(t); setEndTime(''); }
+  };
+  const openTimePicker = () => {
+    const r = parseRange(booking.time || '');
+    setStartTime(r.start); setEndTime(r.end);
+    setShowTimePicker(true); setShowReconfirmBanner(false);
+  };
+  const pendingRange = formatRange(startTime, endTime);
+
+  // ── In-admin Contact composer ────────────────────────────────────────────
+  // Roko writes the client a personal email straight from the card (sent as
+  // roko@makeupbyroko.org). When she's changed the time she can attach an
+  // updated agreement for the client to re-sign.
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [attachContract, setAttachContract] = useState(false);
+  const [sending, setSending] = useState(false);
+  const firstName = booking.name?.split(' ')[0] || 'there';
+
+  const openCompose = () => {
+    if (!composeSubject) setComposeSubject(`Your ${booking.service || 'appointment'} with Makeup by Roko`);
+    if (!composeBody) setComposeBody(`Hi ${firstName},\n\n`);
+    setShowCompose(true);
+    setTimeout(() => { if (composeRef.current) lenisScrollTo(composeRef.current, { offset: -80 }); }, 60);
+  };
+
+  // One-tap starter for the most common case: "your original time isn't open,
+  // here's the new one." Pulls in whatever window is currently on the booking.
+  const fillProposeTime = () => {
+    setComposeSubject('An update on your appointment time');
+    setComposeBody(
+      `Hi ${firstName},\n\n` +
+      `Thank you so much for booking with me! I wanted to reach out about your appointment time.` +
+      `${booking.time ? ` I currently have you down for ${booking.time}` : ''}${dateFormatted ? ` on ${dateFormatted}` : ''}. ` +
+      `Please let me know if that works for you.\n\n` +
+      `Once you confirm, I'll send over the updated agreement to sign so we can lock everything in.\n\n` +
+      `With love,\nRoko`
+    );
+    setAttachContract(true);
+  };
+
+  const sendCompose = async () => {
+    if (!booking.email) { alert('This client has no email on file.'); return; }
+    if (!composeSubject.trim() || !composeBody.trim()) { alert('Add a subject and a message first.'); return; }
+    setSending(true);
+    try {
+      const res = await fetch('/api/contact-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          to: booking.email,
+          firstName: booking.name?.split(' ')[0] || '',
+          subject: composeSubject.trim(),
+          message: composeBody.trim(),
+          includeContract: attachContract,
+          serviceName: booking.service,
+          dateFormatted,
+          time: booking.time,
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
+      setShowCompose(false);
+      showToast(attachContract ? 'Email + agreement sent' : 'Email sent to client', '#22c55e');
+    } catch (err) {
+      alert(err?.message || 'Failed to send email. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
   const [consultExpanded, setConsultExpanded] = useState(false);
   const consultRef = useRef(null);
+  const composeRef = useRef(null);
 
   const showToast = (msg, color) => {
     setToast({ message: msg, color });
@@ -707,6 +823,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       clientName: booking.contract_signed_name || booking.name,
       serviceName: booking.service,
       dateFormatted,
+      time: booking.time || '',
       locationType: onLocation ? 'onlocation' : 'studio',
       kind: 'appointment',
       overrides: contractOverrides,
@@ -830,8 +947,91 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Contact</p>
             {booking.email && <a href={`mailto:${booking.email}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block" style={{ color: dm ? '#e4e4e7' : '#111' }}>{booking.email}</a>}
             {booking.phone && <a href={`sms:${booking.phone}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>{booking.phone}</a>}
+            {booking.email && !showCompose && (
+              <button
+                type="button"
+                onClick={openCompose}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold transition-all hover:opacity-85"
+                style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)', color: '#D4A0B0', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.3)'}` }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
+                Message client
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Contact composer — Roko's personal email, sent as roko@makeupbyroko.org */}
+        {showCompose && (
+          <div ref={composeRef} className="mb-6 rounded-[8px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+            <div className="flex items-center justify-between px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
+              <div>
+                <p className="text-[0.55rem] font-bold tracking-[0.16em] uppercase" style={{ color: '#D4A0B0' }}>Email Client</p>
+                <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#a1a1aa' : '#888' }}>To <span style={{ color: dm ? '#F0EBE6' : '#111', fontWeight: 600 }}>{booking.email}</span> · from roko@makeupbyroko.org</p>
+              </div>
+              <button type="button" onClick={() => setShowCompose(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full transition-all"
+                style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+              {/* Quick starter */}
+              <button type="button" onClick={fillProposeTime}
+                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.64rem] font-semibold transition-all hover:opacity-85"
+                style={{ background: dm ? '#2e2e38' : '#FBF3E8', color: dm ? '#e8c89a' : '#9A6B2F', border: `1px solid ${dm ? '#3a3a48' : '#F0E0C8'}` }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Propose new time {booking.time ? `(${booking.time})` : ''}
+              </button>
+
+              <div>
+                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Subject</label>
+                <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-[6px] outline-none"
+                  style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111' }} />
+              </div>
+
+              <div>
+                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Message</label>
+                <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
+                  placeholder="Write your message…"
+                  className="w-full px-3 py-2.5 rounded-[6px] outline-none resize-y"
+                  style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111' }} />
+                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#bbb' }}>Sent on your branded template. Line breaks are kept.</p>
+              </div>
+
+              {/* Attach updated agreement */}
+              <button type="button" onClick={() => setAttachContract(a => !a)}
+                className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
+                style={{ background: attachContract ? (dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), border: `1px solid ${attachContract ? '#D4A0B0' : (dm ? '#3a3a48' : '#e5e5e5')}` }}>
+                <span className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
+                  style={attachContract ? { background: '#D4A0B0', border: '1px solid #D4A0B0' } : { background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#52525b' : '#ccc'}` }}>
+                  {attachContract && <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
+                </span>
+                <span>
+                  <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Attach updated Service Agreement</span>
+                  <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
+                    Adds a Review &amp; Sign link with {booking.time ? <>the current window <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong></> : 'the current appointment time'}. Signing marks it pending again for you to re-confirm.
+                  </span>
+                </span>
+              </button>
+
+              <div className="flex items-center gap-2 pt-1">
+                <button type="button" onClick={() => setShowCompose(false)}
+                  className="px-4 py-2.5 rounded-[6px] text-[0.72rem] font-semibold transition-all"
+                  style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                  Cancel
+                </button>
+                <button type="button" onClick={sendCompose} disabled={sending}
+                  className="flex-1 py-2.5 rounded-[6px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all flex items-center justify-center gap-2"
+                  style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: sending ? 0.7 : 1 }}>
+                  {sending ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : (attachContract ? 'Send email + agreement' : 'Send email')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {hasNotes && (
           <div className="mb-6">
@@ -1024,12 +1224,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
           <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-3">Appointment Time</p>
 
-          {/* Trigger — current time display (clickable) or empty state button */}
+          {/* Trigger — current time window (clickable) or empty state button */}
           {!showTimePicker && (
             booking.time ? (
               <button
                 type="button"
-                onClick={() => { setPendingTime(booking.time); setShowTimePicker(true); setShowReconfirmBanner(false); }}
+                onClick={openTimePicker}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[6px] transition-all touch-manipulation hover:opacity-80 active:opacity-60"
                 style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
               >
@@ -1046,7 +1246,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             ) : (
               <button
                 type="button"
-                onClick={() => { setPendingTime(''); setShowTimePicker(true); }}
+                onClick={openTimePicker}
                 className="w-full flex items-center justify-between px-4 py-3.5 rounded-[6px] touch-manipulation transition-all hover:opacity-80"
                 style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
               >
@@ -1061,24 +1261,24 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             )
           )}
 
-          {/* Time picker — pill grid on ALL screen sizes */}
+          {/* Time picker — two-tap window: first tap = start, second tap = end */}
           {showTimePicker && (
             <div className="rounded-[6px]" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, overflow: 'visible' }}>
-              {/* Header */}
+              {/* Header — shows the window being built */}
               <div className="flex items-center justify-between px-4 py-3 rounded-t-xl"
                 style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2" style={{ color: '#D4A0B0' }}>
-                  Select a time
-                  {pendingTime && (
-                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case" style={{ color: dm ? '#F0EBE6' : '#111' }}>
-                      — {pendingTime}
+                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2 min-w-0" style={{ color: '#D4A0B0' }}>
+                  <span className="flex-shrink-0">{!startTime ? 'Tap start time' : !endTime ? 'Now tap end time' : 'Time window'}</span>
+                  {startTime && (
+                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case truncate" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+                      {formatRange(startTime, endTime) || startTime}
                     </span>
                   )}
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowTimePicker(false)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation"
+                  className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation flex-shrink-0"
                   style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
@@ -1087,57 +1287,85 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </button>
               </div>
 
-              {/* Mobile — native time input (iOS wheel picker) */}
-              <div className="block md:hidden px-4 pt-4 pb-2" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-                <input
-                  type="time"
-                  value={to24h(pendingTime)}
-                  onChange={e => setPendingTime(from24h(e.target.value))}
-                  style={{
-                    width: '100%', fontSize: '16px', padding: '14px 16px',
-                    borderRadius: '12px', border: `1.5px solid ${dm ? '#3a3a48' : '#e5e5e5'}`,
-                    background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111',
-                    outline: 'none', boxSizing: 'border-box', display: 'block',
-                  }}
-                />
+              {/* Mobile — two native time inputs (Start + End) */}
+              <div className="md:hidden grid grid-cols-2 gap-3 px-4 pt-4 pb-1" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+                {[['Start', startTime, setStartTime], ['End', endTime, setEndTime]].map(([lbl, val, setter]) => (
+                  <div key={lbl}>
+                    <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>{lbl}</label>
+                    <input
+                      type="time"
+                      value={to24h(val)}
+                      onChange={e => setter(from24h(e.target.value))}
+                      style={{
+                        width: '100%', fontSize: '16px', padding: '12px 14px',
+                        borderRadius: '10px', border: `1.5px solid ${dm ? '#3a3a48' : '#e5e5e5'}`,
+                        background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111',
+                        outline: 'none', boxSizing: 'border-box', display: 'block',
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
 
-              {/* Desktop — pill grid */}
+              {/* Desktop — pill grid, two-tap start → end with the window highlighted */}
               <div className="hidden md:block">
                 <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {APPT_TIMES.map(t => (
-                      <button key={t} type="button" onClick={() => setPendingTime(t)}
-                        className="py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
-                        style={pendingTime === t
-                          ? { background: '#D4A0B0', color: '#fff', border: '1px solid #D4A0B0' }
-                          : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
-                        }
-                      >{t}</button>
-                    ))}
+                    {APPT_TIMES.map(t => {
+                      const sMin = apptToMin(startTime), eMin = apptToMin(endTime), tMin = apptToMin(t);
+                      const isEnd = !!endTime && t === endTime;
+                      const isStart = !isEnd && t === startTime;
+                      const inRange = sMin != null && eMin != null && tMin != null && tMin > sMin && tMin < eMin;
+                      const style = (isStart || isEnd)
+                        ? { background: '#D4A0B0', color: '#fff', border: '1px solid #D4A0B0' }
+                        : inRange
+                          ? { background: dm ? 'rgba(212,160,176,0.22)' : 'rgba(212,160,176,0.18)', color: dm ? '#F0EBE6' : '#8a5a6c', border: `1px solid ${dm ? 'rgba(212,160,176,0.4)' : 'rgba(212,160,176,0.35)'}` }
+                          : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` };
+                      return (
+                        <button key={t} type="button" onClick={() => pickTime(t)}
+                          className="relative py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
+                          style={style}
+                        >
+                          {t}
+                          {(isStart || isEnd) && (
+                            <span className="absolute top-0.5 right-1 text-[0.5rem] font-bold uppercase tracking-wide" style={{ opacity: 0.85 }}>
+                              {isStart ? 'A' : 'B'}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
+                  {startTime && (
+                    <button type="button" onClick={() => { setStartTime(''); setEndTime(''); }}
+                      className="mt-2 text-[0.62rem] font-medium underline underline-offset-2 transition-opacity hover:opacity-70"
+                      style={{ color: dm ? '#71717a' : '#999' }}>
+                      Clear selection
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* Confirm button */}
-              <div className="px-3 pb-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+              <div className="px-3 pb-3 pt-1" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                 <button
                   type="button"
-                  disabled={!pendingTime}
+                  disabled={!startTime}
                   onClick={() => {
-                    if (!pendingTime) return;
-                    onUpdateBooking({ time: pendingTime });
+                    if (!startTime) return;
+                    const value = pendingRange;
+                    onUpdateBooking({ time: value });
                     setShowTimePicker(false);
-                    showToast(`Time set to ${pendingTime}`, '#888');
+                    showToast(`Time set to ${value}`, '#888');
                     if (booking.status === 'confirmed') setShowReconfirmBanner(true);
                   }}
                   className="w-full py-3 rounded-[6px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
-                  style={pendingTime
+                  style={startTime
                     ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
                     : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                   }
                 >
-                  {pendingTime ? `Set to ${pendingTime}` : 'Select a time above'}
+                  {!startTime ? 'Tap a start time above' : endTime ? `Set to ${pendingRange}` : `Set start ${startTime} · tap an end time`}
                 </button>
               </div>
             </div>
