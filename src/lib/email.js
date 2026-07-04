@@ -18,7 +18,7 @@ function base(content) {
 ${content}
 <div style="text-align:center;padding:20px 0 8px;">
   <p style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#C4849A;margin:0 0 5px;">With love, Roko</p>
-  <p style="font-size:11px;color:#999999;margin:0;">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+  <p style="font-size:11px;color:#999999;margin:0;">roko@makeupbyroko.org · @makeupbyroko_</p>
 </div>
 </div></body></html>`;
 }
@@ -71,7 +71,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
     ${content}
     <tr><td style="padding:26px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
       <p style="font-family:Georgia,serif;font-style:italic;font-size:17px;color:#C4849A;margin:0 0 8px;">With love, Roko</p>
-      <p style="font-size:12px;color:#9A8E94;margin:0;">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+      <p style="font-size:12px;color:#9A8E94;margin:0;">roko@makeupbyroko.org · @makeupbyroko_</p>
       <p style="font-size:11px;color:#C3B8BE;margin:10px 0 0;">Makeup by Roko · Mountain House, CA</p>
     </td></tr>
   </table>
