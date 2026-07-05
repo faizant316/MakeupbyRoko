@@ -12,6 +12,11 @@ export async function POST(req) {
     const formData = await req.formData();
     const token = formData.get('token');
     const files = formData.getAll('file').filter(Boolean);
+    // Optional category tag ("without" | "with" | "extra"). We encode it in the
+    // storage path so the admin card can group photos without a schema change;
+    // reference_photos stays a flat URL array (backward compatible).
+    const rawCategory = String(formData.get('category') || '').toLowerCase();
+    const category = ['without', 'with', 'extra'].includes(rawCategory) ? rawCategory : 'misc';
 
     if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
     if (!files.length) return NextResponse.json({ error: 'No files provided' }, { status: 400 });
@@ -34,7 +39,7 @@ export async function POST(req) {
     const urls = [];
     for (const file of files) {
       const ext = mimeToExt[file.type] || 'jpg';
-      const path = `client/${booking.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const path = `client/${booking.id}/${category}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const arrayBuffer = await file.arrayBuffer();
       const { error: uploadError } = await supabase.storage
         .from('reference-photos')

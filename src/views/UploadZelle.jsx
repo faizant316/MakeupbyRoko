@@ -146,6 +146,7 @@ function ClientPhotosCard({ token, booking, setBooking }) {
           const formData = new FormData();
           formData.append('file', compressed);
           formData.append('token', token);
+          formData.append('category', 'extra');
           const res = await fetch('/api/upload-client-photos', { method: 'POST', body: formData });
           const raw = await res.text();
           let data = {};
@@ -369,13 +370,17 @@ export default function UploadZelle() {
       // its own instead of taking the whole batch down.
       let refPhotos = Array.isArray(booking?.reference_photos) ? booking.reference_photos : [];
       let photoError = null;
-      const allPhotos = [...withoutItems, ...withItems];
-      for (const it of (isBridal ? allPhotos : [])) {
+      // Tag each upload with its category ("without"/"with") so the admin card
+      // can group them. Encoded in the storage path, not a schema change.
+      const groups = isBridal ? [['without', withoutItems], ['with', withItems]] : [];
+      const tagged = groups.flatMap(([category, items]) => items.map(it => ({ it, category })));
+      for (const { it, category } of tagged) {
         try {
           const compressed = await compressImage(it.file);
           const pf = new FormData();
           pf.append('file', compressed);
           pf.append('token', token);
+          pf.append('category', category);
           const pres = await fetch('/api/upload-client-photos', { method: 'POST', body: pf });
           const praw = await pres.text();
           let pdata = {};
