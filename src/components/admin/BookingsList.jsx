@@ -460,11 +460,11 @@ export default function BookingsList({
       {/* Status + service-type filters — minimal text chips, soft-tint when active */}
       {(() => {
         const STATUS_COLORS = {
-          all:       { dot: null,      light: { bg: 'rgba(160,96,122,0.10)', txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)', txt: '#e7c9d5' } },
-          pending:   { dot: '#F59E0B', light: { bg: 'rgba(245,158,11,0.13)', txt: '#B26A04' }, dark: { bg: 'rgba(245,158,11,0.18)',  txt: '#F5B83C' } },
-          confirmed: { dot: '#3B82F6', light: { bg: 'rgba(59,130,246,0.12)', txt: '#2563EB' }, dark: { bg: 'rgba(59,130,246,0.20)',  txt: '#7DAEF9' } },
-          completed: { dot: '#22C55E', light: { bg: 'rgba(34,197,94,0.13)',  txt: '#15803D' }, dark: { bg: 'rgba(34,197,94,0.18)',   txt: '#56D98A' } },
-          cancelled: { dot: '#EF4444', light: { bg: 'rgba(239,68,68,0.12)',  txt: '#DC2626' }, dark: { bg: 'rgba(239,68,68,0.18)',   txt: '#F87171' } },
+          all:       { dot: null,      light: { bg: 'rgba(160,96,122,0.10)',  txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)',  txt: '#e7c9d5' } },
+          pending:   { dot: '#F59E0B', light: { bg: 'rgba(245,158,11,0.13)',  txt: '#B26A04' }, dark: { bg: 'rgba(245,158,11,0.18)',   txt: '#F5B83C' } },
+          confirmed: { dot: '#16A34A', light: { bg: 'rgba(22,163,74,0.13)',   txt: '#15803D' }, dark: { bg: 'rgba(34,197,94,0.18)',    txt: '#56D98A' } },
+          completed: { dot: '#64748B', light: { bg: 'rgba(100,116,139,0.14)', txt: '#475569' }, dark: { bg: 'rgba(148,163,184,0.16)',  txt: '#A7B2C4' } },
+          cancelled: { dot: '#EF4444', light: { bg: 'rgba(239,68,68,0.12)',   txt: '#DC2626' }, dark: { bg: 'rgba(239,68,68,0.18)',    txt: '#F87171' } },
         };
         const inAppointments = viewType === 'appointments';
         const mutedTxt = dm ? '#8a8a93' : '#9b8e88';

@@ -14,8 +14,8 @@ const CLASS_LABELS = {
 
 const STATUS_META = {
   pending:   { color: '#F59E0B', label: 'Pending'   },
-  confirmed: { color: '#3B82F6', label: 'Confirmed' },
-  enrolled:  { color: '#22C55E', label: 'Enrolled'  },
+  confirmed: { color: '#16A34A', label: 'Confirmed' },
+  enrolled:  { color: '#16A34A', label: 'Enrolled'  },
 };
 
 function timeAgo(iso) {

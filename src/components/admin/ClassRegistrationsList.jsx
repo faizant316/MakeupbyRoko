@@ -7,8 +7,8 @@ import { CLASS_DISPLAY } from '@/lib/classCatalog';
 
 const ENROLLMENT_STYLES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
-  confirmed: { bg: '#3B82F6', text: '#fff', label: 'Confirmed' },
-  enrolled:  { bg: '#22C55E', text: '#fff', label: 'Enrolled'  },
+  confirmed: { bg: '#16A34A', text: '#fff', label: 'Confirmed' },
+  enrolled:  { bg: '#16A34A', text: '#fff', label: 'Enrolled'  },
   cancelled: { bg: '#EF4444', text: '#fff', label: 'Cancelled' },
 };
 

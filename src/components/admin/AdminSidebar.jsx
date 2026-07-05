@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 export const ADMIN_TABS = [
   { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments' },
+  { key: 'clients',      label: 'Clients',        sub: 'Directory & smart groups' },
   { key: 'availability', label: 'Availability',   sub: 'Capacity & days off'     },
   { key: 'services',     label: 'Services',       sub: 'Edit & update offerings' },
   { key: 'reviews',      label: 'Reviews',        sub: 'Approve & manage'        },
