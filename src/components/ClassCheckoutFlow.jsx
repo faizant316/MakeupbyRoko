@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useScrollLock } from '@/lib/useScrollLock';
 import ClassSelector from './class-checkout/ClassSelector';
 import ClassContactForm from './class-checkout/ClassContactForm';
@@ -6,6 +6,7 @@ import ClassSuccessScreen from './ClassSuccessScreen';
 import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
+import { CLASS_KEYS, CLASS_FORMATS, classMeta } from '@/lib/classCatalog';
 
 // "2026-07-15" → "Wednesday, July 15, 2026"
 function formatChosenDate(raw) {
@@ -17,52 +18,14 @@ function formatChosenDate(raw) {
   } catch { return ''; }
 }
 
-const CLASSES = [
-  {
-    key: 'private_basic_lesson',
-    title: 'Beginner Makeup Lesson',
-    duration: '3 hours',
-    price: 500,
-    deposit: 250,
-    description: 'Perfect for anyone wanting to master makeup on themselves. We focus on a soft, everyday glam you can confidently recreate, with personalized guidance for your features.',
-    includes: [
-      'Everyday soft glam application',
-      'Flawless skin prep, foundation, concealer, contour, and highlight',
-      'Soft brown eyeshadow look (up to three shadows)',
-      'Eyeliner and lash application',
-      'Brow shaping and lip contour',
-      'Product recommendations and personalized foundation match',
-      'Techniques you can recreate at home',
-    ],
-  },
-  {
-    key: 'masterclass',
-    title: 'Advanced Makeup Artist Training',
-    duration: '6 hours',
-    price: 1400,
-    deposit: 700,
-    description: 'Designed for makeup artists, or anyone wanting to start a career in makeup. We go deep on signature techniques, working on real clients, and the business side of artistry.',
-    includes: [
-      'My signature bridal and soft glam techniques',
-      'Working on different face shapes, skin tones, and skin types',
-      'Advanced complexion and blending techniques',
-      'Creative eyeshadow placement and color theory',
-      'Client consultation and product selection',
-      'Professional tips for working on clients',
-      'Social media and business guidance',
-      'Certificate of completion included',
-    ],
-  },
-];
-
-export { CLASSES };
-
 const STORAGE_KEY = 'roko_class_checkout';
 
 export default function ClassCheckoutFlow({ onClose }) {
   const [step, setStep] = useState('select');
+  const [format, setFormat] = useState('online'); // 'online' | 'in_person'
   const [selected, setSelected] = useState(null); // single class key
   const [selectedDate, setSelectedDate] = useState(null); // 'YYYY-MM-DD' Wednesday
+  const [selectedSlot, setSelectedSlot] = useState(null); // e.g. '11:00 AM – 2:00 PM'
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', additional_notes: '' });
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [successData, setSuccessData] = useState(null);
@@ -102,14 +65,21 @@ export default function ClassCheckoutFlow({ onClose }) {
     }
   }, []);
 
-  const selectedClass = CLASSES.find(c => c.key === selected) || null;
+  // Slots differ per class + format, so a stale pick must never survive a switch.
+  const pickFormat = (f) => { setFormat(f); setSelectedSlot(null); };
+  const pickClass = (k) => { setSelected(k); setSelectedSlot(null); };
+
+  const selectedClass = selected ? classMeta(selected, format) : null;
   const totalFull = selectedClass?.price || 0;
+  const formatMeta = CLASS_FORMATS[format];
 
   // Filled class agreement for the Review & Sign step (paid in full at checkout).
   const classContract = buildContract({
     kind: 'class',
     clientName: `${form.first_name} ${form.last_name}`.trim(),
-    serviceName: selectedClass?.title || 'your class',
+    serviceName: selectedClass ? `${selectedClass.title} (${formatMeta.label})` : 'your class',
+    dateFormatted: selectedDate ? formatChosenDate(selectedDate) : undefined,
+    time: selectedSlot || '',
     priceAmount: `$${totalFull}`,
     locationType: 'studio',
     overrides: contractOverrides,
@@ -130,7 +100,9 @@ export default function ClassCheckoutFlow({ onClose }) {
           phone: form.phone,
           additional_notes: (form.additional_notes || '').trim() || null,
           selected_classes: selected ? [selected] : [],
+          class_format: format,
           preferred_date: selectedDate || null,
+          preferred_time: selectedSlot || null,
           success_url: `${origin}/payment-success`,
           cancel_url: `${origin}${path}`,
           contract_signed: sig ? true : undefined,
@@ -146,7 +118,10 @@ export default function ClassCheckoutFlow({ onClose }) {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
           full_name: `${form.first_name} ${form.last_name}`.trim(),
           email: form.email,
+          format,
+          formatLabel: formatMeta.short,
           preferredDate: formatChosenDate(selectedDate),
+          preferredTime: selectedSlot || '',
           selectedClasses: selectedClass ? [{ name: selectedClass.title, duration: selectedClass.duration, price: selectedClass.price }] : [],
           totalPaid: totalFull,
         }));
@@ -182,9 +157,11 @@ export default function ClassCheckoutFlow({ onClose }) {
       >
         {step === 'select' && (
           <ClassSelector
-            classes={CLASSES}
+            classKeys={CLASS_KEYS}
+            format={format}
+            onFormat={pickFormat}
             selected={selected}
-            onSelect={setSelected}
+            onSelect={pickClass}
             onClose={onClose}
             onNext={() => selected && setStep('details')}
           />
@@ -195,8 +172,11 @@ export default function ClassCheckoutFlow({ onClose }) {
             form={form}
             setForm={setForm}
             selectedClass={selectedClass}
+            format={format}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
+            selectedSlot={selectedSlot}
+            setSelectedSlot={setSelectedSlot}
             onBack={() => setStep('select')}
             onClose={onClose}
             onCheckout={() => setStep('sign')}

@@ -1,16 +1,11 @@
 import { useMemo } from 'react';
+import { classesOfReg } from '@/lib/classCatalog';
 
 // Home overview card for class sign-ups. Replaces the old emoji + inline pills
 // with a clearer breakdown (Pending / Confirmed / Enrolled) and a real
 // "just signed up" list so it's obvious who registered and when, at a glance.
 
-const CLASS_LABELS = {
-  private_basic_lesson: 'Basic Lesson',
-  masterclass: 'Advanced Lesson',
-  virtual_lesson: 'Virtual Lesson',
-  intermediate_lesson: 'Intermediate Lesson',
-  glam_class: 'Glam Class',
-};
+const FORMAT_SHORT = { online: 'Online', in_person: 'In Person' };
 
 const STATUS_META = {
   pending:   { color: '#F59E0B', label: 'Pending'   },
@@ -28,8 +23,10 @@ function timeAgo(iso) {
 }
 
 function classLabelOf(reg) {
-  const cls = Object.keys(CLASS_LABELS).filter(k => reg[k]);
-  return cls.length ? cls.map(k => CLASS_LABELS[k]).join(' · ') : 'Makeup Class';
+  const cls = classesOfReg(reg);
+  const label = cls.length ? cls.map(c => c.title.replace('Makeup ', '')).join(' · ') : 'Makeup Class';
+  const fmt = FORMAT_SHORT[reg.class_format];
+  return fmt ? `${fmt} · ${label}` : label;
 }
 
 export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg, darkMode: dm }) {

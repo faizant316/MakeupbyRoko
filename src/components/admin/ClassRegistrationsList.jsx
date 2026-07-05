@@ -3,13 +3,19 @@ import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import Collapse from './Collapse';
 import { groupByTime, relativeDate, daysUntil } from './timeline';
-import { CLASS_DISPLAY } from '@/lib/classCatalog';
+import { classesOfReg, regTotal } from '@/lib/classCatalog';
 
 const ENROLLMENT_STYLES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
   confirmed: { bg: '#16A34A', text: '#fff', label: 'Confirmed' },
   enrolled:  { bg: '#16A34A', text: '#fff', label: 'Enrolled'  },
   cancelled: { bg: '#EF4444', text: '#fff', label: 'Cancelled' },
+};
+
+// Online = Zoom blue, In Person = studio violet. Shared look with the detail page.
+export const FORMAT_META = {
+  online:    { label: 'Online',    short: 'Zoom',   color: '#2D8CFF', bg: 'rgba(45,140,255,0.1)'  },
+  in_person: { label: 'In Person', short: 'Studio', color: '#8A63A8', bg: 'rgba(138,99,168,0.12)' },
 };
 
 const PAYMENT_META = {
@@ -27,10 +33,10 @@ function normalizePaymentStatus(raw) {
 
 // Compact one-line row, mirroring the appointments list.
 function ClassRow({ reg, onSelect, dm }) {
-  const selectedClasses = Object.entries(CLASS_DISPLAY).filter(([key]) => reg[key]);
-  const computedTotal = selectedClasses.reduce((sum, [, m]) => sum + (m.price || 0), 0);
-  const totalPrice = reg.amount_paid ?? computedTotal;
-  const classLabel = selectedClasses.length > 0 ? selectedClasses.map(([, m]) => m.title).join(' · ') : 'No classes selected';
+  const selectedClasses = classesOfReg(reg);
+  const totalPrice = regTotal(reg);
+  const classLabel = selectedClasses.length > 0 ? selectedClasses.map(c => c.title).join(' · ') : 'No classes selected';
+  const fmt = FORMAT_META[reg.class_format];
   const meta = ENROLLMENT_STYLES[reg.status || 'pending'] || ENROLLMENT_STYLES.pending;
   const payState = normalizePaymentStatus(reg.payment_status);
   const isRefunded = payState === 'refunded';
@@ -65,9 +71,17 @@ function ClassRow({ reg, onSelect, dm }) {
         <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
           {reg.full_name || 'Unknown'}
         </p>
-        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
-          {classLabel}
-          {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
+        <p className="text-[0.72rem] truncate mt-0.5 flex items-center gap-1.5" style={{ color: mutedColor }}>
+          {fmt && (
+            <span className="inline-flex flex-shrink-0 text-[0.55rem] font-bold tracking-[0.06em] uppercase px-1.5 py-[1px] rounded"
+              style={{ background: fmt.bg, color: fmt.color }}>
+              {fmt.label}
+            </span>
+          )}
+          <span className="truncate">
+            {classLabel}
+            {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
+          </span>
         </p>
       </div>
 
@@ -145,6 +159,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     queryFn: () => api.entities.ClassRegistration.list('-created_date', 100),
   });
   const [collapsedGroups, setCollapsedGroups] = useState({ later: true });
+  const [formatFilter, setFormatFilter] = useState('all'); // all | online | in_person
 
   const registrations = [...rawRegistrations].sort((a, b) => {
     const aDate = a.appointment_date ? new Date(a.appointment_date) : null;
@@ -185,25 +200,31 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     );
   }
 
+  // Format filter first, then the timeline grouping runs on what's visible.
+  const visible = formatFilter === 'all'
+    ? registrations
+    : registrations.filter(r => r.class_format === formatFilter);
+
   // Surface the just-signed-up / not-yet-scheduled sign-ups: pull the
   // "Unscheduled" bucket to the very top and dress it as an action callout,
   // then the timeline (This Week → This Month → Later) follows beneath it.
-  const timeGroups = groupByTime(registrations, r => r.appointment_date);
+  const timeGroups = groupByTime(visible, r => r.appointment_date);
   const orderedGroups = [
     ...timeGroups.filter(g => g.key === 'unscheduled'),
     ...timeGroups.filter(g => g.key !== 'unscheduled'),
   ];
-  const unscheduledCount = registrations.filter(r => !r.appointment_date).length;
-  const weekCount = registrations.filter(r => { const d = daysUntil(r.appointment_date); return d >= 0 && d <= 7; }).length;
+  const unscheduledCount = visible.filter(r => !r.appointment_date).length;
+  const weekCount = visible.filter(r => { const d = daysUntil(r.appointment_date); return d >= 0 && d <= 7; }).length;
+  const countOf = (f) => registrations.filter(r => r.class_format === f).length;
 
   return (
     <div>
       {/* Time-aware summary glance */}
-      <div className="flex items-stretch gap-2 mb-5">
+      <div className="flex items-stretch gap-2 mb-4">
         {[
           { label: 'Needs Scheduling', value: unscheduledCount, accent: unscheduledCount > 0 },
           { label: 'This Week', value: weekCount },
-          { label: 'Total', value: registrations.length },
+          { label: 'Total', value: visible.length },
         ].map(s => (
           <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
             style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
@@ -212,6 +233,34 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
           </div>
         ))}
       </div>
+
+      {/* Online / In Person filter — Booksy-style segmented pills */}
+      <div className="inline-flex items-center gap-1 p-1 rounded-xl mb-5"
+        style={{ background: dm ? '#1e1e24' : '#F5F0EC', border: `1px solid ${dm ? '#2e2e38' : '#eee6df'}` }}>
+        {[
+          { key: 'all', label: `All · ${registrations.length}` },
+          { key: 'online', label: `Online · ${countOf('online')}`, meta: FORMAT_META.online },
+          { key: 'in_person', label: `In Person · ${countOf('in_person')}`, meta: FORMAT_META.in_person },
+        ].map(f => {
+          const active = formatFilter === f.key;
+          return (
+            <button key={f.key} type="button" onClick={() => setFormatFilter(f.key)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.66rem] font-semibold tracking-[0.03em] transition-all"
+              style={active
+                ? { background: dm ? '#34343d' : '#fff', color: f.meta?.color || (dm ? '#e4e4e7' : '#1a1a1a'), boxShadow: dm ? 'none' : '0 1px 4px rgba(60,45,35,0.12)' }
+                : { color: dm ? '#71717a' : '#a99e95' }}>
+              {f.meta && <span className="w-1.5 h-1.5 rounded-full" style={{ background: f.meta.color }} />}
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {visible.length === 0 && (
+        <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+          No {formatFilter === 'online' ? 'online' : 'in-person'} sign-ups yet
+        </p>
+      )}
 
       {/* Time-grouped rows */}
       <div className="flex flex-col gap-6">

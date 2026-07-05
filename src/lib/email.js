@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { buildContract } from './contract';
+import { STUDIO_ADDRESS, STUDIO_DISPLAY, STUDIO_MAPS_URL } from './studio';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
 const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
@@ -215,6 +216,17 @@ function cinfo(html) {
   </td></tr>`;
 }
 
+// Studio address block for in-person classes: the address itself plus a
+// directions button. Mirrors cZoom so online/in-person emails feel like twins.
+function cStudio() {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:16px;text-align:center;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Your Class Location</p>
+    <p style="font-size:15px;font-weight:600;color:#16110F;margin:0 0 12px;line-height:1.5;">${STUDIO_DISPLAY}</p>
+    ${STUDIO_ADDRESS ? clientButton(STUDIO_MAPS_URL, 'Get Directions', true) : ''}
+    <p style="font-size:11px;color:#A99FA4;margin:12px 0 0;">Roko's studio · Mountain House, CA</p>
+  </td></tr></table>`;
+}
+
 function cZoom(zoomLink) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:16px;text-align:center;">
     <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 12px;">Your Zoom Link</p>
@@ -419,30 +431,58 @@ export function feedbackRequestEmail({ name, service }) {
   });
 }
 
-export function classPaymentEmail({ firstName, bookedClasses, totalPaid, catalog, preferredDate }) {
-  const classRows = bookedClasses.map(k =>
-    crow(`${catalog[k].title}<br><span style="font-size:12px;color:#9A8E94;">${catalog[k].duration}</span>`, `$${catalog[k].price.toLocaleString()}`)
+// The single class confirmation email. Since the client picks their Wednesday
+// and time window at checkout, this is the full booking confirmation:
+// online classes get their Zoom link right here, in-person classes get the
+// Mountain House studio address.
+export function classPaymentEmail({ firstName, classes = [], totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink }) {
+  const isOnline = format === 'online';
+  const isInPerson = format === 'in_person';
+
+  const classRows = classes.map(c =>
+    crow(`${c.title}<br><span style="font-size:12px;color:#9A8E94;">${c.dayNote || c.duration}</span>`, `$${c.price.toLocaleString()}`)
   ).join('');
 
-  const receiptRows = [
-    preferredDate ? crow('Requested date', `<strong style="color:#16110F;">${preferredDate}</strong>`) : '',
-    crow('Payment method', 'Card · Stripe'),
-    crow('Status', '<span style="color:#15803d;font-weight:700;">Paid in full ✓</span>'),
+  const scheduleRows = [
+    dateFormatted ? crow('Date', `<strong style="color:#16110F;">${dateFormatted}</strong>`) : '',
+    classTime ? crow('Time', `<strong style="color:#16110F;">${classTime}</strong>`) : '',
+    formatLabel ? crow('Format', `<strong style="color:#16110F;">${isInPerson ? '📍 In Person · Mountain House' : isOnline ? '💻 Online · Zoom' : formatLabel}</strong>`) : '',
   ].filter(Boolean).join('');
 
-  return clientShell({
-    preheader: `Payment received — you're officially booked!`,
-    content: `
-      ${clientHero({ emoji: '✓', eyebrow: 'Payment Confirmed', title: 'Your spot is', titleAccent: 'secured!' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received${preferredDate ? ` for <strong style="color:#16110F;">${preferredDate}</strong>` : ''}. I'll reach out within <strong style="color:#16110F;">24–48 hours</strong> to confirm your time and all the details.`)}
-      ${cheadline('Total Paid', `$${totalPaid.toLocaleString()}`, 'Paid in full via Stripe')}
-      ${cpanel(`${ctitle('Your Class')}${crows(classRows)}`)}
-      ${cpanel(`${ctitle('Payment Receipt')}${crows(receiptRows)}`)}
-      ${cstepsPanel('What Happens Next', [
-        ['1', 'Roko confirms your time within 24–48 hrs', 'Your class is on the Wednesday you chose above'],
+  const connect = isOnline && zoomLink ? cZoom(zoomLink) : isInPerson ? cStudio() : '';
+
+  const receiptRows = [
+    crow('Payment method', 'Card · Stripe'),
+    crow('Status', '<span style="color:#15803d;font-weight:700;">Paid in full ✓</span>'),
+  ].join('');
+
+  const steps = isInPerson
+    ? [
+        ['1', 'Save the address', 'The directions button above takes you right to the studio'],
+        ['2', 'Come with a clean face', 'No makeup, or light moisturizer only. We start fresh!'],
+        ['3', 'Just bring yourself', 'All products and tools are provided at the studio'],
+      ]
+    : isOnline
+    ? [
+        ['1', zoomLink ? 'Save your Zoom link' : 'Watch for your Zoom link', zoomLink ? 'It lives right here in this email whenever you need it' : 'It will arrive in a separate email before your class'],
+        ['2', 'Set up your space', 'Good lighting, a mirror, and your makeup within reach'],
+        ['3', 'Come with a clean face', 'We start fresh with skin prep, then build the look together'],
+      ]
+    : [
+        ['1', 'Roko confirms your details within 24–48 hrs', 'Your class is on the Wednesday you chose above'],
         ['2', 'Prepare any inspiration photos', 'Optional but helpful'],
         ['3', 'Show up and learn!', 'All supplies provided, just bring yourself'],
-      ])}
+      ];
+
+  return clientShell({
+    preheader: dateFormatted ? `You're booked for ${dateFormatted}${classTime ? `, ${classTime}` : ''}.` : `Payment received — you're officially booked!`,
+    content: `
+      ${clientHero({ emoji: '✓', eyebrow: 'Payment Confirmed', title: "You're officially", titleAccent: 'booked!' })}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received and your class is scheduled${dateFormatted ? ` for <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}${classTime ? `, <strong style="color:#16110F;">${classTime}</strong>` : ''}. Everything you need is below.`)}
+      ${cheadline('Total Paid', `$${totalPaid.toLocaleString()}`, 'Paid in full via Stripe')}
+      ${cpanel(`${ctitle('Your Class')}${crows(classRows + scheduleRows)}${connect}`)}
+      ${cpanel(`${ctitle('Payment Receipt')}${crows(receiptRows)}`)}
+      ${cstepsPanel('To Prepare', steps)}
     `,
   });
 }
@@ -504,10 +544,12 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
 }
 
 export function enrolledLessonEmail({ firstName, className, lessonDate, lessonTime, meetingType, zoomLink, clientPhone, notes }) {
-  const fmt = meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType;
+  const fmt = meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType === 'In-Person' ? 'In Person · Mountain House' : meetingType;
   let connect = '';
   if (meetingType === 'Zoom' && zoomLink) {
     connect = cZoom(zoomLink);
+  } else if (meetingType === 'In-Person') {
+    connect = cStudio();
   } else if (meetingType === 'Phone' && clientPhone) {
     connect = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:16px;">
       <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">How We Will Connect</p>
@@ -560,9 +602,9 @@ export function lessonScheduledEmail({ firstName, className, lessonDate, lessonT
 
 // ─── Admin Templates (kept simple & info-dense) ────────────────────────────────
 
-export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog, sessionId, preferredDate }) {
-  const classRows = bookedClasses.map(k =>
-    `<tr><td style="padding:7px 0;font-size:13px;color:#444444;border-bottom:1px solid #F5E8EF;">${catalog[k].title}</td><td style="padding:7px 0;font-size:13px;font-weight:600;color:#111111;text-align:right;border-bottom:1px solid #F5E8EF;">$${catalog[k].price.toLocaleString()}</td></tr>`
+export function adminClassPaymentEmail({ reg, classes = [], totalPaid, formatLabel, dateFormatted, classTime, zoomLink, sessionId }) {
+  const classRows = classes.map(c =>
+    `<tr><td style="padding:7px 0;font-size:13px;color:#444444;border-bottom:1px solid #F5E8EF;">${c.title}${formatLabel ? ` <span style="color:#C4849A;">(${formatLabel})</span>` : ''}</td><td style="padding:7px 0;font-size:13px;font-weight:600;color:#111111;text-align:right;border-bottom:1px solid #F5E8EF;">$${c.price.toLocaleString()}</td></tr>`
   ).join('');
 
   // Real client notes only — the signed-agreement summary now lives in its own
@@ -580,8 +622,17 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
         ${row('Name', reg.full_name)}
         ${row('Email', reg.email)}
         ${row('Phone', reg.phone)}
-        ${preferredDate ? row('Requested Date', `<strong>${preferredDate}</strong>`, '#C4849A') : ''}
         ${cleanNotes ? row('Notes', cleanNotes) : ''}
+      </table>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Schedule</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${formatLabel ? row('Format', `<strong>${formatLabel}</strong>`, '#C4849A') : ''}
+        ${dateFormatted ? row('Date', `<strong>${dateFormatted}</strong>`) : row('Date', 'Not chosen', '#C4849A')}
+        ${classTime ? row('Time', `<strong>${classTime}</strong>`) : ''}
+        ${formatLabel === 'In Person' ? row('Location', STUDIO_DISPLAY) : ''}
+        ${zoomLink ? row('Zoom', `<a href="${zoomLink}" style="color:#2D8CFF;text-decoration:none;">Join link ↗</a>`) : ''}
       </table>
     `)}
     ${card(`
@@ -600,7 +651,9 @@ export function adminClassPaymentEmail({ reg, bookedClasses, totalPaid, catalog,
       </table>
     `) : ''}
     ${card(`
-      <p style="font-size:13px;color:#444444;margin:0 0 14px;">Please reach out within 24–48 hours to confirm their class time.</p>
+      <p style="font-size:13px;color:#444444;margin:0 0 14px;">${dateFormatted
+        ? `This class is booked and the client already has their ${formatLabel === 'In Person' ? 'studio address' : zoomLink ? 'Zoom link' : 'confirmation'}. Reschedule or manage it in the dashboard.`
+        : 'Please reach out within 24–48 hours to confirm their class time.'}</p>
       <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
         <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
       </td></tr></table>
@@ -791,7 +844,8 @@ export function adminLessonEmail({ clientName, clientEmail, className, lessonDat
       <table style="width:100%;border-collapse:collapse;">
         ${row('Date', `<strong>${lessonDate}</strong>`)}
         ${row('Time', `<strong>${lessonTime}</strong>`)}
-        ${row('Format', meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType)}
+        ${row('Format', meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType === 'In-Person' ? 'In Person · Mountain House' : meetingType)}
+        ${meetingType === 'In-Person' ? row('Location', STUDIO_DISPLAY) : ''}
         ${zoomLink ? row('Zoom Link', `<a href="${zoomLink}" style="color:#C4849A;word-break:break-all;">${zoomLink}</a>`) : ''}
         ${notes ? row('Notes', notes) : ''}
       </table>

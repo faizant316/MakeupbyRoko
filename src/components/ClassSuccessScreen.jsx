@@ -4,8 +4,10 @@ import { useModalLenis } from '@/lib/modalLenis';
 export default function ClassSuccessScreen({ onClose, registrationData }) {
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
-  const { full_name, email, selectedClasses = [], totalPaid = 0, preferredDate = '' } = registrationData || {};
+  const { full_name, email, selectedClasses = [], totalPaid = 0, preferredDate = '', preferredTime = '', format = '', formatLabel = '' } = registrationData || {};
   const firstName = (full_name || '').split(' ')[0] || 'there';
+  const isOnline = format === 'online';
+  const isInPerson = format === 'in_person';
   const receiptDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
@@ -29,7 +31,11 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
             <p className="font-serif italic text-[#D4A0B0] text-base">Your spot is officially secured ✦</p>
           </div>
           <p className="text-[0.85rem] text-gray-500 max-w-[400px] leading-[1.8]">
-            Hey {firstName}! Your payment has been received. Roko will reach out within <strong className="text-[#111]">24–48 hours</strong> to confirm your class schedule and all the details.
+            {isOnline
+              ? <>Hey {firstName}! Your payment has been received and your class is scheduled. Your <strong className="text-[#111]">Zoom link</strong> is on its way to your inbox right now.</>
+              : isInPerson
+              ? <>Hey {firstName}! Your payment has been received and your class is scheduled. The <strong className="text-[#111]">studio address in Mountain House</strong> is in your confirmation email.</>
+              : <>Hey {firstName}! Your payment has been received. Roko will reach out within <strong className="text-[#111]">24–48 hours</strong> to confirm your class schedule and all the details.</>}
           </p>
           <div className="flex items-center gap-2 text-[0.72rem] text-[#A0785A]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -56,8 +62,20 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
 
           {preferredDate && (
             <div className="flex items-center justify-between px-5 py-3 border-b border-[#F5F0EC]">
-              <span className="text-[0.68rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Class date (requested)</span>
+              <span className="text-[0.68rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Class date</span>
               <span className="text-[0.8rem] font-medium text-[#111]">{preferredDate}</span>
+            </div>
+          )}
+          {preferredTime && (
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[#F5F0EC]">
+              <span className="text-[0.68rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Time</span>
+              <span className="text-[0.8rem] font-medium text-[#111] tabular-nums">{preferredTime}</span>
+            </div>
+          )}
+          {formatLabel && (
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[#F5F0EC]">
+              <span className="text-[0.68rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Format</span>
+              <span className="text-[0.8rem] font-medium text-[#111]">{formatLabel}</span>
             </div>
           )}
 
@@ -85,11 +103,24 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
             <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#C4849A]">What Happens Next</p>
           </div>
           <div className="bg-white divide-y divide-[#F5F0EC]">
-            {[
-              { n: 1, title: 'Roko reaches out within 24–48 hrs', sub: 'To confirm your class date, time & location' },
-              { n: 2, title: 'Prepare any inspiration photos', sub: 'Optional but helpful, share looks you love' },
-              { n: 3, title: 'Show up and learn!', sub: 'All supplies are provided, just bring yourself' },
-            ].map(({ n, title, sub }) => (
+            {(isOnline
+              ? [
+                  { n: 1, title: 'Check your email for the Zoom link', sub: 'Save it somewhere handy, it is your ticket in' },
+                  { n: 2, title: 'Set up your space', sub: 'Good lighting, a mirror, and your makeup within reach' },
+                  { n: 3, title: 'Come with a clean face', sub: 'We start fresh with skin prep, then build the look' },
+                ]
+              : isInPerson
+              ? [
+                  { n: 1, title: 'Check your email for the studio address', sub: 'Directions to the Mountain House studio are inside' },
+                  { n: 2, title: 'Come with a clean face', sub: 'No makeup, or light moisturizer only' },
+                  { n: 3, title: 'Just bring yourself', sub: 'All products and tools are provided at the studio' },
+                ]
+              : [
+                  { n: 1, title: 'Roko reaches out within 24–48 hrs', sub: 'To confirm your class date, time & location' },
+                  { n: 2, title: 'Prepare any inspiration photos', sub: 'Optional but helpful, share looks you love' },
+                  { n: 3, title: 'Show up and learn!', sub: 'All supplies are provided, just bring yourself' },
+                ]
+            ).map(({ n, title, sub }) => (
               <div key={n} className="flex items-start gap-3 px-5 py-3.5">
                 <div className="w-5 h-5 rounded-full bg-[#F7EEF2] flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-[0.6rem] font-bold text-[#C4849A]">{n}</span>
@@ -106,7 +137,7 @@ export default function ClassSuccessScreen({ onClose, registrationData }) {
         {/* Contact / sign off */}
         <div className="text-center py-2">
           <p className="font-serif italic text-[1.1rem] text-[#C4849A] mb-1">With love, Roko</p>
-          <p className="text-[0.68rem] text-[#999999]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+          <p className="text-[0.68rem] text-[#999999]">roko@makeupbyroko.org · @makeupbyroko_</p>
         </div>
 
         <div className="pb-8">

@@ -4,6 +4,7 @@ import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, daysUntil } from './timeline';
 import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
+import { classesOfReg } from '@/lib/classCatalog';
 
 // SSR-safe layout effect — measures the active tab to position the underline
 // without a first-paint flash, while staying quiet during server render.
@@ -171,13 +172,8 @@ function isBridalBooking(booking) {
 const CONSULT_COLOR = '#A855F7';
 const LESSON_COLOR = '#C4956A';
 
-const CLASS_LABELS = {
-  private_basic_lesson: 'Basic Makeup Lesson',
-  masterclass: 'Advanced Makeup Lesson',
-  virtual_lesson: 'Virtual Makeup Lesson',
-  intermediate_lesson: 'Intermediate Makeup Lesson',
-  glam_class: 'Glam Makeup Class',
-};
+// Class titles/prices come from the shared catalog so admin surfaces never
+// drift from what the site sells.
 
 export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
@@ -784,8 +780,7 @@ export default function BookingsList({
 
           {/* Items */}
           {lessonsOnDate.map((r, i) => {
-            const classList = Object.keys(CLASS_LABELS).filter(k => r[k]);
-            const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Lesson';
+            const classLabel = classesOfReg(r)[0]?.title || 'Makeup Lesson';
             const zoomMatch = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/m);
             const meetingId = parseMeetingId(r.lesson_notes) || meetingIdFromUrl(zoomMatch?.[1]);
             const isZoom = r.consultation_type === 'Zoom';
@@ -815,7 +810,7 @@ export default function BookingsList({
                     {r.full_name || 'Client'}
                   </p>
                   <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
-                    {isPhone ? 'Phone / FaceTime' : (r.consultation_type || 'Zoom')} · {r.appointment_time || ''} · {classLabel}
+                    {isPhone ? 'Phone / FaceTime' : r.consultation_type === 'In-Person' ? 'In Person · Studio' : (r.consultation_type || 'Zoom')} · {r.appointment_time || ''} · {classLabel}
                   </p>
                 </div>
                 {isZoom && (meetingId || zoomMatch) ? (
@@ -855,8 +850,7 @@ export default function BookingsList({
           ) : (
             <div className="flex flex-col gap-2">
               {filteredClassRegs.map((r, i) => {
-                const classList = Object.keys(CLASS_LABELS).filter(k => r[k]);
-                const classLabel = classList.length ? CLASS_LABELS[classList[0]] : 'Makeup Course';
+                const classLabel = classesOfReg(r)[0]?.title || 'Makeup Course';
                 const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#22C55E' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
                 const statusLabel = r.status === 'enrolled' ? 'Enrolled' : r.status === 'confirmed' ? 'Confirmed' : 'Pending';
                 const isRefunded = r.payment_status === 'refunded';

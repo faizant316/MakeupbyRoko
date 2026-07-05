@@ -3,20 +3,13 @@ import StatusBadge from './StatusBadge';
 import { relativeDate } from './timeline';
 import { lenisScrollTo } from '@/lib/lenis';
 import { isBridalService } from './statusColors';
+import { classesOfReg } from '@/lib/classCatalog';
 
 // Booksy-style Clients section. One directory built automatically from every
 // booking and class sign-up: a searchable A-Z list with a jump rail, plus
 // smart groups (New, Most Loyal, Slipping Away, Prospects...) computed live
 // from appointment history. Tap a client for their card: contact actions,
 // stats, and their full appointment + class history.
-
-const CLASS_LABELS = {
-  private_basic_lesson: 'Basic Makeup Lesson',
-  masterclass: 'Advanced Makeup Lesson',
-  virtual_lesson: 'Virtual Makeup Lesson',
-  intermediate_lesson: 'Intermediate Makeup Lesson',
-  glam_class: 'Glam Makeup Class',
-};
 
 const todayKey = () => new Date().toISOString().split('T')[0];
 const dayKeyOffset = (days) => {
@@ -32,8 +25,7 @@ function initialsOf(name) {
 }
 
 function classLabelOf(reg) {
-  const keys = Object.keys(CLASS_LABELS).filter(k => reg[k]);
-  return keys.length ? CLASS_LABELS[keys[0]] : 'Makeup Class';
+  return classesOfReg(reg)[0]?.title || 'Makeup Class';
 }
 
 // ── Build the client directory from bookings + class sign-ups ──

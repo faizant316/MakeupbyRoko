@@ -21,8 +21,8 @@ const DEMO_SUMMARY = {
 };
 
 const DEMO_CLASS_BY_TYPE = [
-  { key: 'private_basic_lesson', title: 'Basic Makeup Lesson',   price: 300,  count: 12, revenue: 3600 },
-  { key: 'masterclass',          title: 'Advanced Makeup Lesson', price: 1500, count: 4,  revenue: 6000 },
+  { key: 'private_basic_lesson', title: 'Beginner Makeup Lesson',          price: 520,  count: 12, revenue: 6240 },
+  { key: 'masterclass',          title: 'Advanced Makeup Artist Training', price: 1445, count: 4,  revenue: 5780 },
 ];
 
 const DEMO_TOP_SERVICES = [

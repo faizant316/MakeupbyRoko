@@ -24,6 +24,7 @@ export async function POST(req) {
     const result = await finalizeClassRegistration(supabase, {
       registrationId: registration_id,
       sessionId: session_id,
+      sessionMeta: session.metadata || {},
     });
 
     return NextResponse.json({ success: true, already_confirmed: !!result.alreadyDone });

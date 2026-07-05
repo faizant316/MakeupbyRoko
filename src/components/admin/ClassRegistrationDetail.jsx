@@ -2,7 +2,9 @@
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
-import { CLASS_DISPLAY } from '@/lib/classCatalog';
+import { classesOfReg, regTotal, classMeta } from '@/lib/classCatalog';
+import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
+import { FORMAT_META } from './ClassRegistrationsList';
 import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
 import { parseRange } from '@/lib/timeWindow';
 
@@ -65,6 +67,9 @@ function parseNotes(raw) {
 function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) {
   const hasLesson = !!reg.appointment_date;
   const parsed = parseNotes(reg.lesson_notes);
+  const isInPersonReg = reg.class_format === 'in_person';
+  // The published start windows for this class + format, offered as quick picks.
+  const classWindows = classesOfReg(reg).find(c => c.slots)?.slots || [];
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);
@@ -74,8 +79,8 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: reg.appointment_date || reg.preferred_date || '',
-    time: reg.appointment_time || TIME_SLOTS[2],
-    type: reg.consultation_type || 'Zoom',
+    time: reg.appointment_time || reg.preferred_time || classWindows[0] || TIME_SLOTS[2],
+    type: reg.consultation_type || (isInPersonReg ? 'In-Person' : 'Zoom'),
     notes: parsed.notes,
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -183,10 +188,15 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
             </div>
             <div className="min-w-0">
               <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
-                {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type} · {reg.appointment_time}
+                {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type === 'In-Person' ? 'In Person · Studio' : reg.consultation_type} · {reg.appointment_time}
               </p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: textMuted }}>{lessonDate}</p>
-              {(meetingId || parsed.meetingId) ? (
+              {reg.consultation_type === 'In-Person' && (
+                <a href={STUDIO_MAPS_URL} target="_blank" rel="noopener noreferrer"
+                  className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
+                  style={{ color: textMuted }}>{STUDIO_DISPLAY}</a>
+              )}
+              {reg.consultation_type !== 'In-Person' && (meetingId || parsed.meetingId) ? (
                 <button type="button"
                   onClick={() => openZoomHost(meetingId || parsed.meetingId, meetLink || parsed.link)}
                   className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
@@ -258,11 +268,27 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
               </div>
             </div>
 
+            {/* The published class windows as one-tap picks */}
+            {classWindows.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 -mt-2">
+                <span className="text-[0.58rem] font-semibold tracking-[0.1em] uppercase" style={{ color: textMuted }}>Class windows:</span>
+                {classWindows.map(w => (
+                  <button key={w} type="button" onClick={() => set('time', w)}
+                    className="text-[0.66rem] font-semibold px-2.5 py-1 rounded-lg transition-all tabular-nums"
+                    style={form.time === w
+                      ? { background: LESSON_BG, color: LESSON_COLOR, border: `1px solid ${LESSON_COLOR}` }
+                      : { background: inputBg, color: textMuted, border: `1px solid ${border}` }}>
+                    {w}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Meeting Type */}
             <div>
               <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
               <div className="flex gap-2">
-                {[{ value: 'Zoom', label: 'Zoom' }, { value: 'Phone', label: 'Phone / FaceTime' }].map(({ value, label }) => (
+                {[{ value: 'Zoom', label: 'Zoom' }, { value: 'Phone', label: 'Phone / FaceTime' }, { value: 'In-Person', label: 'In Studio' }].map(({ value, label }) => (
                   <button key={value} type="button" onClick={() => set('type', value)}
                     className="flex-1 py-3 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
                     style={form.type === value
@@ -274,6 +300,22 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 ))}
               </div>
             </div>
+
+            {/* In-studio location note — the email includes this address */}
+            {form.type === 'In-Person' && (
+              <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+                style={{ background: 'rgba(138,99,168,0.08)', border: '1px solid rgba(138,99,168,0.25)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#8A63A8" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <div className="min-w-0">
+                  <p className="text-[0.75rem] font-semibold" style={{ color: dm ? '#c9b3dd' : '#8A63A8' }}>Studio · Mountain House</p>
+                  <p className="text-[0.68rem] mt-0.5 leading-relaxed" style={{ color: textMuted }}>
+                    {STUDIO_DISPLAY} · the confirmation email includes the address and directions.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Zoom link */}
             {form.type === 'Zoom' && (
@@ -436,12 +478,12 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
     },
   });
 
-  const selectedClasses = Object.entries(CLASS_DISPLAY).filter(([key]) => reg[key]);
-  const classLabel = selectedClasses.map(([, m]) => m.title).join(' · ');
-  const computedTotal = selectedClasses.reduce((sum, [, m]) => sum + (m.price || 0), 0);
-  // Prefer what Stripe actually charged; fall back to the catalog sum for
-  // manually-added rows that never went through checkout.
-  const totalPrice = reg.amount_paid ?? computedTotal;
+  const selectedClasses = classesOfReg(reg);
+  const classLabel = selectedClasses.map(c => c.title).join(' · ');
+  // Prefer what Stripe actually charged; fall back to the per-format catalog
+  // price for manually-added rows that never went through checkout.
+  const totalPrice = regTotal(reg);
+  const fmt = FORMAT_META[reg.class_format];
   // Sign-ups reach this page because they paid through Stripe at checkout, so
   // "paid" is the baseline truth — the only meaningful payment action left is a
   // refund. Exception: a client added manually (no Stripe session) never went
@@ -515,7 +557,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             <div className="min-w-0 px-2">
               <p className="text-white font-bold tracking-[0.16em] uppercase text-[1.25rem] leading-none">{enrollmentMeta.label}</p>
               <p className="text-white/70 text-[0.64rem] mt-1.5 truncate tabular-nums">
-                Makeup Class · ID: {String(reg.id || '').slice(0, 8).toUpperCase()}{signedUpOn ? ` · Signed up ${signedUpOn}` : ''}
+                {fmt ? `${fmt.label} Class` : 'Makeup Class'} · ID: {String(reg.id || '').slice(0, 8).toUpperCase()}{signedUpOn ? ` · Signed up ${signedUpOn}` : ''}
               </p>
             </div>
             <span className="w-10 -mr-1.5" />
@@ -553,8 +595,15 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             <h2 className="font-serif text-[1.7rem] font-light tracking-[-0.01em] mb-1.5" style={{ color: textMain }}>
               {reg.full_name || 'Unknown'}
             </h2>
-            <p className="text-[0.8rem]" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
+            <p className="text-[0.8rem] flex items-center gap-2 flex-wrap" style={{ color: dm ? '#D4A0B0' : '#D4A0B0' }}>
               {classLabel || 'No class selected'}
+              {fmt && (
+                <span className="inline-flex items-center gap-1 text-[0.58rem] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
+                  style={{ background: fmt.bg, color: fmt.color }}>
+                  <span className="w-1 h-1 rounded-full" style={{ background: fmt.color }} />
+                  {fmt.label}{fmt.label === 'In Person' ? ' · Mountain House' : ' · Zoom'}
+                </span>
+              )}
             </p>
             {/* Agreement + photo-consent chips, near the name (not in Notes). */}
             {reg.contract_signed && (
@@ -590,14 +639,15 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 <p className="text-[0.95rem] font-semibold" style={{ color: textMain }}>{appointmentDate}</p>
                 {reg.appointment_time && <p className="text-[0.82rem] mt-0.5" style={{ color: textMuted }}>{reg.appointment_time}</p>}
                 {reg.consultation_type && (
-                  <p className="text-[0.72rem] mt-1 font-medium" style={{ color: LESSON_COLOR }}>
-                    {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type}
+                  <p className="text-[0.72rem] mt-1 font-medium" style={{ color: reg.consultation_type === 'In-Person' ? '#8A63A8' : LESSON_COLOR }}>
+                    {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type === 'In-Person' ? `In Person · ${STUDIO_DISPLAY}` : reg.consultation_type}
                   </p>
                 )}
               </>
             ) : reg.preferred_date ? (
               <>
                 <p className="text-[0.95rem] font-semibold" style={{ color: textMain }}>{formatDate(reg.preferred_date)}</p>
+                {reg.preferred_time && <p className="text-[0.82rem] mt-0.5" style={{ color: textMuted }}>{reg.preferred_time}</p>}
                 <p className="text-[0.72rem] mt-1 font-medium" style={{ color: dm ? '#c47a92' : '#A0607A' }}>Requested by client · not yet confirmed</p>
               </>
             ) : (

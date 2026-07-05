@@ -53,6 +53,10 @@ export default function PaymentSuccessPage() {
   const selectedClasses = data?.selectedClasses || [];
   const totalPaid = data?.totalPaid || selectedClasses.reduce((s, c) => s + (c.price || 0), 0);
   const preferredDate = data?.preferredDate || '';
+  const preferredTime = data?.preferredTime || '';
+  const formatLabel = data?.formatLabel || '';
+  const isOnline = data?.format === 'online';
+  const isInPerson = data?.format === 'in_person';
 
   if (status === 'loading') {
     return (
@@ -105,8 +109,12 @@ export default function PaymentSuccessPage() {
             <p className="font-serif italic text-[#D4A0B0] text-[1rem]">Your spot is officially secured ✦</p>
           </div>
           <p className="text-[0.85rem] text-gray-500 max-w-[420px] leading-[1.85]">
-            Your payment has been received{preferredDate ? <> for <strong className="text-[#111]">{preferredDate}</strong></> : ''} and a confirmation email is on its way to your inbox.
-            Roko will reach out within <strong className="text-[#111]">24–48 hours</strong> to confirm your class time.
+            Your payment has been received{preferredDate ? <> and your class is scheduled for <strong className="text-[#111]">{preferredDate}</strong>{preferredTime ? <>, <strong className="text-[#111]">{preferredTime}</strong></> : ''}</> : ''}.{' '}
+            {isOnline
+              ? <>Your <strong className="text-[#111]">Zoom link</strong> is on its way to your inbox right now.</>
+              : isInPerson
+              ? <>The <strong className="text-[#111]">studio address in Mountain House</strong> is in your confirmation email.</>
+              : <>Roko will reach out within <strong className="text-[#111]">24–48 hours</strong> to confirm your class time.</>}
           </p>
           {data?.email && (
             <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
@@ -131,11 +139,23 @@ export default function PaymentSuccessPage() {
             </span>
           </div>
 
-          {/* Requested class date */}
+          {/* Scheduled class date / time / format */}
           {preferredDate && (
             <div className="flex items-center justify-between px-6 py-3 border-b border-[#F5F0EC]">
-              <span className="text-[0.72rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Class date (requested)</span>
+              <span className="text-[0.72rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Class date</span>
               <span className="text-[0.82rem] font-medium text-[#111]">{preferredDate}</span>
+            </div>
+          )}
+          {preferredTime && (
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#F5F0EC]">
+              <span className="text-[0.72rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Time</span>
+              <span className="text-[0.82rem] font-medium text-[#111] tabular-nums">{preferredTime}</span>
+            </div>
+          )}
+          {formatLabel && (
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#F5F0EC]">
+              <span className="text-[0.72rem] font-medium text-[#A0785A] uppercase tracking-[0.08em]">Format</span>
+              <span className="text-[0.82rem] font-medium text-[#111]">{formatLabel}</span>
             </div>
           )}
 
@@ -171,11 +191,24 @@ export default function PaymentSuccessPage() {
             <p className="text-[0.55rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A]">What Happens Next</p>
           </div>
           <div className="divide-y divide-[#F5F0EC]">
-            {[
-              { n: 1, title: 'Check your email', sub: 'A receipt and confirmation is headed to your inbox' },
-              { n: 2, title: 'Roko reaches out within 24–48 hrs', sub: 'To confirm your class date, time & location' },
-              { n: 3, title: 'Show up and learn!', sub: 'All supplies provided, just bring yourself ✨' },
-            ].map(({ n, title, sub }) => (
+            {(isOnline
+              ? [
+                  { n: 1, title: 'Check your email for the Zoom link', sub: 'Your confirmation and join link are headed to your inbox' },
+                  { n: 2, title: 'Set up your space', sub: 'Good lighting, a mirror, and your makeup within reach' },
+                  { n: 3, title: 'Come with a clean face', sub: 'We start fresh with skin prep, then build the look' },
+                ]
+              : isInPerson
+              ? [
+                  { n: 1, title: 'Check your email for the studio address', sub: 'Directions to the Mountain House studio are inside' },
+                  { n: 2, title: 'Come with a clean face', sub: 'No makeup, or light moisturizer only' },
+                  { n: 3, title: 'Just bring yourself!', sub: 'All products and tools are provided at the studio ✨' },
+                ]
+              : [
+                  { n: 1, title: 'Check your email', sub: 'A receipt and confirmation is headed to your inbox' },
+                  { n: 2, title: 'Roko reaches out within 24–48 hrs', sub: 'To confirm your class date, time & location' },
+                  { n: 3, title: 'Show up and learn!', sub: 'All supplies provided, just bring yourself ✨' },
+                ]
+            ).map(({ n, title, sub }) => (
               <div key={n} className="flex items-start gap-4 px-6 py-4">
                 <div className="w-6 h-6 rounded-full bg-[#F7EEF2] flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-[0.6rem] font-bold text-[#C4849A]">{n}</span>
@@ -192,7 +225,7 @@ export default function PaymentSuccessPage() {
         {/* Sign off */}
         <div className="text-center py-2">
           <p className="font-serif italic text-[1.15rem] text-[#A0785A] mb-1">Xoxo, Roko 💄</p>
-          <p className="text-[0.68rem] text-gray-400">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+          <p className="text-[0.68rem] text-gray-400">roko@makeupbyroko.org · @makeupbyroko_</p>
         </div>
 
         {/* CTA */}

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '../../../src/lib/supabase/server';
 
-import { CLASS_CATALOG } from '../../../src/lib/classCatalog';
+import { CLASS_CATALOG, CLASS_FORMATS, classMeta } from '../../../src/lib/classCatalog';
+import { isBookableWednesday } from '../../../src/lib/classSchedule';
 
 export async function POST(req) {
   try {
@@ -10,7 +11,7 @@ export async function POST(req) {
     const supabase = createClient();
 
     const body = await req.json();
-    const { full_name, email, phone, additional_notes, selected_classes, success_url, cancel_url, preferred_date } = body;
+    const { full_name, email, phone, additional_notes, selected_classes, class_format, preferred_time, success_url, cancel_url, preferred_date } = body;
 
     if (!full_name || !email || !phone || !selected_classes?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -19,7 +20,22 @@ export async function POST(req) {
     const invalid = selected_classes.find(k => !CLASS_CATALOG[k]);
     if (invalid) return NextResponse.json({ error: 'Invalid class selected' }, { status: 400 });
 
-    const classData = selected_classes.map(k => CLASS_CATALOG[k]);
+    if (!CLASS_FORMATS[class_format]) {
+      return NextResponse.json({ error: 'Please choose online or in person' }, { status: 400 });
+    }
+
+    // Classes are bookable only on the next couple of open Wednesdays, at one
+    // of the published start windows for that class + format.
+    if (!isBookableWednesday(preferred_date)) {
+      return NextResponse.json({ error: 'Please pick one of the upcoming Wednesdays' }, { status: 400 });
+    }
+
+    const classData = selected_classes.map(k => classMeta(k, class_format));
+    const badSlot = preferred_time && classData.some(c => !c.slots.includes(preferred_time));
+    if (!preferred_time || badSlot) {
+      return NextResponse.json({ error: 'Please pick a class time' }, { status: 400 });
+    }
+
     const totalAmount = classData.reduce((sum, c) => sum + c.price, 0);
 
     // Create pending record first so reg_id is available for the Stripe success URL
@@ -43,10 +59,11 @@ export async function POST(req) {
 
     if (dbErr) throw dbErr;
 
+    const formatLabel = CLASS_FORMATS[class_format].label;
     const lineItems = classData.map(cls => ({
       price_data: {
         currency: 'usd',
-        product_data: { name: cls.title, description: cls.duration },
+        product_data: { name: `${cls.title} (${formatLabel})`, description: `${cls.duration} · Wednesday ${preferred_date} · ${preferred_time}` },
         unit_amount: cls.price * 100,
       },
       quantity: 1,
@@ -56,11 +73,18 @@ export async function POST(req) {
       line_items: lineItems,
       mode: 'payment',
       customer_email: email,
-      metadata: { registration_id: reg.id },
+      // Format + schedule ride along in metadata so the finalizer can still do
+      // the right thing even if the new columns (migration 0004) lag behind.
+      metadata: {
+        registration_id: reg.id,
+        class_format,
+        preferred_date: preferred_date || '',
+        preferred_time: preferred_time || '',
+      },
       success_url: `${success_url}?session_id={CHECKOUT_SESSION_ID}&reg_id=${reg.id}`,
       cancel_url: `${cancel_url}?cancelled=true`,
       payment_intent_data: {
-        description: `Makeup class — ${full_name}`,
+        description: `Makeup class (${formatLabel}) — ${full_name}`,
       },
     });
 
@@ -69,18 +93,13 @@ export async function POST(req) {
       .update({ stripe_session_id: session.id })
       .eq('id', reg.id);
 
-    // Best-effort: store the client's chosen Wednesday. Wrapped so a lagging
-    // preferred_date column (migration 0003) never blocks checkout, but awaited
-    // so the row has the date before the webhook/confirm route reads it.
-    if (preferred_date) {
-      try {
-        await supabase
-          .from('class_registrations')
-          .update({ preferred_date })
-          .eq('id', reg.id);
-      } catch (e) {
-        console.error('preferred_date write skipped:', e?.message);
-      }
+    // Best-effort: store the chosen Wednesday, time window, and format. Wrapped
+    // so lagging columns (migrations 0003/0004) never block checkout, but
+    // awaited so the row has them before the webhook/confirm route reads it.
+    // Each column separately, so one missing column doesn't drop the others.
+    for (const patch of [{ preferred_date }, { preferred_time }, { class_format }]) {
+      const { error: colErr } = await supabase.from('class_registrations').update(patch).eq('id', reg.id);
+      if (colErr) console.error(`class checkout column write skipped (${Object.keys(patch)[0]}):`, colErr.message);
     }
 
     // Best-effort: store the signed agreement. Kept separate from the required

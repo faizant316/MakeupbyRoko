@@ -32,7 +32,7 @@ export async function POST(req) {
     // Same shared finalizer the on-site confirm route uses. The atomic claim
     // inside means only one of the two paths sends the client + admin email
     // pair — no more duplicate 🎨 / 💳 messages.
-    await finalizeClassRegistration(supabase, { registrationId, sessionId: session.id });
+    await finalizeClassRegistration(supabase, { registrationId, sessionId: session.id, sessionMeta: session.metadata || {} });
   } catch (err) {
     console.error('stripe-webhook handler:', err);
   }
