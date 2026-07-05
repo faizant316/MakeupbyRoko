@@ -9,7 +9,9 @@ import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
-import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
+import { AdminDatePicker } from './SchedulePicker';
+import TimeWindowPicker from './TimeWindowPicker';
+import { parseRange } from '@/lib/timeWindow';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -129,63 +131,6 @@ const APPT_TIMES = [
 
 const STATUS_COLORS = { pending: '#F59E0B', confirmed: '#3B82F6', completed: '#22C55E', cancelled: '#EF4444' };
 
-// "9:30 AM" → "09:30"  (for <input type="time"> value)
-function to24h(val) {
-  if (!val) return '';
-  const isPM = val.includes('PM') && !val.trim().startsWith('12');
-  const isAM12 = val.trim().startsWith('12') && val.includes('AM');
-  const clean = val.replace(/\s?(AM|PM)/i, '').trim();
-  const [hStr, mStr = '00'] = clean.split(':');
-  let h = parseInt(hStr, 10);
-  if (isPM) h += 12;
-  if (isAM12) h = 0;
-  return `${String(h).padStart(2, '0')}:${mStr}`;
-}
-
-// "09:30" → "9:30 AM"
-function from24h(val) {
-  if (!val) return '';
-  const [hStr, mStr = '00'] = val.split(':');
-  const h = parseInt(hStr, 10);
-  const ampm = h < 12 ? 'AM' : 'PM';
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${mStr} ${ampm}`;
-}
-
-// ── Appointment time WINDOW (start → end) helpers ─────────────────────────────
-// The appointment time is stored as a single string so every consumer (card
-// header, calendar, agenda, emails, contract) keeps working unchanged. A window
-// is "11:00 AM – 1:00 PM"; a single time is just "11:00 AM".
-const RANGE_SEP = ' – ';
-
-// "11:00 AM" → minutes since midnight, so the second tap can be ordered after
-// the first (and an earlier tap resets the start).
-function apptToMin(val) {
-  if (!val) return null;
-  const m = String(val).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-  if (!m) return null;
-  let h = parseInt(m[1], 10);
-  const min = parseInt(m[2], 10);
-  const ap = m[3] && m[3].toUpperCase();
-  if (ap === 'PM' && h !== 12) h += 12;
-  if (ap === 'AM' && h === 12) h = 0;
-  return h * 60 + min;
-}
-
-// Split a stored value into { start, end }. Accepts en/em dash, hyphen, or "to".
-function parseRange(val) {
-  if (!val) return { start: '', end: '' };
-  const parts = String(val).split(/\s*(?:–|—|-|to)\s*/i).map(s => s.trim()).filter(Boolean);
-  if (parts.length >= 2) return { start: parts[0], end: parts[1] };
-  return { start: parts[0] || '', end: '' };
-}
-
-// Build the stored/displayed value from a start (+ optional end).
-function formatRange(start, end) {
-  if (start && end) return `${start}${RANGE_SEP}${end}`;
-  return start || '';
-}
-
 // Brand plum (matches the front-end bridal cards)
 const PLUM = '#C4849A';
 
@@ -279,7 +224,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
   const [generatingLink, setGeneratingLink] = useState(false);
   const [form, setForm] = useState({
     date: booking.consultation_date || '',
-    time: booking.consultation_time || TIME_SLOTS[4],
+    time: booking.consultation_time || '',
     type: booking.consultation_type || 'Zoom',
     notes: parsed.notes,
   });
@@ -462,15 +407,17 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
           </div>
 
           <div className="p-5 flex flex-col gap-5" style={{ background: dm ? '#27272a' : '#fff' }}>
-            {/* Date + Time */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Date + Time window */}
+            <div className="flex flex-col gap-4">
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
                 <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR} />
               </div>
               <div>
-                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Time</label>
-                <AdminTimeSelect value={form.time} onChange={v => set('time', v)} dm={dm} slots={TIME_SLOTS} accent={CONSULT_COLOR} />
+                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
+                  Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>— 30 min meeting</span>
+                </label>
+                <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIME_SLOTS} dm={dm} accent={CONSULT_COLOR} />
               </div>
             </div>
 
@@ -614,26 +561,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [toastVisible, setToastVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const initialRange = parseRange(booking.time || '');
-  const [startTime, setStartTime] = useState(initialRange.start);
-  const [endTime, setEndTime] = useState(initialRange.end);
+  const [pendingWindow, setPendingWindow] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
 
-  // Two-tap window: first tap sets the start, second sets the end. Tapping a
-  // time at or before the current start resets it as the new start (no autofill,
-  // full manual control per Roko's ask).
-  const pickTime = (t) => {
-    if (!startTime || endTime) { setStartTime(t); setEndTime(''); return; }
-    const s = apptToMin(startTime), n = apptToMin(t);
-    if (n != null && s != null && n > s) setEndTime(t);
-    else { setStartTime(t); setEndTime(''); }
-  };
   const openTimePicker = () => {
-    const r = parseRange(booking.time || '');
-    setStartTime(r.start); setEndTime(r.end);
-    setShowTimePicker(true); setShowReconfirmBanner(false);
+    setPendingWindow(booking.time || '');
+    setShowTimePicker(true);
+    setShowReconfirmBanner(false);
   };
-  const pendingRange = formatRange(startTime, endTime);
+  const pendingStart = parseRange(pendingWindow).start;
 
   // ── In-admin Contact composer ────────────────────────────────────────────
   // Roko writes the client a personal email straight from the card (sent as
@@ -1261,111 +1197,38 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             )
           )}
 
-          {/* Time picker — two-tap window: first tap = start, second tap = end */}
+          {/* Time picker — modern two-tap window (start → end) */}
           {showTimePicker && (
-            <div className="rounded-[6px]" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, overflow: 'visible' }}>
-              {/* Header — shows the window being built */}
-              <div className="flex items-center justify-between px-4 py-3 rounded-t-xl"
-                style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex items-center gap-2 min-w-0" style={{ color: '#D4A0B0' }}>
-                  <span className="flex-shrink-0">{!startTime ? 'Tap start time' : !endTime ? 'Now tap end time' : 'Time window'}</span>
-                  {startTime && (
-                    <span className="text-[0.72rem] font-semibold tracking-normal normal-case truncate" style={{ color: dm ? '#F0EBE6' : '#111' }}>
-                      {formatRange(startTime, endTime) || startTime}
-                    </span>
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowTimePicker(false)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation flex-shrink-0"
-                  style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
+            <div className="rounded-[10px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+              <div className="flex items-center justify-between px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
+                <p className="text-[0.55rem] font-bold tracking-[0.16em] uppercase" style={{ color: '#D4A0B0' }}>Set Time Window</p>
+                <button type="button" onClick={() => setShowTimePicker(false)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation"
+                  style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
 
-              {/* Mobile — two native time inputs (Start + End) */}
-              <div className="md:hidden grid grid-cols-2 gap-3 px-4 pt-4 pb-1" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-                {[['Start', startTime, setStartTime], ['End', endTime, setEndTime]].map(([lbl, val, setter]) => (
-                  <div key={lbl}>
-                    <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>{lbl}</label>
-                    <input
-                      type="time"
-                      value={to24h(val)}
-                      onChange={e => setter(from24h(e.target.value))}
-                      style={{
-                        width: '100%', fontSize: '16px', padding: '12px 14px',
-                        borderRadius: '10px', border: `1.5px solid ${dm ? '#3a3a48' : '#e5e5e5'}`,
-                        background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111',
-                        outline: 'none', boxSizing: 'border-box', display: 'block',
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
+              <div className="p-4" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+                <TimeWindowPicker value={pendingWindow} onChange={setPendingWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
 
-              {/* Desktop — pill grid, two-tap start → end with the window highlighted */}
-              <div className="hidden md:block">
-                <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {APPT_TIMES.map(t => {
-                      const sMin = apptToMin(startTime), eMin = apptToMin(endTime), tMin = apptToMin(t);
-                      const isEnd = !!endTime && t === endTime;
-                      const isStart = !isEnd && t === startTime;
-                      const inRange = sMin != null && eMin != null && tMin != null && tMin > sMin && tMin < eMin;
-                      const style = (isStart || isEnd)
-                        ? { background: '#D4A0B0', color: '#fff', border: '1px solid #D4A0B0' }
-                        : inRange
-                          ? { background: dm ? 'rgba(212,160,176,0.22)' : 'rgba(212,160,176,0.18)', color: dm ? '#F0EBE6' : '#8a5a6c', border: `1px solid ${dm ? 'rgba(212,160,176,0.4)' : 'rgba(212,160,176,0.35)'}` }
-                          : { background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` };
-                      return (
-                        <button key={t} type="button" onClick={() => pickTime(t)}
-                          className="relative py-2.5 rounded-lg text-[0.68rem] font-medium transition-all text-center touch-manipulation"
-                          style={style}
-                        >
-                          {t}
-                          {(isStart || isEnd) && (
-                            <span className="absolute top-0.5 right-1 text-[0.5rem] font-bold uppercase tracking-wide" style={{ opacity: 0.85 }}>
-                              {isStart ? 'A' : 'B'}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {startTime && (
-                    <button type="button" onClick={() => { setStartTime(''); setEndTime(''); }}
-                      className="mt-2 text-[0.62rem] font-medium underline underline-offset-2 transition-opacity hover:opacity-70"
-                      style={{ color: dm ? '#71717a' : '#999' }}>
-                      Clear selection
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Confirm button */}
-              <div className="px-3 pb-3 pt-1" style={{ background: dm ? '#1e1e24' : '#fff' }}>
                 <button
                   type="button"
-                  disabled={!startTime}
+                  disabled={!pendingStart}
                   onClick={() => {
-                    if (!startTime) return;
-                    const value = pendingRange;
-                    onUpdateBooking({ time: value });
+                    if (!pendingStart) return;
+                    onUpdateBooking({ time: pendingWindow });
                     setShowTimePicker(false);
-                    showToast(`Time set to ${value}`, '#888');
+                    showToast(`Time set to ${pendingWindow}`, '#888');
                     if (booking.status === 'confirmed') setShowReconfirmBanner(true);
                   }}
-                  className="w-full py-3 rounded-[6px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
-                  style={startTime
+                  className="w-full mt-4 py-3 rounded-[8px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
+                  style={pendingStart
                     ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
                     : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                   }
                 >
-                  {!startTime ? 'Tap a start time above' : endTime ? `Set to ${pendingRange}` : `Set start ${startTime} · tap an end time`}
+                  {pendingStart ? `Set to ${pendingWindow}` : 'Tap a start time above'}
                 </button>
               </div>
             </div>
