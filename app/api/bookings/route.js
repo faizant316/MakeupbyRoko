@@ -28,12 +28,13 @@ export async function POST(req) {
     const supabase = createClient();
     const body = await req.json();
 
-    const { name, email, phone, service, date, time, notes, status, reference_photos } = body;
+    const { name, email, phone, service, date, time, notes, status, reference_photos, deposit_received } = body;
     if (!name || !email || !service) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     if (!EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
 
     const upload_token = body.upload_token || uuidv4();
     const insert = { name, email, phone, service, date, time, notes, status, reference_photos, upload_token };
+    if (deposit_received !== undefined) insert.deposit_received = deposit_received;
 
     const { data, error } = await supabase.from('bookings').insert(insert).select().single();
     if (error) throw error;
