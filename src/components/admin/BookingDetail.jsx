@@ -953,10 +953,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <button
                 type="button"
                 onClick={openCompose}
-                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.65rem] font-semibold transition-all hover:opacity-85"
-                style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)', color: '#D4A0B0', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.3)'}` }}
+                className="mt-2.5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-[0.66rem] font-bold tracking-[0.06em] uppercase transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.35)' }}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
                 Message client
               </button>
             )}
@@ -965,16 +965,25 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Contact composer — Roko's personal email, sent as roko@makeupbyroko.org */}
         {showCompose && (
-          <div ref={composeRef} className="mb-6 rounded-[8px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-            <div className="flex items-center justify-between px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
-              <div>
-                <p className="text-[0.55rem] font-bold tracking-[0.16em] uppercase" style={{ color: '#D4A0B0' }}>Email Client</p>
-                <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#a1a1aa' : '#888' }}>To <span style={{ color: dm ? '#F0EBE6' : '#111', fontWeight: 600 }}>{booking.email}</span> · from roko@makeupbyroko.org</p>
+          <div ref={composeRef} className="mb-6 rounded-2xl overflow-hidden"
+            style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
+            <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f3ede7'}` }}>
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
+                </svg>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Message Client</p>
+                <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
+                  To <span style={{ color: dm ? '#e7c9d5' : '#8A4A63', fontWeight: 600 }}>{booking.email}</span> · sends from roko@makeupbyroko.org
+                </p>
               </div>
-              <button type="button" onClick={() => setShowCompose(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-full transition-all"
-                style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <button type="button" onClick={() => setShowCompose(false)} aria-label="Close composer"
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
+                style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
@@ -988,19 +997,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </button>
 
               <div>
-                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Subject</label>
+                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
                 <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-[6px] outline-none"
-                  style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111' }} />
+                  className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
+                  style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
               </div>
 
               <div>
-                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#999' }}>Message</label>
+                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Message</label>
                 <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
                   placeholder="Write your message…"
-                  className="w-full px-3 py-2.5 rounded-[6px] outline-none resize-y"
-                  style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}`, background: dm ? '#27272a' : '#fafafa', color: dm ? '#e4e4e7' : '#111' }} />
-                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#bbb' }}>Sent on your branded template. Line breaks are kept.</p>
+                  className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
+                  style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#c0b5ab' }}>Sent on your branded template. Line breaks are kept.</p>
               </div>
 
               {/* Attach updated agreement */}
@@ -1021,14 +1030,21 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               <div className="flex items-center gap-2 pt-1">
                 <button type="button" onClick={() => setShowCompose(false)}
-                  className="px-4 py-2.5 rounded-[6px] text-[0.72rem] font-semibold transition-all"
-                  style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                  className="px-5 py-3 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.98]"
+                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#8a7e74', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
                   Cancel
                 </button>
                 <button type="button" onClick={sendCompose} disabled={sending}
-                  className="flex-1 py-2.5 rounded-[6px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold tracking-[0.04em] transition-all active:scale-[0.99] flex items-center justify-center gap-2"
                   style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: sending ? 0.7 : 1 }}>
-                  {sending ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : (attachContract ? 'Send email + agreement' : 'Send email')}
+                  {sending
+                    ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                    : <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        {attachContract ? 'Send email + agreement' : 'Send email'}
+                      </>}
                 </button>
               </div>
             </div>
