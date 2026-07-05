@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
+import { parseRange } from '../../../src/lib/timeWindow';
 
 async function getZoomToken() {
   const credentials = Buffer.from(
@@ -32,15 +33,20 @@ export async function POST(req) {
 
     const token = await getZoomToken();
 
-    // Build start_time from date + time if provided
+    // Build start_time from date + time if provided. `time` may be a single
+    // value ("1:00 PM") or a window ("1:00 PM – 1:30 PM") — only the start
+    // matters for scheduling the meeting, so pull just that out first.
     let start_time;
     if (date && time) {
-      const [h, m] = time.replace(' AM', '').replace(' PM', '').split(':').map(Number);
-      const isPM = time.includes('PM') && !time.startsWith('12');
-      const isAM12 = time.startsWith('12') && time.includes('AM');
+      const t = parseRange(time).start || time;
+      const [h, m] = t.replace(/\s?(AM|PM)/gi, '').trim().split(':').map(Number);
+      const isPM = /PM/i.test(t) && !t.trim().startsWith('12');
+      const isAM12 = t.trim().startsWith('12') && /AM/i.test(t);
       const hour24 = isAM12 ? 0 : isPM ? h + 12 : h;
-      const d = new Date(`${date}T${String(hour24).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
-      start_time = d.toISOString().replace('.000Z', 'Z');
+      if (!Number.isNaN(hour24) && !Number.isNaN(m)) {
+        const d = new Date(`${date}T${String(hour24).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+        if (!Number.isNaN(d.getTime())) start_time = d.toISOString().replace('.000Z', 'Z');
+      }
     }
 
     const meetingRes = await fetch('https://api.zoom.us/v2/users/me/meetings', {
