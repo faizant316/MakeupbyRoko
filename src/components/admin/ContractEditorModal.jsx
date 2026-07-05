@@ -104,6 +104,43 @@ export default function ContractEditorModal({
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_400px]">
           {/* ── Editor column ── */}
           <div className="overflow-y-auto px-5 sm:px-6 py-5" data-lenis-prevent style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Auto-fill details — feed the {artistName}, {days}, {travelFee} tokens */}
+            <div className="rounded-xl p-3.5 mb-5" style={{ background: softBg, border: `1px solid ${border}` }}>
+              <p className="text-[0.62rem] font-semibold mb-2.5" style={{ color: textSub }}>
+                Details <span style={{ color: textHint, fontWeight: 400 }}>— these fill in automatically across the contract.</span>
+              </p>
+              <div className="mb-3">
+                <label className={fieldLabel} style={{ color: textHint }}>Your legal / business name</label>
+                <input
+                  value={artistName}
+                  onChange={e => setArtistName(e.target.value)}
+                  placeholder="Roqia Moshref"
+                  className="w-full px-3 py-2 rounded-xl text-[0.82rem] outline-none" style={inputStyle}
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className={fieldLabel} style={{ color: textHint }}>Cancellation notice (days)</label>
+                  <input
+                    type="number" min="0" max="90"
+                    value={cancellationDays}
+                    onChange={e => setCancellationDays(e.target.value)}
+                    placeholder="14"
+                    className="w-full px-3 py-2 rounded-xl text-[0.82rem] outline-none" style={inputStyle}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className={fieldLabel} style={{ color: textHint }}>Travel fee starts at</label>
+                  <input
+                    value={travelFee}
+                    onChange={e => setTravelFee(e.target.value)}
+                    placeholder="$200"
+                    className="w-full px-3 py-2 rounded-xl text-[0.82rem] outline-none" style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Placeholder chips */}
             <div className="rounded-xl p-3 mb-5" style={{ background: softBg, border: `1px dashed ${border}` }}>
               <p className="text-[0.62rem] font-semibold mb-2" style={{ color: textSub }}>
@@ -160,7 +197,7 @@ export default function ContractEditorModal({
               {sections.map((s, i) => (
                 <div key={s.id} className="rounded-xl p-3" style={{ background: softBg, border: `1px solid ${border}` }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="w-5 h-5 rounded-md flex items-center justify-center text-[0.62rem] font-semibold flex-shrink-0" style={{ background: '#D4A0B0/12', color: '#C4849A', border: `1px solid ${border}` }}>{i + 1}</span>
+                    <span className="w-5 h-5 rounded-md flex items-center justify-center text-[0.62rem] font-semibold flex-shrink-0" style={{ background: 'rgba(212,160,176,0.14)', color: '#C4849A', border: `1px solid ${border}` }}>{i + 1}</span>
                     <input
                       value={s.heading}
                       onChange={e => updateSection(i, { heading: e.target.value })}

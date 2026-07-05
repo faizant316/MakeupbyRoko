@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import ContractSign from '@/components/ContractSign';
 import { buildContract } from '@/lib/contract';
+import { useContractOverrides } from '@/lib/useContractOverrides';
 
 // ── Brand plum palette (matches UploadZelle + the admin card) ──
 const PLUM = '#C4849A';
@@ -25,6 +26,7 @@ export default function ResignContract() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const contractOverrides = useContractOverrides();
 
   useEffect(() => {
     if (!bookingId || !token) {
@@ -60,6 +62,7 @@ export default function ResignContract() {
         time: booking.time || '',
         locationType: onLocation ? 'onlocation' : 'studio',
         kind: 'appointment',
+        overrides: contractOverrides,
       })
     : null;
 
