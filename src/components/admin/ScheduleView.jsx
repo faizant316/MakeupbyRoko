@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { EVENT_COLORS, EVENT_LABELS, isBridalService } from './statusColors';
+import { classesOfReg } from '@/lib/classCatalog';
 
 // Booksy-style day schedule: a week strip up top, then a real time grid where
 // every appointment is a color-coded block sized by its time window. Blocks
@@ -94,10 +95,6 @@ export default function ScheduleView({
 
   // ── Build the day's events ──
   const { timed, untimed } = useMemo(() => {
-    const CLASS_NAMES = {
-      private_basic_lesson: 'Basic Lesson', masterclass: 'Advanced Lesson',
-      virtual_lesson: 'Virtual Lesson', intermediate_lesson: 'Intermediate Lesson', glam_class: 'Glam Class',
-    };
     const all = [];
     bookings.forEach(b => {
       if (b.status === 'cancelled') return;
@@ -120,10 +117,11 @@ export default function ScheduleView({
     });
     classRegs.forEach(r => {
       if (r.status === 'cancelled' || r.appointment_date !== dateKey) return;
-      const cls = Object.keys(CLASS_NAMES).filter(k => r[k]);
+      const cls = classesOfReg(r)[0];
+      const fmtTag = r.class_format === 'in_person' ? ' · Studio' : r.class_format === 'online' ? ' · Zoom' : '';
       all.push({
         id: `l-${r.id}`, type: 'class', name: r.full_name || 'Client',
-        detail: cls.length ? CLASS_NAMES[cls[0]] : 'Makeup Class',
+        detail: (cls ? cls.title.replace('Makeup ', '') : 'Makeup Class') + fmtTag,
         timeStr: r.appointment_time || '', status: r.status === 'enrolled' ? 'confirmed' : (r.status || 'pending'),
         onOpen: () => onSelectClassReg?.(r),
       });

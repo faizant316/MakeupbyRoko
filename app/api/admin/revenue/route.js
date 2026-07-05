@@ -1,18 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../../src/lib/supabase/server';
 import { requireAdmin } from '../../../../src/lib/requireAdmin';
-
-const CLASS_CATALOG = {
-  private_basic_lesson: { title: 'Basic Makeup Lesson',   price: 300  },
-  masterclass:          { title: 'Advanced Makeup Lesson', price: 1500 },
-};
+import { CLASS_CATALOG, regTotal, classesOfReg } from '../../../../src/lib/classCatalog';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// What the registration is actually worth: amount_paid (what Stripe charged)
+// with a per-format catalog fallback — the shared helper handles both.
 function calcAmount(reg) {
-  return Object.entries(CLASS_CATALOG).reduce(
-    (sum, [k, { price }]) => sum + (reg[k] ? price : 0), 0
-  );
+  return regTotal(reg);
 }
 
 function buildBuckets(range, now) {
@@ -83,7 +79,7 @@ export async function GET(req) {
     const lastMonthKey  = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
     const buckets     = buildBuckets(range, now);
-    const classByType = Object.entries(CLASS_CATALOG).map(([key, { title, price }]) => ({ key, title, price, count: 0, revenue: 0 }));
+    const classByType = Object.entries(CLASS_CATALOG).map(([key, { title, formats }]) => ({ key, title, price: formats.in_person.price, count: 0, revenue: 0 }));
 
     let totalRevenue = 0, thisMonthRevenue = 0, lastMonthRevenue = 0;
 
@@ -96,7 +92,15 @@ export async function GET(req) {
       if (mk === lastMonthKey) lastMonthRevenue += amount;
       const b = buckets.find(x => x.key === bk);
       if (b) b.revenue += amount;
-      classByType.forEach(ct => { if (reg[ct.key]) { ct.count++; ct.revenue += ct.price; } });
+      const regClasses = classesOfReg(reg).filter(c => CLASS_CATALOG[c.key]);
+      regClasses.forEach(c => {
+        const ct = classByType.find(x => x.key === c.key);
+        if (!ct) return;
+        ct.count++;
+        // One class per registration is the norm, so give it the real charge;
+        // multi-class legacy rows split by their per-format catalog price.
+        ct.revenue += regClasses.length === 1 ? amount : (c.price || 0);
+      });
     });
 
     const serviceMap  = {};

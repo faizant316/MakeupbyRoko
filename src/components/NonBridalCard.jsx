@@ -61,7 +61,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
             {svc.category === 'lessons' && (
               <div className="flex items-center gap-1.5 text-[0.72rem] text-[#A0785A]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
-                <span>Wednesdays only · 10 AM – 8 PM · 50% Zelle deposit to secure spot</span>
+                <span>Wednesdays only · Online via Zoom or in person at the Mountain House studio · pay in full to reserve</span>
               </div>
             )}
           </div>

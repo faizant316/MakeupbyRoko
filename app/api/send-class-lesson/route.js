@@ -22,10 +22,19 @@ export async function POST(req) {
 
     const { error: dbErr } = await supabase
       .from('class_registrations')
-      .update({ appointment_date: lessonDate, appointment_time: lessonTime, consultation_type: meetingType, lesson_notes: storedNotes, status: 'enrolled' })
+      .update({ appointment_date: lessonDate, appointment_time: lessonTime, lesson_notes: storedNotes, status: 'enrolled' })
       .eq('id', registrationId);
 
     if (dbErr) throw dbErr;
+
+    // Separate best-effort write: 'In-Person' is only legal once migration 0004
+    // relaxes the old Zoom/Phone check constraint, and a stale constraint must
+    // never take the whole scheduling call down.
+    const { error: typeErr } = await supabase
+      .from('class_registrations')
+      .update({ consultation_type: meetingType })
+      .eq('id', registrationId);
+    if (typeErr) console.error('send-class-lesson consultation_type skipped:', typeErr.message);
 
     const firstName = (clientName || '').split(' ')[0] || 'there';
     const dateFormatted = new Date(lessonDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });

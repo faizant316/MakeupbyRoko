@@ -1,18 +1,11 @@
 import { useMemo } from 'react';
 import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
+import { classesOfReg } from '@/lib/classCatalog';
 
 // Always-on "Today" card for the Home overview. Surfaces everything happening
 // today in one place — regular appointments, Zoom/phone consultations, AND
 // class sign-up lessons — so a booking today is impossible to miss without
 // having to click the date on the calendar.
-
-const CLASS_LABELS = {
-  private_basic_lesson: 'Basic Makeup Lesson',
-  masterclass: 'Advanced Makeup Lesson',
-  virtual_lesson: 'Virtual Makeup Lesson',
-  intermediate_lesson: 'Intermediate Makeup Lesson',
-  glam_class: 'Glam Makeup Class',
-};
 
 const STATUS_META = {
   pending:   { bg: '#F59E0B', label: 'Pending' },
@@ -56,8 +49,9 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
     (classRegs || []).forEach(r => {
       if (r.status === 'cancelled') return;
       if (r.appointment_date === todayKey) {
-        const cls = Object.keys(CLASS_LABELS).filter(k => r[k]);
-        const label = cls.length ? cls.map(k => CLASS_LABELS[k]).join(' · ') : 'Makeup Class';
+        const cls = classesOfReg(r);
+        const fmtTag = r.class_format === 'in_person' ? ' · Studio' : r.class_format === 'online' ? ' · Zoom' : '';
+        const label = (cls.length ? cls.map(c => c.title).join(' · ') : 'Makeup Class') + fmtTag;
         const joinUrl = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1] || '';
         const isZoom = r.consultation_type === 'Zoom';
         list.push({ id: `l-${r.id}`, time: r.appointment_time, name: r.full_name || 'Client', label, status: r.status || 'pending', dot: '#D4A0B0', tag: 'Class', onClick: () => onSelectClassReg?.(r), joinUrl: isZoom ? joinUrl : '', meetingId: isZoom ? (parseMeetingId(r.lesson_notes) || meetingIdFromUrl(joinUrl)) : '' });

@@ -1,10 +1,22 @@
 import { useRef } from 'react';
 import { useModalLenis } from '@/lib/modalLenis';
+import { CLASS_FORMATS, classMeta } from '@/lib/classCatalog';
 
-export default function ClassSelector({ classes, selected, onSelect, onClose, onNext }) {
+// Format icons for the Online / In Person switch.
+const FormatIcon = ({ type, active }) => type === 'online' ? (
+  <svg viewBox="0 0 24 24" fill="none" stroke={active ? '#fff' : '#A0785A'} strokeWidth="1.6" className="w-[18px] h-[18px]">
+    <rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+  </svg>
+) : (
+  <svg viewBox="0 0 24 24" fill="none" stroke={active ? '#fff' : '#A0785A'} strokeWidth="1.6" className="w-[18px] h-[18px]">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+
+export default function ClassSelector({ classKeys, format, onFormat, selected, onSelect, onClose, onNext }) {
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
-  const selectedClass = classes.find(c => c.key === selected) || null;
+  const selectedClass = selected ? classMeta(selected, format) : null;
 
   return (
     <>
@@ -33,29 +45,67 @@ export default function ClassSelector({ classes, selected, onSelect, onClose, on
 
       {/* Scrollable content — leave bottom padding for sticky bar */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
-        <div className="w-full sm:max-w-[860px] sm:mx-auto px-6 sm:px-10 pt-8 pb-4 flex flex-col gap-8">
+        <div className="w-full sm:max-w-[860px] sm:mx-auto px-6 sm:px-10 pt-8 pb-4 flex flex-col gap-7">
           {/* Intro */}
           <div>
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Service Menu</p>
             <h2 className="font-serif text-[1.6rem] text-[#111] mb-2">Makeup Classes by <em className="text-[#D4A0B0] not-italic">MakeupbyRoko</em></h2>
             <p className="text-[0.85rem] text-gray-400 leading-[1.7]">
-              Pick the class you'd like. Next you'll choose your Wednesday and check out — your seat is reserved in full.
+              Learn online over Zoom, or in person at the studio in Mountain House. Pick your format and class, then choose your Wednesday and time.
             </p>
             <div className="mt-3 flex items-center gap-2 text-[0.72rem] text-[#A0785A]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]" />
-              Wednesdays · 10 AM – 8 PM · pay in full to reserve your seat
+              Wednesdays only · pay in full to reserve your seat
             </div>
+          </div>
+
+          {/* Format switch — Online vs In Person */}
+          <div>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-3">Step 1 · How would you like to learn?</p>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.values(CLASS_FORMATS).map(f => {
+                const active = format === f.key;
+                return (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => onFormat(f.key)}
+                    className="rounded-xl p-4 text-left transition-all border touch-manipulation"
+                    style={{
+                      background: active ? '#111' : '#FAFAF9',
+                      borderColor: active ? '#111' : '#ede8e4',
+                      boxShadow: active ? '0 6px 22px rgba(0,0,0,0.16)' : 'none',
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: active ? 'rgba(255,255,255,0.14)' : 'rgba(212,160,176,0.14)' }}>
+                        <FormatIcon type={f.key} active={active} />
+                      </div>
+                      <span className="text-[0.86rem] font-semibold" style={{ color: active ? '#fff' : '#111' }}>{f.label}</span>
+                    </div>
+                    <p className="text-[0.68rem] leading-[1.6]" style={{ color: active ? 'rgba(255,255,255,0.72)' : '#a5998e' }}>
+                      {f.key === 'online' ? 'Live over Zoom, from anywhere' : 'At the studio · Mountain House, CA'}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[0.68rem] text-gray-400 mt-2.5 leading-[1.6]">
+              {CLASS_FORMATS[format].blurb}
+            </p>
           </div>
 
           {/* Class cards */}
           <div className="flex flex-col gap-4">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-0">Select a Class</p>
-            {classes.map(cls => {
-              const isSelected = selected === cls.key;
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-0">Step 2 · Select a Class</p>
+            {classKeys.map(key => {
+              const cls = classMeta(key, format);
+              const isSelected = selected === key;
               return (
                 <div
-                  key={cls.key}
-                  onClick={() => onSelect(cls.key)}
+                  key={key}
+                  onClick={() => onSelect(key)}
                   className="rounded-xl p-5 cursor-pointer transition-all border"
                   style={{
                     background: isSelected ? 'linear-gradient(135deg, rgba(212,160,176,0.06), rgba(184,160,212,0.06))' : '#FAFAF9',
@@ -79,11 +129,17 @@ export default function ClassSelector({ classes, selected, onSelect, onClose, on
                           className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase px-2 py-0.5 rounded-full"
                           style={{ background: isSelected ? '#D4A0B0' : '#ede8e4', color: isSelected ? '#fff' : '#a5998e' }}
                         >
-                          ${cls.price}
+                          ${cls.price.toLocaleString()}
+                        </span>
+                        <span
+                          className="text-[0.58rem] font-semibold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
+                          style={{ background: 'rgba(160,120,90,0.1)', color: '#A0785A' }}
+                        >
+                          {CLASS_FORMATS[format].short}
                         </span>
                       </div>
                       <p className="text-[0.65rem] font-medium text-[#A0785A] mb-2">
-                        {cls.duration} · <span className="text-[#A0785A]">paid in full</span>
+                        {cls.duration} · {cls.dayNote} · <span className="text-[#A0785A]">paid in full</span>
                       </p>
                       <p className="text-[0.78rem] text-gray-500 leading-[1.7]">{cls.description}</p>
                       {cls.includes && (
@@ -113,7 +169,9 @@ export default function ClassSelector({ classes, selected, onSelect, onClose, on
         <div className="w-full sm:max-w-[860px] sm:mx-auto">
           {selectedClass && (
             <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-[0.7rem] font-semibold text-[#111] truncate pr-3">{selectedClass.title}</span>
+              <span className="text-[0.7rem] font-semibold text-[#111] truncate pr-3">
+                {selectedClass.title} <span className="font-normal text-[#A0785A]">· {CLASS_FORMATS[format].short}</span>
+              </span>
               <div className="text-right flex-shrink-0">
                 <span className="text-[0.65rem] text-gray-400">Total: </span>
                 <span className="text-[0.8rem] font-semibold text-[#111]">${selectedClass.price.toLocaleString()}</span>
@@ -133,7 +191,7 @@ export default function ClassSelector({ classes, selected, onSelect, onClose, on
           </button>
           {selectedClass && (
             <p className="text-[0.65rem] text-center text-gray-400 mt-2">
-              Next: pick your Wednesday &amp; your details <span className="text-[#D4A0B0]">✦</span>
+              Next: pick your Wednesday, time &amp; your details <span className="text-[#D4A0B0]">✦</span>
             </p>
           )}
         </div>
