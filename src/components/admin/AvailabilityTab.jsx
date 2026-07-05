@@ -361,32 +361,6 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
             </div>
           </div>
 
-          {/* Upcoming custom days */}
-          {upcomingOverrides.length > 0 && (
-            <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#71717a' : '#b0a59c' }}>Custom capacity days</p>
-              <div className="flex flex-col gap-1.5">
-                {upcomingOverrides.map(o => (
-                  <div key={o.id}
-                    onClick={() => jumpTo(o.date)}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all"
-                    style={{ background: selectedDate === o.date ? (dm ? '#2e2030' : '#FDF0F7') : (dm ? '#1e1e24' : '#FDF9F7'), border: `1px solid ${selectedDate === o.date ? '#D4A0B0' : (dm ? '#3a3a48' : '#f0e8e0')}` }}>
-                    <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#111' }}>{fmtDay(o.date)}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 text-[0.65rem] font-bold rounded-md" style={{ background: 'rgba(212,160,176,0.15)', color: '#A0607A' }}>{o.capacity} spots</span>
-                      <button onClick={(e) => { e.stopPropagation(); removeOverride.mutate(o.date); }}
-                        className="p-1 rounded-lg transition-colors" style={{ color: dm ? '#52525b' : '#ccc' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = dm ? '#52525b' : '#ccc'; }} title="Reset to default">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /></svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Days off */}
           {upcomingBlocked.length > 0 && (
             <div className="rounded-xl p-5" style={card}>
