@@ -417,40 +417,50 @@ export default function Admin() {
 
         {activeTab === 'bookings' && !selectedBooking && (
           <>
-            <div className="mb-8">
-              <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
-                onSelectBooking={setSelectedBooking}
-                onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
-            </div>
-            {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
-            <TodayAgenda
-              bookings={bookings}
-              classRegs={classRegs}
-              onSelectBooking={setSelectedBooking}
-              onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-              darkMode={dm}
-            />
-            {/* Class Sign-Ups quick access — sits above bookings list */}
-            {classRegs.length > 0 && (
-              <ClassSignupsCard
-                classRegs={classRegs}
-                onOpenAll={() => { setActiveTab('classes'); setSelectedBooking(null); }}
-                onOpenReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                darkMode={dm}
-              />
-            )}
-            <div id="bookings-list">
-              <BookingsList
-                bookings={filtered} loading={loadingBookings}
-                search={search} setSearch={setSearch} statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter} statusCounts={statusCounts}
-                selectedDate={selectedDate} setSelectedDate={setSelectedDate}
-                onSelect={setSelectedBooking} currentMonth={currentMonth}
-                allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
-                darkMode={dm} onAddClient={() => setShowAddClient(true)}
-                classRegs={classRegs} viewType={viewType} setViewType={setViewType}
-                onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-              />
+            {/* Two columns on desktop: calendar + today + classes on the left,
+                the appointments workspace on the right. Stacks on mobile. */}
+            <div className="xl:grid xl:grid-cols-[minmax(400px,460px)_minmax(0,1fr)] xl:gap-10 xl:items-start">
+              <div className="min-w-0">
+                <div className="mb-8">
+                  <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
+                    defaultDayOnMobile
+                    onSelectBooking={setSelectedBooking}
+                    onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
+                </div>
+                {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
+                <TodayAgenda
+                  bookings={bookings}
+                  classRegs={classRegs}
+                  onSelectBooking={setSelectedBooking}
+                  onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                  darkMode={dm}
+                />
+                {/* Class Sign-Ups quick access */}
+                {classRegs.length > 0 && (
+                  <ClassSignupsCard
+                    classRegs={classRegs}
+                    onOpenAll={() => { setActiveTab('classes'); setSelectedBooking(null); }}
+                    onOpenReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                    darkMode={dm}
+                  />
+                )}
+              </div>
+
+              <div id="bookings-list" className="min-w-0">
+                {/* Divider only when stacked (mobile / tablet) */}
+                <div className="xl:hidden mt-2 mb-7 h-px" style={{ background: dm ? '#2e2e38' : '#f1ece7' }} />
+                <BookingsList
+                  bookings={filtered} loading={loadingBookings}
+                  search={search} setSearch={setSearch} statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter} statusCounts={statusCounts}
+                  selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+                  onSelect={setSelectedBooking} currentMonth={currentMonth}
+                  allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
+                  darkMode={dm} onAddClient={() => setShowAddClient(true)}
+                  classRegs={classRegs} viewType={viewType} setViewType={setViewType}
+                  onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                />
+              </div>
             </div>
             {showAddClient && (
               <AddClientModal
