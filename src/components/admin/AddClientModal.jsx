@@ -13,8 +13,8 @@ const TIMES = [
 
 const STATUSES = [
   { value: 'pending', label: 'Pending', color: '#F59E0B' },
-  { value: 'confirmed', label: 'Confirmed', color: '#3B82F6' },
-  { value: 'completed', label: 'Completed', color: '#22C55E' },
+  { value: 'confirmed', label: 'Confirmed', color: '#16A34A' },
+  { value: 'completed', label: 'Completed', color: '#64748B' },
 ];
 
 const HOW_HEARD = ['Instagram', 'TikTok', 'Google', 'Referral / Word of Mouth', 'Other'];

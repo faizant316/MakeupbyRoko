@@ -18,6 +18,7 @@ import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail
 import AnalyticsTab from '../components/admin/AnalyticsTab';
 import RevenueTab from '../components/admin/RevenueTab';
 import AddClientModal from '../components/admin/AddClientModal';
+import ClientsTab from '../components/admin/ClientsTab';
 
 const DEFAULT_CAP = 3;
 
@@ -417,7 +418,9 @@ export default function Admin() {
         {activeTab === 'bookings' && !selectedBooking && (
           <>
             <div className="mb-8">
-              <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm} />
+              <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
+                onSelectBooking={setSelectedBooking}
+                onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
             </div>
             {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
             <TodayAgenda
@@ -472,6 +475,16 @@ export default function Admin() {
             onDelete={() => deleteBookingMutation.mutate(selectedBooking.id)}
             allBookings={bookings}
             darkMode={dm}
+          />
+        )}
+
+        {activeTab === 'clients' && (
+          <ClientsTab
+            bookings={bookings}
+            classRegs={classRegs}
+            darkMode={dm}
+            onOpenBooking={(b) => { setActiveTab('bookings'); setSelectedBooking(b); }}
+            onOpenClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
           />
         )}
 

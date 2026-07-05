@@ -2,32 +2,17 @@
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DateBlockPopup from './DateBlockPopup';
+import ScheduleView from './ScheduleView';
+import { STATUS_COLORS, STATUS_COLORS_DM } from './statusColors';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
-
-const STATUS_COLORS = {
-  pending: '#F59E0B',
-  confirmed: '#3B82F6',
-  completed: '#22C55E',
-  cancelled: '#EF4444',
-};
-
-
 
 function getWeekStart(date) {
   const d = new Date(date);
   d.setDate(d.getDate() - d.getDay());
   return d;
 }
-
-// Dark-mode muted versions of status colors
-const STATUS_COLORS_DM = {
-  pending: '#92660A',
-  confirmed: '#1D4ED8',
-  completed: '#166534',
-  cancelled: '#991B1B',
-};
 
 function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${year}-${pad(month + 1)}-${pad(day)}`;
@@ -206,7 +191,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   );
 }
 
-export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm }) {
+export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm, onSelectBooking, onSelectClassReg }) {
   const [view, setView] = useState('month');
   const [blockPopup, setBlockPopup] = useState(null);
   const queryClient = useQueryClient();
@@ -365,37 +350,27 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     );
   };
 
-  // ─── DAY VIEW ───
+  // ─── DAY VIEW ─── (Booksy-style: week strip + color-coded time grid)
   const renderDay = () => {
     const d = currentMonth;
     const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    const dayBookings = bookings.filter(b => b.date === key).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-    const dayClassRegs = classRegs.filter(r => r.appointment_date === key).sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || ''));
     const isBlocked = blockedSet.has(key);
-    const goDay = (nd) => { setCurrentMonth(nd); setSelectedDate(`${nd.getFullYear()}-${pad(nd.getMonth() + 1)}-${pad(nd.getDate())}`); };
-    const prevDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() - 1); goDay(nd); };
-    const nextDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() + 1); goDay(nd); };
+    const goKey = (k) => { setCurrentMonth(new Date(k + 'T00:00:00')); setSelectedDate(k); setStatusFilter?.('all'); };
 
     return (
       <>
-        <div className="flex flex-col gap-2 mb-5">
-          <div className="flex items-center gap-2">
-            <button onClick={prevDay} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
-            <span className="text-[0.875rem] font-semibold flex-1 min-w-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
-            <button onClick={nextDay} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>›</button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
-              className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-lg border transition-all ${
-                isBlocked
-                  ? 'text-red-500 border-red-200 hover:bg-red-50'
-                  : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#b5a99a] border-[#e8e2dc] hover:text-red-500 hover:border-red-200'
-              }`}>
-              {isBlocked ? '✕ Unblock' : '+ Block Day'}
-            </button>
-            <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
-          </div>
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-[0.875rem] font-semibold flex-1 min-w-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
+          <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
+            className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-lg border transition-all flex-shrink-0 ${
+              isBlocked
+                ? 'text-red-500 border-red-200 hover:bg-red-50'
+                : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#b5a99a] border-[#e8e2dc] hover:text-red-500 hover:border-red-200'
+            }`}>
+            {isBlocked ? '✕ Unblock' : '+ Block Day'}
+          </button>
+          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
         </div>
 
         {isBlocked && (
@@ -408,33 +383,15 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           </div>
         )}
 
-        {dayBookings.length === 0 && dayClassRegs.length === 0 ? (
-          <div className="text-center py-10 text-[0.85rem] text-[#c5bdb5]">No appointments this day</div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {dayBookings.map(b => (
-              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: dm ? '#27272a' : '#FAF8F6', borderColor: dm ? '#3a3a48' : '#f0ebe6' }}>
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
-                <span className="text-[0.8rem] font-semibold w-20 flex-shrink-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.time || '—'}</span>
-                <span className="text-[0.8rem] flex-1 truncate" style={{ color: dm ? '#a1a1aa' : '#555' }}>{b.name}</span>
-                <span className="text-[0.7rem] font-medium" style={{ color: '#A0785A' }}>{b.service}</span>
-              </div>
-            ))}
-            {dayClassRegs.map(r => {
-              const cls = ['private_basic_lesson','masterclass','virtual_lesson','intermediate_lesson','glam_class'].filter(k => r[k]);
-              const CLASS_NAMES = { private_basic_lesson: 'Basic Lesson', masterclass: 'Advanced Lesson', virtual_lesson: 'Virtual Lesson', intermediate_lesson: 'Intermediate Lesson', glam_class: 'Glam Class' };
-              const label = cls.length ? CLASS_NAMES[cls[0]] : 'Makeup Class';
-              return (
-                <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: dm ? '#27272a' : '#FDF5F8', borderColor: dm ? '#4a3a48' : '#f0d8e4' }}>
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#D4A0B0' }} />
-                  <span className="text-[0.8rem] font-semibold w-20 flex-shrink-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{r.appointment_time || '—'}</span>
-                  <span className="text-[0.8rem] flex-1 truncate" style={{ color: dm ? '#a1a1aa' : '#555' }}>{r.full_name}</span>
-                  <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(212,160,176,0.15)', color: '#A0607A' }}>💄 {label}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <ScheduleView
+          bookings={bookings}
+          classRegs={classRegs}
+          dateKey={key}
+          onChangeDate={goKey}
+          onSelectBooking={onSelectBooking}
+          onSelectClassReg={onSelectClassReg}
+          dm={dm}
+        />
       </>
     );
   };
@@ -467,7 +424,8 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
         {view === 'week' && renderWeek()}
         {view === 'day' && renderDay()}
 
-        {/* Legend */}
+        {/* Legend (month/week only — the day schedule carries its own) */}
+        {view !== 'day' && (
         <div className="flex items-center gap-4 mt-5 pt-3 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-3 h-3 rounded-md bg-indigo-50 border-2 border-indigo-300 inline-block" /> Today
@@ -493,6 +451,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#A0607A' }} /> Custom limit
           </span>
         </div>
+        )}
       </div>
 
       {blockPopup && (

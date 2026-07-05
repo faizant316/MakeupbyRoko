@@ -16,9 +16,9 @@ const CLASS_LABELS = {
 
 const STATUS_META = {
   pending:   { bg: '#F59E0B', label: 'Pending' },
-  confirmed: { bg: '#3B82F6', label: 'Confirmed' },
-  completed: { bg: '#22C55E', label: 'Completed' },
-  enrolled:  { bg: '#22C55E', label: 'Enrolled' },
+  confirmed: { bg: '#16A34A', label: 'Confirmed' },
+  completed: { bg: '#64748B', label: 'Completed' },
+  enrolled:  { bg: '#16A34A', label: 'Enrolled' },
   cancelled: { bg: '#EF4444', label: 'Cancelled' },
 };
 
@@ -45,7 +45,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
     (bookings || []).forEach(b => {
       if (b.status === 'cancelled') return;
       if (b.date === todayKey) {
-        list.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', status: b.status || 'pending', dot: STATUS_META[b.status]?.bg || '#3B82F6', onClick: () => onSelectBooking?.(b) });
+        list.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', status: b.status || 'pending', dot: STATUS_META[b.status]?.bg || '#16A34A', onClick: () => onSelectBooking?.(b) });
       }
       if (b.consultation_date === todayKey) {
         const joinUrl = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1] || '';
