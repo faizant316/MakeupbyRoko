@@ -32,6 +32,7 @@ const STATUS_COLORS_DM = {
 function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${year}-${pad(month + 1)}-${pad(day)}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
+  const isCustom = dayCapacityMap[key] != null; // day has its own limit, not the default
   const isToday = key === todayKey;
   const isSel = key === selectedDate;
   const isBlocked = blockedSet.has(key);
@@ -82,6 +83,11 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
       }`}
       style={dm ? cellStyle : {}}
     >
+      {/* Custom-limit marker — a small rose dot in the corner (day has its own cap) */}
+      {isCustom && !isBlocked && (
+        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+          style={{ background: isSel ? 'rgba(255,255,255,0.9)' : '#A0607A' }} title="Custom limit" />
+      )}
       {isBlocked ? (
         <>
           <span className={`text-[0.8rem] font-medium ${dm ? 'text-red-400/70' : 'text-red-400'}`}>{day}</span>
@@ -90,27 +96,23 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
       ) : (
         <>
           <span className={`text-[0.875rem] font-${isSel || isToday ? 'bold' : 'medium'} ${isToday && dm ? 'text-indigo-200' : isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : isBlocked && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{day}</span>
-          {(hasBookings || hasConsultation || hasClassReg) && (
+          {isFull ? (
+            <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
+          ) : (
             <div className="flex gap-[3px] items-center">
-              {isFull ? (
-                <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
-              ) : (
-                <>
-                  {[...new Set(statuses.filter(s => s !== 'cancelled'))].slice(0, 3).map((s, i) => (
-                    <span key={i} className="w-[5px] h-[5px] rounded-full"
-                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
-                  ))}
-                  {hasConsultation && (
-                    <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#A855F7' }} />
-                  )}
-                  {hasClassReg && (
-                    <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
-                      style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
-                  )}
-                  {hasBookings && <span className={`text-[0.62rem] font-semibold ml-0.5 ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
-                </>
+              {[...new Set(statuses.filter(s => s !== 'cancelled'))].slice(0, 3).map((s, i) => (
+                <span key={i} className="w-[5px] h-[5px] rounded-full"
+                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
+              ))}
+              {hasConsultation && (
+                <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
+                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#A855F7' }} />
               )}
+              {hasClassReg && (
+                <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
+                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
+              )}
+              <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
             </div>
           )}
         </>
@@ -122,6 +124,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
 function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
+  const isCustom = dayCapacityMap[key] != null; // day has its own limit, not the default
   const isToday = key === todayKey;
   const isSel = key === selectedDate;
   const isBlocked = blockedSet.has(key);
@@ -154,7 +157,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
       onClick={() => { if (!isBlocked) onSingleClick(key); }}
       onDoubleClick={(e) => { e.preventDefault(); if (isBlocked) onUnblock(blockedMap[key]?.id); else onDoubleClick(key); }}
       title={isBlocked ? 'Double-click to unblock' : isFull ? `Fully booked (${count})` : isFillingUp ? `${effectiveCap - count} spot(s) left` : 'Click to select · Double-click to block'}
-      className={`rounded-xl py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-1.5 transition-all select-none w-full ${
+      className={`relative rounded-xl py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-1.5 transition-all select-none w-full ${
         isBlocked
           ? dm ? '' : 'bg-red-50 border border-red-200 hover:bg-red-100 text-red-400'
           : isSel
@@ -171,33 +174,34 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
       }`}
       style={dm ? cellStyle : {}}
     >
+      {/* Custom-limit marker — a small rose dot in the corner (day has its own cap) */}
+      {isCustom && !isBlocked && (
+        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
+          style={{ background: isSel ? 'rgba(255,255,255,0.9)' : '#A0607A' }} title="Custom limit" />
+      )}
       <span className={`text-[0.6rem] font-semibold tracking-[0.08em] ${isSel ? 'text-white/70' : isToday ? (dm ? 'text-indigo-400' : 'text-indigo-500') : 'text-[#aaa]'}`}>{dayName}</span>
       <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
       {isBlocked ? (
         <span className={`text-[0.65rem] ${dm ? 'text-red-400/70' : 'text-red-400'}`}>✕</span>
-      ) : (hasBookings || hasConsultation || hasClassReg) ? (
+      ) : isFull ? (
+        <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
+      ) : (
         <div className="flex gap-[3px] items-center">
-          {isFull ? (
-            <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
-          ) : (
-            <>
-              {[...new Set(activeStatuses)].slice(0, 3).map((s, i) => (
-                <span key={i} className="w-[5px] h-[5px] rounded-full"
-                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
-              ))}
-              {hasConsultation && (
-                <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
-              )}
-              {hasClassReg && (
-                <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
-                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
-              )}
-              {hasBookings && <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>}
-            </>
+          {[...new Set(activeStatuses)].slice(0, 3).map((s, i) => (
+            <span key={i} className="w-[5px] h-[5px] rounded-full"
+              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
+          ))}
+          {hasConsultation && (
+            <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
+              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
           )}
+          {hasClassReg && (
+            <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
+              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
+          )}
+          <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
         </div>
-      ) : null}
+      )}
     </button>
   );
 }
@@ -265,7 +269,15 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   const handleSingleClick = (key) => {
     const isNewSelection = key !== selectedDate;
     setSelectedDate(isNewSelection ? key : null);
-    if (isNewSelection) setStatusFilter?.('all');
+    // Keep the calendar's reference date on the day you tapped so Week/Day
+    // views open on that same date instead of drifting back to today.
+    if (isNewSelection) { setCurrentMonth(new Date(key + 'T00:00:00')); setStatusFilter?.('all'); }
+  };
+  // Switching views re-centers on the selected day (if any) so the chosen date
+  // stays put whether you look at it by day, week, or month.
+  const changeView = (v) => {
+    setView(v);
+    if (selectedDate) setCurrentMonth(new Date(selectedDate + 'T00:00:00'));
   };
   const handleDoubleClick = (key) => setBlockPopup({ date: key });
   const handleUnblock = (id) => unblockMutation.mutate(id);
@@ -361,8 +373,9 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     const dayBookings = bookings.filter(b => b.date === key).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const dayClassRegs = classRegs.filter(r => r.appointment_date === key).sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || ''));
     const isBlocked = blockedSet.has(key);
-    const prevDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() - 1); setCurrentMonth(nd); };
-    const nextDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() + 1); setCurrentMonth(nd); };
+    const goDay = (nd) => { setCurrentMonth(nd); setSelectedDate(`${nd.getFullYear()}-${pad(nd.getMonth() + 1)}-${pad(nd.getDate())}`); };
+    const prevDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() - 1); goDay(nd); };
+    const nextDay = () => { const nd = new Date(d); nd.setDate(nd.getDate() + 1); goDay(nd); };
 
     return (
       <>
@@ -435,7 +448,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             {['Day', 'Week', 'Month'].map(v => {
               const active = view === v.toLowerCase();
               return (
-                <button key={v} onClick={() => setView(v.toLowerCase())}
+                <button key={v} onClick={() => changeView(v.toLowerCase())}
                   className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
                   style={active
                     ? { background: dm ? '#34343d' : '#F1EBE6', color: dm ? '#f0ebe6' : '#1a1a1a' }
@@ -475,6 +488,9 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           </span>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#D4A0B0' }} /> Makeup Class
+          </span>
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+            <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#A0607A' }} /> Custom limit
           </span>
         </div>
       </div>
