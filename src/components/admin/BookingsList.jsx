@@ -263,16 +263,12 @@ export default function BookingsList({
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Time-aware summary glance — counts everything on the calendar that day, not
-  // only service bookings: makeup classes and consultations count too, so it
-  // reconciles with the Today card up top (a class today is not "0 today").
+  // Upcoming glance — counts every event on the calendar, not only service
+  // bookings: makeup classes and consultations count too, so the "this week"
+  // and "upcoming" totals match what's actually on the schedule.
   const lessonEvents = (classRegs || []).filter(r => r.appointment_date && r.status !== 'cancelled');
   const consultEvents = (allBookings || []).filter(b => b.consultation_date && b.status !== 'cancelled');
-  const inToday = d => daysUntil(d) === 0;
   const inWeek = d => { const x = daysUntil(d); return x >= 0 && x <= 7; };
-  const todayCount = visibleActive.filter(b => inToday(b.date)).length
-    + lessonEvents.filter(r => inToday(r.appointment_date)).length
-    + consultEvents.filter(b => inToday(b.consultation_date)).length;
   const weekCount = visibleActive.filter(b => inWeek(b.date)).length
     + lessonEvents.filter(r => inWeek(r.appointment_date)).length
     + consultEvents.filter(b => inWeek(b.consultation_date)).length;
@@ -864,21 +860,21 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Time-aware summary — minimal inline glance (no boxes) */}
-      {viewType === 'appointments' && !selectedDate && !loading && upcomingCount > 0 && (
-        <div className="flex items-center gap-7 sm:gap-9 mb-5 px-0.5">
-          {[
-            { label: 'Today', value: todayCount },
-            { label: 'This Week', value: weekCount },
-            { label: 'Upcoming', value: upcomingCount },
-          ].map(s => (
-            <div key={s.label} className="flex items-baseline gap-1.5">
-              <span className="text-[1.25rem] font-serif leading-none" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{s.value}</span>
-              <span className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Upcoming glance — reads as a plain sentence so the numbers explain
+          themselves ("57 upcoming inquiries"), instead of a row of bare counts.
+          Wording follows the Bridal / Non-Bridal tab. */}
+      {viewType === 'appointments' && !selectedDate && !loading && upcomingCount > 0 && (() => {
+        const kind = typeFilter === 'bridal' ? 'bridal ' : typeFilter === 'nonbridal' ? 'non-bridal ' : '';
+        const numStyle = { color: dm ? '#e4e4e7' : '#1a1a1a' };
+        return (
+          <div className="flex items-baseline flex-wrap gap-x-2.5 gap-y-1 mb-5 px-0.5 text-[0.85rem]"
+            style={{ color: dm ? '#a1a1aa' : '#9b8e88' }}>
+            <span><span className="font-serif text-[1.2rem] mr-1" style={numStyle}>{weekCount}</span>this week</span>
+            <span style={{ opacity: 0.35 }}>·</span>
+            <span><span className="font-serif text-[1.2rem] mr-1" style={numStyle}>{upcomingCount}</span>upcoming {kind}inquiries</span>
+          </div>
+        );
+      })()}
 
       {/* Appointments content */}
       {viewType === 'appointments' && (loading ? (
