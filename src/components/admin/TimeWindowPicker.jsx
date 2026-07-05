@@ -69,13 +69,15 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
         )}
       </div>
 
-      {/* Mobile: two native time wheels */}
+      {/* Mobile: two native time wheels. min-w-0 is required here — grid items
+          default to min-width:auto, and a native <input type="time">'s
+          intrinsic width can exceed a shrunk column, overflowing the card. */}
       <div className="md:hidden grid grid-cols-2 gap-2.5">
         {[['Start', to24h(start), onStartInput], ['End', to24h(end), onEndInput]].map(([lbl, v, handler]) => (
-          <label key={lbl} className="block">
+          <label key={lbl} className="block min-w-0">
             <span className="block text-[0.52rem] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: p.muted }}>{lbl}</span>
             <input type="time" value={v} onChange={e => handler(e.target.value)}
-              style={{ width: '100%', fontSize: '16px', padding: '11px 13px', borderRadius: '11px', border: `1.5px solid ${p.border}`, background: p.bg, color: p.text, outline: 'none', boxSizing: 'border-box' }} />
+              style={{ width: '100%', minWidth: 0, maxWidth: '100%', fontSize: '16px', padding: '11px 13px', borderRadius: '11px', border: `1.5px solid ${p.border}`, background: p.bg, color: p.text, outline: 'none', boxSizing: 'border-box' }} />
           </label>
         ))}
       </div>

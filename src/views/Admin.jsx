@@ -19,6 +19,7 @@ import AnalyticsTab from '../components/admin/AnalyticsTab';
 import RevenueTab from '../components/admin/RevenueTab';
 import AddClientModal from '../components/admin/AddClientModal';
 import ClientsTab from '../components/admin/ClientsTab';
+import ResizableColumns from '../components/admin/ResizableColumns';
 
 const DEFAULT_CAP = 3;
 
@@ -418,50 +419,55 @@ export default function Admin() {
         {activeTab === 'bookings' && !selectedBooking && (
           <>
             {/* Two columns on desktop: calendar + today + classes on the left,
-                the appointments workspace on the right. Stacks on mobile. */}
-            <div className="xl:grid xl:grid-cols-[minmax(400px,460px)_minmax(0,1fr)] xl:gap-10 xl:items-start">
-              <div className="min-w-0">
-                <div className="mb-8">
-                  <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
-                    defaultDayOnMobile
-                    onSelectBooking={setSelectedBooking}
-                    onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
-                </div>
-                {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
-                <TodayAgenda
-                  bookings={bookings}
-                  classRegs={classRegs}
-                  onSelectBooking={setSelectedBooking}
-                  onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                  darkMode={dm}
-                />
-                {/* Class Sign-Ups quick access */}
-                {classRegs.length > 0 && (
-                  <ClassSignupsCard
+                the appointments workspace on the right. The divider between
+                them is user-draggable (desktop only) and remembers its width.
+                Stacks on mobile/tablet. */}
+            <ResizableColumns
+              darkMode={dm}
+              left={
+                <>
+                  <div className="mb-8">
+                    <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
+                      defaultDayOnMobile
+                      onSelectBooking={setSelectedBooking}
+                      onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
+                  </div>
+                  {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
+                  <TodayAgenda
+                    bookings={bookings}
                     classRegs={classRegs}
-                    onOpenAll={() => { setActiveTab('classes'); setSelectedBooking(null); }}
-                    onOpenReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                    onSelectBooking={setSelectedBooking}
+                    onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
                     darkMode={dm}
                   />
-                )}
-              </div>
-
-              <div id="bookings-list" className="min-w-0">
-                {/* Divider only when stacked (mobile / tablet) */}
-                <div className="xl:hidden mt-2 mb-7 h-px" style={{ background: dm ? '#2e2e38' : '#f1ece7' }} />
-                <BookingsList
-                  bookings={filtered} loading={loadingBookings}
-                  search={search} setSearch={setSearch} statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter} statusCounts={statusCounts}
-                  selectedDate={selectedDate} setSelectedDate={setSelectedDate}
-                  onSelect={setSelectedBooking} currentMonth={currentMonth}
-                  allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
-                  darkMode={dm} onAddClient={() => setShowAddClient(true)}
-                  classRegs={classRegs} viewType={viewType} setViewType={setViewType}
-                  onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                />
-              </div>
-            </div>
+                  {/* Class Sign-Ups quick access */}
+                  {classRegs.length > 0 && (
+                    <ClassSignupsCard
+                      classRegs={classRegs}
+                      onOpenAll={() => { setActiveTab('classes'); setSelectedBooking(null); }}
+                      onOpenReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                      darkMode={dm}
+                    />
+                  )}
+                </>
+              }
+              right={
+                <div id="bookings-list">
+                  <BookingsList
+                    bookings={filtered} loading={loadingBookings}
+                    search={search} setSearch={setSearch} statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter} statusCounts={statusCounts}
+                    selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+                    onSelect={setSelectedBooking} currentMonth={currentMonth}
+                    allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
+                    darkMode={dm} onAddClient={() => setShowAddClient(true)}
+                    classRegs={classRegs} viewType={viewType} setViewType={setViewType}
+                    onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                    onMarkDepositReceived={(id) => updateBookingMutation.mutate({ id, data: { deposit_received: true } })}
+                  />
+                </div>
+              }
+            />
             {showAddClient && (
               <AddClientModal
                 onSave={(newBooking) => {

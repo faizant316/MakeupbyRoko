@@ -184,13 +184,27 @@ export default function BookingsList({
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
+  onMarkDepositReceived,
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
+  const [showZellePanel, setShowZellePanel] = useState(false);
+  const [markingIds, setMarkingIds] = useState(() => new Set());
   const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   const [collapsedGroups, setCollapsedGroups] = useState({ later: true }); // far-future folded by default
+
+  // Deposits waiting on Roko's eyes: client uploaded a Zelle screenshot but no
+  // one has confirmed it in the admin yet. Purely derived from existing data —
+  // as soon as she marks one received it drops out on its own.
+  const pendingZelleReviews = (allBookings || [])
+    .filter(b => b.zelle_screenshot && !b.deposit_received && b.status !== 'cancelled');
+
+  const handleMarkReceived = (id) => {
+    setMarkingIds(prev => new Set(prev).add(id));
+    onMarkDepositReceived?.(id);
+  };
 
   // Months that actually have appointments, for the month dropdown
   const monthMap = new Map();
@@ -312,6 +326,106 @@ export default function BookingsList({
           </button>
         )}
       </div>
+
+      {/* Deposits to Confirm — client sent a Zelle screenshot, awaiting review */}
+      {pendingZelleReviews.length > 0 && (
+        <div className="mb-4 relative">
+          <button
+            onClick={() => setShowZellePanel(v => !v)}
+            aria-expanded={showZellePanel}
+            className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-colors"
+            style={{
+              background: dm ? '#26262e' : '#fff',
+              border: `1px solid ${dm ? '#34343d' : '#ddeee0'}`,
+              borderLeft: '3px solid #16A34A',
+              boxShadow: dm ? 'none' : '0 1px 3px rgba(20,80,40,0.05), 0 4px 14px rgba(20,80,40,0.05)',
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.12)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" className="w-3.5 h-3.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </span>
+              <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#16A34A' }}>Deposits to Confirm</span>
+              <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: dm ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)', color: '#16A34A' }}>
+                {pendingZelleReviews.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[0.7rem] italic" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+                {showZellePanel ? 'collapse' : 'review'}
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2"
+                className="w-3.5 h-3.5"
+                style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showZellePanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </button>
+
+          <div
+            className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
+            style={{
+              background: dm ? '#27272a' : '#fff',
+              border: `1px solid ${dm ? '#3f3f46' : '#ddeee0'}`,
+              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(20,80,40,0.14)',
+              maxHeight: 'min(70vh, 480px)',
+              transformOrigin: 'top center',
+              opacity: showZellePanel ? 1 : 0,
+              transform: showZellePanel ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.985)',
+              pointerEvents: showZellePanel ? 'auto' : 'none',
+              visibility: showZellePanel ? 'visible' : 'hidden',
+              willChange: 'transform, opacity',
+              transition: showZellePanel
+                ? 'opacity 200ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1)'
+                : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
+            }}
+          >
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+              {pendingZelleReviews.map((b, i) => {
+                const isMarking = markingIds.has(b.id);
+                return (
+                  <div
+                    key={b.id}
+                    className="flex items-center gap-3 w-full text-left px-5 py-3.5"
+                    style={{ borderBottom: i < pendingZelleReviews.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(20,80,40,0.08)'}` : 'none' }}
+                  >
+                    <button
+                      onClick={() => onSelect(b)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                        <span className="font-serif text-[#16A34A] text-[0.85rem]">{(b.name || '?').trim().charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
+                        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#8a9e90' }}>
+                          {b.service}
+                          {b.date && <span style={{ color: dm ? '#52525b' : '#a9c0af' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        </p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isMarking}
+                      onClick={(e) => { e.stopPropagation(); handleMarkReceived(b.id); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold tracking-[0.04em] uppercase transition-all hover:opacity-85 active:scale-95 flex-shrink-0"
+                      style={{ background: isMarking ? (dm ? '#3f3f46' : '#e5e5e5') : '#16A34A', color: '#fff', opacity: isMarking ? 0.7 : 1 }}
+                    >
+                      {isMarking ? (
+                        <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+                      )}
+                      {isMarking ? 'Marking…' : 'Received'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Just Booked — appointments only, last 24 hrs */}
       {recentBookings.length > 0 && (
