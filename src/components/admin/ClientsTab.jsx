@@ -155,12 +155,14 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
     : null;
 
   return (
-    <div className="max-w-[760px]">
+    <div className="max-w-[1100px]">
       <button onClick={onBack} className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#D4A0B0] hover:text-[#b8849a] transition-colors mb-6">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         All Clients
       </button>
 
+      <div className="grid grid-cols-1 lg:grid-cols-[350px_minmax(0,1fr)] gap-x-8 items-start">
+      <div className="lg:sticky lg:top-20">
       {/* Identity */}
       <div className="flex items-center gap-4 mb-6">
         <div className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[1.3rem]"
@@ -232,7 +234,9 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
           </div>
         ))}
       </div>
+      </div> {/* /left column */}
 
+      <div className="min-w-0">
       {/* Appointments */}
       {apptRows.length > 0 && (
         <div className="mb-8">
@@ -286,6 +290,14 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
           </div>
         </div>
       )}
+
+      {apptRows.length === 0 && classRows.length === 0 && (
+        <div className="rounded-2xl py-10 text-center" style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${line}` }}>
+          <p className="text-[0.82rem]" style={{ color: dm ? '#71717a' : '#b3a89f' }}>No bookings on file yet</p>
+        </div>
+      )}
+      </div> {/* /right column */}
+      </div> {/* /two-column grid */}
     </div>
   );
 }
@@ -345,9 +357,10 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
   };
 
   return (
-    <div className="max-w-[860px]">
+    <div className="max-w-[1100px]">
       {/* List | Groups segmented control (Booksy style) */}
-      <div className="flex rounded-full p-1 mb-5 max-w-[420px]" style={{ background: dm ? '#26262e' : '#F1EBE6' }}>
+      <div className="flex sm:inline-flex w-full sm:w-auto rounded-full p-1 mb-5"
+        style={{ background: dm ? '#26262e' : '#F3EDE7', border: `1px solid ${dm ? '#2e2e38' : '#EBE3DB'}` }}>
         {[
           { key: 'list', label: `List (${clients.length})` },
           { key: 'groups', label: `Groups (${groups.length})` },
@@ -355,9 +368,9 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
           const active = view === s.key;
           return (
             <button key={s.key} onClick={() => setView(s.key)}
-              className="flex-1 py-2 rounded-full text-[0.78rem] font-semibold transition-all"
+              className="flex-1 sm:flex-none sm:min-w-[170px] py-2 px-6 rounded-full text-[0.78rem] font-semibold transition-all duration-200 whitespace-nowrap"
               style={active
-                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#F0EBE6' : '#111', boxShadow: dm ? 'none' : '0 1px 4px rgba(60,45,35,0.12)' }
+                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#F0EBE6' : '#111', boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 5px rgba(60,45,35,0.14)' }
                 : { background: 'transparent', color: muted }}>
               {s.label}
             </button>
@@ -437,28 +450,54 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
             <div className="flex gap-1">
               {/* Rows */}
               <div className="flex-1 min-w-0">
+                {/* Desktop column header */}
+                <div className="hidden sm:flex items-center gap-3.5 pt-2 pb-2" style={{ borderBottom: `1px solid ${line}` }}>
+                  <span className="w-10 flex-shrink-0" />
+                  <span className="flex-1 min-w-0 grid grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] gap-4">
+                    {['Client', 'Phone', 'Email', 'Next visit'].map(h => (
+                      <span key={h} className="text-[0.56rem] font-bold tracking-[0.14em] uppercase truncate" style={{ color: dm ? '#5a5a63' : '#c9beb4' }}>{h}</span>
+                    ))}
+                  </span>
+                </div>
                 {sections.map(([letter, list]) => (
                   <div key={letter} ref={el => { letterRefs.current[letter] = el; }}>
                     <p className="text-[0.68rem] font-bold tracking-[0.1em] pt-4 pb-1.5" style={{ color: dm ? '#8a8a93' : '#b3a89f' }}>{letter}</p>
-                    {list.map((c, i) => (
-                      <button key={c.key} onClick={() => setSelectedKey(c.key)}
-                        className="w-full flex items-center gap-3.5 py-3 text-left transition-opacity hover:opacity-75"
-                        style={{ borderBottom: i < list.length - 1 ? `1px solid ${line}` : 'none' }}>
-                        <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[0.78rem] font-semibold"
-                          style={{ background: dm ? '#2e2e38' : '#EFE9E3', color: dm ? '#a1a1aa' : '#8a7e74' }}>
-                          {initialsOf(c.name)}
-                        </span>
-                        <span className="flex-1 min-w-0">
-                          <span className="block text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{c.name}</span>
-                          <span className="block text-[0.74rem] mt-0.5 truncate tabular-nums" style={{ color: muted }}>
-                            {c.phone || c.email || 'No contact info'}
+                    {list.map((c, i) => {
+                      const nextRel = c.nextDate ? relativeDate(c.nextDate) : null;
+                      const lastRel = c.lastDate ? relativeDate(c.lastDate) : null;
+                      return (
+                        <button key={c.key} onClick={() => setSelectedKey(c.key)}
+                          className="w-full flex items-center gap-3.5 py-3 text-left transition-opacity hover:opacity-75"
+                          style={{ borderBottom: i < list.length - 1 ? `1px solid ${line}` : 'none' }}>
+                          <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[0.78rem] font-semibold"
+                            style={{ background: dm ? '#2e2e38' : '#EFE9E3', color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                            {initialsOf(c.name)}
                           </span>
-                        </span>
-                        {c.upcomingCount > 0 && (
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" title="Has an upcoming appointment" style={{ background: '#16A34A' }} />
-                        )}
-                      </button>
-                    ))}
+                          <span className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] sm:gap-4 sm:items-center">
+                            <span className="min-w-0">
+                              <span className="block text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{c.name}</span>
+                              <span className="block sm:hidden text-[0.74rem] mt-0.5 truncate tabular-nums" style={{ color: muted }}>
+                                {c.phone || c.email || 'No contact info'}
+                              </span>
+                            </span>
+                            <span className="hidden sm:block text-[0.78rem] truncate tabular-nums" style={{ color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                              {c.phone || '—'}
+                            </span>
+                            <span className="hidden sm:block text-[0.78rem] truncate" style={{ color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                              {c.email || '—'}
+                            </span>
+                            <span className="hidden sm:block text-[0.74rem] font-semibold truncate"
+                              style={{ color: nextRel ? '#16A34A' : muted }}>
+                              {nextRel ? nextRel.label : lastRel ? `Last ${lastRel.label}` : '—'}
+                            </span>
+                          </span>
+                          {c.upcomingCount > 0 && (
+                            <span className="sm:hidden w-2 h-2 rounded-full flex-shrink-0" title="Has an upcoming appointment" style={{ background: '#16A34A' }} />
+                          )}
+                          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#3f3f46' : '#ddd2c8'} strokeWidth="2" className="hidden sm:block w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                      );
+                    })}
                   </div>
                 ))}
               </div>

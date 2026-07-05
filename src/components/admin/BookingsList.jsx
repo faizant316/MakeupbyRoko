@@ -319,8 +319,13 @@ export default function BookingsList({
           <button
             onClick={() => setShowRecentPanel(v => !v)}
             aria-expanded={showRecentPanel}
-            className="w-full flex items-center justify-between px-5 py-3 rounded-2xl transition-colors"
-            style={{ background: dm ? 'rgba(180,100,120,0.25)' : 'rgba(212,160,176,0.25)', border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`, boxShadow: '0 2px 20px rgba(160,120,90,0.07)' }}
+            className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-colors"
+            style={{
+              background: dm ? '#26262e' : '#fff',
+              border: `1px solid ${dm ? '#34343d' : '#f0e6df'}`,
+              borderLeft: '3px solid #D4A0B0',
+              boxShadow: dm ? 'none' : '0 1px 3px rgba(60,45,35,0.05), 0 4px 14px rgba(60,45,35,0.05)',
+            }}
           >
             <div className="flex items-center gap-2.5">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dm ? '#c47a92' : '#D4A0B0' }} />
@@ -535,24 +540,33 @@ export default function BookingsList({
         );
       })()}
 
-      {/* Date label + clear — just above booking results */}
+      {/* Selected-date bar — one clean pill with the date and a dismiss circle */}
       {selectedDate && (
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-0.5" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Showing appointments for</p>
-            <div className="flex items-center gap-2">
-              <p className="text-[1rem] font-semibold font-serif" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+        <div className="flex items-center justify-between gap-3 mb-4 pl-3.5 pr-2.5 py-2.5 rounded-xl"
+          style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${dm ? '#34343d' : '#efe7e0'}` }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/>
+              </svg>
+            </span>
+            <div className="min-w-0">
+              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#71717a' : '#c0b5ab' }}>Showing</p>
+              <p className="text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
             </div>
           </div>
           <button
             onClick={() => setSelectedDate(null)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[0.65rem] font-semibold tracking-[0.06em] uppercase transition-all flex-shrink-0"
-            style={{ background: dm ? 'rgba(239,68,68,0.12)' : '#FEF2F2', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+            aria-label="Clear date filter"
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+            style={{ background: dm ? '#34343d' : '#efe7e0', touchAction: 'manipulation' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            Clear
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#8a7e74'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
       )}
