@@ -191,8 +191,14 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   );
 }
 
-export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm, onSelectBooking, onSelectClassReg }) {
-  const [view, setView] = useState('month');
+export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm, onSelectBooking, onSelectClassReg, defaultDayOnMobile = false }) {
+  // On phones the Booksy day grid is the natural landing view (matches the
+  // Booksy app); desktop and the Availability tab keep the month overview.
+  const [view, setView] = useState(() =>
+    defaultDayOnMobile && typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+      ? 'day'
+      : 'month'
+  );
   const [blockPopup, setBlockPopup] = useState(null);
   const queryClient = useQueryClient();
 

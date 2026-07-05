@@ -285,7 +285,7 @@ export default function BookingsList({
     .sort((a, b) => (a.appointment_date || '').localeCompare(b.appointment_date || ''));
 
   return (
-    <div className="pt-7" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f1ece7'}` }}>
+    <div>
       {/* Month heading + Add Client */}
       <div className="flex items-center justify-between mb-6 pb-4"
         style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}>

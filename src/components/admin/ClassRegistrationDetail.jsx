@@ -4,6 +4,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import { CLASS_DISPLAY } from '@/lib/classCatalog';
 import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
+import { parseRange } from '@/lib/timeWindow';
+
+// Booksy-style hero gradients per enrollment status (matches BookingDetail).
+const HERO_GRADIENTS = {
+  pending:   'linear-gradient(150deg, #D97706, #F59E0B)',
+  confirmed: 'linear-gradient(150deg, #15803D, #22C55E)',
+  enrolled:  'linear-gradient(150deg, #15803D, #22C55E)',
+  cancelled: 'linear-gradient(150deg, #DC2626, #EF4444)',
+};
 
 // Strip the legacy "| ✍️ Agreement … · Photos: …" suffix some older rows still
 // carry in additional_notes, so the Notes section shows only real client notes.
@@ -482,21 +491,58 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
     </p>
   );
 
+  const heroWin = parseRange(reg.appointment_time || '');
+  const heroDate = reg.appointment_date
+    ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    : 'No date set';
+  const signedUpOn = reg.created_date
+    ? new Date(reg.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
   return (
     <>
-      {/* Back */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.1em] uppercase mb-6 transition-colors"
-        style={{ color: '#D4A0B0' }}
-        onMouseEnter={e => e.currentTarget.style.color = '#b8849a'}
-        onMouseLeave={e => e.currentTarget.style.color = '#D4A0B0'}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-        </svg>
-        Back to List
-      </button>
+      {/* ── Booksy-style status hero ── */}
+      <div className="relative mb-6">
+        <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
+          style={{ background: HERO_GRADIENTS[enrollmentStatus] || HERO_GRADIENTS.pending }}>
+          <div className="flex items-center justify-between">
+            <button onClick={onBack} aria-label="Back to list"
+              className="w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-white/10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+              </svg>
+            </button>
+            <div className="min-w-0 px-2">
+              <p className="text-white font-bold tracking-[0.16em] uppercase text-[1.25rem] leading-none">{enrollmentMeta.label}</p>
+              <p className="text-white/70 text-[0.64rem] mt-1.5 truncate tabular-nums">
+                Makeup Class · ID: {String(reg.id || '').slice(0, 8).toUpperCase()}{signedUpOn ? ` · Signed up ${signedUpOn}` : ''}
+              </p>
+            </div>
+            <span className="w-10 -mr-1.5" />
+          </div>
+        </div>
+
+        {/* START | DATE card, overlapping the banner like Booksy */}
+        <div className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-10 grid grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3.5"
+          style={{
+            background: dm ? '#27272a' : '#fff',
+            border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
+            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(50,35,30,0.12)',
+          }}>
+          <div className="px-4 min-w-0">
+            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Start</p>
+            <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+              {heroWin.start || 'Not set'}
+            </p>
+            {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#b0a89f' }}>until {heroWin.end}</p>}
+          </div>
+          <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#f0eae4' }} />
+          <div className="px-4 min-w-0">
+            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Date</p>
+            <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#F0EBE6' : '#111' }}>{heroDate}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Card */}
       <div className="rounded-2xl p-6 sm:p-8" style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: dm ? 'none' : '0 2px 16px rgba(0,0,0,0.04)' }}>

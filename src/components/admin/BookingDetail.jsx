@@ -333,10 +333,10 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
-        <div className="flex items-center justify-between px-4 py-4 rounded-[6px] transition-all"
-          style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+        <div className="flex items-center justify-between px-4 py-4 rounded-2xl transition-all"
+          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, borderLeft: `3px solid ${CONSULT_COLOR}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="min-w-0">
@@ -369,8 +369,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
             </div>
           </div>
           <button onClick={() => { setExpanded(true); setSent(false); }}
-            className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase ml-3 flex-shrink-0"
-            style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
+            className="ml-3 flex-shrink-0 px-3.5 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.08em] uppercase transition-all active:scale-95"
+            style={{ background: CONSULT_BG, color: dm ? '#C4B5FD' : CONSULT_COLOR, border: `1px solid ${CONSULT_BORDER}` }}>
             Edit
           </button>
         </div>
@@ -379,10 +379,10 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
       {/* Empty state */}
       {!hasConsult && !expanded && (
         <button onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-between px-4 py-4 rounded-[6px] transition-all touch-manipulation"
-          style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+          className="w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all touch-manipulation hover:opacity-90"
+          style={{ background: dm ? '#27272a' : '#fff', border: `1px dashed ${dm ? '#4a4a58' : '#d9cfe8'}` }}>
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
@@ -398,18 +398,26 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
 
       {/* Picker */}
       {expanded && (
-        <div className="rounded-[6px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+        <div className="rounded-2xl overflow-hidden"
+          style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
           {/* Header */}
-          <div className="px-5 py-4 flex items-center justify-between"
-            style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-            <div>
-              <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase" style={{ color: CONSULT_COLOR }}>Consultation</p>
-              <p className="font-serif text-[1rem] mt-0.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>Schedule a Meeting</p>
+          <div className="flex items-center gap-3 px-4 py-3.5"
+            style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f3ede7'}` }}>
+            <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Schedule Consultation</p>
+              <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
+                {bridal ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type'}
+              </p>
             </div>
-            <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }}
-              className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
-              style={{ background: dm ? '#3f3f46' : '#f0ece8', color: dm ? '#71717a' : '#888' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }} aria-label="Close scheduler"
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
+              style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#8a7e74' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
@@ -462,23 +470,28 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
 
                 {!meetLink ? (
                   <button type="button" onClick={generateZoomLink} disabled={generatingLink}
-                    className="w-full rounded-[6px] font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
-                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f0ece8') : '#2D8CFF', color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
+                    className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
+                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f3ede7') : CONSULT_COLOR, color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: 'none', boxShadow: generatingLink ? 'none' : '0 2px 10px rgba(124,58,237,0.3)' }}>
                     {generatingLink ? (
-                      <><div className="w-4 h-4 border-2 border-[#2D8CFF]/30 border-t-[#2D8CFF] rounded-full animate-spin" /> Generating…</>
+                      <><div className="w-4 h-4 rounded-full animate-spin border-2" style={{ borderColor: `${CONSULT_COLOR}30`, borderTopColor: CONSULT_COLOR }} /> Generating…</>
                     ) : (
-                      <>Generate Zoom Link</>
+                      <>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                          <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                        </svg>
+                        Generate Zoom Link
+                      </>
                     )}
                   </button>
                 ) : (
                   <button type="button" onClick={copyMeetLink}
-                    className="w-full px-4 rounded-[6px] text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
-                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>
+                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : CONSULT_COLOR}` }}>
+                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : (dm ? '#C4B5FD' : CONSULT_COLOR) }}>
                       {meetLink}
                     </span>
                     <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
-                      style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
+                      style={{ background: linkCopied ? '#22c55e' : CONSULT_COLOR, color: '#fff' }}>
                       {linkCopied ? '✓ Copied' : 'Copy'}
                     </span>
                   </button>
@@ -493,14 +506,14 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
-                className="w-full px-4 py-3 rounded-[6px] outline-none resize-none"
+                className="w-full px-4 py-3 rounded-[10px] outline-none resize-none transition-shadow focus:ring-2 focus:ring-[#A855F7]/25"
                 style={{ ...inputStyle, minHeight: '80px' }} />
             </div>
 
             {/* CTA */}
             {!showConfirmSend ? (
               <button onClick={() => { if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date}
-                className="w-full rounded-[6px] font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
                 style={{
                   minHeight: '50px', fontSize: '14px',
                   ...(!form.date
@@ -510,8 +523,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
                 Confirm & Notify Client
               </button>
             ) : (
-              <div className="rounded-[6px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#fafafa' }}>
+              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+                <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#FBF9F7' }}>
                   <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirm & Send Email?</p>
                   <div className="flex flex-col gap-1.5 mb-4">
                     <div className="flex items-center justify-between">
