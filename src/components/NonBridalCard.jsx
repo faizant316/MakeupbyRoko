@@ -29,7 +29,8 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
             <span className="text-[0.92rem] font-medium text-[#111]">{svc.price}</span>
             <span className="text-[#ccc]">·</span>
             <span className="text-[0.8rem] text-[#7a7068]">{svc.duration}</span>
-            {svc.deposit && <><span className="text-[#ccc]">·</span><span className="text-[0.78rem] text-[#7a7068]">{svc.deposit}</span></>}
+            {/* Courses are pay-in-full, so never surface a deposit line for them. */}
+            {svc.deposit && svc.category !== 'lessons' && <><span className="text-[#ccc]">·</span><span className="text-[0.78rem] text-[#7a7068]">{svc.deposit}</span></>}
           </div>
           {svc.includes?.length > 0 ? (
             <ul className="flex flex-col gap-1 mb-2.5">

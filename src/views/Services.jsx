@@ -16,6 +16,7 @@ import NonBridalCard from '../components/NonBridalCard';
 import BridalComparison from '../components/BridalComparison';
 import About from '../components/About';
 import MakeupClassModal from '../components/MakeupClassModal';
+import CoursesFeature from '../components/CoursesFeature';
 import ServiceDetailModal from '../components/ServiceDetailModal';
 
 // Hook to track scroll progress through the hero (0 = top, 1 = hero fully covered)
@@ -481,23 +482,17 @@ export default function ServicesPage() {
             </div>
           )}
 
-          {/* Courses — own section */}
+          {/* Courses — own featured section, emphasized as a big part of Roko's work */}
           {lessonServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
-                <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#D4A0B0]">Courses</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
+                <div className="w-[3px] h-[16px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
+                <span className="text-[0.68rem] font-bold tracking-[0.18em] uppercase text-[#A0607A]">Learn With Roko · Courses</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/30 to-transparent" />
               </div>
-              <div className="hidden sm:flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
                 {lessonServices.map((svc) => (
-                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
-                ))}
-              </div>
-              {/* Mobile */}
-              <div className="sm:hidden flex flex-col gap-4">
-                {lessonServices.map((svc) => (
-                  <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
+                  <CoursesFeature key={svc.key} svc={svc} onOpenClassModal={() => setShowClassModal(true)} />
                 ))}
               </div>
             </div>

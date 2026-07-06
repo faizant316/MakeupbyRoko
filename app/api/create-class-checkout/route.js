@@ -24,10 +24,10 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Please choose online or in person' }, { status: 400 });
     }
 
-    // Classes are bookable only on the next couple of open Wednesdays, at a
-    // start time that fits the class inside Roko's 11 AM to 7 PM day.
+    // Classes are bookable on any Wednesday at least two weeks out, at a start
+    // time that fits the class inside Roko's 11 AM to 7 PM day.
     if (!isBookableWednesday(preferred_date)) {
-      return NextResponse.json({ error: 'Please pick one of the upcoming Wednesdays' }, { status: 400 });
+      return NextResponse.json({ error: 'Please pick a Wednesday at least two weeks out' }, { status: 400 });
     }
 
     const classData = selected_classes.map(k => classMeta(k, class_format));
