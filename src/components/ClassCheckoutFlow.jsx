@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useScrollLock } from '@/lib/useScrollLock';
+import ClassFormatStep from './class-checkout/ClassFormatStep';
 import ClassSelector from './class-checkout/ClassSelector';
 import ClassContactForm from './class-checkout/ClassContactForm';
 import ClassSuccessScreen from './ClassSuccessScreen';
@@ -21,8 +22,8 @@ function formatChosenDate(raw) {
 const STORAGE_KEY = 'roko_class_checkout';
 
 export default function ClassCheckoutFlow({ onClose }) {
-  const [step, setStep] = useState('select');
-  const [format, setFormat] = useState('online'); // 'online' | 'in_person'
+  const [step, setStep] = useState('format'); // format → select → details → sign → success
+  const [format, setFormat] = useState(null); // 'online' | 'in_person'
   const [selected, setSelected] = useState(null); // single class key
   const [selectedDate, setSelectedDate] = useState(null); // 'YYYY-MM-DD' Wednesday
   const [selectedSlot, setSelectedSlot] = useState(null); // e.g. '11:00 AM – 2:00 PM'
@@ -69,9 +70,9 @@ export default function ClassCheckoutFlow({ onClose }) {
   const pickFormat = (f) => { setFormat(f); setSelectedSlot(null); };
   const pickClass = (k) => { setSelected(k); setSelectedSlot(null); };
 
-  const selectedClass = selected ? classMeta(selected, format) : null;
+  const selectedClass = selected && format ? classMeta(selected, format) : null;
   const totalFull = selectedClass?.price || 0;
-  const formatMeta = CLASS_FORMATS[format];
+  const formatMeta = format ? CLASS_FORMATS[format] : null;
 
   // Filled class agreement for the Review & Sign step (paid in full at checkout).
   const classContract = buildContract({
@@ -155,13 +156,22 @@ export default function ClassCheckoutFlow({ onClose }) {
         }}
         onClick={e => e.stopPropagation()}
       >
+        {step === 'format' && (
+          <ClassFormatStep
+            format={format}
+            onFormat={pickFormat}
+            onClose={onClose}
+            onNext={() => format && setStep('select')}
+          />
+        )}
+
         {step === 'select' && (
           <ClassSelector
             classKeys={CLASS_KEYS}
             format={format}
-            onFormat={pickFormat}
             selected={selected}
             onSelect={pickClass}
+            onBack={() => setStep('format')}
             onClose={onClose}
             onNext={() => selected && setStep('details')}
           />
@@ -241,7 +251,7 @@ export default function ClassCheckoutFlow({ onClose }) {
           </>
         )}
 
-        {step === 'cancelled' && <CancelledScreen onClose={onClose} onRetry={() => setStep('select')} />}
+        {step === 'cancelled' && <CancelledScreen onClose={onClose} onRetry={() => setStep('format')} />}
       </div>
     </div>
   );

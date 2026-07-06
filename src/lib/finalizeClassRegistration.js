@@ -65,7 +65,7 @@ export async function finalizeClassRegistration(supabase, { registrationId, sess
     try {
       const meeting = await createZoomMeeting({
         topic: `Makeup by Roko · ${classes[0].title}`,
-        duration: classes[0].zoomMinutes || 180,
+        duration: classes[0].durationMinutes || 180,
         date: classDate || undefined,
         time: classTime || undefined,
       });

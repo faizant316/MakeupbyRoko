@@ -28,6 +28,26 @@ export function upcomingWednesdays({ count = MAX_BOOKABLE_WEDNESDAYS, blockedSet
   return out;
 }
 
+// One client per Wednesday. A registration "holds" its date when it's paid or
+// confirmed; an unpaid pending row only soft-holds it for 45 minutes (long
+// enough to finish Stripe checkout, short enough that an abandoned checkout
+// never blocks the Wednesday for real clients).
+export function regHoldsDate(reg, now = Date.now()) {
+  if (!reg) return false;
+  if (reg.status === 'cancelled' || reg.status === 'declined') return false;
+  if (reg.payment_status === 'refunded') return false;
+  if (['paid', 'deposit_paid', 'paid_in_full'].includes(reg.payment_status)) return true;
+  if (['confirmed', 'enrolled'].includes(reg.status)) return true;
+  const created = new Date(reg.created_at || reg.created_date || 0).getTime();
+  return now - created < 45 * 60 * 1000;
+}
+
+// The date a registration occupies (admin-confirmed date wins over the
+// client-requested one).
+export function regDateOf(reg) {
+  return reg?.appointment_date || reg?.preferred_date || null;
+}
+
 // Server-side sanity check for a client-submitted class date: must be a real
 // upcoming Wednesday within the bookable horizon. Kept slightly generous
 // (blocked dates can push the 2 open Wednesdays further out).

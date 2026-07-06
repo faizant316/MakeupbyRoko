@@ -46,15 +46,14 @@ export const CLASS_CATALOG = {
       online: {
         price: 310,
         duration: '3 hours',
+        durationMinutes: 180,
         dayNote: 'One 3-hour session, live on Zoom',
-        slots: ['11:00 AM – 2:00 PM', '2:00 PM – 5:00 PM'],
-        zoomMinutes: 180,
       },
       in_person: {
         price: 520,
         duration: '3 hours',
+        durationMinutes: 180,
         dayNote: 'One 3-hour session at the studio',
-        slots: ['11:00 AM – 2:00 PM', '2:00 PM – 5:00 PM'],
       },
     },
   },
@@ -75,24 +74,50 @@ export const CLASS_CATALOG = {
       online: {
         price: 1240,
         duration: '6.5-hour day',
+        durationMinutes: 390,
         dayNote: '6 hours of training with a 30-minute break',
-        slots: ['10:00 AM – 4:30 PM', '11:00 AM – 5:30 PM'],
-        zoomMinutes: 390,
       },
       in_person: {
         price: 1445,
         duration: '7-hour day',
+        durationMinutes: 420,
         dayNote: '6 hours of training with a 1-hour lunch break',
-        slots: ['10:00 AM – 5:00 PM', '11:00 AM – 6:00 PM'],
       },
     },
   },
 };
 
+// ── The class day ──────────────────────────────────────────────────────────
+// Roko teaches between 11 AM and 7 PM, one client per Wednesday. The client
+// picks any start time (30-minute steps) that lets their session finish by
+// 7 PM; the stored value is the full window string ("12:30 PM – 3:30 PM").
+export const CLASS_DAY = { startMin: 11 * 60, endMin: 19 * 60, label: '11 AM – 7 PM' };
+
+function minToLabel(min) {
+  const h24 = Math.floor(min / 60);
+  const m = min % 60;
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+// Every valid start window for a class + format, e.g. a 3-hour class yields
+// "11:00 AM – 2:00 PM" through "4:00 PM – 7:00 PM". Doubles as server-side
+// validation: a submitted preferred_time must be one of these strings.
+export function startWindows(key, format, stepMin = 30) {
+  const meta = classMeta(key, format);
+  if (!meta?.durationMinutes) return [];
+  const out = [];
+  for (let s = CLASS_DAY.startMin; s + meta.durationMinutes <= CLASS_DAY.endMin; s += stepMin) {
+    out.push(`${minToLabel(s)} – ${minToLabel(s + meta.durationMinutes)}`);
+  }
+  return out;
+}
+
 export const CLASS_KEYS = Object.keys(CLASS_CATALOG);
 
 // Resolve the flattened meta for one class in one format:
-// { title, description, includes, price, duration, dayNote, slots, zoomMinutes }.
+// { title, description, includes, price, duration, durationMinutes, dayNote }.
 // Unknown format falls back to in-person (legacy rows without class_format).
 export function classMeta(key, format) {
   const cls = CLASS_CATALOG[key];

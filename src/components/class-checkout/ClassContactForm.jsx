@@ -3,7 +3,9 @@ import { useModalLenis } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/apiClient';
 import { upcomingWednesdays } from '@/lib/classSchedule';
-import { CLASS_FORMATS } from '@/lib/classCatalog';
+import { CLASS_FORMATS, CLASS_DAY, startWindows } from '@/lib/classCatalog';
+import { parseRange } from '@/lib/timeWindow';
+import ClassWednesdayPicker from './ClassWednesdayPicker';
 
 const inputStyle = {
   width: '100%',
@@ -33,19 +35,6 @@ function formatChosen(raw) {
   } catch { return ''; }
 }
 
-// Pieces for the big Wednesday cards: "Wednesday" / "July 8" / "in 3 days"
-function wedParts(raw) {
-  const d = new Date(raw + 'T00:00:00');
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const days = Math.round((d - today) / 86400000);
-  return {
-    month: d.toLocaleDateString('en-US', { month: 'short' }),
-    day: d.getDate(),
-    full: d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }),
-    rel: days === 1 ? 'tomorrow' : `in ${days} days`,
-  };
-}
-
 export default function ClassContactForm({ form, setForm, selectedClass, format, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, onBack, onClose, onCheckout, isRedirecting }) {
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
@@ -53,17 +42,28 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
   const fieldsValid = form.first_name && form.last_name && form.email && form.phone;
   const isValid = fieldsValid && !!selectedDate && !!selectedSlot;
   const price = selectedClass?.price || 0;
-  const slots = selectedClass?.slots || [];
   const formatMeta = CLASS_FORMATS[format];
 
-  // Roko's rule: only the next 2 open Wednesdays are bookable. Blocked dates
-  // just roll the options forward so clients always see 2 choices.
+  // Every start window that fits this class inside Roko's 11 AM to 7 PM day.
+  const windows = selectedClass ? startWindows(selectedClass.key, format) : [];
+  const lastStart = windows.length ? parseRange(windows[windows.length - 1]).start : '';
+
+  // Roko's rules: one client per Wednesday, and only the next 2 open
+  // Wednesdays are bookable. Booked/blocked dates roll the options forward so
+  // clients always see 2 real choices.
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates'],
     queryFn: () => api.entities.BlockedDate.list(),
     initialData: [],
   });
-  const wednesdays = upcomingWednesdays({ blockedSet: new Set(blockedDates.map(b => b.date)) });
+  const { data: bookedData } = useQuery({
+    queryKey: ['class-booked-dates'],
+    queryFn: () => fetch('/api/class-booked-dates').then(r => r.json()),
+    initialData: { dates: [] },
+  });
+  const blockedSet = new Set(blockedDates.map(b => b.date));
+  const bookedSet = new Set(bookedData?.dates || []);
+  const wednesdays = upcomingWednesdays({ blockedSet: new Set([...blockedSet, ...bookedSet]) });
 
   return (
     <>
@@ -101,80 +101,44 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
         <div className="w-full sm:max-w-[980px] sm:mx-auto px-6 sm:px-10 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
-            {/* ── Left: Wednesday + time window ── */}
+            {/* ── Left: Wednesday + start time ── */}
             <div>
               <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Step 1 — Choose Your Date</p>
               <h2 className="font-serif text-[1.5rem] text-[#111] mb-1">Pick a Wednesday</h2>
               <p className="text-[0.82rem] text-gray-400 leading-[1.7] mb-5">
-                Classes run on Wednesdays, and Roko opens the next two at a time. Grab the one that works for you.
+                One client per Wednesday, so the whole day is yours. Roko opens the next two dates at a time.
               </p>
 
-              {/* The next 2 open Wednesdays as big tap cards */}
-              <div className="grid grid-cols-2 gap-3">
-                {wednesdays.map(key => {
-                  const p = wedParts(key);
-                  const isSel = selectedDate === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setSelectedDate(isSel ? null : key)}
-                      className="rounded-xl p-4 text-center transition-all border touch-manipulation"
-                      style={{
-                        background: isSel ? '#111' : '#FAFAF9',
-                        borderColor: isSel ? '#111' : '#ede8e4',
-                        boxShadow: isSel ? '0 6px 22px rgba(0,0,0,0.16)' : 'none',
-                      }}
-                    >
-                      <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: isSel ? 'rgba(255,255,255,0.6)' : '#c5bdb5' }}>
-                        Wednesday
-                      </p>
-                      <p className="font-serif text-[1.6rem] leading-none" style={{ color: isSel ? '#fff' : '#111' }}>
-                        {p.month} {p.day}
-                      </p>
-                      <p className="text-[0.62rem] mt-1.5 font-medium" style={{ color: isSel ? 'rgba(255,255,255,0.6)' : '#A0785A' }}>
-                        {p.rel}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[0.62rem] text-gray-300 mt-2.5">
-                Need a later date? New Wednesdays open up as these fill.
-              </p>
+              <ClassWednesdayPicker
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                openDates={wednesdays}
+                bookedSet={bookedSet}
+                blockedSet={blockedSet}
+              />
 
-              {/* Time window for the chosen class + format */}
+              {/* Start time within the 11 AM – 7 PM class day */}
               <div className="mt-6">
                 <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Step 2 — Choose Your Time</p>
                 <h3 className="font-serif text-[1.2rem] text-[#111] mb-1">Pick a start time</h3>
                 <p className="text-[0.78rem] text-gray-400 leading-[1.7] mb-4">
-                  {selectedClass?.dayNote}{format === 'in_person' ? ', at the studio in Mountain House.' : ', live on Zoom.'}
+                  Class hours are {CLASS_DAY.label}. Your {selectedClass?.duration?.toLowerCase()} can start any time from 11:00 AM{lastStart ? ` to ${lastStart}` : ''}.
                 </p>
-                <div className="flex flex-col gap-2.5">
-                  {slots.map(slot => {
-                    const isSel = selectedSlot === slot;
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {windows.map(win => {
+                    const start = parseRange(win).start;
+                    const isSel = selectedSlot === win;
                     return (
                       <button
-                        key={slot}
+                        key={win}
                         type="button"
-                        onClick={() => setSelectedSlot(isSel ? null : slot)}
-                        className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all border touch-manipulation"
-                        style={{
-                          background: isSel ? 'linear-gradient(135deg, rgba(212,160,176,0.08), rgba(184,160,212,0.08))' : '#FAFAF9',
-                          borderColor: isSel ? '#D4A0B0' : '#ede8e4',
-                          boxShadow: isSel ? '0 0 0 1px #D4A0B080' : 'none',
-                        }}
+                        onClick={() => setSelectedSlot(isSel ? null : win)}
+                        className="py-2.5 rounded-xl text-[0.78rem] font-medium tabular-nums transition-all border touch-manipulation"
+                        style={isSel
+                          ? { background: '#111', color: '#fff', borderColor: '#111', boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }
+                          : { background: '#FAFAF9', color: '#333', borderColor: '#ede8e4' }}
                       >
-                        <span className="flex items-center gap-3">
-                          <span className="w-4.5 h-4.5 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center transition-all"
-                            style={{ borderColor: isSel ? '#D4A0B0' : '#d0c8c0' }}>
-                            {isSel && <span className="w-2 h-2 rounded-full" style={{ background: '#D4A0B0' }} />}
-                          </span>
-                          <span className="text-[0.85rem] font-medium tabular-nums" style={{ color: '#111' }}>{slot}</span>
-                        </span>
-                        <span className="text-[0.62rem] font-semibold tracking-[0.06em] uppercase" style={{ color: isSel ? '#A0607A' : '#c5bdb5' }}>
-                          {selectedClass?.duration}
-                        </span>
+                        {start}
                       </button>
                     );
                   })}
