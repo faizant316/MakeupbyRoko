@@ -139,7 +139,7 @@ export default function ClassCheckoutFlow({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-end sm:items-start sm:justify-center"
+      className="fixed inset-0 z-[500] flex items-start sm:justify-center"
       style={{
         background: 'radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.4) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.33) 0%, transparent 45%), rgba(0,0,0,0.55)',
         backdropFilter: 'blur(20px)',
@@ -149,9 +149,13 @@ export default function ClassCheckoutFlow({ onClose }) {
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
         style={{
+          // Top-anchored + dynamic viewport height (dvh) so the sheet's header
+          // (back / ✕) always sits flush UNDER the nav and is never cropped —
+          // on mobile Safari 100vh overshoots the visible area and a
+          // bottom-anchored sheet used to get pushed up behind the nav.
           animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
-          marginTop: '52px',
-          height: 'calc(100vh - 52px)',
+          marginTop: 'var(--nav-h, 52px)',
+          height: 'calc(100dvh - var(--nav-h, 52px))',
           boxShadow: '0 -1px 0 rgba(212,160,176,0.3)',
         }}
         onClick={e => e.stopPropagation()}

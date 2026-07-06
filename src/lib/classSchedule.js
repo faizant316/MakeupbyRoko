@@ -1,31 +1,30 @@
-// Class scheduling rules: classes run on Wednesdays, and clients can only book
-// the next 2 open Wednesdays (Roko's rule, so her calendar never fills months
-// out). Shared by the public checkout picker and the server-side validation in
+// Class scheduling rules: classes run on Wednesdays. A client can book ANY
+// upcoming Wednesday as long as it's at least two weeks out (Roko needs the
+// lead time to prep), and that Wednesday isn't already taken — one client per
+// Wednesday. Shared by the public picker and the server-side validation in
 // create-class-checkout.
 
-export const MAX_BOOKABLE_WEDNESDAYS = 2;
+// Minimum lead time: the earliest bookable Wednesday is the first one that is
+// at least this many days from today. (Two weeks.)
+export const MIN_LEAD_DAYS = 14;
+
+// How far ahead booking stays open (generous, keeps the calendar sane).
+export const MAX_HORIZON_DAYS = 365;
 
 const pad = (n) => String(n).padStart(2, '0');
 const toKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const WEDNESDAY = 3;
 
-// The next `count` Wednesdays strictly after today, skipping any Roko blocked
-// via blocked_dates (so she always leaves clients `count` real options).
-// Returns 'YYYY-MM-DD' keys.
-export function upcomingWednesdays({ count = MAX_BOOKABLE_WEDNESDAYS, blockedSet = new Set(), from = new Date() } = {}) {
+// 'YYYY-MM-DD' of the earliest bookable Wednesday: the first Wednesday that is
+// at least MIN_LEAD_DAYS out. Everything from here forward is open (unless a
+// specific date is booked/blocked).
+export function firstBookableWednesday(from = new Date()) {
   const d = new Date(from);
   d.setHours(0, 0, 0, 0);
-  const out = [];
-  // Jump to the next Wednesday strictly after `from`, then step by weeks.
-  d.setDate(d.getDate() + (((WEDNESDAY - d.getDay() + 7) % 7) || 7));
-  let guard = 0;
-  while (out.length < count && guard < 26) {
-    const key = toKey(d);
-    if (!blockedSet.has(key)) out.push(key);
-    d.setDate(d.getDate() + 7);
-    guard++;
-  }
-  return out;
+  d.setDate(d.getDate() + MIN_LEAD_DAYS); // earliest allowed calendar day
+  // step forward to the first Wednesday on/after that day
+  d.setDate(d.getDate() + ((WEDNESDAY - d.getDay() + 7) % 7));
+  return toKey(d);
 }
 
 // One client per Wednesday. A registration "holds" its date when it's paid or
@@ -49,8 +48,8 @@ export function regDateOf(reg) {
 }
 
 // Server-side sanity check for a client-submitted class date: must be a real
-// upcoming Wednesday within the bookable horizon. Kept slightly generous
-// (blocked dates can push the 2 open Wednesdays further out).
+// Wednesday, at least two weeks out, within the booking horizon. (Whether the
+// specific date is already taken is checked separately in create-class-checkout.)
 export function isBookableWednesday(dateStr, from = new Date()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '')) return false;
   const d = new Date(dateStr + 'T00:00:00');
@@ -58,5 +57,5 @@ export function isBookableWednesday(dateStr, from = new Date()) {
   const today = new Date(from);
   today.setHours(0, 0, 0, 0);
   const diffDays = (d - today) / 86400000;
-  return diffDays > 0 && diffDays <= 8 * 7;
+  return diffDays >= MIN_LEAD_DAYS && diffDays <= MAX_HORIZON_DAYS;
 }

@@ -2,20 +2,22 @@ import { useRef } from 'react';
 import { useModalLenis } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/apiClient';
-import { upcomingWednesdays } from '@/lib/classSchedule';
+import { firstBookableWednesday } from '@/lib/classSchedule';
 import { CLASS_FORMATS, CLASS_DAY, startWindows } from '@/lib/classCatalog';
 import { parseRange } from '@/lib/timeWindow';
 import ClassWednesdayPicker from './ClassWednesdayPicker';
+import { PLUM } from './classTheme';
+import ClassStepper from './ClassStepper';
 
 const inputStyle = {
   width: '100%',
   padding: '10px 0',
   paddingBottom: '10px',
-  borderBottom: '1px solid #e5e7eb',
+  borderBottom: `1px solid ${PLUM.border}`,
   fontSize: '16px', // prevents iOS zoom
   outline: 'none',
   background: 'transparent',
-  color: '#111',
+  color: '#1a1015',
   fontFamily: 'inherit',
   borderTop: 'none',
   borderLeft: 'none',
@@ -25,8 +27,8 @@ const inputStyle = {
   appearance: 'none',
 };
 
-const inputFocusHandler = (e) => { e.target.style.borderBottomColor = '#D4A0B0'; };
-const inputBlurHandler = (e) => { e.target.style.borderBottomColor = '#e5e7eb'; };
+const inputFocusHandler = (e) => { e.target.style.borderBottomColor = PLUM.rose; };
+const inputBlurHandler = (e) => { e.target.style.borderBottomColor = PLUM.border; };
 
 function formatChosen(raw) {
   if (!raw) return '';
@@ -48,9 +50,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
   const windows = selectedClass ? startWindows(selectedClass.key, format) : [];
   const lastStart = windows.length ? parseRange(windows[windows.length - 1]).start : '';
 
-  // Roko's rules: one client per Wednesday, and only the next 2 open
-  // Wednesdays are bookable. Booked/blocked dates roll the options forward so
-  // clients always see 2 real choices.
+  // One client per Wednesday, and only Wednesdays at least two weeks out.
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates'],
     queryFn: () => api.entities.BlockedDate.list(),
@@ -63,33 +63,31 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
   });
   const blockedSet = new Set(blockedDates.map(b => b.date));
   const bookedSet = new Set(bookedData?.dates || []);
-  const wednesdays = upcomingWednesdays({ blockedSet: new Set([...blockedSet, ...bookedSet]) });
+  const firstOpenKey = firstBookableWednesday();
 
   return (
     <>
       {/* Header */}
       <div
         className="flex-shrink-0 bg-white/95 backdrop-blur-sm flex justify-between items-center px-6 sm:px-10 py-4 sm:py-5"
-        style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}
+        style={{ borderBottom: `1px solid ${PLUM.border}` }}
       >
         <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[#999] hover:text-[#111] transition-all"
-            style={{ background: 'rgba(0,0,0,0.06)' }}
-          >
+          <button onClick={onBack}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+            style={{ background: PLUM.tint2, color: PLUM.plum }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
           <div>
-            <span className="font-serif text-[1.1rem] tracking-tight text-[#111] block leading-tight">Your Wednesday &amp; Details</span>
-            <span className="text-[0.62rem] text-[#c5bdb5] tracking-wide">Pick a date, a time, and tell Roko about you</span>
+            <span className="font-serif text-[1.1rem] tracking-tight text-[#1a1015] block leading-tight">Your Wednesday &amp; Details</span>
+            <span className="text-[0.62rem] tracking-wide" style={{ color: PLUM.gray }}>Pick a date, a time, and tell Roko about you</span>
           </div>
         </div>
         <button onClick={onClose}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[#999] hover:text-[#111] transition-all"
-          style={{ background: 'rgba(0,0,0,0.06)' }}>
+          className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+          style={{ background: PLUM.tint2, color: PLUM.plum }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -98,30 +96,33 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
 
       {/* Scrollable content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
-        <div className="w-full sm:max-w-[980px] sm:mx-auto px-6 sm:px-10 py-8">
+        <div className="w-full sm:max-w-[980px] sm:mx-auto px-5 sm:px-10 pt-6 pb-8">
+
+          <ClassStepper current={3} className="mb-7" />
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
             {/* ── Left: Wednesday + start time ── */}
             <div>
-              <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Step 1 — Choose Your Date</p>
-              <h2 className="font-serif text-[1.5rem] text-[#111] mb-1">Pick a Wednesday</h2>
-              <p className="text-[0.82rem] text-gray-400 leading-[1.7] mb-5">
-                One client per Wednesday, so the whole day is yours. Roko opens the next two dates at a time.
+              <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM.pink }}>Choose your date</p>
+              <h2 className="font-serif text-[1.5rem] text-[#1a1015] mb-1">Pick a Wednesday</h2>
+              <p className="text-[0.82rem] leading-[1.7] mb-5" style={{ color: PLUM.gray }}>
+                One client per Wednesday, so the whole day is yours. Any Wednesday at least two weeks out is open, page ahead to any date you like.
               </p>
 
               <ClassWednesdayPicker
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
-                openDates={wednesdays}
+                firstOpenKey={firstOpenKey}
                 bookedSet={bookedSet}
                 blockedSet={blockedSet}
               />
 
               {/* Start time within the 11 AM – 7 PM class day */}
               <div className="mt-6">
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Step 2 — Choose Your Time</p>
-                <h3 className="font-serif text-[1.2rem] text-[#111] mb-1">Pick a start time</h3>
-                <p className="text-[0.78rem] text-gray-400 leading-[1.7] mb-4">
+                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM.pink }}>Choose your time</p>
+                <h3 className="font-serif text-[1.2rem] text-[#1a1015] mb-1">Pick a start time</h3>
+                <p className="text-[0.78rem] leading-[1.7] mb-4" style={{ color: PLUM.gray }}>
                   Class hours are {CLASS_DAY.label}. Your {selectedClass?.duration?.toLowerCase()} can start any time from 11:00 AM{lastStart ? ` to ${lastStart}` : ''}.
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -135,8 +136,8 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                         onClick={() => setSelectedSlot(isSel ? null : win)}
                         className="py-2.5 rounded-xl text-[0.78rem] font-medium tabular-nums transition-all border touch-manipulation"
                         style={isSel
-                          ? { background: '#111', color: '#fff', borderColor: '#111', boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }
-                          : { background: '#FAFAF9', color: '#333', borderColor: '#ede8e4' }}
+                          ? { background: PLUM.ink, color: '#fff', borderColor: PLUM.ink, boxShadow: '0 4px 16px rgba(42,22,32,0.2)' }
+                          : { background: PLUM.tint, color: PLUM.deep, borderColor: PLUM.border }}
                       >
                         {start}
                       </button>
@@ -147,11 +148,11 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
 
               {selectedDate && selectedSlot && (
                 <div className="mt-5 flex items-center gap-2 px-4 py-3 rounded-xl"
-                  style={{ background: 'rgba(212,160,176,0.1)', border: '1px solid rgba(212,160,176,0.35)' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-4 h-4 flex-shrink-0">
+                  style={{ background: 'rgba(196,132,154,0.1)', border: `1px solid ${PLUM.rose}59` }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="2" className="w-4 h-4 flex-shrink-0">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
-                  <span className="text-[0.8rem] text-[#A0607A] font-medium">{formatChosen(selectedDate)} · {selectedSlot}</span>
+                  <span className="text-[0.8rem] font-medium" style={{ color: PLUM.deep }}>{formatChosen(selectedDate)} · {selectedSlot}</span>
                 </div>
               )}
             </div>
@@ -159,36 +160,36 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
             {/* ── Right: details + order summary ── */}
             <div className="flex flex-col gap-8">
               <div>
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Step 3 — Your Details</p>
-                <h2 className="font-serif text-[1.5rem] text-[#111] mb-4">Your Information</h2>
+                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM.pink }}>Your details</p>
+                <h2 className="font-serif text-[1.5rem] text-[#1a1015] mb-4">Your Information</h2>
 
                 <div className="flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">First Name *</label>
+                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>First Name *</label>
                       <input required value={form.first_name} onChange={e => set('first_name', e.target.value)}
                         onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="Jane" style={inputStyle} />
                     </div>
                     <div>
-                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Last Name *</label>
+                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Last Name *</label>
                       <input required value={form.last_name} onChange={e => set('last_name', e.target.value)}
                         onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="Smith" style={inputStyle} />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Email Address *</label>
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Email Address *</label>
                     <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
                       onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="you@email.com" style={inputStyle} />
                   </div>
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Phone Number *</label>
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Phone Number *</label>
                     <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
                       onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="(555) 000-0000" style={inputStyle} />
                   </div>
 
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Additional Notes</label>
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Additional Notes</label>
                     <textarea value={form.additional_notes} onChange={e => set('additional_notes', e.target.value)}
                       onFocus={inputFocusHandler} onBlur={inputBlurHandler}
                       placeholder="Anything else Roko should know…" rows={3} style={{ ...inputStyle, resize: 'none' }} />
@@ -197,22 +198,22 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
               </div>
 
               {/* Order summary — paid in full */}
-              <div className="rounded-xl border border-[#e8e2dc]" style={{ background: '#FAFAF9' }}>
-                <div className="px-5 py-4" style={{ borderBottom: '1px solid #ede8e4' }}>
-                  <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#A0785A] mb-1">Due Today (Paid in Full)</p>
-                  <p className="font-serif text-[1.7rem] text-[#111] leading-none">${price.toLocaleString()}</p>
-                  <p className="text-[0.65rem] text-gray-400 mt-2">Apple Pay · Google Pay · All major cards, via Stripe</p>
+              <div className="rounded-2xl overflow-hidden" style={{ background: PLUM.tint, border: `1px solid ${PLUM.border}` }}>
+                <div className="px-5 py-4" style={{ borderBottom: `1px solid ${PLUM.border}`, background: PLUM.tint2 }}>
+                  <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-1" style={{ color: PLUM.plum }}>Due Today · Paid in Full</p>
+                  <p className="font-serif text-[1.8rem] leading-none" style={{ color: '#1a1015' }}>${price.toLocaleString()}</p>
+                  <p className="text-[0.65rem] mt-2" style={{ color: PLUM.gray }}>Apple Pay · Google Pay · all major cards, via Stripe</p>
                 </div>
                 {selectedClass && (
-                  <div className="px-5 py-3 flex items-center justify-between text-[0.72rem]">
-                    <span className="text-gray-500">{selectedClass.title} <span className="text-gray-400">· {formatMeta?.short}</span></span>
-                    <span className="font-medium text-[#111]">${selectedClass.price.toLocaleString()}</span>
+                  <div className="px-5 py-3 flex items-center justify-between text-[0.72rem]" style={{ borderBottom: (selectedDate || selectedSlot) ? `1px solid ${PLUM.borderSoft}` : 'none' }}>
+                    <span style={{ color: PLUM.deep }}>{selectedClass.title} <span style={{ color: PLUM.gray }}>· {formatMeta?.short}</span></span>
+                    <span className="font-medium" style={{ color: '#1a1015' }}>${selectedClass.price.toLocaleString()}</span>
                   </div>
                 )}
                 {(selectedDate || selectedSlot) && (
-                  <div className="px-5 pb-3 -mt-1 flex items-center justify-between text-[0.68rem]">
-                    <span className="text-gray-400">{selectedDate ? formatChosen(selectedDate) : 'Pick a Wednesday'}</span>
-                    <span className="text-gray-400 tabular-nums">{selectedSlot || ''}</span>
+                  <div className="px-5 py-3 flex items-center justify-between text-[0.68rem]">
+                    <span style={{ color: PLUM.gray }}>{selectedDate ? formatChosen(selectedDate) : 'Pick a Wednesday'}</span>
+                    <span className="tabular-nums" style={{ color: PLUM.gray }}>{selectedSlot || ''}</span>
                   </div>
                 )}
               </div>
@@ -225,7 +226,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
       {/* Sticky footer CTA */}
       <div
         className="flex-shrink-0"
-        style={{ borderTop: '1px solid rgba(0,0,0,0.07)', background: '#fff', padding: '12px 24px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
+        style={{ borderTop: `1px solid ${PLUM.border}`, background: '#fff', padding: '12px 24px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
       >
         <div className="w-full sm:max-w-[980px] sm:mx-auto">
           <button
@@ -233,8 +234,8 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
             disabled={!isValid || isRedirecting}
             className="w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] transition-all flex items-center justify-center gap-2"
             style={isValid && !isRedirecting
-              ? { background: '#111', color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }
-              : { background: '#f0ece8', color: '#bbb', cursor: 'not-allowed' }
+              ? { background: PLUM.ink, color: '#fff', boxShadow: '0 4px 20px rgba(42,22,32,0.22)' }
+              : { background: PLUM.disabled, color: PLUM.grayLt, cursor: 'not-allowed' }
             }
           >
             {!selectedDate ? 'Choose your Wednesday to continue'
@@ -242,8 +243,8 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
               : !fieldsValid ? 'Fill in your details to continue'
               : 'Continue to Review →'}
           </button>
-          <p className="text-[0.65rem] text-center text-gray-400 mt-2">
-            Next: review &amp; sign, then secure checkout <span className="text-[#D4A0B0]">✦</span>
+          <p className="text-[0.65rem] text-center mt-2" style={{ color: PLUM.gray }}>
+            Next: review &amp; sign, then secure checkout <span style={{ color: PLUM.pink }}>✦</span>
           </p>
         </div>
       </div>

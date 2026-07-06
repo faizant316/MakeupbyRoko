@@ -331,7 +331,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-end sm:items-start sm:justify-center"
+      className="fixed inset-0 z-[500] flex items-start sm:justify-center"
       style={{
         background: 'radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.45) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.38) 0%, transparent 45%), radial-gradient(ellipse at 50% 0%, rgba(212,160,176,0.25) 0%, transparent 50%), rgba(0,0,0,0.58)',
         backdropFilter: 'blur(22px)'
@@ -341,10 +341,12 @@ export default function BookingModal({ service: initialService, onClose }) {
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
         style={{
+          // Top-anchored + dvh so the sticky header (back / ✕) is never cropped
+          // behind the nav on mobile (100vh/100% overshoot the visible area).
           animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
           boxShadow: typeof window !== 'undefined' && window.innerWidth >= 640 ? 'inset 0 0 200px rgba(212,140,170,0.12), inset 100px 0 200px rgba(212,140,170,0.08), inset -100px 0 200px rgba(180,140,220,0.08), 0 -1px 0 rgba(212,160,176,0.35)' : undefined,
-          marginTop: '52px',
-          height: 'calc(100% - 52px)',
+          marginTop: 'var(--nav-h, 52px)',
+          height: 'calc(100dvh - var(--nav-h, 52px))',
         }}
       >
         {/* Header — slim & sleek */}
