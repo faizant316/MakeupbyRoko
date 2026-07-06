@@ -2,21 +2,26 @@ import { useRef } from 'react';
 import { useModalLenis } from '@/lib/modalLenis';
 import { CLASS_FORMATS, classMeta } from '@/lib/classCatalog';
 
-// Format icons for the Online / In Person switch.
-const FormatIcon = ({ type, active }) => type === 'online' ? (
-  <svg viewBox="0 0 24 24" fill="none" stroke={active ? '#fff' : '#A0785A'} strokeWidth="1.6" className="w-[18px] h-[18px]">
-    <rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-  </svg>
-) : (
-  <svg viewBox="0 0 24 24" fill="none" stroke={active ? '#fff' : '#A0785A'} strokeWidth="1.6" className="w-[18px] h-[18px]">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-  </svg>
-);
+// Step 2 of the class flow: pick the class (format already chosen). Cards for
+// each class plus a side-by-side comparison table so everything about the
+// courses lives on this one screen.
 
-export default function ClassSelector({ classKeys, format, onFormat, selected, onSelect, onClose, onNext }) {
+export default function ClassSelector({ classKeys, format, selected, onSelect, onBack, onClose, onNext }) {
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
   const selectedClass = selected ? classMeta(selected, format) : null;
+  const fmt = CLASS_FORMATS[format];
+  const beginner = classMeta('private_basic_lesson', format);
+  const advanced = classMeta('masterclass', format);
+
+  const compareRows = [
+    ['Best for', 'Doing your own makeup', 'Aspiring & working artists'],
+    ['Length', beginner.duration, advanced.duration],
+    ['Your day', beginner.dayNote, advanced.dayNote],
+    ['Class size', 'Private, just you', 'Private, just you'],
+    ['Price', `$${beginner.price.toLocaleString()}`, `$${advanced.price.toLocaleString()}`],
+    ['You leave with', 'Personalized product list', 'Certificate of completion'],
+  ];
 
   return (
     <>
@@ -26,12 +31,18 @@ export default function ClassSelector({ classKeys, format, onFormat, selected, o
         style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#D4A0B0]/12 flex items-center justify-center">
-            <span className="text-[#D4A0B0] text-xs">✦</span>
-          </div>
+          <button
+            onClick={onBack}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#999] hover:text-[#111] transition-all"
+            style={{ background: 'rgba(0,0,0,0.06)' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
           <div>
-            <span className="font-serif text-[1.1rem] tracking-tight text-[#111] block leading-tight">Makeup Classes by Roko</span>
-            <span className="text-[0.62rem] text-[#c5bdb5] tracking-wide">Choose your class</span>
+            <span className="font-serif text-[1.1rem] tracking-tight text-[#111] block leading-tight">Select Your Class</span>
+            <span className="text-[0.62rem] text-[#c5bdb5] tracking-wide">{fmt?.short}</span>
           </div>
         </div>
         <button onClick={onClose}
@@ -48,57 +59,17 @@ export default function ClassSelector({ classKeys, format, onFormat, selected, o
         <div className="w-full sm:max-w-[860px] sm:mx-auto px-6 sm:px-10 pt-8 pb-4 flex flex-col gap-7">
           {/* Intro */}
           <div>
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Service Menu</p>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-1">Step 2 of 3</p>
             <h2 className="font-serif text-[1.6rem] text-[#111] mb-2">Makeup Classes by <em className="text-[#D4A0B0] not-italic">MakeupbyRoko</em></h2>
             <p className="text-[0.85rem] text-gray-400 leading-[1.7]">
-              Learn online over Zoom, or in person at the studio in Mountain House. Pick your format and class, then choose your Wednesday and time.
-            </p>
-            <div className="mt-3 flex items-center gap-2 text-[0.72rem] text-[#A0785A]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0]" />
-              Wednesdays only · pay in full to reserve your seat
-            </div>
-          </div>
-
-          {/* Format switch — Online vs In Person */}
-          <div>
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-3">Step 1 · How would you like to learn?</p>
-            <div className="grid grid-cols-2 gap-3">
-              {Object.values(CLASS_FORMATS).map(f => {
-                const active = format === f.key;
-                return (
-                  <button
-                    key={f.key}
-                    type="button"
-                    onClick={() => onFormat(f.key)}
-                    className="rounded-xl p-4 text-left transition-all border touch-manipulation"
-                    style={{
-                      background: active ? '#111' : '#FAFAF9',
-                      borderColor: active ? '#111' : '#ede8e4',
-                      boxShadow: active ? '0 6px 22px rgba(0,0,0,0.16)' : 'none',
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: active ? 'rgba(255,255,255,0.14)' : 'rgba(212,160,176,0.14)' }}>
-                        <FormatIcon type={f.key} active={active} />
-                      </div>
-                      <span className="text-[0.86rem] font-semibold" style={{ color: active ? '#fff' : '#111' }}>{f.label}</span>
-                    </div>
-                    <p className="text-[0.68rem] leading-[1.6]" style={{ color: active ? 'rgba(255,255,255,0.72)' : '#a5998e' }}>
-                      {f.key === 'online' ? 'Live over Zoom, from anywhere' : 'At the studio · Mountain House, CA'}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[0.68rem] text-gray-400 mt-2.5 leading-[1.6]">
-              {CLASS_FORMATS[format].blurb}
+              {format === 'online'
+                ? 'Both classes run live on Zoom. Pick yours, then choose your Wednesday and start time.'
+                : 'Both classes are held at the studio in Mountain House. Pick yours, then choose your Wednesday and start time.'}
             </p>
           </div>
 
           {/* Class cards */}
           <div className="flex flex-col gap-4">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-0">Step 2 · Select a Class</p>
             {classKeys.map(key => {
               const cls = classMeta(key, format);
               const isSelected = selected === key;
@@ -131,12 +102,6 @@ export default function ClassSelector({ classKeys, format, onFormat, selected, o
                         >
                           ${cls.price.toLocaleString()}
                         </span>
-                        <span
-                          className="text-[0.58rem] font-semibold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
-                          style={{ background: 'rgba(160,120,90,0.1)', color: '#A0785A' }}
-                        >
-                          {CLASS_FORMATS[format].short}
-                        </span>
                       </div>
                       <p className="text-[0.65rem] font-medium text-[#A0785A] mb-2">
                         {cls.duration} · {cls.dayNote} · <span className="text-[#A0785A]">paid in full</span>
@@ -158,6 +123,40 @@ export default function ClassSelector({ classKeys, format, onFormat, selected, o
               );
             })}
           </div>
+
+          {/* Side-by-side comparison */}
+          <div>
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#888] mb-3">Compare the Classes</p>
+            <div className="rounded-xl border border-[#ede8e4] overflow-hidden" style={{ background: '#FAFAF9' }}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left" style={{ borderCollapse: 'collapse', minWidth: '480px' }}>
+                  <thead>
+                    <tr style={{ background: '#F3EEE9' }}>
+                      <th className="px-4 py-3 text-[0.58rem] font-semibold tracking-[0.12em] uppercase text-[#a5998e] w-[130px]"> </th>
+                      <th className="px-4 py-3 font-serif text-[0.88rem] font-normal text-[#111]">Beginner Lesson</th>
+                      <th className="px-4 py-3 font-serif text-[0.88rem] font-normal text-[#111]">Advanced Training</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {compareRows.map(([label, a, b], i) => (
+                      <tr key={label} style={{ borderTop: '1px solid #ede8e4' }}>
+                        <td className="px-4 py-2.5 text-[0.62rem] font-semibold tracking-[0.08em] uppercase text-[#b0a59c] align-top">{label}</td>
+                        <td className="px-4 py-2.5 text-[0.76rem] text-[#555] leading-[1.55] align-top">
+                          {label === 'Price' ? <span className="font-semibold text-[#111]">{a}</span> : a}
+                        </td>
+                        <td className="px-4 py-2.5 text-[0.76rem] text-[#555] leading-[1.55] align-top">
+                          {label === 'Price' ? <span className="font-semibold text-[#111]">{b}</span> : b}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="px-4 py-2.5 text-[0.65rem] text-[#b0a59c]" style={{ borderTop: '1px solid #ede8e4' }}>
+                Prices shown for {fmt?.label.toLowerCase()} classes. Every class runs on a Wednesday between 11 AM and 7 PM, one client per day.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -170,7 +169,7 @@ export default function ClassSelector({ classKeys, format, onFormat, selected, o
           {selectedClass && (
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-[0.7rem] font-semibold text-[#111] truncate pr-3">
-                {selectedClass.title} <span className="font-normal text-[#A0785A]">· {CLASS_FORMATS[format].short}</span>
+                {selectedClass.title} <span className="font-normal text-[#A0785A]">· {fmt?.short}</span>
               </span>
               <div className="text-right flex-shrink-0">
                 <span className="text-[0.65rem] text-gray-400">Total: </span>

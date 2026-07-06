@@ -2,7 +2,7 @@
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
-import { classesOfReg, regTotal, classMeta } from '@/lib/classCatalog';
+import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
 import { FORMAT_META } from './ClassRegistrationsList';
 import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
@@ -68,8 +68,14 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const hasLesson = !!reg.appointment_date;
   const parsed = parseNotes(reg.lesson_notes);
   const isInPersonReg = reg.class_format === 'in_person';
-  // The published start windows for this class + format, offered as quick picks.
-  const classWindows = classesOfReg(reg).find(c => c.slots)?.slots || [];
+  // A few one-tap start windows from the class's 11 AM to 7 PM day (first,
+  // last, and a couple in between — the Time select still allows anything).
+  const classWindows = (() => {
+    const all = startWindows(classesOfReg(reg)[0]?.key, reg.class_format);
+    if (all.length <= 4) return all;
+    const picks = [0, Math.round((all.length - 1) / 3), Math.round(((all.length - 1) * 2) / 3), all.length - 1];
+    return [...new Set(picks)].map(i => all[i]);
+  })();
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sent, setSent] = useState(false);

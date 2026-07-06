@@ -41,7 +41,7 @@ const SHOOT_FAQ = [
 ];
 
 const LESSON_FAQ = [
-  { q: "When are classes held?", a: "Classes are held on Wednesdays. You can book one of the next two open Wednesdays and pick the start time that works for you." },
+  { q: "When are classes held?", a: "Classes are held on Wednesdays between 11 AM and 7 PM, one client per day. You can book one of the next two open Wednesdays and pick the start time that works for you." },
   { q: "Are classes online or in person?", a: "Both! Take your class live over Zoom from anywhere, or in person at the studio in Mountain House, CA. Online classes are a little cheaper, and your Zoom link or the studio address arrives in your confirmation email right after checkout." },
   { q: "How do I sign up for a class?", a: "Choose your class and format, pick your Wednesday and start time, sign the class agreement, and pay in full online (Apple Pay, Google Pay, and all major cards via Stripe). Your seat is reserved instantly." },
   { q: "How long are the classes?", a: "The Beginner Makeup Lesson is 3 hours. The Advanced Makeup Artist Training is a full day: 7 hours in person with a 1-hour lunch break, or 6 hours online with a 30-minute break." },

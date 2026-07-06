@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '../../../src/lib/supabase/server';
 
-import { CLASS_CATALOG, CLASS_FORMATS, classMeta } from '../../../src/lib/classCatalog';
-import { isBookableWednesday } from '../../../src/lib/classSchedule';
+import { CLASS_CATALOG, CLASS_FORMATS, classMeta, startWindows } from '../../../src/lib/classCatalog';
+import { isBookableWednesday, regHoldsDate, regDateOf } from '../../../src/lib/classSchedule';
 
 export async function POST(req) {
   try {
@@ -24,16 +24,30 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Please choose online or in person' }, { status: 400 });
     }
 
-    // Classes are bookable only on the next couple of open Wednesdays, at one
-    // of the published start windows for that class + format.
+    // Classes are bookable only on the next couple of open Wednesdays, at a
+    // start time that fits the class inside Roko's 11 AM to 7 PM day.
     if (!isBookableWednesday(preferred_date)) {
       return NextResponse.json({ error: 'Please pick one of the upcoming Wednesdays' }, { status: 400 });
     }
 
     const classData = selected_classes.map(k => classMeta(k, class_format));
-    const badSlot = preferred_time && classData.some(c => !c.slots.includes(preferred_time));
-    if (!preferred_time || badSlot) {
+    const badWindow = preferred_time && selected_classes.some(k => !startWindows(k, class_format).includes(preferred_time));
+    if (!preferred_time || badWindow) {
       return NextResponse.json({ error: 'Please pick a class time' }, { status: 400 });
+    }
+
+    // One client per Wednesday: if any active registration already holds this
+    // date, the seat is gone. (select('*') keeps this working before
+    // migration 0003/0004 adds preferred_date; nothing is returned to the client.)
+    const { data: existing, error: existErr } = await supabase
+      .from('class_registrations')
+      .select('*')
+      .neq('status', 'cancelled')
+      .neq('status', 'declined');
+    if (existErr) throw existErr;
+    const dateTaken = (existing || []).some(r => regDateOf(r) === preferred_date && regHoldsDate(r));
+    if (dateTaken) {
+      return NextResponse.json({ error: 'That Wednesday was just booked. Please pick another date.' }, { status: 409 });
     }
 
     const totalAmount = classData.reduce((sum, c) => sum + c.price, 0);
