@@ -2,9 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
-const VIDEO_URL = '/hero.mp4';           // 1080p — desktop split panel
-const MOBILE_VIDEO_URL = '/hero-mobile.mp4'; // 720p, ~650KB — fast start on cellular
-const POSTER_URL = '/hero-poster.jpg';
+const VIDEO_URL = '/hero.mp4';          // full-quality 1080p, used on both desktop and mobile
+const POSTER_URL = '/hero-poster.jpg';  // crisp still shown instantly; video fades in once ready
+
+// Tiny blurred placeholder baked straight into the code. It paints at 0ms with
+// zero network, so the hero is never blank even on the very first frame of a
+// cold cellular load, before the (small) crisp poster JPG has arrived.
+const LQIP = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD//gAQTGF2YzYyLjI4LjEwMQD/2wBDAAgQEBMQExYWFhYWFhoYGhsbGxoaGhobGxsdHR0iIiIdHR0bGx0dICAiIiUmJSMjIiMmJigoKDAwLi44ODpFRVP/xABkAAEBAQEBAQAAAAAAAAAAAAAHBggEAgUBAQAAAAAAAAAAAAAAAAAAAAAQAAIABQEHBQEBAAAAAAAAAAECAwARMQQhUQVBYXM0shNyEgYUIpERAQAAAAAAAAAAAAAAAAAAAAD/wAARCAASACADASIAAhEAAxEA/9oADAMBAAIRAxEAPwAEQ/FlOwg/5NXvGMkaLDdDoU11qa1sdkyIvNLiYpy2ENF9SK7AJDrQUAqzO3BRy1kOVkdQCwIqKiulRtHKfitcy95+58uPjooWF6sJACPkTXShCFrV4cJBnRobsrAhlJBBuCDQiQ8C4lg+pgfuinZAanL+lkfFxLD9S72L0D5LIPDXPunHm8O9yevF8zOw2ufdOPN4d7k9eL5mQ//Z';
 
 // Keeps trying to start playback through the events that typically unblock
 // autoplay on mobile: the video finishing its initial buffer, the tab becoming
@@ -60,22 +64,26 @@ function useViewportHeight() {
   return vh;
 }
 
-// Two-video swap loop — the only reliable way to get a seamless loop on iOS Safari.
-// While video A is playing, video B sits ready at t=0. When A has ~1.5s left,
-// B starts playing and fades in. A is paused and reset. They alternate forever.
+// POSTER-FIRST hero. The crisp still image (over an instant blurred placeholder)
+// is what the visitor sees the moment the page opens, on ANY connection. The
+// video loads quietly underneath and is only revealed once it is genuinely
+// playing and advancing frames. If the connection is bad or autoplay is blocked,
+// the visitor simply keeps seeing a sharp still and never a broken/half-loaded
+// player. Quality never suffers because the still is full quality and the video
+// is full 1080p.
 //
-// Loading strategy for slow/metered connections: ONLY video A preloads at page
-// load, so the visible first frame arrives as fast as possible on a single
-// stream. Video B is deferred (preload="none") and only warmed up once A is
-// actually playing. If a swap comes due before B is buffered, we simply re-loop
-// A instead of stalling on a black frame.
-function MobileVideoLoop({ src, poster, videoStyle, onError }) {
+// Seamless loop: two copies of the video alternate so iOS never shows its
+// loop-point flicker. Only copy A preloads up front (single stream = fastest);
+// copy B warms up once A is playing. If a loop swap comes due before B is
+// buffered, we just re-loop A rather than stall.
+function MobileVideoLoop({ src, poster, lqip, videoStyle, onError }) {
   const refA = useRef(null);
   const refB = useRef(null);
   const activeRef = useRef('A');
   const swapping = useRef(false);
+  const revealed = useRef(false);
   const [front, setFront] = useState('A');
-  const [started, setStarted] = useState(false); // true once a real frame has played
+  const [ready, setReady] = useState(false); // true once the video is truly playing
 
   // Play whichever video is currently in front. Returns the play() promise so
   // useReliableAutoplay can stop retrying on success.
@@ -95,15 +103,8 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
 
     // Retry A whenever more data buffers (covers "not enough data yet" stalls).
     const kickA = () => { if (activeRef.current === 'A') vA.play().catch(() => {}); };
-    const onAPlaying = () => {
-      setStarted(true);
-      // Visible video is running — now quietly warm up B for a seamless loop.
-      if (vB.preload !== 'auto') vB.preload = 'auto';
-      try { vB.load(); } catch { /* noop */ }
-    };
     vA.addEventListener('loadeddata', kickA);
     vA.addEventListener('canplay', kickA);
-    vA.addEventListener('playing', onAPlaying);
 
     const doSwap = () => {
       if (swapping.current) return;
@@ -112,7 +113,7 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
       const prev = isA ? vA : vB;
       const nextKey = isA ? 'B' : 'A';
 
-      // Incoming video not buffered enough? Don't freeze on a swap — re-loop the
+      // Incoming video not buffered enough? Don't freeze on a swap. Re-loop the
       // current one so playback never stalls on a slow connection.
       if (next.readyState < 3) {
         prev.currentTime = 0;
@@ -134,7 +135,18 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
 
     const onTime = (e) => {
       const active = activeRef.current === 'A' ? vA : vB;
-      if (e.target !== active || swapping.current || !e.target.duration) return;
+      if (e.target !== active) return;
+
+      // First real evidence the video is playing: reveal it (crossfade off the
+      // poster) and warm up copy B for the seamless loop. Runs once.
+      if (!revealed.current && e.target.currentTime > 0.2) {
+        revealed.current = true;
+        setReady(true);
+        if (vB.preload !== 'auto') vB.preload = 'auto';
+        try { vB.load(); } catch { /* noop */ }
+      }
+
+      if (swapping.current || !e.target.duration) return;
       if (e.target.currentTime >= e.target.duration - HANDOFF) doSwap();
     };
 
@@ -145,33 +157,29 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
       vB.removeEventListener('timeupdate', onTime);
       vA.removeEventListener('loadeddata', kickA);
       vA.removeEventListener('canplay', kickA);
-      vA.removeEventListener('playing', onAPlaying);
     };
   }, []);
 
   const base = {
     position: 'absolute', inset: 0, width: '100%', height: '100%',
-    objectFit: 'cover', transition: 'opacity 0.5s ease',
+    objectFit: 'cover',
     ...videoStyle,
   };
+  const fade = { transition: 'opacity 0.7s ease' };
 
   return (
     <>
-      <video ref={refA} src={src} poster={poster} muted playsInline preload="auto" autoPlay
-        style={{ ...base, opacity: front === 'A' ? 1 : 0 }} onError={onError} />
-      <video ref={refB} src={src} poster={poster} muted playsInline preload="none"
-        style={{ ...base, opacity: front === 'B' ? 1 : 0 }} />
-      {/* Poster overlay sits on top until real playback starts. It hides the
-          native "tap to play" glyph iOS paints on a paused video, and gives a
-          clean still frame in the rare case autoplay stays blocked. Fades out
-          the moment a frame plays. Non-interactive so taps still reach the page
-          (and trigger the gesture-based autoplay retry). */}
-      <img
-        src={poster}
-        alt=""
-        aria-hidden="true"
-        style={{ ...base, transition: 'opacity 0.6s ease', opacity: started ? 0 : 1, pointerEvents: 'none' }}
-      />
+      {/* 0ms blurred paint, zero network */}
+      <div style={{ ...base, backgroundImage: `url(${lqip})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <video ref={refA} src={src} muted playsInline preload="auto" autoPlay
+        style={{ ...base, ...fade, opacity: ready && front === 'A' ? 1 : 0 }} onError={onError} />
+      <video ref={refB} src={src} muted playsInline preload="none"
+        style={{ ...base, ...fade, opacity: ready && front === 'B' ? 1 : 0 }} />
+      {/* Crisp still on top. Covers the video until it is truly playing, then
+          crossfades out. Non-interactive so a tap still reaches the page and
+          triggers the gesture-based autoplay retry. */}
+      <img src={poster} alt="" aria-hidden="true"
+        style={{ ...base, ...fade, opacity: ready ? 0 : 1, pointerEvents: 'none' }} />
     </>
   );
 }
@@ -181,12 +189,27 @@ export default function ServicesHero() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileVideoFailed, setMobileVideoFailed] = useState(false);
   const [desktopVideoFailed, setDesktopVideoFailed] = useState(false);
+  const [desktopReady, setDesktopReady] = useState(false);
   const mobileProgress = useMobileHeroProgress();
   const vh = useViewportHeight();
 
   // Same resilient autoplay coverage for the desktop split-panel video.
   const playDesktop = useCallback(() => desktopVideoRef.current?.play(), []);
   useReliableAutoplay(playDesktop);
+
+  // Reveal the desktop video (crossfade off its poster) only once it is truly
+  // playing and advancing frames.
+  useEffect(() => {
+    const v = desktopVideoRef.current;
+    if (!v) return;
+    const onAdvance = () => { if (v.currentTime > 0.2) setDesktopReady(true); };
+    v.addEventListener('timeupdate', onAdvance);
+    v.addEventListener('playing', onAdvance);
+    return () => {
+      v.removeEventListener('timeupdate', onAdvance);
+      v.removeEventListener('playing', onAdvance);
+    };
+  }, []);
 
   // Track scroll for mobile fade effect
   useEffect(() => {
@@ -222,8 +245,9 @@ export default function ServicesHero() {
           {mobileVideoFailed
             ? <img src={POSTER_URL} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }} />
             : <MobileVideoLoop
-                src={MOBILE_VIDEO_URL}
+                src={VIDEO_URL}
                 poster={POSTER_URL}
+                lqip={LQIP}
                 videoStyle={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }}
                 onError={() => setMobileVideoFailed(true)}
               />
@@ -442,15 +466,17 @@ export default function ServicesHero() {
           </div>
         </div>
 
-        {/* RIGHT PANEL — video */}
+        {/* RIGHT PANEL — video (poster-first, same as mobile) */}
         <div className="relative w-[50%] flex-1 overflow-hidden" style={{ minHeight: '300px', zIndex: 1 }}>
-          {desktopVideoFailed && (
-            <img src={POSTER_URL} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.3) brightness(0.7) contrast(1.15)' }} />
-          )}
+          {/* 0ms blurred paint, zero network */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `url(${LQIP})`, backgroundSize: 'cover', backgroundPosition: 'center',
+            filter: 'saturate(0.3) brightness(0.7) contrast(1.15)',
+          }} />
           <video
             ref={desktopVideoRef}
             src={VIDEO_URL}
-            poster={POSTER_URL}
             autoPlay
             muted
             loop
@@ -460,10 +486,17 @@ export default function ServicesHero() {
               position: 'absolute', inset: 0, width: '100%', height: '100%',
               objectFit: 'cover', objectPosition: 'center',
               filter: 'saturate(0.3) brightness(0.7) contrast(1.15)',
-              display: desktopVideoFailed ? 'none' : 'block',
+              opacity: desktopReady && !desktopVideoFailed ? 1 : 0,
+              transition: 'opacity 0.7s ease',
             }}
             onError={() => setDesktopVideoFailed(true)}
           />
+          {/* Crisp still, covers the video until it is truly playing, then crossfades out */}
+          <img src={POSTER_URL} alt="" aria-hidden="true" style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+            filter: 'saturate(0.3) brightness(0.7) contrast(1.15)',
+            opacity: desktopReady ? 0 : 1, transition: 'opacity 0.7s ease', pointerEvents: 'none',
+          }} />
           <div style={{
             position: 'absolute', inset: 0,
             background: 'rgba(120, 80, 60, 0.08)',
