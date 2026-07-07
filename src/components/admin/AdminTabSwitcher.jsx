@@ -23,7 +23,7 @@ export default function AdminTabSwitcher({ activeTab, setActiveTab, darkMode: dm
                 : dm ? '#26262e' : '#fff',
               border: `1px solid ${isActive
                 ? dm ? '#D4A0B0' : '#111'
-                : dm ? '#3a3a48' : '#e4ddd7'}`,
+                : dm ? '#3a3a48' : '#E2E4EA'}`,
               boxShadow: isActive ? '0 2px 12px rgba(0,0,0,0.12)' : 'none',
             }}
           >

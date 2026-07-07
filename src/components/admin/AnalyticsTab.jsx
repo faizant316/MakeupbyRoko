@@ -15,7 +15,7 @@ const CHANNEL_MAP = {
   'Organic Search':   { label: 'Google Search',    dot: '#4285F4', letter: 'G', desc: 'People who Googled "makeup artist" or your name and found you' },
   'Organic Social':   { label: 'Instagram / TikTok', dot: '#E1306C', letter: '◈', desc: 'Clicks from your social posts, reels, or bio link' },
   'Direct':           { label: 'Direct',           dot: '#8B5CF6', letter: '↗', desc: 'Typed your URL directly or used a bookmark — usually loyal repeat clients' },
-  'Referral':         { label: 'Referral Links',   dot: '#10B981', letter: '⋯', desc: 'Someone else\'s website linked to yours — wedding blogs, vendor lists, directories' },
+  'Referral':         { label: 'Referral Links',   dot: '#3B82F6', letter: '⋯', desc: 'Someone else\'s website linked to yours — wedding blogs, vendor lists, directories' },
   'Email':            { label: 'Email',            dot: '#F59E0B', letter: '@', desc: 'Clicked a link from one of your emails or booking confirmations' },
   'Paid Search':      { label: 'Paid Ads',         dot: '#EF4444', letter: '$', desc: 'Traffic from Google Ads (if you\'re running any)' },
   'Organic Shopping': { label: 'Google Shopping',  dot: '#34A853', letter: 'S', desc: 'People browsing beauty services on Google Shopping' },
@@ -63,7 +63,7 @@ function SectionHead({ label, desc, dm }) {
 
 function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm }) {
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#e4ddd7';
+  const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
@@ -98,11 +98,11 @@ export default function AnalyticsTab({ darkMode: dm }) {
   }, []);
 
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#e4ddd7';
-  const sb = dm ? '#1e1e24' : '#FAF8F6';
+  const bd = dm ? '#3a3a48' : '#E2E4EA';
+  const sb = dm ? '#1e1e24' : '#FAFAFB';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
-  const di = dm ? '#52525b' : '#c5bdb5';
+  const di = dm ? '#52525b' : '#bcbcc4';
 
   if (!loading && data?.notConfigured) {
     return (
@@ -159,7 +159,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
         <SectionHead label="Audience Overview — Last 30 Days" desc="How many people visited the site and how they engaged with it" dm={dm} />
         <div className="grid grid-cols-2 gap-3">
           <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Unique people who visited"     loading={loading} dm={dm} />
-          <MetricCard icon={Activity}  accent="#22C55E" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total visits (1 person can visit multiple times)" loading={loading} dm={dm} />
+          <MetricCard icon={Activity}  accent="#3B82F6" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total visits (1 person can visit multiple times)" loading={loading} dm={dm} />
           <MetricCard icon={Clock}     accent="#F59E0B" label="Avg Time"  value={fmtDur(ov?.avgSessionDuration)}                    sub="How long people stay per visit" loading={loading} dm={dm} />
           <MetricCard icon={RefreshCw} accent="#D4A0B0" label="New Users" value={ov ? pct(ov.newUsers, ov.activeUsers) : '--'}      sub="First-time visitors this month" loading={loading} dm={dm} />
         </div>
@@ -356,9 +356,9 @@ export default function AnalyticsTab({ darkMode: dm }) {
           </p>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[0.6rem] font-semibold text-emerald-500 tracking-[0.08em] uppercase">Tracking Active</span>
+          style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+          <span className="text-[0.6rem] font-semibold text-blue-500 tracking-[0.08em] uppercase">Tracking Active</span>
         </div>
       </div>
 

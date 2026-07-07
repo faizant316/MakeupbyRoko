@@ -372,7 +372,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-lg border transition-all flex-shrink-0 ${
               isBlocked
                 ? 'text-red-500 border-red-200 hover:bg-red-50'
-                : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#b5a99a] border-[#e8e2dc] hover:text-red-500 hover:border-red-200'
+                : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
             }`}>
             {isBlocked ? '✕ Unblock' : '+ Block Day'}
           </button>
@@ -414,16 +414,16 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
                 <button key={v} onClick={() => changeView(v.toLowerCase())}
                   className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
                   style={active
-                    ? { background: dm ? '#34343d' : '#F1EBE6', color: dm ? '#f0ebe6' : '#1a1a1a' }
-                    : { background: 'transparent', color: dm ? '#6f6f78' : '#b3a89f' }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#8a7e84'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#b3a89f'; }}>
+                    ? { background: dm ? '#34343d' : '#F1EBE6', color: dm ? '#ECEDF1' : '#1a1a1a' }
+                    : { background: 'transparent', color: dm ? '#6f6f78' : '#a8a8b1' }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#83838d'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#a8a8b1'; }}>
                   {v}
                 </button>
               );
             })}
           </div>
-          <span className="text-[0.6rem] tracking-wide hidden sm:block italic" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Double-click to block a date</span>
+          <span className="text-[0.6rem] tracking-wide hidden sm:block italic" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>Double-click to block a date</span>
         </div>
 
         {view === 'month' && renderMonth()}
@@ -432,7 +432,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
         {/* Legend (month/week only — the day schedule carries its own) */}
         {view !== 'day' && (
-        <div className="flex items-center gap-4 mt-5 pt-3 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+        <div className="flex items-center gap-4 mt-5 pt-3 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-3 h-3 rounded-md bg-indigo-50 border-2 border-indigo-300 inline-block" /> Today
           </span>

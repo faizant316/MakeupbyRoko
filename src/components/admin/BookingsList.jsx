@@ -47,7 +47,7 @@ function MonthSelect({ value, onChange, options, dm }) {
 
   const triggerStyle = hasFilter
     ? { color: dm ? '#e7c9d5' : '#A0607A' }
-    : { color: dm ? '#a1a1aa' : '#8a7e84' };
+    : { color: dm ? '#a1a1aa' : '#83838d' };
 
   const trigger = (
     <button type="button" onClick={() => { if (!isIOS) setOpen(o => !o); }}
@@ -78,7 +78,7 @@ function MonthSelect({ value, onChange, options, dm }) {
       {trigger}
       {open && (
         <div className="absolute right-0 top-full mt-1.5 z-50 rounded-lg overflow-hidden min-w-[190px] max-h-[280px] overflow-y-auto"
-          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#ece6e0'}`, boxShadow: '0 10px 34px rgba(0,0,0,0.14)', animation: 'fadeSlideDown 0.16s ease-out' }}>
+          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#E8E9EE'}`, boxShadow: '0 10px 34px rgba(0,0,0,0.14)', animation: 'fadeSlideDown 0.16s ease-out' }}>
           {options.map(o => {
             const isSel = o.value === value;
             return (
@@ -86,7 +86,7 @@ function MonthSelect({ value, onChange, options, dm }) {
                 onClick={() => { onChange(o.value); setOpen(false); }}
                 className="w-full text-left px-3.5 py-2.5 text-[0.72rem] font-medium transition-colors flex items-center justify-between gap-2"
                 style={{ background: isSel ? (dm ? 'rgba(196,132,154,0.14)' : '#FBF5F7') : 'transparent', color: isSel ? '#C4849A' : (dm ? '#a1a1aa' : '#555') }}
-                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = dm ? '#2e2e38' : '#FAF8F6'; }}
+                onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = dm ? '#2e2e38' : '#FAFAFB'; }}
                 onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}>
                 <span className="truncate">{o.label}</span>
                 {isSel && <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2.5" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
@@ -136,11 +136,11 @@ function TypeSegment({ value, onChange, dm }) {
             onClick={() => onChange(s.key)}
             className="relative pb-2 pt-0.5 text-[0.92rem] tracking-[0.01em] whitespace-nowrap transition-colors duration-200"
             style={{
-              color: isActive ? (dm ? '#f0ebe6' : '#1a1a1a') : (dm ? '#6f6f78' : '#b3a89f'),
+              color: isActive ? (dm ? '#ECEDF1' : '#1a1a1a') : (dm ? '#6f6f78' : '#a8a8b1'),
               fontWeight: isActive ? 600 : 500,
             }}
-            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = dm ? '#a1a1aa' : '#8a7e84'; }}
-            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = dm ? '#6f6f78' : '#b3a89f'; }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = dm ? '#a1a1aa' : '#83838d'; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = dm ? '#6f6f78' : '#a8a8b1'; }}
           >
             {s.label}
           </button>
@@ -170,7 +170,7 @@ function isBridalBooking(booking) {
 }
 
 const CONSULT_COLOR = '#A855F7';
-const LESSON_COLOR = '#C4956A';
+const LESSON_COLOR = '#C76BA6';
 
 // Class titles/prices come from the shared catalog so admin surfaces never
 // drift from what the site sells.
@@ -298,7 +298,7 @@ export default function BookingsList({
     <div>
       {/* Month heading + Add Client */}
       <div className="flex items-center justify-between mb-6 pb-4"
-        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}>
+        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}>
         <div>
           <h2 className="font-serif text-[1.85rem] sm:text-[2.1rem] font-light leading-none tracking-[-0.01em]"
             style={{ color: dm ? '#e4e4e7' : '#111' }}>Appointments</h2>
@@ -332,26 +332,26 @@ export default function BookingsList({
             className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-colors"
             style={{
               background: dm ? '#26262e' : '#fff',
-              border: `1px solid ${dm ? '#34343d' : '#ddeee0'}`,
-              borderLeft: '3px solid #16A34A',
-              boxShadow: dm ? 'none' : '0 1px 3px rgba(20,80,40,0.05), 0 4px 14px rgba(20,80,40,0.05)',
+              border: `1px solid ${dm ? '#34343d' : '#d7e2f7'}`,
+              borderLeft: '3px solid #2563EB',
+              boxShadow: dm ? 'none' : '0 1px 3px rgba(30,64,175,0.05), 0 4px 14px rgba(30,64,175,0.05)',
             }}
           >
             <div className="flex items-center gap-2.5">
-              <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.12)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" className="w-3.5 h-3.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.12)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" className="w-3.5 h-3.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               </span>
-              <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#16A34A' }}>Deposits to Confirm</span>
+              <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#2563EB' }}>Deposits to Confirm</span>
               <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: dm ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.14)', color: '#16A34A' }}>
+                style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.14)', color: '#2563EB' }}>
                 {pendingZelleReviews.length}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[0.7rem] italic" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+              <span className="text-[0.7rem] italic" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                 {showZellePanel ? 'collapse' : 'review'}
               </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2"
+              <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"
                 className="w-3.5 h-3.5"
                 style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showZellePanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                 <polyline points="6 9 12 15 18 9"/>
@@ -363,8 +363,8 @@ export default function BookingsList({
             className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
             style={{
               background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#ddeee0'}`,
-              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(20,80,40,0.14)',
+              border: `1px solid ${dm ? '#3f3f46' : '#d7e2f7'}`,
+              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(30,64,175,0.14)',
               maxHeight: 'min(70vh, 480px)',
               transformOrigin: 'top center',
               opacity: showZellePanel ? 1 : 0,
@@ -384,20 +384,20 @@ export default function BookingsList({
                   <div
                     key={b.id}
                     className="flex items-center gap-3 w-full text-left px-5 py-3.5"
-                    style={{ borderBottom: i < pendingZelleReviews.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(20,80,40,0.08)'}` : 'none' }}
+                    style={{ borderBottom: i < pendingZelleReviews.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(30,64,175,0.08)'}` : 'none' }}
                   >
                     <button
                       onClick={() => onSelect(b)}
                       className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
-                        <span className="font-serif text-[#16A34A] text-[0.85rem]">{(b.name || '?').trim().charAt(0).toUpperCase()}</span>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                        <span className="font-serif text-[#2563EB] text-[0.85rem]">{(b.name || '?').trim().charAt(0).toUpperCase()}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#8a9e90' }}>
+                        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#8791a6' }}>
                           {b.service}
-                          {b.date && <span style={{ color: dm ? '#52525b' : '#a9c0af' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                          {b.date && <span style={{ color: dm ? '#52525b' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                         </p>
                       </div>
                     </button>
@@ -406,7 +406,7 @@ export default function BookingsList({
                       disabled={isMarking}
                       onClick={(e) => { e.stopPropagation(); handleMarkReceived(b.id); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold tracking-[0.04em] uppercase transition-all hover:opacity-85 active:scale-95 flex-shrink-0"
-                      style={{ background: isMarking ? (dm ? '#3f3f46' : '#e5e5e5') : '#16A34A', color: '#fff', opacity: isMarking ? 0.7 : 1 }}
+                      style={{ background: isMarking ? (dm ? '#3f3f46' : '#e5e5e5') : '#2563EB', color: '#fff', opacity: isMarking ? 0.7 : 1 }}
                     >
                       {isMarking ? (
                         <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -432,7 +432,7 @@ export default function BookingsList({
             className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-colors"
             style={{
               background: dm ? '#26262e' : '#fff',
-              border: `1px solid ${dm ? '#34343d' : '#f0e6df'}`,
+              border: `1px solid ${dm ? '#34343d' : '#EAEBF0'}`,
               borderLeft: '3px solid #D4A0B0',
               boxShadow: dm ? 'none' : '0 1px 3px rgba(60,45,35,0.05), 0 4px 14px rgba(60,45,35,0.05)',
             }}
@@ -464,7 +464,7 @@ export default function BookingsList({
             className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
             style={{
               background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#f0e6df'}`,
+              border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
               boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(160,120,90,0.18)',
               maxHeight: 'min(70vh, 520px)',
               transformOrigin: 'top center',
@@ -480,7 +480,7 @@ export default function BookingsList({
           >
             <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(160,120,90,0.1)'}` }}>
                 <div className="relative">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
                   <input
@@ -488,7 +488,7 @@ export default function BookingsList({
                     onChange={e => setRecentSearch(e.target.value)}
                     placeholder="Search recent clients…"
                     className="w-full pl-9 pr-3 py-2 rounded-lg text-[0.8rem] outline-none transition-all"
-                    style={{ background: dm ? '#1e1e24' : '#FAF8F6', border: `1px solid ${dm ? '#3f3f46' : '#ede8e3'}`, color: dm ? '#e4e4e7' : '#111' }}
+                    style={{ background: dm ? '#1e1e24' : '#FAFAFB', border: `1px solid ${dm ? '#3f3f46' : '#E8E9EE'}`, color: dm ? '#e4e4e7' : '#111' }}
                     onClick={e => e.stopPropagation()}
                   />
                   {recentSearch && (
@@ -509,7 +509,7 @@ export default function BookingsList({
                     onClick={() => onSelect(b)}
                     className="flex items-center gap-4 w-full text-left px-5 py-4 transition-colors group"
                     style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(160,120,90,0.08)'}` }}
-                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
+                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <div className="w-8 h-8 rounded-full bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
@@ -517,9 +517,9 @@ export default function BookingsList({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#b5a99a' }}>
+                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
                         {b.service}
-                        {b.date && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        {b.date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                       </p>
                     </div>
                     <StatusBadge status={b.status} />
@@ -530,7 +530,7 @@ export default function BookingsList({
                 ))
               }
               {recentSearch && recentBookings.filter(b => [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase()))).length === 0 && (
-                <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>No results for "{recentSearch}"</div>
+                <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>No results for "{recentSearch}"</div>
               )}
             </div>
           </div>
@@ -541,7 +541,7 @@ export default function BookingsList({
 
       {/* Search */}
       <div className="relative mb-4">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -551,8 +551,8 @@ export default function BookingsList({
           placeholder="Search by name, email, or service..."
           className="w-full pl-10 pr-10 py-2.5 rounded-lg text-base sm:text-[0.82rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
           style={{
-            background: dm ? '#232328' : '#FAF8F6',
-            border: `1px solid ${dm ? '#34343d' : '#efe9e3'}`,
+            background: dm ? '#232328' : '#FAFAFB',
+            border: `1px solid ${dm ? '#34343d' : '#E8E9EE'}`,
             color: dm ? '#e4e4e7' : '#111',
           }}
         />
@@ -563,9 +563,9 @@ export default function BookingsList({
             onClick={() => setSearch('')}
             aria-label="Clear search"
             className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#3f3f46' : '#f0ebe6', touchAction: 'manipulation' }}
+            style={{ background: dm ? '#3f3f46' : '#ECEDF1', touchAction: 'manipulation' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#8a7e84'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
@@ -577,14 +577,14 @@ export default function BookingsList({
         const STATUS_COLORS = {
           all:       { dot: null,      light: { bg: 'rgba(160,96,122,0.10)',  txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)',  txt: '#e7c9d5' } },
           pending:   { dot: '#F59E0B', light: { bg: 'rgba(245,158,11,0.13)',  txt: '#B26A04' }, dark: { bg: 'rgba(245,158,11,0.18)',   txt: '#F5B83C' } },
-          confirmed: { dot: '#16A34A', light: { bg: 'rgba(22,163,74,0.13)',   txt: '#15803D' }, dark: { bg: 'rgba(34,197,94,0.18)',    txt: '#56D98A' } },
+          confirmed: { dot: '#2563EB', light: { bg: 'rgba(37,99,235,0.13)',   txt: '#1D4ED8' }, dark: { bg: 'rgba(59,130,246,0.18)',    txt: '#93B4F7' } },
           completed: { dot: '#64748B', light: { bg: 'rgba(100,116,139,0.14)', txt: '#475569' }, dark: { bg: 'rgba(148,163,184,0.16)',  txt: '#A7B2C4' } },
           cancelled: { dot: '#EF4444', light: { bg: 'rgba(239,68,68,0.12)',   txt: '#DC2626' }, dark: { bg: 'rgba(239,68,68,0.18)',    txt: '#F87171' } },
         };
         const inAppointments = viewType === 'appointments';
-        const mutedTxt = dm ? '#8a8a93' : '#9b8e88';
+        const mutedTxt = dm ? '#8a8a93' : '#93939b';
         const hoverTxt = dm ? '#cfcfd6' : '#6b6259';
-        const hoverBg  = dm ? '#26262d' : '#F5F1EC';
+        const hoverBg  = dm ? '#26262d' : '#F3F3F7';
         const chipCls = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
         const inactiveStyle = { background: 'transparent', color: mutedTxt };
         const onEnter = (e, active) => { if (!active) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } };
@@ -613,12 +613,12 @@ export default function BookingsList({
             })}
 
             {/* Divider */}
-            <div className="w-px h-3.5 rounded-full flex-shrink-0 mx-1.5" style={{ background: dm ? '#3f3f46' : '#e6ddd6' }} />
+            <div className="w-px h-3.5 rounded-full flex-shrink-0 mx-1.5" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
 
             {/* Makeup Courses */}
             {(() => {
               const active = viewType === 'courses';
-              const tone = dm ? { bg: 'rgba(196,149,106,0.2)', txt: '#D8B084' } : { bg: 'rgba(196,149,106,0.14)', txt: '#9C6B38' };
+              const tone = dm ? { bg: 'rgba(199,107,166,0.2)', txt: '#E7A9CE' } : { bg: 'rgba(199,107,166,0.14)', txt: '#A83E86' };
               const count = classRegs.filter(r => !r.appointment_date || r.appointment_date >= today).length;
               return (
                 <button onClick={() => setViewType?.('courses')} className={chipCls}
@@ -653,7 +653,7 @@ export default function BookingsList({
       {/* Selected-date bar — one clean pill with the date and a dismiss circle */}
       {selectedDate && (
         <div className="flex items-center justify-between gap-3 mb-4 pl-3.5 pr-2.5 py-2.5 rounded-xl"
-          style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${dm ? '#34343d' : '#efe7e0'}` }}>
+          style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#34343d' : '#E8E9EE'}` }}>
           <div className="flex items-center gap-3 min-w-0">
             <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
@@ -662,7 +662,7 @@ export default function BookingsList({
               </svg>
             </span>
             <div className="min-w-0">
-              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#71717a' : '#c0b5ab' }}>Showing</p>
+              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#71717a' : '#b6b6bf' }}>Showing</p>
               <p className="text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
@@ -672,9 +672,9 @@ export default function BookingsList({
             onClick={() => setSelectedDate(null)}
             aria-label="Clear date filter"
             className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
-            style={{ background: dm ? '#34343d' : '#efe7e0', touchAction: 'manipulation' }}
+            style={{ background: dm ? '#34343d' : '#E8E9EE', touchAction: 'manipulation' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#8a7e74'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
@@ -761,11 +761,11 @@ export default function BookingsList({
 
       {/* Makeup Lessons on selected date */}
       {selectedDate && lessonsOnDate.length > 0 && (
-        <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(196,149,106,0.3)` }}>
+        <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(199,107,166,0.3)` }}>
           {/* Header */}
           <div className="flex items-center gap-2.5 px-4 py-3"
-            style={{ background: 'rgba(196,149,106,0.08)', borderBottom: '1px solid rgba(196,149,106,0.18)' }}>
-            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,149,106,0.18)' }}>
+            style={{ background: 'rgba(199,107,166,0.08)', borderBottom: '1px solid rgba(199,107,166,0.18)' }}>
+            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(199,107,166,0.18)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-3 h-3">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
@@ -773,7 +773,7 @@ export default function BookingsList({
             <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: LESSON_COLOR }}>
               Makeup Lessons
             </span>
-            <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(196,149,106,0.15)', color: LESSON_COLOR }}>
+            <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(199,107,166,0.15)', color: LESSON_COLOR }}>
               {lessonsOnDate.length}
             </span>
           </div>
@@ -794,7 +794,7 @@ export default function BookingsList({
                   borderBottom: i < lessonsOnDate.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#ebebeb'}` : 'none',
                 }}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,149,106,0.12)' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(199,107,166,0.12)' }}>
                   {isZoom ? (
                     <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
                       <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
@@ -829,7 +829,7 @@ export default function BookingsList({
                   <a
                     href={`tel:${r.phone}`}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
-                    style={{ background: 'rgba(196,149,106,0.1)', color: LESSON_COLOR, border: '1px solid rgba(196,149,106,0.25)' }}
+                    style={{ background: 'rgba(199,107,166,0.1)', color: LESSON_COLOR, border: '1px solid rgba(199,107,166,0.25)' }}
                   >
                     {r.phone}
                   </a>
@@ -845,13 +845,13 @@ export default function BookingsList({
         <div>
           {filteredClassRegs.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-[#b5a99a] text-[0.85rem]">No makeup courses found</p>
+              <p className="text-[#a3a3ad] text-[0.85rem]">No makeup courses found</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
               {filteredClassRegs.map((r, i) => {
                 const classLabel = classesOfReg(r)[0]?.title || 'Makeup Course';
-                const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#22C55E' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
+                const statusColor = (r.status === 'enrolled' || r.status === 'confirmed') ? '#3B82F6' : r.status === 'pending' || !r.status ? '#F59E0B' : '#3B82F6';
                 const statusLabel = r.status === 'enrolled' ? 'Enrolled' : r.status === 'confirmed' ? 'Confirmed' : 'Pending';
                 const isRefunded = r.payment_status === 'refunded';
                 const isUnpaid = (!r.payment_status || r.payment_status === 'unpaid' || r.payment_status === 'pending') && !r.stripe_session_id;
@@ -860,11 +860,11 @@ export default function BookingsList({
                     key={r.id}
                     onClick={() => onSelectClassReg?.(r)}
                     className="flex items-center gap-4 px-5 py-4 rounded-xl w-full text-left transition-colors group"
-                    style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}
-                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
+                    style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
+                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
                     onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(196,149,106,0.12)' }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(199,107,166,0.12)' }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4">
                         <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
                       </svg>
@@ -875,9 +875,9 @@ export default function BookingsList({
                       </p>
                       <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
                         {classLabel}
-                        {r.appointment_date && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{new Date(r.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                        {r.appointment_time && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{r.appointment_time}</span>}
-                        {r.consultation_type && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{r.consultation_type}</span>}
+                        {r.appointment_date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(r.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {r.appointment_time && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{r.appointment_time}</span>}
+                        {r.consultation_type && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{r.consultation_type}</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -914,7 +914,7 @@ export default function BookingsList({
         <div>
           {consultationBookings.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-[#b5a99a] text-[0.85rem]">No consultations found</p>
+              <p className="text-[#a3a3ad] text-[0.85rem]">No consultations found</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -926,8 +926,8 @@ export default function BookingsList({
                     key={b.id}
                     onClick={() => onSelect(b)}
                     className="flex items-center gap-4 w-full text-left px-5 py-4 rounded-xl transition-colors group"
-                    style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0ebe5'}` }}
-                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FDF9F7'}
+                    style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
+                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
                     onMouseLeave={e => e.currentTarget.style.background = dm ? '#27272a' : '#fff'}
                   >
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(168,85,247,0.12)' }}>
@@ -941,9 +941,9 @@ export default function BookingsList({
                       </p>
                       <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
                         {b.service}
-                        {b.consultation_date && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{new Date(b.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                        {b.consultation_time && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{b.consultation_time}</span>}
-                        {b.consultation_type && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{' · '}{b.consultation_type}</span>}
+                        {b.consultation_date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {b.consultation_time && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{b.consultation_time}</span>}
+                        {b.consultation_type && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{b.consultation_type}</span>}
                       </p>
                     </div>
                     {(meetingId || join) && (
@@ -990,7 +990,7 @@ export default function BookingsList({
         const numStyle = { color: dm ? '#e4e4e7' : '#1a1a1a' };
         return (
           <div className="flex items-baseline flex-wrap gap-x-2.5 gap-y-1 mb-5 px-0.5 text-[0.85rem]"
-            style={{ color: dm ? '#a1a1aa' : '#9b8e88' }}>
+            style={{ color: dm ? '#a1a1aa' : '#93939b' }}>
             <span><span className="font-serif text-[1.2rem] mr-1" style={numStyle}>{weekCount}</span>this week</span>
             <span style={{ opacity: 0.35 }}>·</span>
             <span><span className="font-serif text-[1.2rem] mr-1" style={numStyle}>{upcomingCount}</span>upcoming {kind}inquiries</span>
@@ -1001,11 +1001,11 @@ export default function BookingsList({
       {/* Appointments content */}
       {viewType === 'appointments' && (loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-[#e8e2dc] border-t-[#A0785A] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#E5E7EB] border-t-[#A0785A] rounded-full animate-spin" />
         </div>
       ) : visibleActiveCount === 0 && visibleCompleted.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-[#b5a99a] text-[0.85rem]">
+          <p className="text-[#a3a3ad] text-[0.85rem]">
             No {typeFilter === 'bridal' ? 'bridal ' : typeFilter === 'nonbridal' ? 'non-bridal ' : ''}appointments found
           </p>
         </div>
@@ -1014,12 +1014,12 @@ export default function BookingsList({
           {visibleActiveCount === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="1.5" className="w-5 h-5">
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="1.5" className="w-5 h-5">
                   <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-[0.9rem] font-serif" style={{ color: dm ? '#71717a' : '#b5a99a' }}>No active appointments</p>
+                <p className="text-[0.9rem] font-serif" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>No active appointments</p>
                 <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#52525b' : '#d4c8c0' }}>All wrapped up here ✦</p>
               </div>
               {visibleCompleted.length > 0 && (
@@ -1027,10 +1027,10 @@ export default function BookingsList({
                   onClick={() => setShowArchive(true)}
                   className="flex flex-col items-center gap-1 mt-1 group"
                 >
-                  <p className="text-[0.65rem] font-semibold tracking-[0.1em] uppercase transition-colors group-hover:text-[#A0785A]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+                  <p className="text-[0.65rem] font-semibold tracking-[0.1em] uppercase transition-colors group-hover:text-[#A0785A]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
                     See completed archive below
                   </p>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="1.5" className="w-4 h-4 transition-colors group-hover:stroke-[#A0785A]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="1.5" className="w-4 h-4 transition-colors group-hover:stroke-[#A0785A]">
                     <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
                   </svg>
                 </button>
@@ -1058,11 +1058,11 @@ export default function BookingsList({
                       {group.accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.accent }} />}
                       <h3 className="font-serif text-[1.05rem]" style={{ color: group.accent || (dm ? '#e4e4e7' : '#111') }}>{group.label}</h3>
                       <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#a99e95' }}>
+                        style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
                         {group.items.length}
                       </span>
                       <span className="flex-1" />
-                      <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2"
+                      <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
                         className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>
                         <polyline points="6 9 12 15 18 9"/>
                       </svg>
@@ -1082,7 +1082,7 @@ export default function BookingsList({
 
           {/* Completed Archive */}
           {visibleCompleted.length > 0 && (
-            <div className="border-t border-dashed border-[#e8e2dc] pt-6">
+            <div className="border-t border-dashed border-[#E5E7EB] pt-6">
               <button
                 onClick={() => setShowArchive(v => !v)}
                 className="flex items-center gap-3 mb-4 group"

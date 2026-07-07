@@ -30,19 +30,19 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
         style={{ animation: 'fadeSlideDown 0.2s ease-out' }}
       >
         {/* Header */}
-        <div className={`px-6 pt-6 pb-4 ${isBlocked ? 'bg-[#FDF3F3]' : 'bg-[#FAF8F6]'}`}>
+        <div className={`px-6 pt-6 pb-4 ${isBlocked ? 'bg-[#FDF3F3]' : 'bg-[#FAFAFB]'}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className={`w-2 h-2 rounded-full ${isBlocked ? 'bg-[#EF5350]' : 'bg-[#e8e2dc]'}`} />
-                <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a]">
+                <span className={`w-2 h-2 rounded-full ${isBlocked ? 'bg-[#EF5350]' : 'bg-[#E5E7EB]'}`} />
+                <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#a3a3ad]">
                   {isBlocked ? 'Date Blocked' : 'Block This Date'}
                 </span>
               </div>
               <p className="font-serif text-[1.15rem] text-[#111] leading-snug">{formatted}</p>
             </div>
             <button onClick={onClose}
-              className="w-7 h-7 rounded-full bg-white/80 flex items-center justify-center text-[#ccc] hover:text-[#888] transition-colors flex-shrink-0 mt-0.5 border border-[#f0ebe6]">
+              className="w-7 h-7 rounded-full bg-white/80 flex items-center justify-center text-[#ccc] hover:text-[#888] transition-colors flex-shrink-0 mt-0.5 border border-[#ECEDF1]">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -69,7 +69,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
                   Unblock Date
                 </button>
                 <button onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-[#e8e2dc] text-[0.75rem] font-medium text-[#999] hover:border-[#ccc] transition-colors">
+                  className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[0.75rem] font-medium text-[#999] hover:border-[#ccc] transition-colors">
                   Cancel
                 </button>
               </div>
@@ -88,7 +88,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="e.g. Personal day, Travel, Holiday…"
-                  className="w-full px-3.5 py-2.5 border border-[#e8e2dc] rounded-lg text-base sm:text-[0.85rem] focus:border-[#D4A0B0] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all bg-white text-[#111] placeholder:text-[#c5bdb5]"
+                  className="w-full px-3.5 py-2.5 border border-[#E5E7EB] rounded-lg text-base sm:text-[0.85rem] focus:border-[#D4A0B0] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all bg-white text-[#111] placeholder:text-[#bcbcc4]"
                   onKeyDown={e => { if (e.key === 'Enter') onBlock(reason); }}
                 />
               </div>
@@ -102,7 +102,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
                   Block This Date
                 </button>
                 <button onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-[#e8e2dc] text-[0.75rem] font-medium text-[#999] hover:border-[#ccc] transition-colors">
+                  className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[0.75rem] font-medium text-[#999] hover:border-[#ccc] transition-colors">
                   Cancel
                 </button>
               </div>

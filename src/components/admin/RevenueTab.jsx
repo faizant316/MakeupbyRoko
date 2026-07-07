@@ -146,7 +146,7 @@ function fmtRevenue(n) {
 
 function StatCard({ icon: Icon, label, sub, value, accent, delta, dm }) {
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#e4ddd7';
+  const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
@@ -157,7 +157,7 @@ function StatCard({ icon: Icon, label, sub, value, accent, delta, dm }) {
         </div>
         {delta !== null && delta !== undefined && (
           <span className="text-[0.55rem] font-semibold px-2 py-0.5 rounded-full"
-            style={{ background: delta >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: delta >= 0 ? '#22C55E' : '#EF4444' }}>
+            style={{ background: delta >= 0 ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)', color: delta >= 0 ? '#3B82F6' : '#EF4444' }}>
             {delta >= 0 ? '+' : ''}{delta}% vs last mo
           </span>
         )}
@@ -174,7 +174,7 @@ function StatCard({ icon: Icon, label, sub, value, accent, delta, dm }) {
 
 function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
   const bg = dm ? '#26262e' : '#fff';
-  const bd = dm ? '#3a3a48' : '#e4ddd7';
+  const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
@@ -185,7 +185,7 @@ function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
       <div className="min-w-0">
         <p className="text-[1rem] font-semibold leading-none" style={{ color: tx }}>{value}</p>
         <p className="text-[0.6rem] mt-0.5 leading-tight" style={{ color: mu }}>
-          {label}<br /><span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{sub}</span>
+          {label}<br /><span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{sub}</span>
         </p>
       </div>
     </div>
@@ -194,7 +194,7 @@ function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
 
 function ChartTooltip({ active, payload, label, dm }) {
   if (!active || !payload?.length) return null;
-  const bg = dm ? '#26262e' : '#fff', bd = dm ? '#3a3a48' : '#e4ddd7';
+  const bg = dm ? '#26262e' : '#fff', bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111', mu = dm ? '#71717a' : '#999';
   return (
     <div className="rounded-xl px-3.5 py-3" style={{ background: bg, border: `1px solid ${bd}`, boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
@@ -230,7 +230,7 @@ export default function RevenueTab({ darkMode: dm }) {
   }, [range, demoMode]);
 
   const bg      = dm ? '#26262e' : '#fff';
-  const bd      = dm ? '#3a3a48' : '#e4ddd7';
+  const bd      = dm ? '#3a3a48' : '#E2E4EA';
   const tx      = dm ? '#e4e4e7' : '#111';
   const mu      = dm ? '#71717a' : '#999';
   const grid    = dm ? '#2e2e38' : '#f3eeea';
@@ -279,7 +279,7 @@ export default function RevenueTab({ darkMode: dm }) {
           className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full mt-1"
           style={{
             background: demoMode ? 'rgba(212,160,176,0.15)' : dm ? '#2e2e38' : '#f5f0ec',
-            border: `1px solid ${demoMode ? 'rgba(212,160,176,0.35)' : dm ? '#3a3a48' : '#e4ddd7'}`,
+            border: `1px solid ${demoMode ? 'rgba(212,160,176,0.35)' : dm ? '#3a3a48' : '#E2E4EA'}`,
           }}
         >
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: demoMode ? '#D4A0B0' : dm ? '#52525b' : '#ccc' }} />
@@ -301,7 +301,7 @@ export default function RevenueTab({ darkMode: dm }) {
               style={{
                 background: isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#2e2e38' : '#f5f0ec',
                 color:      isActive ? (dm ? '#1e1e24' : '#fff') : mu,
-                border:     `1px solid ${isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#3a3a48' : '#e4ddd7'}`,
+                border:     `1px solid ${isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#3a3a48' : '#E2E4EA'}`,
               }}
             >
               {label}
@@ -312,7 +312,7 @@ export default function RevenueTab({ darkMode: dm }) {
 
       {/* ── Stats Grid ──────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={DollarSign} label="Class Revenue"    sub="this month"     value={`$${(summary.thisMonthRevenue  || 0).toLocaleString()}`} accent="#22C55E" delta={revDelta}  dm={dm} />
+        <StatCard icon={DollarSign} label="Class Revenue"    sub="this month"     value={`$${(summary.thisMonthRevenue  || 0).toLocaleString()}`} accent="#3B82F6" delta={revDelta}  dm={dm} />
         <StatCard icon={Users}      label="Appointments"     sub="this month"     value={summary.thisMonthBookings ?? 0}                           accent="#3B82F6" delta={bookDelta} dm={dm} />
         <StatCard icon={TrendingUp} label="All-Time Revenue" sub="from classes"   value={fmtRevenue(summary.totalRevenue || 0)}                    accent="#D4A0B0"                   dm={dm} />
         <StatCard icon={BookOpen}   label="Class Signups"    sub="paid, all time" value={summary.paidClassSignups ?? 0}                            accent="#F59E0B"                   dm={dm} />
@@ -320,7 +320,7 @@ export default function RevenueTab({ darkMode: dm }) {
 
       {/* ── Insight Strip ───────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-2">
-        <InsightCard icon={CheckCircle} label="Completion Rate" value={`${completionRate}%`} sub="bookings done"   accent="#22C55E" dm={dm} />
+        <InsightCard icon={CheckCircle} label="Completion Rate" value={`${completionRate}%`} sub="bookings done"   accent="#3B82F6" dm={dm} />
         <InsightCard icon={Star}        label="Avg per Class"    value={`$${avgClassRev}`}    sub="per signup"      accent="#F59E0B" dm={dm} />
         <InsightCard icon={Calendar}    label="Peak Day"         value={summary.peakDay || '—'} sub="most bookings" accent="#D4A0B0" dm={dm} />
       </div>
@@ -404,7 +404,7 @@ export default function RevenueTab({ darkMode: dm }) {
                       <p className="text-[0.75rem] font-medium leading-tight" style={{ color: tx }}>{svc.name}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      <span className="text-[0.6rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{completePct}% done</span>
+                      <span className="text-[0.6rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{completePct}% done</span>
                       <span className="text-[0.68rem] font-semibold" style={{ color: mu }}>{svc.count}</span>
                     </div>
                   </div>

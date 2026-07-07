@@ -29,17 +29,17 @@ export default function AdminStats({ today, pending, confirmed, completed, darkM
           className="rounded-xl p-5 flex flex-col gap-3 transition-all text-left"
           style={{
             background: dm ? '#26262e' : '#fff',
-            border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`,
+            border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`,
             cursor: s.filter ? 'pointer' : 'default',
           }}
           onMouseEnter={e => { if (s.filter) e.currentTarget.style.borderColor = s.color; }}
-          onMouseLeave={e => { if (s.filter) e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#e8e2dc'; }}
+          onMouseLeave={e => { if (s.filter) e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E5E7EB'; }}
         >
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: s.iconBg }}>
             {s.icon}
           </div>
           <div>
-            <div className="font-serif text-[2rem] leading-none" style={{ color: dm ? '#F0EBE6' : '#111' }}>{s.value}</div>
+            <div className="font-serif text-[2rem] leading-none" style={{ color: dm ? '#ECEDF1' : '#111' }}>{s.value}</div>
             <div className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mt-1" style={{ color: s.color }}>{s.label}</div>
           </div>
         </button>

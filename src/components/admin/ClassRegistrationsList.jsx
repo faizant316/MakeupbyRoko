@@ -7,8 +7,8 @@ import { classesOfReg, regTotal } from '@/lib/classCatalog';
 
 const ENROLLMENT_STYLES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
-  confirmed: { bg: '#16A34A', text: '#fff', label: 'Confirmed' },
-  enrolled:  { bg: '#16A34A', text: '#fff', label: 'Enrolled'  },
+  confirmed: { bg: '#2563EB', text: '#fff', label: 'Confirmed' },
+  enrolled:  { bg: '#2563EB', text: '#fff', label: 'Enrolled'  },
   cancelled: { bg: '#EF4444', text: '#fff', label: 'Cancelled' },
 };
 
@@ -20,7 +20,7 @@ export const FORMAT_META = {
 
 const PAYMENT_META = {
   unpaid:   { label: 'Unpaid',   color: '#C4849A', bg: 'rgba(212,160,176,0.14)' },
-  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(34,197,94,0.1)'    },
+  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(59,130,246,0.1)'    },
   refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'    },
 };
 
@@ -44,8 +44,8 @@ function ClassRow({ reg, onSelect, dm }) {
   const isNew = reg.created_date && (Date.now() - new Date(reg.created_date).getTime()) < 24 * 60 * 60 * 1000;
   const rel = relativeDate(reg.appointment_date);
   const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
-  const mutedColor = dm ? '#71717a' : '#a99e95';
-  const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#8a7e84');
+  const mutedColor = dm ? '#71717a' : '#9c9ca4';
+  const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#83838d');
 
   const iconBtn = 'flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105';
   const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#ece5e0'}` };
@@ -80,7 +80,7 @@ function ClassRow({ reg, onSelect, dm }) {
           )}
           <span className="truncate">
             {classLabel}
-            {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#c5bdb5' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
+            {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
           </span>
         </p>
       </div>
@@ -248,7 +248,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.66rem] font-semibold tracking-[0.03em] transition-all"
               style={active
                 ? { background: dm ? '#34343d' : '#fff', color: f.meta?.color || (dm ? '#e4e4e7' : '#1a1a1a'), boxShadow: dm ? 'none' : '0 1px 4px rgba(60,45,35,0.12)' }
-                : { color: dm ? '#71717a' : '#a99e95' }}>
+                : { color: dm ? '#71717a' : '#9c9ca4' }}>
               {f.meta && <span className="w-1.5 h-1.5 rounded-full" style={{ background: f.meta.color }} />}
               {f.label}
             </button>
@@ -257,7 +257,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
       </div>
 
       {visible.length === 0 && (
-        <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+        <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
           No {formatFilter === 'online' ? 'online' : 'in-person'} sign-ups yet
         </p>
       )}
@@ -279,14 +279,14 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
                 {headAccent && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isNeedsScheduling ? 'animate-pulse' : ''}`} style={{ background: headAccent }} />}
                 <h3 className="font-serif text-[1.05rem]" style={{ color: headAccent || (dm ? '#e4e4e7' : '#111') }}>{headLabel}</h3>
                 <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#a99e95' }}>
+                  style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
                   {group.items.length}
                 </span>
                 {isNeedsScheduling && (
                   <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>awaiting a date</span>
                 )}
                 <span className="flex-1" />
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2"
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
                   className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>
                   <polyline points="6 9 12 15 18 9"/>
                 </svg>

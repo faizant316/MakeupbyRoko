@@ -3,7 +3,7 @@ import { useState } from 'react';
 const FILTER_TONES = {
   all:      { dot: null,      light: { bg: 'rgba(160,96,122,0.10)', txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)', txt: '#e7c9d5' } },
   pending:  { dot: '#F59E0B', light: { bg: 'rgba(245,158,11,0.13)', txt: '#B26A04' }, dark: { bg: 'rgba(245,158,11,0.18)',  txt: '#F5B83C' } },
-  approved: { dot: '#22C55E', light: { bg: 'rgba(34,197,94,0.13)',  txt: '#15803D' }, dark: { bg: 'rgba(34,197,94,0.18)',   txt: '#56D98A' } },
+  approved: { dot: '#3B82F6', light: { bg: 'rgba(59,130,246,0.13)',  txt: '#1D4ED8' }, dark: { bg: 'rgba(59,130,246,0.18)',   txt: '#93B4F7' } },
 };
 
 export default function ReviewsList({ reviews, loading, onApprove, onDelete, darkMode: dm }) {
@@ -15,9 +15,9 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
     approved: reviews.filter(r => r.status === 'approved').length,
   };
 
-  const mutedTxt = dm ? '#8a8a93' : '#9b8e88';
+  const mutedTxt = dm ? '#8a8a93' : '#93939b';
   const hoverTxt = dm ? '#cfcfd6' : '#6b6259';
-  const hoverBg  = dm ? '#26262d' : '#F5F1EC';
+  const hoverBg  = dm ? '#26262d' : '#F3F3F7';
   const chipCls  = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
 
   return (
@@ -48,15 +48,15 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 rounded-full border-2 animate-spin"
-            style={{ borderColor: dm ? '#3a3a48' : '#e8e2dc', borderTopColor: '#D4A0B0' }} />
+            style={{ borderColor: dm ? '#3a3a48' : '#E5E7EB', borderTopColor: '#D4A0B0' }} />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-            style={{ background: dm ? '#26262e' : '#FAF8F6', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }}>
+            style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }}>
             <span className="text-[#D4A0B0] text-lg">✦</span>
           </div>
-          <p className="text-[0.85rem]" style={{ color: dm ? '#71717a' : '#b5a99a' }}>
+          <p className="text-[0.85rem]" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
             {filter === 'all' ? 'No reviews yet' : `No ${filter} reviews`}
           </p>
         </div>
@@ -77,10 +77,10 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
   const isApproved = review.status === 'approved';
 
   const bg      = dm ? '#26262e' : '#fff';
-  const bd      = dm ? '#3a3a48' : '#e4ddd7';
+  const bd      = dm ? '#3a3a48' : '#E2E4EA';
   const tx      = dm ? '#e4e4e7' : '#111';
-  const di      = dm ? '#52525b' : '#c5bdb5';
-  const divider = dm ? '#2e2e38' : '#f0ebe6';
+  const di      = dm ? '#52525b' : '#bcbcc4';
+  const divider = dm ? '#2e2e38' : '#ECEDF1';
   const star    = dm ? '#3a3a48' : '#e8e0db';
 
   return (
@@ -92,7 +92,7 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
           <h4 className="font-serif text-[1.02rem] truncate" style={{ color: tx }}>{review.name}</h4>
           {review.service && <p className="text-[0.7rem] mt-0.5 truncate" style={{ color: '#D4A0B0' }}>{review.service}</p>}
           {review.location && (
-            <p className="flex items-center gap-1 text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#a89f97' }}>
+            <p className="flex items-center gap-1 text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-3 h-3 flex-shrink-0">
                 <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
               </svg>
@@ -102,7 +102,7 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
         </div>
         <span className="px-2.5 py-1 text-[0.55rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0"
           style={isApproved
-            ? { background: dm ? 'rgba(34,197,94,0.18)' : 'rgba(34,197,94,0.12)', color: dm ? '#56D98A' : '#15803D' }
+            ? { background: dm ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)', color: dm ? '#93B4F7' : '#1D4ED8' }
             : { background: dm ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.13)', color: dm ? '#F5B83C' : '#B26A04' }}>
           {review.status}
         </span>
@@ -149,16 +149,16 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
         {review.status === 'pending' && (
           <button onClick={() => onApprove(review.id)}
             className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all active:scale-[0.98]"
-            style={{ background: dm ? 'rgba(34,197,94,0.16)' : 'rgba(34,197,94,0.1)', color: dm ? '#56D98A' : '#15803D' }}>
+            style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.1)', color: dm ? '#93B4F7' : '#1D4ED8' }}>
             Approve
           </button>
         )}
         {!confirmDelete ? (
           <button onClick={() => setConfirmDelete(true)}
             className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all"
-            style={{ color: dm ? '#a1a1aa' : '#b0a89f', border: `1px solid ${bd}` }}
+            style={{ color: dm ? '#a1a1aa' : '#a8a8b1', border: `1px solid ${bd}` }}
             onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = dm ? '#7f1d1d' : '#fca5a5'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#b0a89f'; e.currentTarget.style.borderColor = bd; }}>
+            onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#a8a8b1'; e.currentTarget.style.borderColor = bd; }}>
             Delete
           </button>
         ) : (

@@ -28,7 +28,7 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
   };
 
   const p = dm
-    ? { bg: '#1e1e24', chip: '#27272a', border: '#3a3a48', text: '#F0EBE6', muted: '#8b8b96', tint: 'rgba(212,160,176,0.20)', tintBorder: 'rgba(212,160,176,0.4)' }
+    ? { bg: '#1e1e24', chip: '#27272a', border: '#3a3a48', text: '#ECEDF1', muted: '#8b8b96', tint: 'rgba(212,160,176,0.20)', tintBorder: 'rgba(212,160,176,0.4)' }
     : { bg: '#fff', chip: '#faf7f8', border: '#ece6ea', text: '#1a1417', muted: '#9a9098', tint: 'rgba(212,160,176,0.14)', tintBorder: 'rgba(212,160,176,0.35)' };
 
   const dur = (sMin != null && eMin != null && eMin > sMin) ? eMin - sMin : 0;
@@ -93,7 +93,7 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
             const style = (isStart || isEnd)
               ? { background: accent, color: '#fff', border: `1px solid ${accent}`, boxShadow: '0 2px 8px rgba(196,132,154,0.35)' }
               : inRange
-                ? { background: p.tint, color: dm ? '#F0EBE6' : '#8a5a6c', border: `1px solid ${p.tintBorder}` }
+                ? { background: p.tint, color: dm ? '#ECEDF1' : '#8a5a6c', border: `1px solid ${p.tintBorder}` }
                 : { background: p.chip, color: p.muted, border: `1px solid ${p.border}` };
             return (
               <button key={t} type="button" onClick={() => pick(t)}

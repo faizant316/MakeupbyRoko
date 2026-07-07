@@ -163,7 +163,7 @@ export default function ScheduleView({
 
   const line = dm ? '#2e2e38' : '#f0eae4';
   const softLine = dm ? '#26262e' : '#f7f2ee';
-  const muted = dm ? '#71717a' : '#b3a89f';
+  const muted = dm ? '#71717a' : '#a8a8b1';
 
   return (
     <div>
@@ -186,7 +186,7 @@ export default function ScheduleView({
                   style={{ color: isTod ? '#E05B7F' : muted }}>{DAYS[d.getDay()]}</span>
                 <span className="w-9 h-9 rounded-full flex items-center justify-center text-[0.9rem] font-semibold transition-all"
                   style={isSel
-                    ? { background: dm ? '#F0EBE6' : '#111', color: dm ? '#111' : '#fff' }
+                    ? { background: dm ? '#ECEDF1' : '#111', color: dm ? '#111' : '#fff' }
                     : { color: isTod ? '#E05B7F' : (dm ? '#d4d4d8' : '#333') }}>
                   {d.getDate()}
                 </span>
@@ -203,7 +203,7 @@ export default function ScheduleView({
 
       {/* ── Untimed events ── */}
       {untimed.length > 0 && (
-        <div className="mb-3 mt-2 rounded-xl px-3 py-2.5" style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${line}` }}>
+        <div className="mb-3 mt-2 rounded-xl px-3 py-2.5" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
           <p className="text-[0.55rem] font-bold tracking-[0.14em] uppercase mb-1.5" style={{ color: muted }}>No time set</p>
           <div className="flex flex-wrap gap-1.5">
             {untimed.map(ev => (
@@ -221,7 +221,7 @@ export default function ScheduleView({
       {/* ── Time grid ── */}
       {timed.length === 0 && untimed.length === 0 ? (
         <div className="text-center py-10 mt-2">
-          <p className="text-[0.85rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>Nothing scheduled this day</p>
+          <p className="text-[0.85rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>Nothing scheduled this day</p>
         </div>
       ) : (
         <div className="relative mt-2" style={{ height: gridH }}>

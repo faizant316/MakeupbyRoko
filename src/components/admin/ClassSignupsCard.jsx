@@ -9,8 +9,8 @@ const FORMAT_SHORT = { online: 'Online', in_person: 'In Person' };
 
 const STATUS_META = {
   pending:   { color: '#F59E0B', label: 'Pending'   },
-  confirmed: { color: '#16A34A', label: 'Confirmed' },
-  enrolled:  { color: '#16A34A', label: 'Enrolled'  },
+  confirmed: { color: '#2563EB', label: 'Confirmed' },
+  enrolled:  { color: '#2563EB', label: 'Enrolled'  },
 };
 
 function timeAgo(iso) {
@@ -55,14 +55,14 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[0.92rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
-          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
             {classRegs.length} {classRegs.length === 1 ? 'registration' : 'registrations'}
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[0.7rem] font-semibold transition-colors group-hover:text-[#A0607A]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>View all</span>
+          <span className="text-[0.7rem] font-semibold transition-colors group-hover:text-[#A0607A]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>View all</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            className="w-3.5 h-3.5 transition-all group-hover:translate-x-0.5 group-hover:stroke-[#A0607A]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+            className="w-3.5 h-3.5 transition-all group-hover:translate-x-0.5 group-hover:stroke-[#A0607A]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
             <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
           </svg>
         </div>
@@ -105,7 +105,7 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[0.78rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{r.full_name || 'Unknown'}</p>
-                    <p className="text-[0.65rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+                    <p className="text-[0.65rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                       {classLabelOf(r)} · {timeAgo(r.created_date)}
                     </p>
                   </div>

@@ -11,8 +11,8 @@ import { parseRange } from '@/lib/timeWindow';
 // Booksy-style hero gradients per enrollment status (matches BookingDetail).
 const HERO_GRADIENTS = {
   pending:   'linear-gradient(150deg, #D97706, #F59E0B)',
-  confirmed: 'linear-gradient(150deg, #15803D, #22C55E)',
-  enrolled:  'linear-gradient(150deg, #15803D, #22C55E)',
+  confirmed: 'linear-gradient(150deg, #1D4ED8, #3B82F6)',
+  enrolled:  'linear-gradient(150deg, #1D4ED8, #3B82F6)',
   cancelled: 'linear-gradient(150deg, #DC2626, #EF4444)',
 };
 
@@ -386,10 +386,10 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
 
             {sent && (
               <div className="flex items-center justify-center gap-1.5 py-1">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-green-500">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-blue-500">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <p className="text-[0.75rem] font-medium text-green-600">Enrolled and notified.</p>
+                <p className="text-[0.75rem] font-medium text-blue-600">Enrolled and notified.</p>
               </div>
             )}
           </div>
@@ -401,14 +401,14 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
 
 const ENROLLMENT_STATUSES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
-  confirmed: { bg: '#16A34A', text: '#fff', label: 'Confirmed' },
-  enrolled:  { bg: '#16A34A', text: '#fff', label: 'Enrolled'  },
+  confirmed: { bg: '#2563EB', text: '#fff', label: 'Confirmed' },
+  enrolled:  { bg: '#2563EB', text: '#fff', label: 'Enrolled'  },
   cancelled: { bg: '#EF4444', text: '#fff', label: 'Cancelled' },
 };
 
 const PAYMENT_META = {
   unpaid:   { label: 'Unpaid',   color: '#C4849A', bg: 'rgba(212,160,176,0.14)' },
-  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(34,197,94,0.1)'    },
+  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(59,130,246,0.1)'    },
   refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'    },
 };
 
@@ -579,15 +579,15 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           }}>
           <div className="px-4 min-w-0">
             <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Start</p>
-            <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+            <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroWin.start || 'Not set'}
             </p>
-            {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#b0a89f' }}>until {heroWin.end}</p>}
+            {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroWin.end}</p>}
           </div>
           <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#f0eae4' }} />
           <div className="px-4 min-w-0">
             <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Date</p>
-            <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#F0EBE6' : '#111' }}>{heroDate}</p>
+            <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
           </div>
         </div>
       </div>
@@ -615,14 +615,14 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             {reg.contract_signed && (
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.6rem] font-semibold tracking-[0.04em]"
-                  style={{ background: dm ? 'rgba(34,197,94,0.14)' : 'rgba(34,197,94,0.1)', color: dm ? '#86efac' : '#15803d' }}>
+                  style={{ background: dm ? 'rgba(59,130,246,0.14)' : 'rgba(59,130,246,0.1)', color: dm ? '#86efac' : '#15803d' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   Agreement signed
                 </span>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[0.6rem] font-semibold tracking-[0.04em]"
                   style={reg.contract_photo_consent
                     ? { background: dm ? 'rgba(212,160,176,0.18)' : 'rgba(212,160,176,0.16)', color: dm ? '#e7c9d5' : '#A0607A' }
-                    : { background: dm ? '#33333c' : '#F1EEEA', color: dm ? '#a1a1aa' : '#8a7e84' }}>
+                    : { background: dm ? '#33333c' : '#F1EEEA', color: dm ? '#a1a1aa' : '#83838d' }}>
                   Photos: {reg.contract_photo_consent ? 'Yes' : 'No'}
                 </span>
               </div>
@@ -748,7 +748,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
               style={{ background: sectionBg, border: `1px solid ${cardBorder}` }}>
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div className="min-w-0">

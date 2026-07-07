@@ -97,14 +97,14 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
   const isEditingExisting = overrideDate && futureOverrides.some(o => o.date === overrideDate);
 
   return (
-    <div ref={containerRef} className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+    <div ref={containerRef} className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` }}>
       <div className="flex items-center gap-2 mb-4">
         <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
             <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </div>
-        <span className="text-[0.75rem] font-semibold tracking-tight" style={{ color: dm ? '#F0EBE6' : '#111' }}>Daily Booking Capacity</span>
+        <span className="text-[0.75rem] font-semibold tracking-tight" style={{ color: dm ? '#ECEDF1' : '#111' }}>Daily Booking Capacity</span>
       </div>
 
       {/* Default capacity */}
@@ -114,14 +114,14 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
 
       <div className="flex items-center gap-3 mb-5">
         <span className="text-[0.7rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#555' }}>Default:</span>
-        <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+        <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` }}>
           <button onClick={() => setDefaultValue(Math.max(1, defaultValue - 1))}
             className="w-9 h-9 flex items-center justify-center transition-colors text-lg"
             style={{ color: dm ? '#71717a' : '#999', background: dm ? '#1e1e24' : 'transparent' }}>−</button>
           <input type="number" min="1" max="20" value={defaultValue}
             onChange={e => setDefaultValue(Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)))}
             className="w-10 h-9 text-center text-[0.95rem] font-semibold outline-none"
-            style={{ color: dm ? '#e4e4e7' : '#111', borderLeft: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, borderRight: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }} />
+            style={{ color: dm ? '#e4e4e7' : '#111', borderLeft: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`, borderRight: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`, background: dm ? '#26262e' : '#fff' }} />
           <button onClick={() => setDefaultValue(Math.min(20, defaultValue + 1))}
             className="w-9 h-9 flex items-center justify-center transition-colors text-lg"
             style={{ color: dm ? '#71717a' : '#999', background: dm ? '#1e1e24' : 'transparent' }}>+</button>
@@ -138,11 +138,11 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
       </div>
 
       {/* Divider */}
-      <div className="h-px mb-4" style={{ background: dm ? '#3a3a48' : '#f0ebe6' }} />
+      <div className="h-px mb-4" style={{ background: dm ? '#3a3a48' : '#ECEDF1' }} />
 
       {/* Per-day override */}
       <div className="flex items-center gap-2 mb-3">
-        <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+        <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>
           {isEditingExisting ? 'Edit Override' : 'Set Override for a Specific Date'}
         </p>
         {isEditingExisting && (
@@ -167,7 +167,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
             min={today}
             onChange={e => setOverrideDate(e.target.value)}
             className="px-3 py-2 rounded-xl text-[0.78rem] outline-none transition-all"
-            style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, color: dm ? '#e4e4e7' : '#111', background: dm ? '#1e1e24' : '#fff', paddingRight: overrideDate ? '28px' : undefined }}
+            style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`, color: dm ? '#e4e4e7' : '#111', background: dm ? '#1e1e24' : '#fff', paddingRight: overrideDate ? '28px' : undefined }}
           />
           {overrideDate && (
             <button
@@ -178,14 +178,14 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
             >✕</button>
           )}
         </div>
-        <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+        <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` }}>
           <button onClick={() => setOverrideCap(Math.max(1, overrideCap - 1))}
             className="w-9 h-9 flex items-center justify-center transition-colors text-lg"
             style={{ color: dm ? '#71717a' : '#999', background: dm ? '#1e1e24' : 'transparent' }}>−</button>
           <input type="number" min="1" max="20" value={overrideCap}
             onChange={e => setOverrideCap(Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)))}
             className="w-10 h-9 text-center text-[0.95rem] font-semibold outline-none"
-            style={{ color: dm ? '#e4e4e7' : '#111', borderLeft: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, borderRight: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }} />
+            style={{ color: dm ? '#e4e4e7' : '#111', borderLeft: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`, borderRight: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`, background: dm ? '#26262e' : '#fff' }} />
           <button onClick={() => setOverrideCap(Math.min(20, overrideCap + 1))}
             className="w-9 h-9 flex items-center justify-center transition-colors text-lg"
             style={{ color: dm ? '#71717a' : '#999', background: dm ? '#1e1e24' : 'transparent' }}>+</button>
@@ -213,7 +213,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
                 onClick={() => { setOverrideDate(o.date); setOverrideCap(o.capacity); }}
                 className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all"
                 style={{
-                  background: isActive ? (dm ? '#2e2030' : '#FDF0F7') : (dm ? '#1e1e24' : '#FDF9F7'),
+                  background: isActive ? (dm ? '#2e2030' : '#FDF0F7') : (dm ? '#1e1e24' : '#FAFAFB'),
                   border: `1px solid ${isActive ? '#D4A0B0' : (dm ? '#3a3a48' : '#f0e8e0')}`,
                   boxShadow: isActive ? '0 0 0 1px #D4A0B0' : 'none',
                 }}>

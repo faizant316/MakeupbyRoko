@@ -134,17 +134,17 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
 
   // Theme tokens
   const modalBg = dm ? '#27272a' : '#ffffff';
-  const borderColor = dm ? '#3f3f46' : '#ece6e0';
+  const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
   const textMuted = dm ? '#71717a' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
-  const inputBorder = dm ? '#3f3f46' : '#e4ddd7';
-  const sectionLabelColor = dm ? '#71717a' : '#b5a99a';
-  const tagBg = dm ? '#18181b' : '#FAF8F6';
+  const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
+  const sectionLabelColor = dm ? '#71717a' : '#a3a3ad';
+  const tagBg = dm ? '#18181b' : '#FAFAFB';
   const tagColor = dm ? '#a1a1aa' : '#666';
   const addBtnBg = dm ? '#3f3f46' : '#111111';
   const addBtnColor = dm ? '#f4f4f5' : '#ffffff';
-  const subtleBg = dm ? '#1e1e24' : '#FAF8F6';
+  const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
 
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
   const inputClass = `w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]`;
@@ -156,7 +156,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
 
   const Section = ({ children }) => (
     <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: sectionLabelColor }}>
-      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#e4ddd7' }} />
+      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
       {children}
     </p>
   );
@@ -460,7 +460,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
           <button type="button" onClick={() => setShowPreview(!showPreview)}
             className="w-full py-2.5 text-[0.75rem] font-medium tracking-[0.04em] rounded-xl border transition-all"
             style={showPreview
-              ? { background: dm ? '#3f3f46' : '#FAF8F6', borderColor: '#D4A0B0', color: '#D4A0B0' }
+              ? { background: dm ? '#3f3f46' : '#FAFAFB', borderColor: '#D4A0B0', color: '#D4A0B0' }
               : { background: 'transparent', borderColor, color: textMuted }
             }>
             {showPreview ? 'Hide Preview ↑' : 'Preview Card ↓'}
@@ -468,7 +468,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
 
           {showPreview && (
             <div className="rounded-xl p-4" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
-              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase text-[#b5a99a] mb-3">How it looks on the homepage</p>
+              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase text-[#a3a3ad] mb-3">How it looks on the homepage</p>
               <ServicePreview form={form} />
             </div>
           )}
