@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { lenisStop, lenisStart } from "@/lib/lenis";
+import { lenisStop, lenisStart, lenisScrollTo } from "@/lib/lenis";
 
 // Reliably locks the page behind a modal so the background never scrolls.
 //
@@ -30,8 +30,12 @@ export function useScrollLock() {
       style.width = '';
       style.overflow = '';
       window.scrollTo(0, scrollY);
-      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
       lenisStart();
+      // Resync Lenis to the restored position — otherwise its internal offset
+      // (drifted to 0 while the body was fixed) makes the next wheel tick jump
+      // the page back to the top.
+      lenisScrollTo(scrollY, { immediate: true, force: true });
+      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
     };
   }, []);
 }

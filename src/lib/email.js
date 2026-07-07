@@ -720,7 +720,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
   `);
 }
 
-export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, artistArriveBy, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
+export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
 
   const clientRows = [
@@ -742,8 +742,9 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
 
   const timingRows = [
     eventStartTime ? row('Event Starts', eventStartTime) : '',
+    makeupReadyByTime ? row('Ready By (Requested)', makeupReadyByTime) : '',
     venueAccessTime ? row('Venue Access', venueAccessTime) : '',
-    artistArriveBy ? row('Artist Arrive By', artistArriveBy) : '',
+    hairstylistArriveBy ? row('Hairstylist Arrive By', hairstylistArriveBy) : '',
     photographerArrival ? row('Photographer Arrives', photographerArrival) : '',
     photographer ? row('Photographer', photographer) : '',
     hairstylist ? row('Hairstylist', hairstylist) : '',

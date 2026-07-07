@@ -54,6 +54,7 @@ create table if not exists bridal_inquiries (
   additional_details text,
   how_heard text,
   ready_by_time text,
+  makeup_ready_by_time text,
   photographer_arrival_time text,
   out_of_state boolean,
   service text,

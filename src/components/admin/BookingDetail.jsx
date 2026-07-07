@@ -1114,8 +1114,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <BField dm={dm} label="Wedding Date" value={biWedding} />
                 <BField dm={dm} label="Preferred Appt" value={biPreferred} />
                 <BField dm={dm} label="Event Start" value={bridalInquiry.event_start_time} />
+                <BField dm={dm} label="Ready By (Requested)" value={bridalInquiry.makeup_ready_by_time} accent />
                 <BField dm={dm} label="Venue Access" value={bridalInquiry.venue_access_time} />
-                <BField dm={dm} label="Artist Arrive By" value={bridalInquiry.ready_by_time} accent />
+                <BField dm={dm} label="Hairstylist Arrive By" value={bridalInquiry.ready_by_time} />
                 <BField dm={dm} label="Photographer Arrives" value={bridalInquiry.photographer_arrival_time} />
               </div>
 

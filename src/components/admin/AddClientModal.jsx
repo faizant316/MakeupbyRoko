@@ -110,7 +110,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
   const [nb, setNb] = useState({ ready_by_time: '', early_arrival: null, travel_requested: null });
   const [bridal, setBridal] = useState({
     bride_name: '', soon_to_be_last_name: '', wedding_date: '', event_start_time: '',
-    venue_access_time: '', ready_by_time: '', photographer_arrival_time: '', num_people_glam: '',
+    venue_access_time: '', ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', num_people_glam: '',
     event_location: '', photographer: '', hairstylist: '', instagram_handle: '', how_heard: '', additional_details: '',
   });
 
@@ -349,8 +349,12 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
                   <NativeSelect value={bridal.venue_access_time} onChange={v => setBr('venue_access_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Artist Arrive By (Ready By)</label>
+                  <label style={labelStyle}>Hairstylist Arrive By</label>
                   <NativeSelect value={bridal.ready_by_time} onChange={v => setBr('ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Ready By (Requested)</label>
+                  <NativeSelect value={bridal.makeup_ready_by_time} onChange={v => setBr('makeup_ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
                 <div>
                   <label style={labelStyle}>Photographer Arrival</label>
