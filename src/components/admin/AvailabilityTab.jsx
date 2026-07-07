@@ -38,7 +38,7 @@ function CapacityRing({ booked, capacity, blocked, dm }) {
         ) : (
           <>
             <span className="font-serif leading-none" style={{ fontSize: '1.7rem', color: dm ? '#e4e4e7' : '#1a1a1a' }}>{booked}</span>
-            <span className="text-[0.6rem] font-medium mt-1 tracking-wide" style={{ color: dm ? '#71717a' : '#a99e95' }}>of {capacity}</span>
+            <span className="text-[0.6rem] font-medium mt-1 tracking-wide" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>of {capacity}</span>
           </>
         )}
       </div>
@@ -50,7 +50,7 @@ function CapacityRing({ booked, capacity, blocked, dm }) {
 function Stepper({ value, onChange, min = 1, max = 20, dm }) {
   const btn = 'w-9 h-9 flex items-center justify-center transition-colors text-lg select-none';
   const btnStyle = { color: dm ? '#a1a1aa' : '#999', background: dm ? '#1e1e24' : 'transparent' };
-  const bd = dm ? '#3a3a48' : '#e8e2dc';
+  const bd = dm ? '#3a3a48' : '#E5E7EB';
   return (
     <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${bd}` }}>
       <button type="button" onClick={() => onChange(Math.max(min, value - 1))} className={btn} style={btnStyle}>−</button>
@@ -190,7 +190,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
 
   const jumpTo = (key) => { setSelectedDate(key); setMonth(new Date(key + 'T00:00:00')); };
 
-  const card = { background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e8e2dc'}` };
+  const card = { background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` };
   const spotsLeft = effForSelected - selBooked;
 
   // ── Glance stats ──
@@ -205,7 +205,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
   return (
     <div className="pb-4">
       {/* Intro line */}
-      <p className="text-[0.8rem] leading-relaxed mb-5 max-w-xl" style={{ color: dm ? '#a1a1aa' : '#8a7e84' }}>
+      <p className="text-[0.8rem] leading-relaxed mb-5 max-w-xl" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
         Control how many bookings you take each day. Set a default for every day, then tap any date to give it a custom limit or close it off entirely.
       </p>
 
@@ -254,7 +254,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                   {selBlocked ? (
                     <>
                       <p className="text-[0.85rem] font-semibold" style={{ color: '#EF4444' }}>Closed to bookings</p>
-                      <p className="text-[0.72rem] mt-1 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#8a7e84' }}>
+                      <p className="text-[0.72rem] mt-1 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
                         Clients can't book this day on the site.
                       </p>
                     </>
@@ -263,7 +263,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                       <p className="text-[0.95rem] font-semibold" style={{ color: spotsLeft <= 0 ? '#E0795B' : (dm ? '#e4e4e7' : '#1a1a1a') }}>
                         {spotsLeft <= 0 ? 'Fully booked' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} open`}
                       </p>
-                      <p className="text-[0.72rem] mt-1 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#8a7e84' }}>
+                      <p className="text-[0.72rem] mt-1 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
                         {selBooked} of {effForSelected} taken
                         {selHasOverride ? ' · custom limit' : ` · default (${defaultCap})`}
                       </p>
@@ -273,7 +273,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
               </div>
 
               {!selBlocked && (
-                <div className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+                <div className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#555' }}>Limit:</span>
                     <Stepper value={editCap} onChange={setEditCap} dm={dm} />
@@ -292,7 +292,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                     <button
                       onClick={() => removeOverride.mutate(selectedDate)}
                       className="mt-3 text-[0.68rem] font-medium transition-colors hover:opacity-70"
-                      style={{ color: dm ? '#71717a' : '#a99e95' }}>
+                      style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                       ↺ Reset to default ({defaultCap} spots)
                     </button>
                   )}
@@ -300,7 +300,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
               )}
 
               {/* Close / reopen day — clearly outlined so it reads as tappable */}
-              <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+              <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
                 {selBlocked ? (
                   <button
                     onClick={() => unblockDay.mutate(selectedDate)}
@@ -332,7 +332,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                 </svg>
               </div>
               <p className="text-[0.85rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Pick a day</p>
-              <p className="text-[0.72rem] mt-1.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+              <p className="text-[0.72rem] mt-1.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                 Tap any date on the calendar to set its booking limit or close it off.
               </p>
             </div>
@@ -341,7 +341,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
           {/* Default capacity */}
           <div className="rounded-xl p-5" style={card}>
             <div className="flex items-center gap-2 mb-1.5">
-              <h3 className="text-[0.78rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Default capacity</h3>
+              <h3 className="text-[0.78rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Default capacity</h3>
             </div>
             <p className="text-[0.7rem] mb-4 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
               Applies to every day without a custom limit.
@@ -374,13 +374,13 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[0.7rem]" style={{ color: '#EF4444' }}>✕</span>
                       <span className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>{fmtDay(b.date)}</span>
-                      {b.reason && <span className="text-[0.65rem] truncate" style={{ color: dm ? '#71717a' : '#a99e95' }}>· {b.reason}</span>}
+                      {b.reason && <span className="text-[0.65rem] truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>· {b.reason}</span>}
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); unblockDay.mutate(b.date); }}
                       className="text-[0.62rem] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0"
-                      style={{ color: dm ? '#a1a1aa' : '#a99e95' }}
+                      style={{ color: dm ? '#a1a1aa' : '#9c9ca4' }}
                       onMouseEnter={e => { e.currentTarget.style.color = '#A0607A'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#a99e95'; }}>
+                      onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#9c9ca4'; }}>
                       Reopen
                     </button>
                   </div>

@@ -3,7 +3,7 @@ export default function ServicePreview({ form }) {
 
   if (isBridal) {
     return (
-      <div className="rounded-lg overflow-hidden border border-[#e8e2dc] bg-white">
+      <div className="rounded-lg overflow-hidden border border-[#E5E7EB] bg-white">
         <div className="flex flex-col sm:flex-row">
           {form.photo && (
             <div className="sm:w-[44%] aspect-[3/4] sm:aspect-auto overflow-hidden bg-[#f5f5f5] flex-shrink-0">

@@ -150,8 +150,8 @@ export default function ContractSettings({ darkMode: dm }) {
   });
 
   const cardBg = dm ? '#26262e' : '#fff';
-  const border = dm ? '#3a3a48' : '#e8e2dc';
-  const textMain = dm ? '#F0EBE6' : '#111';
+  const border = dm ? '#3a3a48' : '#E5E7EB';
+  const textMain = dm ? '#ECEDF1' : '#111';
   const textHint = dm ? '#71717a' : '#999';
 
   const sectionCount = savedPreview.sections.length;

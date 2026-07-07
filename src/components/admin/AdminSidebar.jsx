@@ -58,7 +58,7 @@ export default function AdminSidebar({
         className="hidden sm:flex flex-col w-[220px] shrink-0 sticky top-14 self-start overflow-y-auto"
         style={{
           height: 'calc(100vh - 56px)',
-          borderRight: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`,
+          borderRight: `1px solid ${dm ? '#2e2e38' : '#E5E7EB'}`,
           background: dm ? '#1e1e24' : '#fff',
         }}
       >
@@ -100,7 +100,7 @@ export default function AdminSidebar({
             toggle, matching the mobile menu's cleaner look */}
         <div
           className="px-3 pb-5 pt-3 flex flex-col gap-0.5"
-          style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}` }}
+          style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#E5E7EB'}` }}
         >
           {/* Dark / light mode */}
           <button
@@ -170,7 +170,7 @@ export default function AdminSidebar({
           className="flex items-center justify-between px-6 flex-shrink-0"
           style={{
             height: '56px',
-            borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe6'}`,
+            borderBottom: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}`,
           }}
         >
           <span
@@ -199,7 +199,7 @@ export default function AdminSidebar({
                 key={tab.key}
                 onClick={() => handleTabClick(tab.key)}
                 className="w-full text-left py-3.5 flex flex-col gap-0.5 active:opacity-60 transition-opacity"
-                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f0ebe6'}` }}
+                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
               >
                 <span
                   className="font-serif font-light leading-none"
@@ -225,7 +225,7 @@ export default function AdminSidebar({
             every nav section still stays visible above them without scrolling */}
         <div
           className="px-5 pb-5 pt-2 flex flex-col flex-shrink-0"
-          style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ebe6'}` }}
+          style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
         >
           {/* Dark / light mode — sun & moon */}
           <button

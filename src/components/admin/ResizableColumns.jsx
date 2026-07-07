@@ -99,7 +99,7 @@ export default function ResizableColumns({ left, right, darkMode: dm }) {
           style={{ background: (dragging || hovering) ? '#D4A0B0' : 'transparent' }} />
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[5px] h-11 rounded-full transition-colors"
-          style={{ background: (dragging || hovering) ? '#D4A0B0' : (dm ? '#34343d' : '#e8e2dc') }}
+          style={{ background: (dragging || hovering) ? '#D4A0B0' : (dm ? '#34343d' : '#E5E7EB') }}
         />
       </div>
 

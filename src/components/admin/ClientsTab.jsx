@@ -128,7 +128,7 @@ function ActionCircle({ href, label, dm, children }) {
   return (
     <a href={href}
       className="flex flex-col items-center gap-1.5 flex-1 py-3 rounded-2xl transition-all hover:opacity-80 active:scale-[0.97]"
-      style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${dm ? '#2e2e38' : '#f0eae4'}`, minWidth: 0 }}>
+      style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#2e2e38' : '#f0eae4'}`, minWidth: 0 }}>
       <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
         {children}
       </span>
@@ -164,7 +164,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
         <div className="min-w-0">
           <h2 className="font-serif text-[1.6rem] leading-tight truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.name}</h2>
           {memberSince && (
-            <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#71717a' : '#a99e95' }}>Client since {memberSince}</p>
+            <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>Client since {memberSince}</p>
           )}
         </div>
       </div>
@@ -195,21 +195,21 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
       </div>
 
       {/* Contact details */}
-      <div className="rounded-2xl px-4 py-3.5 mb-6 flex flex-col gap-2" style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${line}` }}>
+      <div className="rounded-2xl px-4 py-3.5 mb-6 flex flex-col gap-2" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
         {client.phone && (
           <div className="flex items-center justify-between gap-3 min-w-0">
-            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#b3a89f' }}>Phone</span>
+            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>Phone</span>
             <span className="text-[0.82rem] font-medium truncate tabular-nums" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.phone}</span>
           </div>
         )}
         {client.email && (
           <div className="flex items-center justify-between gap-3 min-w-0">
-            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#b3a89f' }}>Email</span>
+            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>Email</span>
             <span className="text-[0.82rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.email}</span>
           </div>
         )}
         {!client.phone && !client.email && (
-          <p className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#b3a89f' }}>No contact info on file</p>
+          <p className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>No contact info on file</p>
         )}
       </div>
 
@@ -221,7 +221,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
           { label: 'Upcoming', value: client.upcomingCount },
         ].map(s => (
           <div key={s.label} className="rounded-2xl py-3.5 text-center" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
-            <div className="font-serif text-[1.4rem] leading-none" style={{ color: dm ? '#F0EBE6' : '#111' }}>{s.value}</div>
+            <div className="font-serif text-[1.4rem] leading-none" style={{ color: dm ? '#ECEDF1' : '#111' }}>{s.value}</div>
             <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5" style={{ color: dm ? '#71717a' : '#A89098' }}>{s.label}</div>
           </div>
         ))}
@@ -242,13 +242,13 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
                   style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
                   <div className="flex-1 min-w-0">
                     <p className="text-[0.84rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.service || 'Appointment'}</p>
-                    <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+                    <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                       {rel.label}{b.time ? ` · ${b.time}` : ''}
                       {isBridalService(b.service) ? ' · Bridal' : ''}
                     </p>
                   </div>
                   <StatusBadge status={b.status} />
-                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               );
             })}
@@ -267,16 +267,16 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
                 style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-[0.84rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{classLabelOf(r)}</p>
-                  <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a99e95' }}>
+                  <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                     {r.appointment_date ? relativeDate(r.appointment_date).label : 'No date set'}
                     {r.appointment_time ? ` · ${r.appointment_time}` : ''}
                   </p>
                 </div>
                 <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
-                  style={{ background: 'rgba(196,149,106,0.14)', color: '#9C6B38' }}>
+                  style={{ background: 'rgba(199,107,166,0.14)', color: '#A83E86' }}>
                   {r.status === 'enrolled' ? 'Enrolled' : r.status === 'contacted' ? 'Contacted' : 'New'}
                 </span>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             ))}
           </div>
@@ -284,8 +284,8 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
       )}
 
       {apptRows.length === 0 && classRows.length === 0 && (
-        <div className="rounded-2xl py-10 text-center" style={{ background: dm ? '#26262e' : '#FAF7F4', border: `1px solid ${line}` }}>
-          <p className="text-[0.82rem]" style={{ color: dm ? '#71717a' : '#b3a89f' }}>No bookings on file yet</p>
+        <div className="rounded-2xl py-10 text-center" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
+          <p className="text-[0.82rem]" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>No bookings on file yet</p>
         </div>
       )}
       </div> {/* /right column */}
@@ -330,7 +330,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
   const selectedClient = selectedKey ? clients.find(c => c.key === selectedKey) : null;
 
   const line = dm ? '#2e2e38' : '#f0eae4';
-  const muted = dm ? '#71717a' : '#b3a89f';
+  const muted = dm ? '#71717a' : '#a8a8b1';
 
   if (selectedClient) {
     return (
@@ -362,7 +362,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
             <button key={s.key} onClick={() => setView(s.key)}
               className="flex-1 sm:flex-none sm:min-w-[170px] py-2 px-6 rounded-full text-[0.78rem] font-semibold transition-all duration-200 whitespace-nowrap"
               style={active
-                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#F0EBE6' : '#111', boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 5px rgba(60,45,35,0.14)' }
+                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#ECEDF1' : '#111', boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 5px rgba(60,45,35,0.14)' }
                 : { background: 'transparent', color: muted }}>
               {s.label}
             </button>
@@ -380,7 +380,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
               style={{ borderBottom: i < groups.length - 1 ? `1px solid ${line}` : 'none' }}>
               <span className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ border: `1px solid ${dm ? '#3a3a44' : '#e4dcd4'}` }}>
-                <GroupIcon color={dm ? '#8a8a93' : '#b3a89f'} />
+                <GroupIcon color={dm ? '#8a8a93' : '#a8a8b1'} />
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[0.95rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
@@ -388,7 +388,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                 </span>
                 <span className="block text-[0.74rem] mt-0.5 leading-snug" style={{ color: muted }}>{g.desc}</span>
               </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           ))}
         </div>
@@ -397,20 +397,20 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
         <>
           {/* Search */}
           <div className="relative mb-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#b5a99a" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input
               type="text" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search clients..."
               className="w-full pl-10 pr-10 py-2.5 rounded-full text-base sm:text-[0.85rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
-              style={{ background: dm ? '#232328' : '#F5F1EC', border: `1px solid ${dm ? '#34343d' : 'transparent'}`, color: dm ? '#e4e4e7' : '#111' }}
+              style={{ background: dm ? '#232328' : '#F3F3F7', border: `1px solid ${dm ? '#34343d' : 'transparent'}`, color: dm ? '#e4e4e7' : '#111' }}
             />
             {search && (
               <button type="button" onClick={() => setSearch('')} aria-label="Clear search"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
                 style={{ background: dm ? '#3f3f46' : '#e9e2da', touchAction: 'manipulation' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#8a7e84'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
@@ -434,7 +434,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
 
           {visible.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-[0.85rem]" style={{ color: dm ? '#52525b' : '#c5bdb5' }}>
+              <p className="text-[0.85rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
                 {q ? `No clients match "${search}"` : 'No clients in this group yet'}
               </p>
             </div>
@@ -453,7 +453,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                 </div>
                 {sections.map(([letter, list]) => (
                   <div key={letter} ref={el => { letterRefs.current[letter] = el; }}>
-                    <p className="text-[0.68rem] font-bold tracking-[0.1em] pt-4 pb-1.5" style={{ color: dm ? '#8a8a93' : '#b3a89f' }}>{letter}</p>
+                    <p className="text-[0.68rem] font-bold tracking-[0.1em] pt-4 pb-1.5" style={{ color: dm ? '#8a8a93' : '#a8a8b1' }}>{letter}</p>
                     {list.map((c, i) => {
                       const nextRel = c.nextDate ? relativeDate(c.nextDate) : null;
                       const lastRel = c.lastDate ? relativeDate(c.lastDate) : null;
@@ -462,7 +462,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                           className="w-full flex items-center gap-3.5 py-3 text-left transition-opacity hover:opacity-75"
                           style={{ borderBottom: i < list.length - 1 ? `1px solid ${line}` : 'none' }}>
                           <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[0.78rem] font-semibold"
-                            style={{ background: dm ? '#2e2e38' : '#EFE9E3', color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                            style={{ background: dm ? '#2e2e38' : '#EFE9E3', color: dm ? '#a1a1aa' : '#83838d' }}>
                             {initialsOf(c.name)}
                           </span>
                           <span className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] sm:gap-4 sm:items-center">
@@ -472,19 +472,19 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                                 {c.phone || c.email || 'No contact info'}
                               </span>
                             </span>
-                            <span className="hidden sm:block text-[0.78rem] truncate tabular-nums" style={{ color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                            <span className="hidden sm:block text-[0.78rem] truncate tabular-nums" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
                               {c.phone || '—'}
                             </span>
-                            <span className="hidden sm:block text-[0.78rem] truncate" style={{ color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                            <span className="hidden sm:block text-[0.78rem] truncate" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
                               {c.email || '—'}
                             </span>
                             <span className="hidden sm:block text-[0.74rem] font-semibold truncate"
-                              style={{ color: nextRel ? '#16A34A' : muted }}>
+                              style={{ color: nextRel ? '#2563EB' : muted }}>
                               {nextRel ? nextRel.label : lastRel ? `Last ${lastRel.label}` : '—'}
                             </span>
                           </span>
                           {c.upcomingCount > 0 && (
-                            <span className="sm:hidden w-2 h-2 rounded-full flex-shrink-0" title="Has an upcoming appointment" style={{ background: '#16A34A' }} />
+                            <span className="sm:hidden w-2 h-2 rounded-full flex-shrink-0" title="Has an upcoming appointment" style={{ background: '#2563EB' }} />
                           )}
                           <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#3f3f46' : '#ddd2c8'} strokeWidth="2" className="hidden sm:block w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
                         </button>
@@ -502,7 +502,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                     return (
                       <button key={l} onClick={() => has && jumpTo(l)} disabled={!has}
                         className="w-5 text-[0.58rem] font-semibold leading-[15px] text-center"
-                        style={{ color: has ? (dm ? '#a1a1aa' : '#8a7e74') : (dm ? '#3a3a44' : '#e0d8d0'), cursor: has ? 'pointer' : 'default', touchAction: 'manipulation' }}>
+                        style={{ color: has ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#3a3a44' : '#e0d8d0'), cursor: has ? 'pointer' : 'default', touchAction: 'manipulation' }}>
                         {l}
                       </button>
                     );

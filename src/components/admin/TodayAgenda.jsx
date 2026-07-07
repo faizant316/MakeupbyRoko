@@ -9,9 +9,9 @@ import { classesOfReg } from '@/lib/classCatalog';
 
 const STATUS_META = {
   pending:   { bg: '#F59E0B', label: 'Pending' },
-  confirmed: { bg: '#16A34A', label: 'Confirmed' },
+  confirmed: { bg: '#2563EB', label: 'Confirmed' },
   completed: { bg: '#64748B', label: 'Completed' },
-  enrolled:  { bg: '#16A34A', label: 'Enrolled' },
+  enrolled:  { bg: '#2563EB', label: 'Enrolled' },
   cancelled: { bg: '#EF4444', label: 'Cancelled' },
 };
 
@@ -38,7 +38,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
     (bookings || []).forEach(b => {
       if (b.status === 'cancelled') return;
       if (b.date === todayKey) {
-        list.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', status: b.status || 'pending', dot: STATUS_META[b.status]?.bg || '#16A34A', onClick: () => onSelectBooking?.(b) });
+        list.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', status: b.status || 'pending', dot: STATUS_META[b.status]?.bg || '#2563EB', onClick: () => onSelectBooking?.(b) });
       }
       if (b.consultation_date === todayKey) {
         const joinUrl = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1] || '';
@@ -68,7 +68,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
       <div className="flex items-center gap-2.5 mb-4">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasItems ? 'animate-pulse' : ''}`} style={{ background: hasItems ? '#D4A0B0' : (dm ? '#52525b' : '#d8cfc8') }} />
         <h2 className="font-serif text-[1.2rem] leading-none" style={{ color: dm ? '#e4e4e7' : '#111' }}>Today</h2>
-        <span className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#a99e95' }}>{todayLabel}</span>
+        <span className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{todayLabel}</span>
         {hasItems && (
           <span className="text-[0.62rem] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
             style={{ background: 'rgba(212,160,176,0.16)', color: '#A0607A' }}>
@@ -90,9 +90,9 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                 onClick={item.onClick}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.onClick?.(); } }}
                 className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
-                style={{ background: dm ? '#1e1e24' : '#FAF8F6' }}
+                style={{ background: dm ? '#1e1e24' : '#FAFAFB' }}
                 onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2a2a31' : '#F4EFEC'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = dm ? '#1e1e24' : '#FAF8F6'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = dm ? '#1e1e24' : '#FAFAFB'; }}
               >
                 <span className="text-[0.72rem] font-semibold w-[64px] flex-shrink-0 tabular-nums" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
                   {item.time || '—'}
@@ -100,7 +100,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.dot }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{item.name}</p>
-                  <p className="text-[0.7rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#a99e95' }}>{item.label}</p>
+                  <p className="text-[0.7rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{item.label}</p>
                 </div>
                 {item.tag && (
                   <span className="hidden sm:inline-flex text-[0.55rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
@@ -133,7 +133,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
           <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#cbbfb6'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
             <path d="M20 6 9 17l-5-5" />
           </svg>
-          <p className="text-[0.8rem]" style={{ color: dm ? '#71717a' : '#a99e95' }}>Nothing scheduled today. You're all clear.</p>
+          <p className="text-[0.8rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>Nothing scheduled today. You're all clear.</p>
         </div>
       )}
     </div>

@@ -15,7 +15,7 @@ const TIMES = [
 
 const STATUSES = [
   { value: 'pending',   label: 'Pending',   color: '#F59E0B' },
-  { value: 'confirmed', label: 'Confirmed', color: '#16A34A' },
+  { value: 'confirmed', label: 'Confirmed', color: '#2563EB' },
   { value: 'completed', label: 'Completed', color: '#64748B' },
   { value: 'cancelled', label: 'Cancelled', color: '#EF4444' },
 ];
@@ -82,13 +82,13 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
 
   // Theme tokens (match ServiceFormModal)
   const modalBg = dm ? '#27272a' : '#ffffff';
-  const borderColor = dm ? '#3f3f46' : '#ece6e0';
+  const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
   const textMuted = dm ? '#71717a' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
-  const inputBorder = dm ? '#3f3f46' : '#e4ddd7';
-  const sectionLabelColor = dm ? '#71717a' : '#b5a99a';
-  const subtleBg = dm ? '#1e1e24' : '#FAF8F6';
+  const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
+  const sectionLabelColor = dm ? '#71717a' : '#a3a3ad';
+  const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
 
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
   const inputClass = 'w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]';
@@ -96,7 +96,7 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
 
   const Section = ({ children }) => (
     <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: sectionLabelColor }}>
-      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#e4ddd7' }} />
+      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
       {children}
     </p>
   );

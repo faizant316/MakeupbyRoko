@@ -46,7 +46,7 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
     { key: 'extra', label: 'Reference & Mood Board', dot: '#F0C27A', items: tagged.filter(t => !['without', 'with'].includes(t.cat)) },
   ].filter(g => g.items.length > 0);
 
-  const border = dm ? '#3a3a48' : '#e8e2dc';
+  const border = dm ? '#3a3a48' : '#E5E7EB';
 
   const PhotoTile = ({ url, idx }) => (
     <div className="relative group aspect-square rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
@@ -60,7 +60,7 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
   );
 
   return (
-    <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0ebe6'}` }}>
+    <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
       <div className="flex items-center justify-between mb-3">
         <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0]">
           Reference &amp; Client Photos

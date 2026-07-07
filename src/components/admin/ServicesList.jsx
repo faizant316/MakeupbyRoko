@@ -49,16 +49,16 @@ export default function ServicesList({ darkMode: dm }) {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-[#e4ddd7] border-t-[#111] rounded-full animate-spin" /></div>;
+    return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-[#E2E4EA] border-t-[#111] rounded-full animate-spin" /></div>;
   }
 
   const cardBg = dm ? '#26262e' : '#fff';
-  const cardBorder = dm ? '#3a3a48' : '#e4ddd7';
+  const cardBorder = dm ? '#3a3a48' : '#E2E4EA';
   const titleColor = dm ? '#e4e4e7' : '#111';
   const mutedColor = dm ? '#71717a' : '#999';
-  const tagBg = dm ? '#1e1e24' : '#FAF8F6';
+  const tagBg = dm ? '#1e1e24' : '#FAFAFB';
   const tagColor = dm ? '#a1a1aa' : '#888';
-  const actionBorder = dm ? '#3a3a48' : '#e4ddd7';
+  const actionBorder = dm ? '#3a3a48' : '#E2E4EA';
   const inactiveBg = dm ? '#3a3a48' : '#f5f5f5';
   const inactiveColor = dm ? '#71717a' : '#aaa';
 

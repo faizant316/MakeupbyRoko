@@ -62,8 +62,8 @@ export default function ContractEditorModal({
   // ── Styles ──
   const panelBg = dm ? '#1c1c22' : '#fff';
   const softBg = dm ? '#26262e' : '#FBFAF9';
-  const border = dm ? '#3a3a48' : '#e8e2dc';
-  const textMain = dm ? '#F0EBE6' : '#111';
+  const border = dm ? '#3a3a48' : '#E5E7EB';
+  const textMain = dm ? '#ECEDF1' : '#111';
   const textSub = dm ? '#a1a1aa' : '#555';
   const textHint = dm ? '#71717a' : '#999';
   const inputStyle = { border: `1px solid ${border}`, color: textMain, background: dm ? '#141419' : '#fff' };
@@ -313,7 +313,7 @@ function IconBtn({ children, onClick, disabled, danger, label, dm }) {
 // Shared by the modal preview and the collapsed card preview.
 export function ContractPreview({ c, dm }) {
   if (!c) return null;
-  const textMain = dm ? '#F0EBE6' : '#16110F';
+  const textMain = dm ? '#ECEDF1' : '#16110F';
   const textBody = dm ? '#b6b6c0' : '#666';
   return (
     <div>
@@ -326,7 +326,7 @@ export function ContractPreview({ c, dm }) {
         </div>
       ))}
       {c.photoConsentQuestion && (
-        <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${dm ? '#3a3a48' : '#e8e2dc'}` }}>
+        <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${dm ? '#3a3a48' : '#E5E7EB'}` }}>
           <p className="text-[0.56rem] font-semibold tracking-[0.12em] uppercase text-[#C4849A] mb-1">Photo Permission</p>
           <p className="text-[0.68rem] leading-[1.6]" style={{ color: textBody }}>{c.photoConsentQuestion}</p>
         </div>

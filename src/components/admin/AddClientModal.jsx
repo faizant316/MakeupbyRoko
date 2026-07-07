@@ -13,7 +13,7 @@ const TIMES = [
 
 const STATUSES = [
   { value: 'pending', label: 'Pending', color: '#F59E0B' },
-  { value: 'confirmed', label: 'Confirmed', color: '#16A34A' },
+  { value: 'confirmed', label: 'Confirmed', color: '#2563EB' },
   { value: 'completed', label: 'Completed', color: '#64748B' },
 ];
 
@@ -31,7 +31,7 @@ function StyledDropdown({ value, onChange, options, placeholder, dm }) {
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
-  const border = dm ? '#3f3f46' : '#e4ddd7';
+  const border = dm ? '#3f3f46' : '#E2E4EA';
   const bg = dm ? '#18181b' : '#ffffff';
   const text = dm ? '#f4f4f5' : '#111';
   const muted = dm ? '#71717a' : '#999';
@@ -68,7 +68,7 @@ function StyledDropdown({ value, onChange, options, placeholder, dm }) {
 // option list renders in the browser's top layer, so it is NEVER clipped by the
 // modal's scroll container (unlike a custom popover) — bulletproof in a dense form.
 function NativeSelect({ value, onChange, options, placeholder, dm }) {
-  const border = dm ? '#3f3f46' : '#e4ddd7';
+  const border = dm ? '#3f3f46' : '#E2E4EA';
   const bg = dm ? '#18181b' : '#ffffff';
   const text = dm ? '#f4f4f5' : '#111';
   const muted = dm ? '#71717a' : '#999';
@@ -86,7 +86,7 @@ function NativeSelect({ value, onChange, options, placeholder, dm }) {
 }
 
 function YesNo({ value, onChange, dm, yes = 'Yes', no = 'No' }) {
-  const border = dm ? '#3f3f46' : '#e4ddd7';
+  const border = dm ? '#3f3f46' : '#E2E4EA';
   const idle = { background: dm ? '#1e1e24' : '#fafafa', color: dm ? '#71717a' : '#999', border: `1px solid ${border}` };
   return (
     <div className="flex gap-2">
@@ -201,13 +201,13 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
 
   // Theme tokens (match EditBookingModal / ServiceFormModal)
   const modalBg = dm ? '#27272a' : '#ffffff';
-  const borderColor = dm ? '#3f3f46' : '#ece6e0';
+  const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
   const textMuted = dm ? '#71717a' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
-  const inputBorder = dm ? '#3f3f46' : '#e4ddd7';
-  const sectionLabelColor = dm ? '#71717a' : '#b5a99a';
-  const subtleBg = dm ? '#1e1e24' : '#FAF8F6';
+  const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
+  const sectionLabelColor = dm ? '#71717a' : '#a3a3ad';
+  const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
 
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
   const inputClass = 'w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]';
@@ -215,7 +215,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
 
   const Section = ({ children, accent }) => (
     <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: accent || sectionLabelColor }}>
-      <span className="w-4 h-px" style={{ background: accent || (dm ? '#3f3f46' : '#e4ddd7') }} />
+      <span className="w-4 h-px" style={{ background: accent || (dm ? '#3f3f46' : '#E2E4EA') }} />
       {children}
     </p>
   );

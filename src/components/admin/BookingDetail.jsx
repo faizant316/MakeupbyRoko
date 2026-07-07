@@ -46,7 +46,7 @@ function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
         style={{ background: dm ? '#2e2e38' : '#f7f7f7' }}
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
           <span className="text-[0.72rem] font-semibold" style={{ color: dm ? '#86efac' : '#16a34a' }}>Zelle Screenshot Received</span>
@@ -133,7 +133,7 @@ const APPT_TIMES = [
 // Booksy-style hero gradients per status (banner behind CONFIRMED / PENDING...)
 const HERO_GRADIENTS = {
   pending:   'linear-gradient(150deg, #D97706, #F59E0B)',
-  confirmed: 'linear-gradient(150deg, #15803D, #22C55E)',
+  confirmed: 'linear-gradient(150deg, #1D4ED8, #3B82F6)',
   completed: 'linear-gradient(150deg, #475569, #64748B)',
   cancelled: 'linear-gradient(150deg, #DC2626, #EF4444)',
 };
@@ -409,14 +409,14 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
               </svg>
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Schedule Consultation</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Schedule Consultation</p>
               <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
                 {bridal ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type'}
               </p>
             </div>
             <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }} aria-label="Close scheduler"
               className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-              style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#8a7e74' }}>
+              style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
@@ -559,10 +559,10 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
 
             {sent && (
               <div className="flex items-center justify-center gap-1.5 py-1">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-green-500">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-blue-500">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <p className="text-[0.75rem] font-medium text-green-600">Consultation scheduled — client notified.</p>
+                <p className="text-[0.75rem] font-medium text-blue-600">Consultation scheduled — client notified.</p>
               </div>
             )}
           </div>
@@ -688,7 +688,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.3, x: 0.5 }, colors: ['#F0C27A', '#D4A0B0', '#B8A0D4', '#60A5FA'], scalar: 1.0 });
       setTimeout(() => setCelebrate(false), 2200);
     } else if (s === 'confirmed') {
-      showToast(isReconfirm ? 'Reconfirmed, client notified' : 'Appointment confirmed', '#16A34A');
+      showToast(isReconfirm ? 'Reconfirmed, client notified' : 'Appointment confirmed', '#2563EB');
       // Bridal confirmations go out through the combined consultation email, so
       // never fire the standalone confirmation email for them.
       if (booking.email && !isBridal) {
@@ -829,7 +829,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
         : dateFormatted;
       if (newStatus === 'confirmed' && !isBridal) {
-        showToast('Appointment confirmed', '#16A34A');
+        showToast('Appointment confirmed', '#2563EB');
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -895,18 +895,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           }}>
           <div className="px-4 min-w-0">
             <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Start</p>
-            <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#F0EBE6' : '#111' }}>
+            <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroStart || 'Set time'}
             </p>
-            {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#b0a89f' }}>until {heroEnd}</p>}
+            {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroEnd}</p>}
           </div>
           <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#f0eae4' }} />
           <div className="px-4 min-w-0 flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Date</p>
-              <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#F0EBE6' : '#111' }}>{heroDate}</p>
+              <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
             </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#c5bdb5'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </button>
       </div>
@@ -937,15 +937,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {showClientStats && (
           <div className="grid grid-cols-3 gap-3 mb-6 p-4 rounded-[6px]" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#2a2420' : '#ebebeb'}`, animation: 'fadeSlideDown 0.3s ease-out' }}>
             <div className="text-center">
-              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#F0EBE6' : '#111' }}>{totalVisits}</div>
+              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{totalVisits}</div>
               <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Total Visits</div>
             </div>
             <div className="text-center">
-              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#F0EBE6' : '#111' }}>{completedVisits}</div>
+              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{completedVisits}</div>
               <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Completed</div>
             </div>
             <div className="text-center">
-              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#F0EBE6' : '#111' }}>{cancelledVisits}</div>
+              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{cancelledVisits}</div>
               <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Cancelled</div>
             </div>
           </div>
@@ -955,7 +955,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div>
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Date & Time</p>
-            <p className="text-[0.9rem] font-medium" style={{ color: dm ? '#F0EBE6' : '#111' }}>{dateFormatted}</p>
+            <p className="text-[0.9rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>{dateFormatted}</p>
             {booking.time && <p className="text-[0.85rem]" style={{ color: dm ? '#D4A0B0' : '#888' }}>{booking.time}</p>}
           </div>
           <div>
@@ -988,14 +988,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </svg>
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Message Client</p>
+                <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Message Client</p>
                 <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
                   To <span style={{ color: dm ? '#e7c9d5' : '#8A4A63', fontWeight: 600 }}>{booking.email}</span> · sends from roko@makeupbyroko.org
                 </p>
               </div>
               <button type="button" onClick={() => setShowCompose(false)} aria-label="Close composer"
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-                style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#8a7e74' }}>
+                style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -1004,7 +1004,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {/* Quick starter */}
               <button type="button" onClick={fillProposeTime}
                 className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.64rem] font-semibold transition-all hover:opacity-85"
-                style={{ background: dm ? '#2e2e38' : '#FBF3E8', color: dm ? '#e8c89a' : '#9A6B2F', border: `1px solid ${dm ? '#3a3a48' : '#F0E0C8'}` }}>
+                style={{ background: dm ? '#2e2e38' : '#FBF3E8', color: dm ? '#e8c89a' : '#C76BA6', border: `1px solid ${dm ? '#3a3a48' : '#F0E0C8'}` }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Propose new time {booking.time ? `(${booking.time})` : ''}
               </button>
@@ -1022,7 +1022,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   placeholder="Write your message…"
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                   style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
-                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#c0b5ab' }}>Sent on your branded template. Line breaks are kept.</p>
+                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
               </div>
 
               {/* Attach updated agreement */}
@@ -1034,7 +1034,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {attachContract && <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>
                 <span>
-                  <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>Attach updated Service Agreement</span>
+                  <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
                   <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
                     Adds a Review &amp; Sign link with {booking.time ? <>the current window <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong></> : 'the current appointment time'}. Signing marks it pending again for you to re-confirm.
                   </span>
@@ -1044,7 +1044,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div className="flex items-center gap-2 pt-1">
                 <button type="button" onClick={() => setShowCompose(false)}
                   className="px-5 py-3 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.98]"
-                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#8a7e74', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
                   Cancel
                 </button>
                 <button type="button" onClick={sendCompose} disabled={sending}
@@ -1076,12 +1076,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.3)'}` }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     <span className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Ready by</span>
-                    <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#2C1A14' }}>{notes.readyBy}</span>
+                    <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{notes.readyBy}</span>
                   </span>
                 )}
                 {notes.flags.map((f, i) => (
                   <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
-                    style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#9A6B2F' }}>
+                    style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#C76BA6' }}>
                     {f}
                   </span>
                 ))}
@@ -1176,12 +1176,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <div className="mb-6">
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Service Agreement</p>
             {booking.contract_signed ? (
-              <div className="rounded-[6px] p-4" style={{ background: dm ? 'rgba(34,197,94,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.25)'}` }}>
+              <div className="rounded-[6px] p-4" style={{ background: dm ? 'rgba(59,130,246,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.25)'}` }}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#22c55e' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
                   </div>
-                  <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#4ade80' : '#15803d' }}>Signed</span>
+                  <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#60A5FA' : '#15803d' }}>Signed</span>
                   <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#71717a' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1223,7 +1223,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               onClick={() => onUpdateBooking({ deposit_received: true })}
               className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
               style={booking.deposit_received
-                ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#fff', border: '1px solid #22c55e', boxShadow: '0 4px 16px rgba(34,197,94,0.25)' }
+                ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#fff', border: '1px solid #22c55e', boxShadow: '0 4px 16px rgba(59,130,246,0.25)' }
                 : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
               }
             >
@@ -1268,7 +1268,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </div>
-                  <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#F0EBE6' : '#111' }}>{booking.time}</p>
+                  <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>{booking.time}</p>
                 </div>
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#ccc'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -1333,16 +1333,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           {showReconfirmBanner && booking.status === 'confirmed' && (
             <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-[6px]"
               style={{
-                background: dm ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.07)',
-                border: '1px solid rgba(34,197,94,0.3)',
+                background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.07)',
+                border: '1px solid rgba(59,130,246,0.3)',
                 animation: 'fadeSlideDown 0.3s ease-out',
               }}>
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.15)' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.15)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[0.75rem] font-semibold" style={{ color: '#16A34A' }}>Time was updated</p>
+                  <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Time was updated</p>
                   <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Notify client of their new appointment time?</p>
                 </div>
               </div>
@@ -1350,7 +1350,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <button
                   onClick={() => { setShowReconfirmBanner(false); setPendingStatus('reconfirm'); }}
                   className="px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold text-white transition-all"
-                  style={{ background: '#16A34A' }}>
+                  style={{ background: '#2563EB' }}>
                   Reconfirm →
                 </button>
                 <button
@@ -1378,7 +1378,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   className="py-2.5 px-3 text-[0.65rem] font-semibold tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90 truncate"
                   style={isActive
                     ? { background: STATUS_COLORS[s], color: '#fff' }
-                    : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#ece6e0'}` }
+                    : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
                   }
                 >{s}</button>
               );
@@ -1387,7 +1387,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {isBridal && booking.status !== 'confirmed' && !booking.consultation_date && (
             <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
-              Tap <span className="font-semibold" style={{ color: '#16A34A' }}>Confirmed</span> or schedule below — one email goes out with their confirmation, consultation details &amp; upload link.
+              Tap <span className="font-semibold" style={{ color: '#2563EB' }}>Confirmed</span> or schedule below — one email goes out with their confirmation, consultation details &amp; upload link.
             </p>
           )}
 
@@ -1439,7 +1439,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
                   <div>
-                    <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#F0EBE6' : '#111' }}>{b.service}</p>
+                    <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>{b.service}</p>
                     <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
                       {b.date
                         ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

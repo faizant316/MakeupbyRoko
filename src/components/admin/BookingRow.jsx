@@ -12,8 +12,8 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
     ? '#A0607A'
     : rel.tone === 'past'
       ? '#E0795B'
-      : (dm ? '#a1a1aa' : '#8a7e84');
-  const mutedColor = dm ? '#71717a' : '#a99e95';
+      : (dm ? '#a1a1aa' : '#83838d');
+  const mutedColor = dm ? '#71717a' : '#9c9ca4';
 
   const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
   const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#ece5e0'}` };
@@ -74,7 +74,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           {booking.contract_signed && (
             <span
               className="inline-flex items-center gap-1 text-[0.5rem] font-bold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? 'rgba(34,197,94,0.15)' : '#e8f7ee', color: dm ? '#4ade80' : '#15803d' }}
+              style={{ background: dm ? 'rgba(59,130,246,0.15)' : '#e8f7ee', color: dm ? '#60A5FA' : '#15803d' }}
               title={`Agreement signed${booking.contract_signed_name ? ` by ${booking.contract_signed_name}` : ''}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" className="w-2 h-2"><polyline points="20 6 9 17 4 12"/></svg>
