@@ -1,19 +1,21 @@
-// Shared plum palette for the whole class flow (format → class → details →
-// success) and the courses card + receipt. Replaces the old warm brown/tan
-// tones (#A0785A, #FAF7F4, #ede8e4…) with the same pink / white / deep-plum
-// look used on the luxury bridal cards (#FBF5F7, #C4849A, #6B4055).
+// Shared palette for the class flow + courses + receipt. Editorial and clean
+// like the rest of the site: mostly WHITE and BLACK with soft GRAYS, and pink
+// used only as a light accent (not a plum wash). CTAs are black, selection is
+// a subtle black outline rather than a dark fill.
 export const PLUM = {
-  ink: '#2A1620',        // deep plum-black — dark cards, primary CTA, headings-on-dark
-  ink2: '#3E2231',       // lighter plum for gradient partners
-  deep: '#6B4055',       // dark plum — emphasis body text
-  plum: '#A0607A',       // plum — labels / muted subtext (was brown #A0785A)
-  rose: '#C4849A',       // rose accent
-  pink: '#D4A0B0',       // brand pink
-  gray: '#A2919A',       // plum-toned muted gray
-  grayLt: '#C6B4BD',     // lighter plum-gray (disabled / hints)
-  tint: '#FBF5F7',       // light plum tint bg (was warm #FAFAF9 / #FAF7F4)
-  tint2: '#F6EAF0',      // deeper tint (card headers / footers)
-  border: '#EEDCE6',     // plum border (was warm #ede8e4 / #EDE6DF)
-  borderSoft: '#F4E8EE', // faint plum divider (was #F5F0EC)
-  disabled: '#F0E6EB',   // disabled button fill
+  ink: '#111111',       // black — CTAs, selected outline, dark accents, headings
+  ink2: '#1c1c1c',
+  deep: '#3d3a40',      // dark neutral gray — emphasis body text
+  plum: '#8b868d',      // muted gray — subtext (kept key name for compatibility)
+  rose: '#C4849A',      // rose accent — eyebrows, labels, note border
+  pink: '#D4A0B0',      // brand pink accent
+  gray: '#8b868d',      // muted gray text
+  grayLt: '#b7b3b8',    // light gray — hints / disabled text
+  tint: '#FCFBFC',      // near-white (faintest warm) card base
+  tint2: '#F7F4F5',     // light neutral for card headers / footers
+  selBg: '#FDFAFB',     // selected card wash (barely-there pink)
+  noteBg: '#FBF5F7',    // note background, travel-fee style
+  border: '#EBE7E9',    // light neutral border
+  borderSoft: '#F2EEF0',
+  disabled: '#EFEDEF',  // disabled button fill
 };

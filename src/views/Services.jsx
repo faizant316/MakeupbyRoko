@@ -49,10 +49,27 @@ const PHOTO_OVERRIDES = {
   'Bridal Trial': '/bridal-trial.jpg',
 };
 
+// The DB row for "Makeup Courses" still holds the old copy (Mon-Thu, 50%
+// deposit via Zelle, stale prices). Classes are now Wednesdays only and paid in
+// full, so override that content here for both the card and its detail modal.
+const LESSONS_OVERRIDE = {
+  desc: 'Learn from Roko one-on-one, online over Zoom or in person at the Mountain House studio. Every class is private, one client per Wednesday, and you pay in full to reserve your day.',
+  price: 'From $310',
+  duration: 'Online or in person',
+  deposit: '',
+  includes: [
+    'Beginner Makeup Lesson (3 hours) - from $310',
+    'Advanced Makeup Artist Training (full day) - from $1,240',
+  ],
+  key_features: [],
+  what_to_expect: '',
+};
+
 function mapService(svc) {
   const mainPhoto = PHOTO_OVERRIDES[svc.title] || svc.photo || '';
   // One cover photo per card — no gallery carousel.
   const photos = [mainPhoto].filter(Boolean);
+  const isLessons = svc.category === 'lessons';
 
   return {
     key: svc.id,
@@ -60,13 +77,13 @@ function mapService(svc) {
     title: svc.title,
     photo: mainPhoto,
     photos,
-    desc: svc.description || '',
-    price: svc.price,
-    duration: svc.duration,
-    deposit: svc.deposit || '',
-    includes: svc.includes || [],
-    key_features: svc.key_features || [],
-    what_to_expect: svc.what_to_expect || '',
+    desc: isLessons ? LESSONS_OVERRIDE.desc : (svc.description || ''),
+    price: isLessons ? LESSONS_OVERRIDE.price : svc.price,
+    duration: isLessons ? LESSONS_OVERRIDE.duration : svc.duration,
+    deposit: isLessons ? LESSONS_OVERRIDE.deposit : (svc.deposit || ''),
+    includes: isLessons ? LESSONS_OVERRIDE.includes : (svc.includes || []),
+    key_features: isLessons ? LESSONS_OVERRIDE.key_features : (svc.key_features || []),
+    what_to_expect: isLessons ? LESSONS_OVERRIDE.what_to_expect : (svc.what_to_expect || ''),
     before_after_photos: svc.before_after_photos || [],
   };
 }
@@ -134,6 +151,21 @@ export default function ServicesPage() {
     setBridalIdx(0);
     setOtherIdx(0);
   }, [activeCategory]);
+
+  // The mobile nav's Services dropdown deep-links into a category: it dispatches
+  // this event, and we select that filter and scroll the grid into view.
+  useEffect(() => {
+    const handler = (e) => {
+      const key = e.detail;
+      if (!key) return;
+      setActiveCategory(key);
+      requestAnimationFrame(() => {
+        document.querySelector('#services-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    };
+    window.addEventListener('roko:selectCategory', handler);
+    return () => window.removeEventListener('roko:selectCategory', handler);
+  }, []);
 
   // Keep the filter-strip scroll cues accurate on mount and when the width changes
   useEffect(() => {
@@ -486,13 +518,13 @@ export default function ServicesPage() {
           {lessonServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <div className="w-[3px] h-[16px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
-                <span className="text-[0.68rem] font-bold tracking-[0.18em] uppercase text-[#A0607A]">Learn With Roko · Courses</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/30 to-transparent" />
+                <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
+                <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#111]">Learn With Roko</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
               </div>
               <div className="flex flex-col gap-4">
                 {lessonServices.map((svc) => (
-                  <CoursesFeature key={svc.key} svc={svc} onOpenClassModal={() => setShowClassModal(true)} />
+                  <CoursesFeature key={svc.key} svc={svc} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                 ))}
               </div>
             </div>
