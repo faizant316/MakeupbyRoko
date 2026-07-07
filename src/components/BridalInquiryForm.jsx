@@ -375,7 +375,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     instagram_handle: '', wedding_date: '', event_location: '',
     event_start_time: '', photographer: '', hairstylist: '',
     venue_access_time: '', bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
-    ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
+    ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -521,6 +521,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         eventStartTime: form.event_start_time,
         venueAccessTime: form.venue_access_time,
         readyByTime: form.ready_by_time,
+        makeupReadyByTime: form.makeup_ready_by_time,
         photographerArrival: form.photographer_arrival_time,
         photographer: form.photographer,
         hairstylist: form.hairstylist,
@@ -552,6 +553,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Instagram / TikTok', value: form.instagram_handle },
       { label: 'Event location', value: form.event_location },
       { label: 'Event start time', value: form.event_start_time },
+      { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
       { label: 'Venue access time', value: form.venue_access_time },
@@ -888,6 +890,14 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             <div>
               <label className={labelClass}>Event Start Time *</label>
               <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
+            </div>
+
+            <div>
+              <label className={labelClass}>What time would you like to be ready by?</label>
+              <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
+              <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
+                Your preference for when you'd like your makeup finished. Roko sets the final timeline, but she'll plan around getting you ready by then.
+              </p>
             </div>
 
             <div>

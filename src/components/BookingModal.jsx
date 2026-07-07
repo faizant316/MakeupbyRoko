@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
-import { lenisStop, lenisStart } from '@/lib/lenis';
+import { lenisStop, lenisStart, lenisScrollTo } from '@/lib/lenis';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 
@@ -89,8 +89,10 @@ function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick
   );
 }
 
-const inputClass = "w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.85rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
-const labelClass = "block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5";
+// Sized to match the bridal form's fields so non-bridal (photoshoot / other
+// services) inquiries feel just as substantial on desktop, not shrunken.
+const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
+const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2";
 
 export default function BookingModal({ service: initialService, onClose }) {
   const [service, setService] = useState(initialService);
@@ -292,8 +294,12 @@ export default function BookingModal({ service: initialService, onClose }) {
       document.body.style.right = '';
       document.body.style.overflow = '';
       window.scrollTo(0, scrollY);
-      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
       lenisStart();
+      // Resync Lenis to the restored position. While the body was fixed, Lenis's
+      // internal scroll offset drifted to 0; without this the first wheel tick
+      // after closing snaps the page up to the hero. immediate = no animation.
+      lenisScrollTo(scrollY, { immediate: true, force: true });
+      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
     };
   }, []);
 
@@ -377,14 +383,15 @@ export default function BookingModal({ service: initialService, onClose }) {
             style={{ background: 'linear-gradient(90deg, transparent, rgba(212,160,176,0.5) 50%, transparent)' }}
           />
 
-          {/* ← Back (step-aware: form → date, otherwise close) */}
+          {/* ← Back (step-aware: form → date, otherwise close) — soft gray bubble
+              to match the Makeup Courses flow (was a white pink-bordered bubble) */}
           <button
             onClick={(e) => { e.stopPropagation(); handleHeaderBack(); }}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
-            style={{ background: '#fff', border: '1px solid rgba(212,160,176,0.3)', boxShadow: '0 1px 4px rgba(140,90,110,0.07)' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#f0eef0] flex-shrink-0 touch-manipulation"
+            style={{ background: '#F7F4F5', color: '#8b868d' }}
             aria-label={canBack ? 'Back to date' : 'Close'}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
@@ -405,14 +412,14 @@ export default function BookingModal({ service: initialService, onClose }) {
             )}
           </div>
 
-          {/* × Close */}
+          {/* × Close — soft gray bubble to match the Makeup Courses flow */}
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#F7EEF2] flex-shrink-0 touch-manipulation"
-            style={{ background: '#fff', border: '1px solid rgba(212,160,176,0.3)', boxShadow: '0 1px 4px rgba(140,90,110,0.07)' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-[#f0eef0] flex-shrink-0 touch-manipulation"
+            style={{ background: '#F7F4F5', color: '#8b868d' }}
             aria-label="Close"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2C1A14" strokeWidth="2.4" strokeLinecap="round" className="w-3 h-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-3 h-3">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
@@ -614,7 +621,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
               {/* ───────── STEP 2: FORM ───────── */}
               {step === 'form' && (
-                <div className="w-full max-w-[600px] mx-auto px-6 lg:px-7 py-6 flex flex-col flex-1">
+                <div className="w-full max-w-[680px] lg:max-w-[740px] mx-auto px-6 lg:px-9 py-6 flex flex-col flex-1">
 
                   {/* Selected-date chip with a "change" affordance back to the calendar */}
                   <button
@@ -639,12 +646,12 @@ export default function BookingModal({ service: initialService, onClose }) {
                   </button>
 
                   <div className="mb-5">
-                    <h3 className="font-serif text-[1.4rem] text-[#111] mb-1">Your <em className="text-[#D4A0B0] not-italic">Details</em></h3>
-                    <p className="text-[0.8rem] text-gray-400">Fill in your info. Roko will confirm your time.</p>
+                    <h3 className="font-serif text-[1.7rem] lg:text-[1.9rem] text-[#111] mb-1 leading-tight">Your <em className="text-[#D4A0B0] not-italic">Details</em></h3>
+                    <p className="text-[0.85rem] text-gray-400">Fill in your info. Roko will confirm your time.</p>
                   </div>
 
-                  <form id="nonbridal-booking-form" onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4 flex-1">
-                    <div className="grid grid-cols-2 gap-3">
+                  <form id="nonbridal-booking-form" onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-5 flex-1">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className={labelClass}>First Name *</label>
                         <input value={formData.fname} onChange={e => setFormData({ ...formData, fname: e.target.value })}
@@ -975,7 +982,7 @@ export default function BookingModal({ service: initialService, onClose }) {
             className="flex-shrink-0 border-t border-[#f0ebe6] bg-white px-5 sm:px-8 py-3.5"
             style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom, 0px))' }}
           >
-            <div className="max-w-[600px] mx-auto flex items-center gap-4">
+            <div className="max-w-[680px] lg:max-w-[740px] mx-auto flex items-center gap-4">
               <div className="flex flex-col leading-tight flex-shrink-0">
                 <span className="font-serif text-[1.25rem] text-[#111]">{step === 'form' ? footerTotal : service.price}</span>
                 <span className="text-[0.62rem] text-[#b5a99a] uppercase tracking-[0.1em]">{step === 'form' ? 'Est. total' : (service.duration || 'Total')}</span>
