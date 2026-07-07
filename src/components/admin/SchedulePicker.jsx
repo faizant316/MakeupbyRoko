@@ -195,7 +195,7 @@ export function AdminTimeSelect({ value, onChange, dm, slots = [], accent = '#11
         {open && (
           <div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
             style={{ background: p.panel, border: `1px solid ${p.border}` }}>
-            <div ref={listRef} className="max-h-[240px] overflow-y-auto py-1.5">
+            <div ref={listRef} data-lenis-prevent className="max-h-[240px] overflow-y-auto overscroll-contain py-1.5">
               {slots.map(t => {
                 const isSel = t === value;
                 return (

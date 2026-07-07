@@ -1,11 +1,10 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
 import { FORMAT_META } from './ClassRegistrationsList';
-import { AdminDatePicker, AdminTimeSelect } from './SchedulePicker';
 import { parseRange } from '@/lib/timeWindow';
 
 // Booksy-style hero gradients per enrollment status (matches BookingDetail).
@@ -32,19 +31,6 @@ function formatDate(raw) {
   } catch { return ''; }
 }
 
-const TIME_SLOTS = (() => {
-  const slots = [];
-  for (let h = 9; h <= 20; h++) {
-    for (let m of [0, 30]) {
-      if (h === 20 && m === 30) break;
-      const ampm = h < 12 ? 'AM' : 'PM';
-      const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      slots.push(`${h12}:${m === 0 ? '00' : '30'} ${ampm}`);
-    }
-  }
-  return slots;
-})();
-
 const LESSON_COLOR = '#5BB0CC';
 const LESSON_BG = 'rgba(91,176,204,0.07)';
 
@@ -64,38 +50,75 @@ function parseNotes(raw) {
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
+// Grid of the class's valid start–end windows as one-tap pills. All options are
+// visible at once (no dropdown, no scroll trap), and each is a real range so
+// Roko picks "time A" or "time B" directly.
+function WindowGrid({ windows, value, onChange, dm }) {
+  const border = dm ? '#3a3a48' : '#e5e5e5';
+  const inputBg = dm ? '#1c1c28' : '#fafafa';
+  const muted = dm ? '#71717a' : '#999';
+  if (!windows.length) {
+    return (
+      <p className="text-[0.72rem] italic leading-relaxed" style={{ color: muted }}>
+        No preset windows for this class yet. Set the timing with the client directly.
+      </p>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {windows.map(w => {
+        const sel = value === w;
+        return (
+          <button key={w} type="button" onClick={() => onChange(w)}
+            className="py-3 px-2 rounded-xl text-[0.74rem] font-semibold tabular-nums text-center transition-all touch-manipulation active:scale-[0.98]"
+            style={sel
+              ? { background: LESSON_COLOR, color: '#fff', border: `1px solid ${LESSON_COLOR}`, boxShadow: '0 3px 12px rgba(91,176,204,0.35)' }
+              : { background: inputBg, color: dm ? '#cdd3dd' : '#3f3f46', border: `1px solid ${border}` }}>
+            {w}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// One Wednesday per client, so the DATE is always locked to what the client
+// chose at checkout. The only thing Roko sets is:
+//   • online  → the time window (date + Zoom link get sent)
+//   • in person → nothing; there's no time to pick, they come to the studio.
+//     She just confirms so the studio-details email goes out.
 function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) {
-  const hasLesson = !!reg.appointment_date;
+  const isInPerson = reg.class_format === 'in_person';
+  const classKey = classesOfReg(reg)[0]?.key;
+  const windows = startWindows(classKey, reg.class_format);
   const parsed = parseNotes(reg.lesson_notes);
-  const isInPersonReg = reg.class_format === 'in_person';
-  // A few one-tap start windows from the class's 11 AM to 7 PM day (first,
-  // last, and a couple in between — the Time select still allows anything).
-  const classWindows = (() => {
-    const all = startWindows(classesOfReg(reg)[0]?.key, reg.class_format);
-    if (all.length <= 4) return all;
-    const picks = [0, Math.round((all.length - 1) / 3), Math.round(((all.length - 1) * 2) / 3), all.length - 1];
-    return [...new Set(picks)].map(i => all[i]);
-  })();
+
+  // The client's chosen Wednesday. Locked — never a date picker.
+  const lockedDate = reg.appointment_date || reg.preferred_date || '';
+  const lockedLabel = lockedDate ? formatDate(lockedDate) : '';
+
+  // "Done" = in person is set the moment it's confirmed; online is set once a
+  // time window is on the row.
+  const scheduled = isInPerson
+    ? (reg.status === 'enrolled' || !!reg.appointment_date)
+    : !!reg.appointment_time;
+
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [sent, setSent] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [meetLink, setMeetLink] = useState(parsed.link);
   const [meetingId, setMeetingId] = useState(parsed.meetingId);
   const [generatingLink, setGeneratingLink] = useState(false);
-  const [form, setForm] = useState({
-    date: reg.appointment_date || reg.preferred_date || '',
-    time: reg.appointment_time || reg.preferred_time || classWindows[0] || TIME_SLOTS[2],
-    type: reg.consultation_type || (isInPersonReg ? 'In-Person' : 'Zoom'),
-    notes: parsed.notes,
-  });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [time, setTime] = useState(reg.appointment_time || reg.preferred_time || windows[0] || '');
+  const [notes, setNotes] = useState(parsed.notes);
 
   const border = dm ? '#3a3a48' : '#e5e5e5';
   const inputBg = dm ? '#1c1c28' : '#fafafa';
   const inputColor = dm ? '#e4e4e7' : '#111';
   const textMuted = dm ? '#71717a' : '#999';
   const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
+
+  const showForm = expanded || !scheduled;
 
   const generateZoomLink = async () => {
     setGeneratingLink(true);
@@ -107,8 +130,8 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         body: JSON.stringify({
           topic: `Makeup by Roko — Lesson with ${reg.full_name || 'Client'}`,
           duration: 60,
-          date: form.date || undefined,
-          time: form.time || undefined,
+          date: lockedDate || undefined,
+          time: time || undefined,
         }),
       });
       const data = await res.json();
@@ -130,7 +153,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const doSend = async () => {
+  const doSend = async (finalTime, finalType) => {
     setSaving(true);
     try {
       const res = await fetch('/api/send-class-lesson', {
@@ -142,21 +165,26 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
           clientName: reg.full_name,
           clientPhone: phone || reg.phone || '',
           className,
-          lessonDate: form.date,
-          lessonTime: form.time,
-          meetingType: form.type,
-          zoomLink: form.type === 'Zoom' ? meetLink : '',
-          notes: form.notes,
+          lessonDate: lockedDate,
+          lessonTime: finalTime,
+          meetingType: finalType,
+          zoomLink: finalType === 'Zoom' ? meetLink : '',
+          notes,
         }),
       });
       if (!res.ok) throw new Error('Failed');
       const storedNotes = [
-        form.type === 'Zoom' && meetLink ? `Link: ${meetLink}` : null,
-        form.type === 'Zoom' && meetingId ? `MeetingId: ${meetingId}` : null,
-        form.notes || null,
+        finalType === 'Zoom' && meetLink ? `Link: ${meetLink}` : null,
+        finalType === 'Zoom' && meetingId ? `MeetingId: ${meetingId}` : null,
+        notes || null,
       ].filter(Boolean).join('\n');
-      onUpdateReg({ appointment_date: form.date, appointment_time: form.time, consultation_type: form.type, lesson_notes: storedNotes, status: 'enrolled' });
-      setSent(true);
+      onUpdateReg({
+        appointment_date: lockedDate,
+        appointment_time: finalTime,
+        consultation_type: finalType,
+        lesson_notes: storedNotes,
+        status: 'enrolled',
+      });
       setExpanded(false);
     } catch {
       alert('Failed to send. Please try again.');
@@ -165,27 +193,36 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
     }
   };
 
-  const handleSend = () => {
-    if (!form.date || !form.time) { alert('Please select a date and time.'); return; }
+  const handleSendOnline = () => {
+    if (!time) { alert('Pick a time window first.'); return; }
     confirmFn({
       title: 'Confirm & Notify Client?',
-      body: `This will enroll ${reg.full_name || 'the client'} and send them their lesson details.`,
-      color: LESSON_COLOR,
-      icon: '✓',
-      confirmLabel: 'Yes, Send',
-      onConfirm: doSend,
+      body: `This will enroll ${reg.full_name || 'the client'} and send their lesson time and Zoom link.`,
+      color: LESSON_COLOR, icon: '✓', confirmLabel: 'Yes, Send',
+      onConfirm: () => doSend(time, 'Zoom'),
     });
   };
 
-  const lessonDate = reg.appointment_date
+  const handleConfirmInPerson = () => {
+    const finalTime = reg.appointment_time || reg.preferred_time || windows[0] || '';
+    confirmFn({
+      title: 'Confirm In-Studio Class?',
+      body: `This will confirm ${reg.full_name || 'the client'} for their Wednesday and email the studio address and directions.`,
+      color: '#8A63A8', icon: '✓', confirmLabel: 'Yes, Confirm',
+      onConfirm: () => doSend(finalTime, 'In-Person'),
+    });
+  };
+
+  const summaryDate = reg.appointment_date
     ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    : null;
+    : (lockedLabel || null);
 
   return (
     <div className="mb-8">
       <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-3" style={{ color: textMuted }}>Makeup Lesson</p>
 
-      {hasLesson && !expanded && (
+      {/* Confirmed summary (collapsible) */}
+      {scheduled && !expanded && (
         <div className="flex items-center justify-between px-4 py-4 rounded-xl"
           style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${border}` }}>
           <div className="flex items-center gap-3 min-w-0">
@@ -194,15 +231,14 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
             </div>
             <div className="min-w-0">
               <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
-                {reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : reg.consultation_type === 'In-Person' ? 'In Person · Studio' : reg.consultation_type} · {reg.appointment_time}
+                {isInPerson ? 'In Person · Studio' : (reg.consultation_type === 'Phone' ? 'Phone / FaceTime' : 'Online · Zoom')}
+                {reg.appointment_time ? ` · ${reg.appointment_time}` : ''}
               </p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: textMuted }}>{lessonDate}</p>
-              {reg.consultation_type === 'In-Person' && (
+              <p className="text-[0.68rem] mt-0.5" style={{ color: textMuted }}>{summaryDate}</p>
+              {isInPerson ? (
                 <a href={STUDIO_MAPS_URL} target="_blank" rel="noopener noreferrer"
-                  className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
-                  style={{ color: textMuted }}>{STUDIO_DISPLAY}</a>
-              )}
-              {reg.consultation_type !== 'In-Person' && (meetingId || parsed.meetingId) ? (
+                  className="text-[0.65rem] mt-1 block truncate underline underline-offset-2" style={{ color: textMuted }}>{STUDIO_DISPLAY}</a>
+              ) : (meetingId || parsed.meetingId) ? (
                 <button type="button"
                   onClick={() => openZoomHost(meetingId || parsed.meetingId, meetLink || parsed.link)}
                   className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
@@ -214,12 +250,11 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 </button>
               ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
-                  className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
-                  style={{ color: textMuted }}>{parsed.link}</a>
+                  className="text-[0.65rem] mt-1 block truncate underline underline-offset-2" style={{ color: textMuted }}>{parsed.link}</a>
               ) : null}
             </div>
           </div>
-          <button onClick={() => { setExpanded(true); setSent(false); }}
+          <button onClick={() => setExpanded(true)}
             className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase ml-3 flex-shrink-0"
             style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
             Edit
@@ -227,174 +262,249 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         </div>
       )}
 
-      {!hasLesson && !expanded && (
-        <button onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-between px-4 py-4 rounded-xl transition-all touch-manipulation"
-          style={{ background: dm ? '#1c1c28' : '#fafafa', border: `1px solid ${border}` }}>
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: LESSON_BG }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>Schedule Makeup Lesson</p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>Set date, time &amp; meeting type</p>
-            </div>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="2" className="w-3.5 h-3.5 opacity-40">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
-      )}
-
-      {expanded && (
+      {showForm && (
         <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${border}` }}>
           <div className="px-5 py-4 flex items-center justify-between"
             style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
             <div>
-              <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase" style={{ color: LESSON_COLOR }}>Makeup Lesson</p>
-              <p className="font-serif text-[1rem] mt-0.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>Schedule Makeup Lesson</p>
+              <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase" style={{ color: isInPerson ? '#8A63A8' : LESSON_COLOR }}>Makeup Lesson</p>
+              <p className="font-serif text-[1rem] mt-0.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+                {isInPerson ? 'Confirm In-Studio Class' : 'Set Lesson Time'}
+              </p>
             </div>
-            <button onClick={() => setExpanded(false)}
-              className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
-              style={{ background: dm ? '#3f3f46' : '#f0ece8', color: dm ? '#71717a' : '#888' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            {scheduled && (
+              <button onClick={() => setExpanded(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
+                style={{ background: dm ? '#3f3f46' : '#f0ece8', color: dm ? '#71717a' : '#888' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            )}
           </div>
 
           <div className="p-5 flex flex-col gap-5" style={{ background: dm ? '#27272a' : '#fff' }}>
-            {/* Date + Time */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
-                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={LESSON_COLOR} />
-              </div>
-              <div>
-                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Time</label>
-                <AdminTimeSelect value={form.time} onChange={v => set('time', v)} dm={dm} slots={TIME_SLOTS} accent={LESSON_COLOR} />
-              </div>
-            </div>
-
-            {/* The published class windows as one-tap picks */}
-            {classWindows.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 -mt-2">
-                <span className="text-[0.58rem] font-semibold tracking-[0.1em] uppercase" style={{ color: textMuted }}>Class windows:</span>
-                {classWindows.map(w => (
-                  <button key={w} type="button" onClick={() => set('time', w)}
-                    className="text-[0.66rem] font-semibold px-2.5 py-1 rounded-lg transition-all tabular-nums"
-                    style={form.time === w
-                      ? { background: LESSON_BG, color: LESSON_COLOR, border: `1px solid ${LESSON_COLOR}` }
-                      : { background: inputBg, color: textMuted, border: `1px solid ${border}` }}>
-                    {w}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Meeting Type */}
+            {/* Locked date — the client's Wednesday, never editable here */}
             <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
-              <div className="flex gap-2">
-                {[{ value: 'Zoom', label: 'Zoom' }, { value: 'Phone', label: 'Phone / FaceTime' }, { value: 'In-Person', label: 'In Studio' }].map(({ value, label }) => (
-                  <button key={value} type="button" onClick={() => set('type', value)}
-                    className="flex-1 py-3 rounded-xl text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
-                    style={form.type === value
-                      ? { background: '#111', color: '#fff', border: '1px solid #111' }
-                      : { background: inputBg, color: textMuted, border: `1px solid ${border}` }
-                    }>
-                    {label}
-                  </button>
-                ))}
+              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date · locked</label>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                style={{ background: inputBg, border: `1px solid ${border}` }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.6" className="w-4 h-4 flex-shrink-0">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span className="text-[0.85rem] font-semibold flex-1 min-w-0 truncate" style={{ color: inputColor }}>
+                  {lockedLabel || 'Client has not chosen a date yet'}
+                </span>
+                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.8" className="w-3.5 h-3.5 flex-shrink-0">
+                  <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                </svg>
               </div>
+              <p className="text-[0.62rem] mt-1.5 leading-relaxed" style={{ color: textMuted }}>
+                One Wednesday per client — the client picked this at checkout. To move it, use Message client below.
+              </p>
             </div>
 
-            {/* In-studio location note — the email includes this address */}
-            {form.type === 'In-Person' && (
-              <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
-                style={{ background: 'rgba(138,99,168,0.08)', border: '1px solid rgba(138,99,168,0.25)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#8A63A8" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                </svg>
-                <div className="min-w-0">
-                  <p className="text-[0.75rem] font-semibold" style={{ color: dm ? '#c9b3dd' : '#8A63A8' }}>Studio · Mountain House</p>
-                  <p className="text-[0.68rem] mt-0.5 leading-relaxed" style={{ color: textMuted }}>
-                    {STUDIO_DISPLAY} · the confirmation email includes the address and directions.
-                  </p>
+            {isInPerson ? (
+              <>
+                {/* In studio — nothing to schedule */}
+                <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+                  style={{ background: 'rgba(138,99,168,0.08)', border: '1px solid rgba(138,99,168,0.25)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#8A63A8" strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="text-[0.75rem] font-semibold" style={{ color: dm ? '#c9b3dd' : '#8A63A8' }}>In studio · Mountain House</p>
+                    <p className="text-[0.68rem] mt-0.5 leading-relaxed" style={{ color: textMuted }}>
+                      Nothing to schedule — {reg.full_name?.split(' ')[0] || 'the client'} comes to the studio on their Wednesday.
+                      {' '}Confirming sends the address and directions. {STUDIO_DISPLAY}.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Zoom link */}
-            {form.type === 'Zoom' && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase" style={{ color: textMuted }}>Zoom Link</label>
-                  {meetLink && (
+                {/* Notes */}
+                <div>
+                  <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
+                    Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                  </label>
+                  <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+                    placeholder="Any extra info for the client…"
+                    className="w-full px-4 py-3 rounded-xl outline-none resize-none"
+                    style={{ ...inputStyle, minHeight: '72px' }} />
+                </div>
+
+                <button onClick={handleConfirmInPerson} disabled={saving}
+                  className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                  style={{ minHeight: '50px', fontSize: '14px', background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
+                  {saving
+                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                    : 'Confirm & Send Studio Details'}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Time window — the only thing to set for an online class */}
+                <div>
+                  <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2.5" style={{ color: textMuted }}>Choose a time window</label>
+                  <WindowGrid windows={windows} value={time} onChange={setTime} dm={dm} />
+                </div>
+
+                {/* Zoom link */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase" style={{ color: textMuted }}>Zoom Link</label>
+                    {meetLink && (
+                      <button type="button" onClick={generateZoomLink} disabled={generatingLink}
+                        className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                        style={{ background: dm ? '#2a2a32' : '#f2f6fb', color: LESSON_COLOR, border: `1px solid ${border}` }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        New Link
+                      </button>
+                    )}
+                  </div>
+                  {!meetLink ? (
                     <button type="button" onClick={generateZoomLink} disabled={generatingLink}
-                      className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
-                      style={{ background: dm ? '#2a2a32' : '#f7f2f6', color: LESSON_COLOR, border: `1px solid ${border}` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                      New Link
+                      className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                      style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? inputBg : '#2D8CFF', color: generatingLink ? textMuted : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
+                      {generatingLink
+                        ? <><div className="w-4 h-4 border-2 border-[#2D8CFF]/30 border-t-[#2D8CFF] rounded-full animate-spin" /> Generating…</>
+                        : 'Generate Zoom Link'}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={copyMeetLink}
+                      className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
+                      style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#eff6ff') : inputBg, border: `1.5px solid ${linkCopied ? '#3b82f6' : '#2D8CFF'}` }}>
+                      <span className="text-[0.73rem] font-medium truncate" style={{ color: '#2D8CFF' }}>{meetLink}</span>
+                      <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
+                        style={{ background: linkCopied ? '#3b82f6' : '#2D8CFF', color: '#fff' }}>
+                        {linkCopied ? '✓ Copied' : 'Copy'}
+                      </span>
                     </button>
                   )}
                 </div>
-                {!meetLink ? (
-                  <button type="button" onClick={generateZoomLink} disabled={generatingLink}
-                    className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
-                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? inputBg : '#2D8CFF', color: generatingLink ? textMuted : '#fff', border: `1px solid ${generatingLink ? border : '#2D8CFF'}` }}>
-                    {generatingLink
-                      ? <><div className="w-4 h-4 border-2 border-[#2D8CFF]/30 border-t-[#2D8CFF] rounded-full animate-spin" /> Generating…</>
-                      : 'Generate Zoom Link'}
-                  </button>
-                ) : (
-                  <button type="button" onClick={copyMeetLink}
-                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : '#2D8CFF'}` }}>
-                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : '#2D8CFF' }}>{meetLink}</span>
-                    <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
-                      style={{ background: linkCopied ? '#22c55e' : '#2D8CFF', color: '#fff' }}>
-                      {linkCopied ? '✓ Copied' : 'Copy'}
-                    </span>
-                  </button>
-                )}
-              </div>
-            )}
 
-            {/* Notes */}
-            <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
-              </label>
-              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
-                placeholder="Any extra info for the client…"
-                className="w-full px-4 py-3 rounded-xl outline-none resize-none"
-                style={{ ...inputStyle, minHeight: '80px' }} />
-            </div>
-
-            {/* CTA */}
-            <button onClick={handleSend} disabled={saving || !form.date}
-              className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
-              style={{
-                minHeight: '50px', fontSize: '14px',
-                ...(!form.date
-                  ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
-                  : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
-              }}>
-              {saving
-                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
-                : 'Confirm & Notify Client'}
-            </button>
-
-            {sent && (
-              <div className="flex items-center justify-center gap-1.5 py-1">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-blue-500">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                {/* Notes */}
+                <div>
+                  <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
+                    Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                  </label>
+                  <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+                    placeholder="Any extra info for the client…"
+                    className="w-full px-4 py-3 rounded-xl outline-none resize-none"
+                    style={{ ...inputStyle, minHeight: '72px' }} />
                 </div>
-                <p className="text-[0.75rem] font-medium text-blue-600">Enrolled and notified.</p>
-              </div>
+
+                <button onClick={handleSendOnline} disabled={saving || !time}
+                  className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
+                  style={{
+                    minHeight: '50px', fontSize: '14px',
+                    ...(!time
+                      ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                      : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
+                  }}>
+                  {saving
+                    ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                    : 'Confirm & Notify Client'}
+                </button>
+              </>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// In-card email composer for the class client (sent as roko@makeupbyroko.org via
+// /api/contact-client). No booking/contract attachment — classes are paid in
+// full up front, so this is purely for reaching out about the day or a change.
+function ClassContactComposer({ reg, dm, onClose, onSent }) {
+  const first = reg.full_name?.split(' ')[0] || 'there';
+  const classLabel = classesOfReg(reg).map(c => c.title).join(' · ') || 'Makeup Lesson';
+  const when = reg.appointment_date || reg.preferred_date
+    ? formatDate(reg.appointment_date || reg.preferred_date)
+    : '';
+  const [subject, setSubject] = useState(`Your ${classLabel} with Makeup by Roko`);
+  const [body, setBody] = useState(`Hi ${first},\n\n`);
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!reg.email) { alert('This client has no email on file.'); return; }
+    if (!subject.trim() || !body.trim()) { alert('Add a subject and a message first.'); return; }
+    setSending(true);
+    try {
+      const res = await fetch('/api/contact-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: reg.email,
+          firstName: first,
+          subject: subject.trim(),
+          message: body.trim(),
+          serviceName: classLabel,
+          dateFormatted: when,
+          time: reg.appointment_time || reg.preferred_time || '',
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
+      onSent();
+      onClose();
+    } catch (err) {
+      alert(err?.message || 'Failed to send email. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const fieldStyle = { fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' };
+
+  return (
+    <div className="mb-8 rounded-2xl overflow-hidden"
+      style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
+      <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f3ede7'}` }}>
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
+          </svg>
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Message Client</p>
+          <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
+            To <span style={{ color: dm ? '#e7c9d5' : '#8A4A63', fontWeight: 600 }}>{reg.email}</span> · sends from roko@makeupbyroko.org
+          </p>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close composer"
+          className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
+          style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+        <div>
+          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
+          <input value={subject} onChange={e => setSubject(e.target.value)}
+            className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30" style={fieldStyle} />
+        </div>
+        <div>
+          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Message</label>
+          <textarea value={body} onChange={e => setBody(e.target.value)} rows={7}
+            placeholder="Write your message…"
+            className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
+            style={{ ...fieldStyle, minHeight: '150px', lineHeight: 1.6 }} />
+          <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <button type="button" onClick={onClose}
+            className="px-5 py-3 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.98]"
+            style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+            Cancel
+          </button>
+          <button type="button" onClick={send} disabled={sending}
+            className="flex-1 px-5 py-3 rounded-xl text-[0.72rem] font-bold tracking-[0.04em] uppercase text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            style={{ background: '#111', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
+            {sending ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Send Email'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -459,6 +569,8 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const queryClient = useQueryClient();
   const [reg, setReg] = useState(initialReg);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
 
   const cardBg    = dm ? '#26262e' : '#fff';
   const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
@@ -542,7 +654,9 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const heroWin = parseRange(reg.appointment_time || '');
   const heroDate = reg.appointment_date
     ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-    : 'No date set';
+    : (reg.preferred_date
+        ? new Date(reg.preferred_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+        : 'No date set');
   const signedUpOn = reg.created_date
     ? new Date(reg.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
@@ -580,7 +694,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           <div className="px-4 min-w-0">
             <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Start</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
-              {heroWin.start || 'Not set'}
+              {heroWin.start || (reg.class_format === 'in_person' ? 'In studio' : 'Not set')}
             </p>
             {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroWin.end}</p>}
           </div>
@@ -639,7 +753,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
         {/* Date/Time + Contact */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
           <div>
-            <SectionLabel>Date & Time</SectionLabel>
+            <SectionLabel>Date &amp; Time</SectionLabel>
             {appointmentDate ? (
               <>
                 <p className="text-[0.95rem] font-semibold" style={{ color: textMain }}>{appointmentDate}</p>
@@ -654,7 +768,9 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
               <>
                 <p className="text-[0.95rem] font-semibold" style={{ color: textMain }}>{formatDate(reg.preferred_date)}</p>
                 {reg.preferred_time && <p className="text-[0.82rem] mt-0.5" style={{ color: textMuted }}>{reg.preferred_time}</p>}
-                <p className="text-[0.72rem] mt-1 font-medium" style={{ color: dm ? '#c47a92' : '#A0607A' }}>Requested by client · not yet confirmed</p>
+                <p className="text-[0.72rem] mt-1 font-medium" style={{ color: dm ? '#c47a92' : '#A0607A' }}>
+                  {reg.class_format === 'in_person' ? "Client's Wednesday · confirm to send studio details" : 'Client picked this Wednesday · needs a time'}
+                </p>
               </>
             ) : (
               <p className="text-[0.82rem] italic" style={{ color: dm ? '#52525b' : '#ccc' }}>Not scheduled yet</p>
@@ -673,8 +789,27 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 {reg.phone}
               </a>
             )}
+            {reg.email && !showCompose && (
+              <button type="button" onClick={() => { setShowCompose(true); setContactSent(false); }}
+                className="mt-2.5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-[0.66rem] font-bold tracking-[0.06em] uppercase transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.35)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
+                Message client
+              </button>
+            )}
+            {contactSent && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[0.68rem] font-semibold" style={{ color: '#2563EB' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Email sent to client
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Contact composer */}
+        {showCompose && (
+          <ClassContactComposer reg={reg} dm={dm} onClose={() => setShowCompose(false)} onSent={() => setContactSent(true)} />
+        )}
 
         {/* Total */}
         {totalPrice > 0 && (
