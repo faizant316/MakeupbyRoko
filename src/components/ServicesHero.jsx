@@ -1,9 +1,42 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
-const VIDEO_URL = '/hero.mp4';
+const VIDEO_URL = '/hero.mp4';           // 1080p — desktop split panel
+const MOBILE_VIDEO_URL = '/hero-mobile.mp4'; // 720p, ~650KB — fast start on cellular
 const POSTER_URL = '/hero-poster.jpg';
+
+// Keeps trying to start playback through the events that typically unblock
+// autoplay on mobile: the video finishing its initial buffer, the tab becoming
+// visible, or the user's first tap/scroll/click. That last one is the key to
+// getting near-100% coverage — a single real "user gesture" satisfies iOS Low
+// Power Mode, iOS Low Data Mode, and Android Data Saver, all of which hard-block
+// silent autoplay no matter what attributes the <video> has. `playFn` must
+// return the play() promise so we can stop retrying once it succeeds.
+function useReliableAutoplay(playFn) {
+  useEffect(() => {
+    let done = false;
+    const gestureEvents = ['touchstart', 'pointerdown', 'click', 'scroll', 'keydown'];
+    const cleanup = () => {
+      done = true;
+      document.removeEventListener('visibilitychange', onVis);
+      gestureEvents.forEach((e) => window.removeEventListener(e, attempt));
+    };
+    const attempt = () => {
+      if (done) return;
+      const p = playFn();
+      if (p && typeof p.then === 'function') {
+        p.then(() => cleanup()).catch(() => {});
+      }
+    };
+    const onVis = () => { if (document.visibilityState === 'visible') attempt(); };
+
+    document.addEventListener('visibilitychange', onVis);
+    gestureEvents.forEach((e) => window.addEventListener(e, attempt, { passive: true }));
+    attempt(); // immediate best-effort
+    return cleanup;
+  }, [playFn]);
+}
 
 function useMobileHeroProgress() {
   const [progress, setProgress] = useState(0);
@@ -28,14 +61,29 @@ function useViewportHeight() {
 }
 
 // Two-video swap loop — the only reliable way to get a seamless loop on iOS Safari.
-// While video A is playing, video B sits loaded at t=0. When A has ~1.5s left,
+// While video A is playing, video B sits ready at t=0. When A has ~1.5s left,
 // B starts playing and fades in. A is paused and reset. They alternate forever.
+//
+// Loading strategy for slow/metered connections: ONLY video A preloads at page
+// load, so the visible first frame arrives as fast as possible on a single
+// stream. Video B is deferred (preload="none") and only warmed up once A is
+// actually playing. If a swap comes due before B is buffered, we simply re-loop
+// A instead of stalling on a black frame.
 function MobileVideoLoop({ src, poster, videoStyle, onError }) {
   const refA = useRef(null);
   const refB = useRef(null);
   const activeRef = useRef('A');
   const swapping = useRef(false);
   const [front, setFront] = useState('A');
+  const [started, setStarted] = useState(false); // true once a real frame has played
+
+  // Play whichever video is currently in front. Returns the play() promise so
+  // useReliableAutoplay can stop retrying on success.
+  const playFront = useCallback(() => {
+    const v = activeRef.current === 'A' ? refA.current : refB.current;
+    return v ? v.play() : undefined;
+  }, []);
+  useReliableAutoplay(playFront);
 
   useEffect(() => {
     const HANDOFF = 1.5;
@@ -45,17 +93,38 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
 
     vA.play().catch(() => {});
 
+    // Retry A whenever more data buffers (covers "not enough data yet" stalls).
+    const kickA = () => { if (activeRef.current === 'A') vA.play().catch(() => {}); };
+    const onAPlaying = () => {
+      setStarted(true);
+      // Visible video is running — now quietly warm up B for a seamless loop.
+      if (vB.preload !== 'auto') vB.preload = 'auto';
+      try { vB.load(); } catch { /* noop */ }
+    };
+    vA.addEventListener('loadeddata', kickA);
+    vA.addEventListener('canplay', kickA);
+    vA.addEventListener('playing', onAPlaying);
+
     const doSwap = () => {
       if (swapping.current) return;
-      swapping.current = true;
       const isA = activeRef.current === 'A';
       const next = isA ? vB : vA;
+      const prev = isA ? vA : vB;
       const nextKey = isA ? 'B' : 'A';
+
+      // Incoming video not buffered enough? Don't freeze on a swap — re-loop the
+      // current one so playback never stalls on a slow connection.
+      if (next.readyState < 3) {
+        prev.currentTime = 0;
+        prev.play().catch(() => {});
+        return;
+      }
+
+      swapping.current = true;
       next.currentTime = 0;
       next.play().catch(() => {});
       setFront(nextKey);
       setTimeout(() => {
-        const prev = isA ? vA : vB;
         prev.pause();
         prev.currentTime = 0;
         activeRef.current = nextKey;
@@ -74,6 +143,9 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
     return () => {
       vA.removeEventListener('timeupdate', onTime);
       vB.removeEventListener('timeupdate', onTime);
+      vA.removeEventListener('loadeddata', kickA);
+      vA.removeEventListener('canplay', kickA);
+      vA.removeEventListener('playing', onAPlaying);
     };
   }, []);
 
@@ -87,8 +159,19 @@ function MobileVideoLoop({ src, poster, videoStyle, onError }) {
     <>
       <video ref={refA} src={src} poster={poster} muted playsInline preload="auto" autoPlay
         style={{ ...base, opacity: front === 'A' ? 1 : 0 }} onError={onError} />
-      <video ref={refB} src={src} poster={poster} muted playsInline preload="auto"
+      <video ref={refB} src={src} poster={poster} muted playsInline preload="none"
         style={{ ...base, opacity: front === 'B' ? 1 : 0 }} />
+      {/* Poster overlay sits on top until real playback starts. It hides the
+          native "tap to play" glyph iOS paints on a paused video, and gives a
+          clean still frame in the rare case autoplay stays blocked. Fades out
+          the moment a frame plays. Non-interactive so taps still reach the page
+          (and trigger the gesture-based autoplay retry). */}
+      <img
+        src={poster}
+        alt=""
+        aria-hidden="true"
+        style={{ ...base, transition: 'opacity 0.6s ease', opacity: started ? 0 : 1, pointerEvents: 'none' }}
+      />
     </>
   );
 }
@@ -101,9 +184,9 @@ export default function ServicesHero() {
   const mobileProgress = useMobileHeroProgress();
   const vh = useViewportHeight();
 
-  useEffect(() => {
-    desktopVideoRef.current?.play().catch(() => {});
-  }, []);
+  // Same resilient autoplay coverage for the desktop split-panel video.
+  const playDesktop = useCallback(() => desktopVideoRef.current?.play(), []);
+  useReliableAutoplay(playDesktop);
 
   // Track scroll for mobile fade effect
   useEffect(() => {
@@ -139,7 +222,7 @@ export default function ServicesHero() {
           {mobileVideoFailed
             ? <img src={POSTER_URL} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }} />
             : <MobileVideoLoop
-                src={VIDEO_URL}
+                src={MOBILE_VIDEO_URL}
                 poster={POSTER_URL}
                 videoStyle={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }}
                 onError={() => setMobileVideoFailed(true)}
