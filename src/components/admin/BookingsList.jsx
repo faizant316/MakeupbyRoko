@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
-import { groupByTime, daysUntil } from './timeline';
+import { groupByTime, daysUntil, timeToMinutes } from './timeline';
 import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 
@@ -684,7 +684,9 @@ export default function BookingsList({
       {/* Consultations on selected date */}
       {selectedDate && consultationsOnDate.length > 0 && (() => {
         // Deduplicate — don't show bookings already listed as regular appointments
-        const uniqueConsults = consultationsOnDate.filter(b => !bookings.some(fb => fb.id === b.id));
+        const uniqueConsults = consultationsOnDate
+          .filter(b => !bookings.some(fb => fb.id === b.id))
+          .sort((a, b) => timeToMinutes(a.consultation_time) - timeToMinutes(b.consultation_time));
         if (uniqueConsults.length === 0) return null;
         return (
           <div className="mb-6 rounded-xl overflow-hidden" style={{ border: `1px solid rgba(168,85,247,0.25)` }}>
@@ -779,7 +781,7 @@ export default function BookingsList({
           </div>
 
           {/* Items */}
-          {lessonsOnDate.map((r, i) => {
+          {[...lessonsOnDate].sort((a, b) => timeToMinutes(a.appointment_time) - timeToMinutes(b.appointment_time)).map((r, i) => {
             const classLabel = classesOfReg(r)[0]?.title || 'Makeup Lesson';
             const zoomMatch = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/m);
             const meetingId = parseMeetingId(r.lesson_notes) || meetingIdFromUrl(zoomMatch?.[1]);

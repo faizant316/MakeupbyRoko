@@ -29,6 +29,21 @@ export const GROUP_META = [
   { key: 'unscheduled', label: 'Unscheduled', accent: null },
 ];
 
+// Parse "10:00 AM" / "1:30 PM" (or the start of a "11:00 AM – 12:30 PM"
+// range) into minutes since midnight, so single times sort chronologically —
+// lexical sorting would otherwise put "10:00 AM" before "9:00 AM".
+export function timeToMinutes(t) {
+  if (!t) return 9999;
+  const m = String(t).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return 9999;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3] && m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+
 // Bucket a list by how soon each item is. `getDate` pulls the date string.
 export function groupByTime(items, getDate) {
   const buckets = { pastdue: [], today: [], week: [], month: [], later: [], unscheduled: [] };
