@@ -31,6 +31,17 @@ function normalizePaymentStatus(raw) {
   return 'unpaid';
 }
 
+// The date a class effectively sits on: the confirmed appointment date, else
+// (in person only) the client's chosen Wednesday. One Wednesday per client, so
+// an in-person sign-up's day is already fixed — there's nothing to schedule, so
+// it groups by that Wednesday. An online sign-up with no appointment date is
+// left null on purpose so it lands in "Needs Scheduling" (it still needs a time).
+function effectiveDate(reg) {
+  if (reg.appointment_date) return reg.appointment_date;
+  if (reg.class_format === 'in_person') return reg.preferred_date || null;
+  return null;
+}
+
 // Compact one-line row, mirroring the appointments list.
 function ClassRow({ reg, onSelect, dm }) {
   const selectedClasses = classesOfReg(reg);
@@ -42,7 +53,7 @@ function ClassRow({ reg, onSelect, dm }) {
   const isRefunded = payState === 'refunded';
   const isUnpaid = payState === 'unpaid' && !reg.stripe_session_id;
   const isNew = reg.created_date && (Date.now() - new Date(reg.created_date).getTime()) < 24 * 60 * 60 * 1000;
-  const rel = relativeDate(reg.appointment_date);
+  const rel = relativeDate(effectiveDate(reg));
   const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
   const mutedColor = dm ? '#71717a' : '#9c9ca4';
   const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#83838d');
@@ -208,13 +219,13 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   // Surface the just-signed-up / not-yet-scheduled sign-ups: pull the
   // "Unscheduled" bucket to the very top and dress it as an action callout,
   // then the timeline (This Week → This Month → Later) follows beneath it.
-  const timeGroups = groupByTime(visible, r => r.appointment_date);
+  const timeGroups = groupByTime(visible, effectiveDate);
   const orderedGroups = [
     ...timeGroups.filter(g => g.key === 'unscheduled'),
     ...timeGroups.filter(g => g.key !== 'unscheduled'),
   ];
-  const unscheduledCount = visible.filter(r => !r.appointment_date).length;
-  const weekCount = visible.filter(r => { const d = daysUntil(r.appointment_date); return d >= 0 && d <= 7; }).length;
+  const unscheduledCount = visible.filter(r => !effectiveDate(r)).length;
+  const weekCount = visible.filter(r => { const d = daysUntil(effectiveDate(r)); return d >= 0 && d <= 7; }).length;
   const countOf = (f) => registrations.filter(r => r.class_format === f).length;
 
   return (
@@ -283,7 +294,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
                   {group.items.length}
                 </span>
                 {isNeedsScheduling && (
-                  <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>awaiting a date</span>
+                  <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>online · needs a time</span>
                 )}
                 <span className="flex-1" />
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
