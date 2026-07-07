@@ -5,6 +5,7 @@ import { api } from '@/api/apiClient';
 export default function Navigation({ onCloseModal }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const pendingHrefRef = useRef(null);
   const router = useRouter();
@@ -18,6 +19,9 @@ export default function Navigation({ onCloseModal }) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Collapse the Services dropdown whenever the whole menu closes.
+  useEffect(() => { if (!mobileOpen) setServicesOpen(false); }, [mobileOpen]);
 
   useEffect(() => {
     if (mobileOpen) {
@@ -89,6 +93,23 @@ export default function Navigation({ onCloseModal }) {
     { label: 'Transformations', href: '#before-after', sub: 'Before & after' },
     { label: 'Reviews', href: '#reviews', sub: 'Client love' },
   ];
+
+  // Sub-items for the mobile "Services" dropdown. Keys match the category
+  // filter in the services grid (src/views/Services.jsx).
+  const serviceCats = [
+    { key: 'all', label: 'All Services' },
+    { key: 'bridal', label: 'Bridal' },
+    { key: 'event', label: 'Non-Bridal Makeup' },
+    { key: 'creative', label: 'Photoshoot Makeup' },
+    { key: 'lessons', label: 'Makeup Courses' },
+  ];
+
+  // Pick a category from the mobile dropdown: tell the services grid to filter,
+  // then reuse the normal nav jump (closes the menu + scrolls to the grid).
+  const handleCategory = (key) => {
+    window.dispatchEvent(new CustomEvent('roko:selectCategory', { detail: key }));
+    handleNavClick('#services-grid');
+  };
 
   return (
     <>
@@ -180,33 +201,64 @@ export default function Navigation({ onCloseModal }) {
         </div>
 
         {/* Nav links */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center px-8">
-          {navItems.map((item, i) => (
-            <div key={item.label}>
-              <button
-                onClick={() => handleNavClick(item.href)}
-                className="w-full text-left py-5 group active:scale-[0.98] transition-transform duration-100"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="block font-serif text-[1.65rem] text-[#111] leading-tight group-active:text-[#D4A0B0] transition-colors duration-100">
-                      {item.label}
-                    </span>
-                    <span className="block text-[0.7rem] text-[#bbb] tracking-[0.06em] mt-1 uppercase">
-                      {item.sub}
-                    </span>
+        <div className="relative z-10 flex-1 flex flex-col justify-center px-8 overflow-y-auto">
+          {navItems.map((item, i) => {
+            const isServices = item.label === 'Services';
+            return (
+              <div key={item.label}>
+                <button
+                  onClick={() => isServices ? setServicesOpen(o => !o) : handleNavClick(item.href)}
+                  className="w-full text-left py-5 group active:scale-[0.98] transition-transform duration-100"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span
+                        className="block font-serif text-[1.65rem] leading-tight transition-colors duration-150"
+                        style={{ color: isServices && servicesOpen ? '#D4A0B0' : '#111' }}
+                      >
+                        {item.label}
+                      </span>
+                      <span className="block text-[0.7rem] text-[#bbb] tracking-[0.06em] mt-1 uppercase">
+                        {isServices ? (servicesOpen ? 'Choose a category' : item.sub) : item.sub}
+                      </span>
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5"
+                      stroke={isServices && servicesOpen ? '#D4A0B0' : '#ccc'}
+                      className={`w-5 h-5 transition-all duration-300 group-active:stroke-[#D4A0B0] ${
+                        isServices ? (servicesOpen ? 'rotate-90' : '') : 'group-active:translate-x-1'
+                      }`}>
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
                   </div>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5"
-                    className="w-5 h-5 group-active:stroke-[#D4A0B0] group-active:translate-x-1 transition-all duration-100">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </div>
-              </button>
-              {i < navItems.length - 1 && (
-                <div className="h-px bg-[#EDE8E3]" />
-              )}
-            </div>
-          ))}
+                </button>
+
+                {/* Services dropdown — categories slide open */}
+                {isServices && (
+                  <div
+                    className="overflow-hidden transition-all duration-300 ease-out"
+                    style={{ maxHeight: servicesOpen ? `${serviceCats.length * 52 + 8}px` : '0px', opacity: servicesOpen ? 1 : 0 }}
+                  >
+                    <div className="pb-3 pl-1 flex flex-col">
+                      {serviceCats.map((cat) => (
+                        <button
+                          key={cat.key}
+                          onClick={() => handleCategory(cat.key)}
+                          className="w-full text-left py-3 flex items-center gap-3 active:opacity-60 transition-opacity duration-100"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#D4A0B0' }} />
+                          <span className="text-[0.98rem] text-[#444] tracking-[0.01em]">{cat.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {i < navItems.length - 1 && (
+                  <div className="h-px bg-[#EDE8E3]" />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Bottom — Instagram + contact */}
