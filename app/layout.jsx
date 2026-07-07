@@ -5,12 +5,46 @@ import SmoothScroll from '@/components/SmoothScroll';
 
 const GA_ID = 'G-HE25CGQHH4';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+// The one public domain we want Google to rank. Everything SEO-facing (canonical
+// URL, Open Graph, sitemap, structured data) points here so Google consolidates
+// all ranking signals onto makeupbyroko.org instead of the raw vercel URL.
+const CANONICAL_URL = 'https://makeupbyroko.org';
+
+const DESCRIPTION = 'Luxury makeup artistry by Roqia Moshref (Makeup by Roko). Bridal, editorial, and special-occasion makeup plus makeup classes, serving the San Francisco Bay Area and traveling statewide.';
+
+// Structured data so Google understands makeupbyroko.org is the official home of
+// the "Makeup by Roko" brand and links every social profile back to it. This is
+// what powers a knowledge panel and helps outrank look-alike sites.
+const JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'HealthAndBeautyBusiness',
+  '@id': `${CANONICAL_URL}/#business`,
+  name: 'Makeup by Roko',
+  alternateName: ['Roqia Moshref Makeup Artistry', 'makeupbyroko'],
+  description: DESCRIPTION,
+  url: CANONICAL_URL,
+  image: `${CANONICAL_URL}/roko_pic.png`,
+  founder: { '@type': 'Person', name: 'Roqia Moshref' },
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Mountain House',
+    addressRegion: 'CA',
+    addressCountry: 'US',
+  },
+  areaServed: { '@type': 'Place', name: 'San Francisco Bay Area, California' },
+  sameAs: [
+    'https://www.instagram.com/makeupbyroko_/',
+    'https://www.tiktok.com/@makeupbyroko',
+  ],
+};
 
 export const metadata = {
-  metadataBase: new URL(siteUrl),
-  title: 'Makeup by Roko',
-  description: 'Luxury makeup artistry by Roqia Moshref. Bridal, editorial, special occasions, and makeup classes in the Bay Area.',
+  metadataBase: new URL(CANONICAL_URL),
+  title: 'Makeup by Roko | Bay Area Bridal & Luxury Makeup Artist',
+  description: DESCRIPTION,
+  alternates: {
+    canonical: '/',
+  },
   viewport: {
     width: 'device-width',
     initialScale: 1,
@@ -18,24 +52,24 @@ export const metadata = {
     userScalable: false,
   },
   openGraph: {
-    title: 'Makeup by Roko',
-    description: 'Luxury makeup artistry by Roqia Moshref. Bridal, editorial, special occasions, and makeup classes in the Bay Area.',
-    url: siteUrl,
+    title: 'Makeup by Roko | Bay Area Bridal & Luxury Makeup Artist',
+    description: DESCRIPTION,
+    url: CANONICAL_URL,
     siteName: 'Makeup by Roko',
     images: [
       {
         url: '/roko_pic.png',
         width: 1200,
         height: 630,
-        alt: 'Roqia Moshref — Makeup by Roko',
+        alt: 'Roqia Moshref, Makeup by Roko',
       },
     ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Makeup by Roko',
-    description: 'Luxury makeup artistry by Roqia Moshref. Bridal, editorial, special occasions, and makeup classes in the Bay Area.',
+    title: 'Makeup by Roko | Bay Area Bridal & Luxury Makeup Artist',
+    description: DESCRIPTION,
     images: ['/roko_pic.png'],
   },
 };
@@ -43,6 +77,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
+      </head>
       <body>
         <SmoothScroll />
         <Providers>{children}</Providers>

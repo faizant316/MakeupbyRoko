@@ -1,4 +1,5 @@
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+// Canonical public domain (must match the canonical in app/layout.jsx).
+const siteUrl = 'https://makeupbyroko.org';
 
 export default function sitemap() {
   return [

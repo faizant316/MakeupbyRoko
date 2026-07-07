@@ -5,4 +5,4 @@ Disallow: /admin
 Disallow: /admin-invite
 Disallow: /api/
 
-Sitemap: https://makeupby-roko.vercel.app/sitemap.xml
+Sitemap: https://makeupbyroko.org/sitemap.xml
