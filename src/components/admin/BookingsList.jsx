@@ -273,6 +273,11 @@ export default function BookingsList({
 
   const today = new Date().toISOString().split('T')[0];
 
+  // When the "Completed" status chip is active, the whole point of the view is
+  // the archive, so we skip the empty "No active appointments" state and just
+  // show the completed list, expanded.
+  const completedOnly = statusFilter === 'completed';
+
   const consultationBookings = (allBookings || [])
     .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
     .sort((a, b) => (a.consultation_date || '').localeCompare(b.consultation_date || ''));
@@ -986,6 +991,7 @@ export default function BookingsList({
       ) : (
         <div className="flex flex-col gap-8">
           {visibleActiveCount === 0 ? (
+            completedOnly ? null : (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: dm ? '#2e2e38' : '#F5F0EC' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="1.5" className="w-5 h-5">
@@ -1010,6 +1016,7 @@ export default function BookingsList({
                 </button>
               )}
             </div>
+            )
           ) : selectedDate ? (
             // A single day is selected — show its appointments flat (no timeline
             // buckets to hide them under, no collapse).
@@ -1060,22 +1067,25 @@ export default function BookingsList({
 
           {/* Completed Archive */}
           {visibleCompleted.length > 0 && (
-            <div className="border-t border-dashed border-[#E5E7EB] pt-6">
+            <div className={completedOnly ? '' : 'border-t border-dashed border-[#E5E7EB] pt-6'}>
               <button
-                onClick={() => setShowArchive(v => !v)}
+                onClick={() => { if (!completedOnly) setShowArchive(v => !v); }}
                 className="flex items-center gap-3 mb-4 group"
+                style={completedOnly ? { cursor: 'default' } : undefined}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-[1rem]">🗂️</span>
                   <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#52525b' : '#999' }}>Completed Archive</h3>
                 </div>
                 <span className="text-[0.65rem] text-[#bbb]">({visibleCompleted.length})</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"
-                  className={`w-4 h-4 transition-transform duration-300 ${showArchive ? 'rotate-180' : ''}`}>
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
+                {!completedOnly && (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"
+                    className={`w-4 h-4 transition-transform duration-300 ${showArchive ? 'rotate-180' : ''}`}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                )}
               </button>
-              <Collapse open={showArchive}>
+              <Collapse open={showArchive || completedOnly}>
                 <div className="flex flex-col gap-2 pb-1">
                   {visibleCompleted.map(b => (
                     <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} dimmed />
