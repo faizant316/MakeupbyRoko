@@ -294,7 +294,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
                   {group.items.length}
                 </span>
                 {isNeedsScheduling && (
-                  <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>online · needs a time</span>
+                  <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>confirm to send it</span>
                 )}
                 <span className="flex-1" />
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"

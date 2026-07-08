@@ -6,6 +6,7 @@ import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
 import { FORMAT_META } from './ClassRegistrationsList';
 import { parseRange } from '@/lib/timeWindow';
+import { AdminDatePicker } from './SchedulePicker';
 
 // Booksy-style hero gradients per enrollment status (matches BookingDetail).
 const HERO_GRADIENTS = {
@@ -93,15 +94,14 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const windows = startWindows(classKey, reg.class_format);
   const parsed = parseNotes(reg.lesson_notes);
 
-  // The client's chosen Wednesday. Locked — never a date picker.
-  const lockedDate = reg.appointment_date || reg.preferred_date || '';
-  const lockedLabel = lockedDate ? formatDate(lockedDate) : '';
+  // The client's Wednesday + chosen time window, both pre-filled from what they
+  // picked at checkout and both editable here, so Roko can move a client if she
+  // needs to. It's their selection shown back, not something she builds from scratch.
+  const clientDate = reg.appointment_date || reg.preferred_date || '';
 
-  // "Done" = in person is set the moment it's confirmed; online is set once a
-  // time window is on the row.
-  const scheduled = isInPerson
-    ? (reg.status === 'enrolled' || !!reg.appointment_date)
-    : !!reg.appointment_time;
+  // "Done" = already confirmed onto the calendar (a set date + time, or an
+  // in-person row that's been enrolled).
+  const scheduled = !!reg.appointment_time || (isInPerson && reg.status === 'enrolled' && !!reg.appointment_date);
 
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -109,6 +109,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const [meetLink, setMeetLink] = useState(parsed.link);
   const [meetingId, setMeetingId] = useState(parsed.meetingId);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [date, setDate] = useState(clientDate);
   const [time, setTime] = useState(reg.appointment_time || reg.preferred_time || windows[0] || '');
   const [notes, setNotes] = useState(parsed.notes);
 
@@ -130,7 +131,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         body: JSON.stringify({
           topic: `Makeup by Roko — Lesson with ${reg.full_name || 'Client'}`,
           duration: 60,
-          date: lockedDate || undefined,
+          date: date || undefined,
           time: time || undefined,
         }),
       });
@@ -165,7 +166,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
           clientName: reg.full_name,
           clientPhone: phone || reg.phone || '',
           className,
-          lessonDate: lockedDate,
+          lessonDate: date,
           lessonTime: finalTime,
           meetingType: finalType,
           zoomLink: finalType === 'Zoom' ? meetLink : '',
@@ -179,7 +180,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
         notes || null,
       ].filter(Boolean).join('\n');
       onUpdateReg({
-        appointment_date: lockedDate,
+        appointment_date: date,
         appointment_time: finalTime,
         consultation_type: finalType,
         lesson_notes: storedNotes,
@@ -193,29 +194,30 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
     }
   };
 
-  const handleSendOnline = () => {
-    if (!time) { alert('Pick a time window first.'); return; }
-    confirmFn({
-      title: 'Confirm & Notify Client?',
-      body: `This will enroll ${reg.full_name || 'the client'} and send their lesson time and Zoom link.`,
-      color: LESSON_COLOR, icon: '✓', confirmLabel: 'Yes, Send',
-      onConfirm: () => doSend(time, 'Zoom'),
-    });
+  const handleConfirm = () => {
+    if (!date) { alert('Set a date first.'); return; }
+    if (windows.length && !time) { alert('Pick a time window first.'); return; }
+    const finalTime = time || windows[0] || '';
+    if (isInPerson) {
+      confirmFn({
+        title: 'Confirm In-Studio Class?',
+        body: `This will confirm ${reg.full_name || 'the client'} for their Wednesday and email the studio address and directions.`,
+        color: '#8A63A8', icon: '✓', confirmLabel: 'Yes, Confirm',
+        onConfirm: () => doSend(finalTime, 'In-Person'),
+      });
+    } else {
+      confirmFn({
+        title: 'Confirm & Notify Client?',
+        body: `This will enroll ${reg.full_name || 'the client'} and send their lesson time and Zoom link.`,
+        color: LESSON_COLOR, icon: '✓', confirmLabel: 'Yes, Send',
+        onConfirm: () => doSend(finalTime, 'Zoom'),
+      });
+    }
   };
 
-  const handleConfirmInPerson = () => {
-    const finalTime = reg.appointment_time || reg.preferred_time || windows[0] || '';
-    confirmFn({
-      title: 'Confirm In-Studio Class?',
-      body: `This will confirm ${reg.full_name || 'the client'} for their Wednesday and email the studio address and directions.`,
-      color: '#8A63A8', icon: '✓', confirmLabel: 'Yes, Confirm',
-      onConfirm: () => doSend(finalTime, 'In-Person'),
-    });
-  };
-
-  const summaryDate = reg.appointment_date
-    ? new Date(reg.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    : (lockedLabel || null);
+  const summaryDate = clientDate
+    ? new Date(clientDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : null;
 
   return (
     <div className="mb-8">
@@ -269,7 +271,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
             <div>
               <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase" style={{ color: isInPerson ? '#8A63A8' : LESSON_COLOR }}>Makeup Lesson</p>
               <p className="font-serif text-[1rem] mt-0.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
-                {isInPerson ? 'Confirm In-Studio Class' : 'Set Lesson Time'}
+                {isInPerson ? 'Confirm In-Studio Class' : 'Confirm Lesson Time'}
               </p>
             </div>
             {scheduled && (
@@ -284,22 +286,22 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
           <div className="p-5 flex flex-col gap-5" style={{ background: dm ? '#27272a' : '#fff' }}>
             {/* Locked date — the client's Wednesday, never editable here */}
             <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date · locked</label>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                style={{ background: inputBg, border: `1px solid ${border}` }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.6" className="w-4 h-4 flex-shrink-0">
-                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span className="text-[0.85rem] font-semibold flex-1 min-w-0 truncate" style={{ color: inputColor }}>
-                  {lockedLabel || 'Client has not chosen a date yet'}
-                </span>
-                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.8" className="w-3.5 h-3.5 flex-shrink-0">
-                  <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                </svg>
-              </div>
+              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
+              <AdminDatePicker value={date} onChange={setDate} dm={dm} accent={LESSON_COLOR} />
               <p className="text-[0.62rem] mt-1.5 leading-relaxed" style={{ color: textMuted }}>
-                One Wednesday per client — the client picked this at checkout. To move it, use Message client below.
+                The client picked this Wednesday at checkout. Change it only if you need to move them (one client per Wednesday), then Message client to let them know.
               </p>
+            </div>
+
+            {/* Time window — the client's own selection, pre-filled. Tap another to change it. */}
+            <div>
+              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2.5" style={{ color: textMuted }}>Time window</label>
+              <WindowGrid windows={windows} value={time} onChange={setTime} dm={dm} />
+              {windows.length > 0 && (
+                <p className="text-[0.62rem] mt-2 leading-relaxed" style={{ color: textMuted }}>
+                  This is the window the client chose. Tap another only if you need to change it.
+                </p>
+              )}
             </div>
 
             {isInPerson ? (
@@ -313,8 +315,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                   <div className="min-w-0">
                     <p className="text-[0.75rem] font-semibold" style={{ color: dm ? '#c9b3dd' : '#8A63A8' }}>In studio · Mountain House</p>
                     <p className="text-[0.68rem] mt-0.5 leading-relaxed" style={{ color: textMuted }}>
-                      Nothing to schedule — {reg.full_name?.split(' ')[0] || 'the client'} comes to the studio on their Wednesday.
-                      {' '}Confirming sends the address and directions. {STUDIO_DISPLAY}.
+                      {reg.full_name?.split(' ')[0] || 'The client'} comes to the studio for the window above. Confirming sends the address and directions. {STUDIO_DISPLAY}.
                     </p>
                   </div>
                 </div>
@@ -330,7 +331,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                     style={{ ...inputStyle, minHeight: '72px' }} />
                 </div>
 
-                <button onClick={handleConfirmInPerson} disabled={saving}
+                <button onClick={handleConfirm} disabled={saving}
                   className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
                   style={{ minHeight: '50px', fontSize: '14px', background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
                   {saving
@@ -340,12 +341,6 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
               </>
             ) : (
               <>
-                {/* Time window — the only thing to set for an online class */}
-                <div>
-                  <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2.5" style={{ color: textMuted }}>Choose a time window</label>
-                  <WindowGrid windows={windows} value={time} onChange={setTime} dm={dm} />
-                </div>
-
                 {/* Zoom link */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -391,7 +386,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                     style={{ ...inputStyle, minHeight: '72px' }} />
                 </div>
 
-                <button onClick={handleSendOnline} disabled={saving || !time}
+                <button onClick={handleConfirm} disabled={saving || (windows.length > 0 && !time)}
                   className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation"
                   style={{
                     minHeight: '50px', fontSize: '14px',
