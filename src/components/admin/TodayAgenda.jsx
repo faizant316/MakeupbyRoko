@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { openZoomRoom, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { timeToMinutes } from './timeline';
@@ -29,6 +29,12 @@ const STATUS_META = {
 export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBooking, onSelectClassReg, darkMode: dm }) {
   const todayKey = localDateKey(new Date());
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  // Each group (Consultations / Appointments / Makeup Classes) is a collapsible
+  // dropdown, collapsed by default, so the Today card stays a compact summary
+  // (just the labelled counts) until Roko taps a section open.
+  const [openGroups, setOpenGroups] = useState({});
+  const toggleGroup = key => setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
 
   const { groups, total } = useMemo(() => {
     const consults = [], appts = [], classes = [];
@@ -83,17 +89,31 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
 
       {hasItems ? (
         <div className="flex flex-col gap-4">
-          {groups.map(group => (
+          {groups.map(group => {
+            const isOpen = !!openGroups[group.key];
+            return (
             <div key={group.key} className="flex flex-col gap-1.5">
-              {/* Group header — labels the run so consultations, appointments
-                  and classes never blur into one another. */}
-              <div className="flex items-center gap-2 px-1 mb-0.5">
+              {/* Group header — tap to expand/collapse this run so consultations,
+                  appointments and classes stay tidy and don't crowd the card. */}
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.key)}
+                aria-expanded={isOpen}
+                className="w-full flex items-center gap-2 px-1 py-1 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+              >
                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.color }} />
                 <span className="text-[0.6rem] font-bold tracking-[0.12em] uppercase" style={{ color: group.color }}>{group.label}</span>
                 <span className="text-[0.6rem] font-semibold" style={{ color: dm ? '#52525b' : '#b8b8c0' }}>{group.items.length}</span>
-              </div>
+                <svg
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={`w-3.5 h-3.5 ml-auto transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                  style={{ color: dm ? '#52525b' : '#c2c2ca' }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
 
-              {group.items.map(item => {
+              {isOpen && group.items.map(item => {
                 const meta = STATUS_META[item.status] || STATUS_META.pending;
                 const canJoin = !!(item.meetingId || item.joinUrl);
                 return (
@@ -136,7 +156,8 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                 );
               })}
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="flex items-center gap-2.5 py-1">
