@@ -2,15 +2,92 @@
 import { useEffect } from 'react';
 
 export const ADMIN_TABS = [
-  { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments' },
-  { key: 'clients',      label: 'Clients',        sub: 'Directory & smart groups' },
-  { key: 'availability', label: 'Availability',   sub: 'Capacity & days off'     },
-  { key: 'services',     label: 'Services',       sub: 'Edit & update offerings' },
-  { key: 'reviews',      label: 'Reviews',        sub: 'Approve & manage'        },
-  { key: 'classes',      label: 'Class Sign-Ups', sub: 'Registrations'           },
-  { key: 'analytics',    label: 'Analytics',      sub: 'Insights & trends'       },
-  { key: 'revenue',      label: 'Revenue',        sub: 'Revenue & booking stats' },
+  { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments', icon: 'home'     },
+  { key: 'clients',      label: 'Clients',        sub: 'Directory & smart groups', icon: 'users'    },
+  { key: 'availability', label: 'Availability',   sub: 'Capacity & days off',     icon: 'calendar' },
+  { key: 'services',     label: 'Services',       sub: 'Edit & update offerings',  icon: 'sparkles' },
+  { key: 'reviews',      label: 'Reviews',        sub: 'Approve & manage',        icon: 'star'     },
+  { key: 'classes',      label: 'Class Sign-Ups', sub: 'Registrations',           icon: 'cap'      },
+  { key: 'analytics',    label: 'Analytics',      sub: 'Insights & trends',       icon: 'chart'    },
+  { key: 'revenue',      label: 'Revenue',        sub: 'Revenue & booking stats', icon: 'revenue'  },
 ];
+
+/* Modern, crisp line icons (Lucide-style, 24px grid, round joins). stroke is
+   currentColor so each icon inherits the nav item's active/muted color. */
+function NavIcon({ name, className, style }) {
+  const common = {
+    className,
+    style,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.7,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
+  switch (name) {
+    case 'home':
+      return (
+        <svg {...common}>
+          <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
+        </svg>
+      );
+    case 'users':
+      return (
+        <svg {...common}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      );
+    case 'sparkles':
+      return (
+        <svg {...common}>
+          <path d="M12 3l1.9 4.9L18.8 9.8 13.9 11.7 12 16.6 10.1 11.7 5.2 9.8 10.1 7.9z" />
+          <path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" />
+          <path d="M5 4.5l.5 1.3 1.3.5-1.3.5L5 8.1 4.5 6.8 3.2 6.3 4.5 5.8z" />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg {...common}>
+          <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.4l-5.81 3.05 1.11-6.47-4.7-4.58 6.5-.95z" />
+        </svg>
+      );
+    case 'cap':
+      return (
+        <svg {...common}>
+          <path d="M22 10 12 5 2 10l10 5 10-5z" />
+          <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
+          <path d="M22 10v6" />
+        </svg>
+      );
+    case 'chart':
+      return (
+        <svg {...common}>
+          <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+          <path d="M7 14l3.5-4 3 3L21 6" />
+        </svg>
+      );
+    case 'revenue':
+      return (
+        <svg {...common}>
+          <path d="M12 2v20" />
+          <path d="M17 5.5H9.75a3.25 3.25 0 0 0 0 6.5h4.5a3.25 3.25 0 0 1 0 6.5H6" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
 
 export default function AdminSidebar({
   activeTab,
@@ -62,35 +139,43 @@ export default function AdminSidebar({
           background: dm ? '#1e1e24' : '#fff',
         }}
       >
-        {/* Nav items */}
+        {/* Nav items — icon + label rows, ChatGPT-style rounded highlight */}
         <nav className="flex-1 flex flex-col gap-0.5 px-3 pt-6">
           {ADMIN_TABS.map(tab => {
             const isActive = activeTab === tab.key;
+            const activeColor = dm ? '#f4dce4' : '#A0607A';
+            const mutedColor = dm ? '#a1a1aa' : '#8a8a8a';
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl transition-all duration-200"
+                className="w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-xl transition-all duration-200"
                 style={{
                   background: isActive
-                    ? dm ? 'rgba(212,160,176,0.12)' : 'rgba(212,160,176,0.1)'
+                    ? dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.12)'
                     : 'transparent',
-                  borderLeft: `3px solid ${isActive ? '#D4A0B0' : 'transparent'}`,
                 }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'; }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.035)'; }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               >
-                <p
-                  className="text-[0.78rem] font-semibold tracking-[0.02em] leading-tight transition-colors"
-                  style={{ color: isActive ? (dm ? '#f4dce4' : '#A0607A') : (dm ? '#a1a1aa' : '#888') }}
-                >
-                  {tab.label}
-                </p>
-                {isActive && (
-                  <p className="text-[0.62rem] mt-0.5 leading-tight" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
-                    {tab.sub}
-                  </p>
-                )}
+                <NavIcon
+                  name={tab.icon}
+                  className="w-[18px] h-[18px] flex-shrink-0 transition-colors"
+                  style={{ color: isActive ? activeColor : mutedColor }}
+                />
+                <span className="flex flex-col min-w-0">
+                  <span
+                    className="text-[0.82rem] font-medium leading-tight truncate transition-colors"
+                    style={{ color: isActive ? activeColor : (dm ? '#d4d4d8' : '#3f3f46') }}
+                  >
+                    {tab.label}
+                  </span>
+                  {isActive && (
+                    <span className="text-[0.62rem] mt-0.5 leading-tight truncate" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
+                      {tab.sub}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}
@@ -174,7 +259,7 @@ export default function AdminSidebar({
           }}
         >
           <span
-            className="font-serif text-base tracking-[0.12em] uppercase"
+            className="text-base font-semibold tracking-[0.02em]"
             style={{ color: dm ? '#e4e4e7' : '#111' }}
           >
             Dashboard
@@ -190,31 +275,48 @@ export default function AdminSidebar({
           </button>
         </div>
 
-        {/* Nav items — serif text like Navigation.jsx, sized so all sections fit */}
-        <nav className="flex-1 overflow-y-auto px-6 pt-1">
+        {/* Nav items — icon chip + label rows, sized so all sections fit */}
+        <nav className="flex-1 overflow-y-auto px-5 pt-1">
           {ADMIN_TABS.map(tab => {
             const isActive = activeTab === tab.key;
+            const activeColor = '#D4A0B0';
             return (
               <button
                 key={tab.key}
                 onClick={() => handleTabClick(tab.key)}
-                className="w-full text-left py-3.5 flex flex-col gap-0.5 active:opacity-60 transition-opacity"
+                className="w-full text-left py-3 flex items-center gap-3.5 active:opacity-60 transition-opacity"
                 style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
               >
                 <span
-                  className="font-serif font-light leading-none"
+                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
-                    fontSize: 'clamp(1.35rem, 5vw, 1.7rem)',
-                    color: isActive ? '#D4A0B0' : (dm ? '#e4e4e7' : '#111'),
+                    background: isActive
+                      ? 'rgba(212,160,176,0.16)'
+                      : dm ? '#2a2a32' : '#f5f0ec',
                   }}
                 >
-                  {tab.label}
+                  <NavIcon
+                    name={tab.icon}
+                    className="w-[19px] h-[19px]"
+                    style={{ color: isActive ? activeColor : (dm ? '#a1a1aa' : '#7a6f74') }}
+                  />
                 </span>
-                <span
-                  className="text-[0.6rem] tracking-[0.12em] uppercase mt-0.5"
-                  style={{ color: dm ? '#52525b' : '#bbb' }}
-                >
-                  {tab.sub}
+                <span className="flex flex-col min-w-0">
+                  <span
+                    className="font-medium leading-tight"
+                    style={{
+                      fontSize: 'clamp(1.05rem, 4.4vw, 1.3rem)',
+                      color: isActive ? activeColor : (dm ? '#e4e4e7' : '#1a1a1a'),
+                    }}
+                  >
+                    {tab.label}
+                  </span>
+                  <span
+                    className="text-[0.6rem] tracking-[0.12em] uppercase mt-0.5"
+                    style={{ color: dm ? '#52525b' : '#bbb' }}
+                  >
+                    {tab.sub}
+                  </span>
                 </span>
               </button>
             );
