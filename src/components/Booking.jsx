@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { api } from '@/api/apiClient';
+import { formatPhone } from '@/lib/phone';
 import { useQuery } from '@tanstack/react-query';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
@@ -280,8 +281,8 @@ export default function Booking() {
                       <input
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="(555) 000-0000"
+                        onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+                        placeholder="(555)000-0000"
                         className="w-full px-4 py-3 border border-[var(--border)] rounded-[var(--radius)] text-[0.9375rem] focus:border-[var(--accent)] outline-none transition-colors"
                       />
                     </div>

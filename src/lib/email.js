@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { buildContract } from './contract';
 import { STUDIO_ADDRESS, STUDIO_DISPLAY, STUDIO_MAPS_URL } from './studio';
+import { formatPhone, phoneHref } from './phone';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
 const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
@@ -553,7 +554,7 @@ export function enrolledLessonEmail({ firstName, className, lessonDate, lessonTi
   } else if (meetingType === 'Phone' && clientPhone) {
     connect = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:16px;">
       <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">How We Will Connect</p>
-      <p style="font-size:14px;color:#5A5258;margin:0;line-height:1.55;">Roqia will call you at <strong style="color:#16110F;">${clientPhone}</strong> on ${lessonDate} at ${lessonTime}. Make sure your phone is on!</p>
+      <p style="font-size:14px;color:#5A5258;margin:0;line-height:1.55;">Roqia will call you at <strong style="color:#16110F;">${formatPhone(clientPhone)}</strong> on ${lessonDate} at ${lessonTime}. Make sure your phone is on!</p>
     </td></tr></table>`;
   }
   return clientShell({
@@ -621,7 +622,7 @@ export function adminClassPaymentEmail({ reg, classes = [], totalPaid, formatLab
       <table style="width:100%;border-collapse:collapse;">
         ${row('Name', reg.full_name)}
         ${row('Email', reg.email)}
-        ${row('Phone', reg.phone)}
+        ${row('Phone', formatPhone(reg.phone))}
         ${cleanNotes ? row('Notes', cleanNotes) : ''}
       </table>
     `)}
@@ -687,7 +688,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
       <table style="width:100%;border-collapse:collapse;">
         ${row('Name', name)}
         ${row('Email', `<a href="mailto:${email}" style="color:#C4849A;text-decoration:none;">${email}</a>`)}
-        ${row('Phone', phone ? `<a href="tel:${phone}" style="color:#C4849A;text-decoration:none;">${phone}</a>` : 'Not provided')}
+        ${row('Phone', phone ? `<a href="tel:${phoneHref(phone)}" style="color:#C4849A;text-decoration:none;">${formatPhone(phone)}</a>` : 'Not provided')}
       </table>
     `)}
     ${card(`
@@ -726,7 +727,7 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
   const clientRows = [
     row('Name', fullName),
     row('Email', `<a href="mailto:${email}" style="color:#C4849A;text-decoration:none;">${email}</a>`),
-    row('Phone', phone ? `<a href="tel:${phone}" style="color:#C4849A;text-decoration:none;">${phone}</a>` : 'Not provided'),
+    row('Phone', phone ? `<a href="tel:${phoneHref(phone)}" style="color:#C4849A;text-decoration:none;">${formatPhone(phone)}</a>` : 'Not provided'),
     instagram ? row('Instagram / TikTok', instagram) : '',
     howHeard ? row('How they heard', howHeard) : '',
   ].filter(Boolean).join('');

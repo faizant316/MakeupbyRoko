@@ -4,6 +4,7 @@ import { relativeDate } from './timeline';
 import { lenisScrollTo } from '@/lib/lenis';
 import { isBridalService } from './statusColors';
 import { classesOfReg } from '@/lib/classCatalog';
+import { formatPhone, phoneHref } from '@/lib/phone';
 
 // Booksy-style Clients section. One directory built automatically from every
 // booking and class sign-up: a searchable A-Z list with a jump rail, plus
@@ -172,14 +173,14 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
       {/* Contact actions */}
       <div className="flex gap-2.5 mb-6">
         {client.phone && (
-          <ActionCircle href={`tel:${client.phone}`} label="Call" dm={dm}>
+          <ActionCircle href={`tel:${phoneHref(client.phone)}`} label="Call" dm={dm}>
             <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 11.7 19.79 19.79 0 0 1 1 3.07 2 2 0 0 1 2.11 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
             </svg>
           </ActionCircle>
         )}
         {client.phone && (
-          <ActionCircle href={`sms:${client.phone}`} label="Text" dm={dm}>
+          <ActionCircle href={`sms:${phoneHref(client.phone)}`} label="Text" dm={dm}>
             <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
@@ -199,7 +200,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
         {client.phone && (
           <div className="flex items-center justify-between gap-3 min-w-0">
             <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>Phone</span>
-            <span className="text-[0.82rem] font-medium truncate tabular-nums" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.phone}</span>
+            <span className="text-[0.82rem] font-medium truncate tabular-nums" style={{ color: dm ? '#e4e4e7' : '#111' }}>{formatPhone(client.phone)}</span>
           </div>
         )}
         {client.email && (
@@ -469,11 +470,11 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                             <span className="min-w-0">
                               <span className="block text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{c.name}</span>
                               <span className="block sm:hidden text-[0.74rem] mt-0.5 truncate tabular-nums" style={{ color: muted }}>
-                                {c.phone || c.email || 'No contact info'}
+                                {formatPhone(c.phone) || c.email || 'No contact info'}
                               </span>
                             </span>
                             <span className="hidden sm:block text-[0.78rem] truncate tabular-nums" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
-                              {c.phone || '—'}
+                              {formatPhone(c.phone) || '—'}
                             </span>
                             <span className="hidden sm:block text-[0.78rem] truncate" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
                               {c.email || '—'}

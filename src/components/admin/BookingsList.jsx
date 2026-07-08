@@ -5,6 +5,7 @@ import Collapse from './Collapse';
 import { groupByTime, timeToMinutes } from './timeline';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
+import { formatPhone, phoneHref } from '@/lib/phone';
 
 // SSR-safe layout effect — measures the active tab to position the underline
 // without a first-paint flash, while staying quiet during server render.
@@ -822,11 +823,11 @@ export default function BookingsList({
                   </button>
                 ) : isPhone && r.phone ? (
                   <a
-                    href={`tel:${r.phone}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
+                    href={`tel:${phoneHref(r.phone)}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80 tabular-nums"
                     style={{ background: 'rgba(199,107,166,0.1)', color: LESSON_COLOR, border: '1px solid rgba(199,107,166,0.25)' }}
                   >
-                    {r.phone}
+                    {formatPhone(r.phone)}
                   </a>
                 ) : null}
               </div>

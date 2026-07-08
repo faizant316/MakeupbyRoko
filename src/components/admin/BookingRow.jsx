@@ -1,5 +1,6 @@
 import StatusBadge from './StatusBadge';
 import { relativeDate } from './timeline';
+import { phoneHref } from '@/lib/phone';
 
 // Compact one-line list item for the appointments list. The rich detail lives
 // in the modal opened on click, so the row only carries what helps you scan:
@@ -115,7 +116,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         )}
         {booking.phone && (
           <a
-            href={`sms:${booking.phone}`}
+            href={`sms:${phoneHref(booking.phone)}`}
             onClick={e => e.stopPropagation()}
             aria-label="Text client"
             className={iconBtn}

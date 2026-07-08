@@ -6,6 +6,7 @@ import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
 import { FORMAT_META } from './ClassRegistrationsList';
 import { parseRange } from '@/lib/timeWindow';
+import { formatPhone, phoneHref } from '@/lib/phone';
 import { AdminDatePicker } from './SchedulePicker';
 
 // Booksy-style hero gradients per enrollment status (matches BookingDetail).
@@ -816,8 +817,8 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
               </a>
             )}
             {reg.phone && (
-              <a href={`tel:${reg.phone}`} className="block text-[0.82rem]" style={{ color: textMuted }}>
-                {reg.phone}
+              <a href={`tel:${phoneHref(reg.phone)}`} className="block text-[0.82rem] tabular-nums" style={{ color: textMuted }}>
+                {formatPhone(reg.phone)}
               </a>
             )}
             {reg.email && !showCompose && (

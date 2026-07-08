@@ -5,6 +5,7 @@ import { api } from '@/api/apiClient';
 import { firstBookableWednesday } from '@/lib/classSchedule';
 import { CLASS_FORMATS, CLASS_DAY, startWindows } from '@/lib/classCatalog';
 import { parseRange } from '@/lib/timeWindow';
+import { formatPhone } from '@/lib/phone';
 import ClassWednesdayPicker from './ClassWednesdayPicker';
 import { PLUM } from './classTheme';
 import ClassStepper from './ClassStepper';
@@ -184,8 +185,8 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                   </div>
                   <div>
                     <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Phone Number *</label>
-                    <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
-                      onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="(555) 000-0000" style={inputStyle} />
+                    <input required type="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))}
+                      onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="(555)000-0000" style={inputStyle} />
                   </div>
 
                   <div>
