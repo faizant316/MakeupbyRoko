@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -20,6 +20,7 @@ import RevenueTab from '../components/admin/RevenueTab';
 import AddClientModal from '../components/admin/AddClientModal';
 import ClientsTab from '../components/admin/ClientsTab';
 import ResizableColumns from '../components/admin/ResizableColumns';
+import { daysUntil } from '../components/admin/timeline';
 
 const DEFAULT_CAP = 3;
 
@@ -75,6 +76,24 @@ export default function Admin() {
     queryKey: ['admin-bookings'],
     queryFn: () => api.entities.Booking.list('-created_date', 200),
   });
+
+  // Auto-complete finished work: once a CONFIRMED appointment's date has passed,
+  // roll it to "completed" so it leaves Past Due for the Completed Archive on its
+  // own, and the calendar dot updates to match. Pending past-due is left alone —
+  // it never got confirmed, so it still needs Roko's attention. Runs on load;
+  // the ref keeps it from re-firing the same update before the refetch lands.
+  const autoCompletedRef = useRef(new Set());
+  useEffect(() => {
+    if (!bookings || bookings.length === 0) return;
+    const stale = bookings.filter(
+      b => b.status === 'confirmed' && b.date && daysUntil(b.date) < 0 && !autoCompletedRef.current.has(b.id)
+    );
+    if (stale.length === 0) return;
+    stale.forEach(b => autoCompletedRef.current.add(b.id));
+    Promise.all(stale.map(b => api.entities.Booking.update(b.id, { status: 'completed' })))
+      .then(() => queryClient.invalidateQueries({ queryKey: ['admin-bookings'] }))
+      .catch(err => console.error('auto-complete past-due failed:', err));
+  }, [bookings, queryClient]);
 
   const { data: capacitySettings = [] } = useQuery({
     queryKey: ['booking-capacity'],
