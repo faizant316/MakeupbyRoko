@@ -186,7 +186,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                   <div>
                     <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Phone Number *</label>
                     <input required type="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))}
-                      onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="(555)000-0000" style={inputStyle} />
+                      onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="(555) 000-0000" style={inputStyle} />
                   </div>
 
                   <div>
