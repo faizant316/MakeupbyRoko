@@ -674,7 +674,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                     <div>
                       <label className={labelClass}>Phone Number</label>
                       <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
-                        placeholder="(555)000-0000" className={inputClass} />
+                        placeholder="(555) 000-0000" className={inputClass} />
                     </div>
 
                     <div>

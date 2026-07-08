@@ -282,7 +282,7 @@ export default function Booking() {
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
-                        placeholder="(555)000-0000"
+                        placeholder="(555) 000-0000"
                         className="w-full px-4 py-3 border border-[var(--border)] rounded-[var(--radius)] text-[0.9375rem] focus:border-[var(--accent)] outline-none transition-colors"
                       />
                     </div>
