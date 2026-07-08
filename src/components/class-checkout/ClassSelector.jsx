@@ -129,6 +129,9 @@ export default function ClassSelector({ classKeys, format, selected, onSelect, o
                   {/* footer facts */}
                   <div className="mt-auto pt-3 grid grid-cols-1 gap-1.5" style={{ borderTop: `1px solid ${PLUM.borderSoft}` }}>
                     <FactRow label="Length" value={cls.duration} />
+                    {cls.durationMinutes >= 360 && (
+                      <FactRow label="Break" value={format === 'in_person' ? '1-hr lunch break' : '30-min break'} />
+                    )}
                     <FactRow label="You leave with" value={extra.leaveWith} />
                   </div>
                 </button>

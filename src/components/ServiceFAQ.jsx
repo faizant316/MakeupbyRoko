@@ -46,7 +46,7 @@ const LESSON_FAQ = [
   { q: "How do I sign up for a class?", a: "Choose your class and format, pick your Wednesday and start time, sign the class agreement, and pay in full online (Apple Pay, Google Pay, and all major cards via Stripe). Your seat is reserved instantly." },
   { q: "How long are the classes?", a: "The Beginner Makeup Lesson is 3 hours. The Advanced Makeup Artist Training is a full day: 7 hours in person with a 1-hour lunch break, or 6 hours online with a 30-minute break." },
   { q: "Do I need to bring my own makeup?", a: "For in-person classes everything is provided, though you're welcome to bring products you already own so I can show you how to use them better. For online classes, have your own makeup and brushes ready. Everyone receives a personalized product recommendation list." },
-  ...GENERAL_FAQ.slice(0, 3),
+  { q: "What's the cancellation policy for classes?", a: "You can cancel or reschedule with at least 14 days notice, and either move your payment one time to another open Wednesday at no charge, or get a refund of your class fee minus the card processing fee. Cancellations with less than 14 days notice, and no-shows, forfeit the payment. If Roko ever has to cancel (illness or an emergency), you receive a full refund including the processing fee, or a free reschedule." },
 ];
 
 const BRIDAL_TRIAL_FAQ = [
