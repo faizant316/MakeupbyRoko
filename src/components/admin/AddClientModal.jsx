@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { lenisStop, lenisStart } from '@/lib/lenis';
+import { formatPhone } from '@/lib/phone';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 
@@ -268,7 +269,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label style={labelStyle}>Phone</label>
-              <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(555) 000-0000" className={inputClass} style={inputStyle} />
+              <input type="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="(555)000-0000" className={inputClass} style={inputStyle} />
             </div>
             <div>
               <label style={labelStyle}>Email *</label>

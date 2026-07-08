@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import ContractSign from './ContractSign';
+import { formatPhone } from '@/lib/phone';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
 
@@ -873,7 +874,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </div>
               <div>
                 <label className={labelClass}>Phone *</label>
-                <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(555) 000-0000" className={inputClass} />
+                <input type="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="(555)000-0000" className={inputClass} />
               </div>
             </div>
 

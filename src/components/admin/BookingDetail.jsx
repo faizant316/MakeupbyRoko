@@ -12,6 +12,7 @@ import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 import { parseRange } from '@/lib/timeWindow';
+import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS } from './statusColors';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
@@ -920,14 +921,22 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {(booking.name || '?').trim().charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
+              {booking.service && (
+                <span className="inline-block mb-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-[0.04em] text-[0.82rem] leading-none"
+                  style={{ background: dm ? 'rgba(196,132,154,0.20)' : '#F7E4EC', color: dm ? '#EDB8CB' : '#B0587A' }}>
+                  {booking.service}
+                </span>
+              )}
               <button onClick={() => setShowClientStats(!showClientStats)}
                 className="font-serif text-[1.5rem] leading-tight transition-colors text-left block truncate max-w-full"
                 style={{ color: dm ? '#e4e4e7' : '#111' }}>
                 {booking.name}
               </button>
-              <p className="text-[0.8rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
-                {booking.service}{booking.phone ? ` · ${booking.phone}` : ''}
-              </p>
+              {booking.phone && (
+                <p className="text-[0.8rem] mt-0.5 truncate tabular-nums" style={{ color: dm ? '#71717a' : '#999' }}>
+                  {formatPhone(booking.phone)}
+                </p>
+              )}
             </div>
           </div>
           <StatusBadge status={booking.status} />
@@ -961,7 +970,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <div>
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Contact</p>
             {booking.email && <a href={`mailto:${booking.email}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block" style={{ color: dm ? '#e4e4e7' : '#111' }}>{booking.email}</a>}
-            {booking.phone && <a href={`sms:${booking.phone}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>{booking.phone}</a>}
+            {booking.phone && <a href={`sms:${phoneHref(booking.phone)}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5 tabular-nums" style={{ color: dm ? '#71717a' : '#999' }}>{formatPhone(booking.phone)}</a>}
             {booking.email && !showCompose && (
               <button
                 type="button"

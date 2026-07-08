@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Collapse from './Collapse';
 import { groupByTime, relativeDate, daysUntil } from './timeline';
 import { classesOfReg, regTotal } from '@/lib/classCatalog';
+import { phoneHref } from '@/lib/phone';
 
 const ENROLLMENT_STYLES = {
   pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
@@ -146,7 +147,7 @@ function ClassRow({ reg, onSelect, dm }) {
         )}
         {reg.phone && (
           <a
-            href={`sms:${reg.phone}`}
+            href={`sms:${phoneHref(reg.phone)}`}
             onClick={e => e.stopPropagation()}
             aria-label="Text registrant"
             className={iconBtn}
