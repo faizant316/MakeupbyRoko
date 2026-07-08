@@ -185,7 +185,10 @@ function parseBookingNotes(raw) {
     const rest = [];
     for (const seg of text.split('|').map(s => s.trim()).filter(Boolean)) {
       const m = seg.match(/^Ready by:\s*(.+)$/i);
-      if (m) readyBy = m[1].trim();
+      if (m) readyBy = /not specified/i.test(m[1]) ? '' : m[1].trim();
+      // The signed-agreement chip has its own "Service Agreement" section below,
+      // so it must never leak into the free-text comment.
+      else if (/^✍️/.test(seg) || /Agreement\s+\S+\s+signed by/i.test(seg)) continue;
       else if (/early arrival|⏰/i.test(seg)) flags.push(seg.replace(/^⏰\s*/, '').trim());
       else if (/travel/i.test(seg) || seg.includes('✈️')) flags.push(seg.replace(/^✈️\s*/, '').trim());
       else rest.push(seg);
@@ -573,10 +576,33 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
   );
 }
 
+// One appointment line in the client profile panel's Upcoming / Past lists.
+function ApptRow({ b, isCurrent, last, dm }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3.5"
+      style={{ borderBottom: last ? 'none' : `1px solid ${dm ? '#2a2a32' : '#f2ece7'}` }}>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
+        <div className="min-w-0">
+          <p className="text-[0.85rem] font-medium flex items-center gap-2 min-w-0" style={{ color: dm ? '#ECEDF1' : '#111' }}>
+            <span className="truncate">{b.service || 'Appointment'}</span>
+            {isCurrent && <span className="flex-shrink-0 text-[0.5rem] font-bold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded" style={{ background: 'rgba(196,132,154,0.15)', color: '#C4849A' }}>This one</span>}
+          </p>
+          <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
+            {b.date ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'No date set'}
+            {b.time ? ` · ${b.time}` : ''}
+          </p>
+        </div>
+      </div>
+      <StatusBadge status={b.status} />
+    </div>
+  );
+}
+
 export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdateBooking, onDelete, allBookings, darkMode: dm }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [showClientStats, setShowClientStats] = useState(false);
+  const [showClientPanel, setShowClientPanel] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -720,7 +746,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
   const totalVisits = allBookings.filter(b => b.email === booking.email).length;
   const completedVisits = allBookings.filter(b => b.email === booking.email && b.status === 'completed').length;
-  const cancelledVisits = allBookings.filter(b => b.email === booking.email && b.status === 'cancelled').length;
   // Sort chronologically: earliest date first, undated last
   const clientBookings = allBookings
     .filter(b => b.email === booking.email && b.id !== booking.id)
@@ -730,6 +755,25 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       if (!b.date) return -1;
       return a.date.localeCompare(b.date);
     });
+
+  // Full appointment list for this client (including the current one), split
+  // into upcoming vs past for the tap-through client profile panel. "Today" is
+  // computed in local time so an appointment today never falls into the past.
+  const localToday = (() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  })();
+  const allClientBookings = (booking.email ? allBookings.filter(b => b.email === booking.email) : [booking])
+    .slice()
+    .sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    });
+  const isUpcomingAppt = (b) => b.status !== 'cancelled' && b.status !== 'completed' && (!b.date || b.date >= localToday);
+  const upcomingBookings = allClientBookings.filter(isUpcomingAppt);
+  const pastBookings = allClientBookings.filter(b => !isUpcomingAppt(b)).reverse();
 
   // Fetch bridal inquiry if this is a bridal booking
   const isBridal = /bridal|bride|wedding|full day/i.test(booking.service || '') && !/non-bridal/i.test(booking.service || '');
@@ -916,10 +960,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Header */}
         <div className="flex items-start justify-between mb-6 gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[1rem]"
+            {/* Avatar + name both open the full client profile screen. */}
+            <button type="button" onClick={() => setShowClientPanel(true)} aria-label={`View ${booking.name || 'client'} profile`}
+              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[1rem] transition-all active:scale-95"
               style={{ background: dm ? 'rgba(212,160,176,0.16)' : '#F5E6EC', color: dm ? '#e7c9d5' : '#8A4A63' }}>
               {(booking.name || '?').trim().charAt(0).toUpperCase()}
-            </div>
+            </button>
             <div className="min-w-0">
               {booking.service && (
                 <span className="inline-block mb-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-[0.04em] text-[0.82rem] leading-none"
@@ -927,10 +973,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {booking.service}
                 </span>
               )}
-              <button onClick={() => setShowClientStats(!showClientStats)}
-                className="font-serif text-[1.5rem] leading-tight transition-colors text-left block truncate max-w-full"
+              <button onClick={() => setShowClientPanel(true)}
+                className="group font-serif text-[1.5rem] leading-tight transition-colors text-left flex items-center gap-1.5 max-w-full"
                 style={{ color: dm ? '#e4e4e7' : '#111' }}>
-                {booking.name}
+                <span className="truncate">{booking.name}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#5b5560' : '#c9bcc3'} strokeWidth="2.4" className="w-3.5 h-3.5 flex-shrink-0 transition-transform group-active:translate-x-0.5"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               {booking.phone && (
                 <p className="text-[0.8rem] mt-0.5 truncate tabular-nums" style={{ color: dm ? '#71717a' : '#999' }}>
@@ -941,24 +988,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </div>
           <StatusBadge status={booking.status} />
         </div>
-
-        {/* Client stats — toggled by name click */}
-        {showClientStats && (
-          <div className="grid grid-cols-3 gap-3 mb-6 p-4 rounded-[6px]" style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#2a2420' : '#ebebeb'}`, animation: 'fadeSlideDown 0.3s ease-out' }}>
-            <div className="text-center">
-              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{totalVisits}</div>
-              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Total Visits</div>
-            </div>
-            <div className="text-center">
-              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{completedVisits}</div>
-              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Completed</div>
-            </div>
-            <div className="text-center">
-              <div className="font-serif text-[1.5rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{cancelledVisits}</div>
-              <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098]">Cancelled</div>
-            </div>
-          </div>
-        )}
 
         {/* Info grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
@@ -1460,6 +1489,103 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <StatusBadge status={b.status} />
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Client profile panel ──────────────────────────────────────────────
+          Tapping the client's name/avatar on the card opens this full screen.
+          Its own back button returns to the booking card (just closes it), so on
+          mobile it reads as a proper client screen ↔ booking-card navigation. */}
+      {showClientPanel && (
+        <div className="fixed inset-0 z-[9997] overflow-y-auto overscroll-contain"
+          style={{ background: dm ? '#141418' : '#F6F2F0', animation: 'fadeSlideDown 0.2s ease-out' }}>
+          {/* Sticky header with back */}
+          <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3"
+            style={{ background: dm ? 'rgba(20,20,24,0.92)' : 'rgba(246,242,240,0.92)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}` }}>
+            <button type="button" onClick={() => setShowClientPanel(false)} aria-label="Back to appointment"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+              style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#111'} strokeWidth="2.2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <p className="text-[0.62rem] font-bold tracking-[0.18em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Client Profile</p>
+          </div>
+
+          <div className="max-w-[640px] mx-auto px-5 py-7 flex flex-col gap-6">
+            {/* Hero */}
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center font-serif text-[2rem]"
+                style={{ background: dm ? 'rgba(212,160,176,0.16)' : '#F5E6EC', color: dm ? '#e7c9d5' : '#8A4A63' }}>
+                {(booking.name || '?').trim().charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-serif text-[1.7rem] leading-tight" style={{ color: dm ? '#f4f4f5' : '#111' }}>{booking.name || 'Client'}</h2>
+                {booking.phone && <p className="text-[0.85rem] mt-1 tabular-nums" style={{ color: dm ? '#a1a1aa' : '#8a8a92' }}>{formatPhone(booking.phone)}</p>}
+                {booking.email && <p className="text-[0.8rem] mt-0.5 break-all" style={{ color: dm ? '#71717a' : '#a0969c' }}>{booking.email}</p>}
+              </div>
+            </div>
+
+            {/* Contact actions: Call / Text / Email */}
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { label: 'Call', href: booking.phone ? `tel:${phoneHref(booking.phone)}` : null, icon: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/> },
+                { label: 'Text', href: booking.phone ? `sms:${phoneHref(booking.phone)}` : null, icon: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/> },
+                { label: 'Email', href: booking.email ? `mailto:${booking.email}` : null, icon: <><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></> },
+              ].map(({ label, href, icon }) => {
+                const inner = (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">{icon}</svg>
+                    <span className="text-[0.64rem] font-bold tracking-[0.08em] uppercase" style={{ color: dm ? '#d4d4d8' : '#6B4055' }}>{label}</span>
+                  </>
+                );
+                const cardStyle = { background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}` };
+                return href ? (
+                  <a key={label} href={href} className="flex flex-col items-center gap-1.5 py-3.5 rounded-2xl transition-all active:scale-95" style={cardStyle}>{inner}</a>
+                ) : (
+                  <div key={label} className="flex flex-col items-center gap-1.5 py-3.5 rounded-2xl opacity-40" style={cardStyle}>{inner}</div>
+                );
+              })}
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#ece5df'}` }}>
+              {[['Total', totalVisits], ['Completed', completedVisits], ['Upcoming', upcomingBookings.length]].map(([label, n]) => (
+                <div key={label} className="text-center">
+                  <div className="font-serif text-[1.6rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{n}</div>
+                  <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098] mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Upcoming */}
+            {upcomingBookings.length > 0 && (
+              <div>
+                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-2.5">Upcoming</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#ece5df'}` }}>
+                  {upcomingBookings.map((b, idx) => (
+                    <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} last={idx === upcomingBookings.length - 1} dm={dm} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Past & Completed */}
+            {pastBookings.length > 0 && (
+              <div>
+                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-2.5">Past &amp; Completed</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#ece5df'}` }}>
+                  {pastBookings.map((b, idx) => (
+                    <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} last={idx === pastBookings.length - 1} dm={dm} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button type="button" onClick={() => setShowClientPanel(false)}
+              className="mt-1 w-full py-3.5 rounded-xl text-[0.78rem] font-semibold transition-all active:scale-[0.99]"
+              style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+              Back to appointment
+            </button>
           </div>
         </div>
       )}

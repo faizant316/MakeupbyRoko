@@ -125,10 +125,46 @@ function Dots({ count, active, onJump }) {
   );
 }
 
+// Which section a photo belongs to. The category is baked into the storage path
+// by /api/upload-client-photos (client/<id>/<category>/…), so a flat URL array
+// still groups cleanly. Check "without" first — "/without/" contains "with".
+function photoCategory(url) {
+  const u = String(url || '');
+  if (/\/without\//.test(u)) return 'without';
+  if (/\/with\//.test(u)) return 'with';
+  return 'extra';
+}
+
+// One labeled photo section on the success card — mirrors the upload screen's
+// two-zone layout (Without makeup / With makeup) so the confirmation shows the
+// photos organized exactly the way the client added them, on mobile and desktop.
+function PhotoGroupView({ icon, title, items }) {
+  if (!items.length) return null;
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.6" className="w-3.5 h-3.5 flex-shrink-0">{icon}</svg>
+        <p className="text-[0.68rem] font-bold tracking-[0.1em] uppercase" style={{ color: PLUM_DARK }}>{title}</p>
+        <span className="ml-auto text-[0.56rem] font-bold tracking-[0.08em] uppercase" style={{ color: LABEL }}>{items.length} photo{items.length > 1 ? 's' : ''}</span>
+      </div>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {items.map((url, i) => (
+          <div key={i} className="aspect-square rounded-lg overflow-hidden" style={{ border: `1px solid ${HEAD_BORDER}` }}>
+            <img src={url} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Bridal clients attach their with/without makeup + inspiration photos here
 // (return-visit, post-submit). Uploads land on the booking's reference_photos.
 function ClientPhotosCard({ token, booking, setBooking }) {
   const photos = booking?.reference_photos || [];
+  const withoutPhotos = photos.filter(u => photoCategory(u) === 'without');
+  const withPhotos = photos.filter(u => photoCategory(u) === 'with');
+  const extraPhotos = photos.filter(u => photoCategory(u) === 'extra');
   const [uploading, setUploading] = useState(false);
 
   const handlePick = async (e) => {
@@ -173,12 +209,10 @@ function ClientPhotosCard({ token, booking, setBooking }) {
         </p>
 
         {photos.length > 0 && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {photos.map((url, i) => (
-              <div key={i} className="aspect-square rounded-lg overflow-hidden" style={{ border: `1px solid ${HEAD_BORDER}` }}>
-                <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-              </div>
-            ))}
+          <div className="flex flex-col gap-4">
+            <PhotoGroupView icon={ICON.camera} title="Without makeup" items={withoutPhotos} />
+            <PhotoGroupView icon={ICON.sparkle} title="With makeup" items={withPhotos} />
+            <PhotoGroupView icon={ICON.image} title="More photos" items={extraPhotos} />
           </div>
         )}
 
@@ -350,7 +384,9 @@ export default function UploadZelle() {
     if (!zelleFile || submitting) return;
     setSubmitting(true);
     try {
-      // 1) Deposit screenshot — the critical, required upload.
+      // 1) Deposit screenshot — the critical, required upload. This is the ONLY
+      // thing the client waits on, so the confirmation appears in seconds
+      // instead of after every photo has finished.
       const shot = await compressImage(zelleFile);
       const fd = new FormData();
       fd.append('file', shot);
@@ -361,45 +397,50 @@ export default function UploadZelle() {
       try { data = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
       if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
 
+      // Deposit is saved — reveal the success screen right away. The bridal
+      // photos then upload in the background and pop onto the card as they land,
+      // so the client is never stuck on a spinner while several phone photos
+      // compress and upload (which was taking ~a minute on mobile).
+      setBooking(b => ({ ...b, zelle_screenshot: 'uploaded', screenshot_url: data.url }));
+      setUploaded(true);
+      setSubmitting(false);
+
       // 2) Bridal photos — encouraged, but never block a saved deposit.
       // Upload ONE photo per request. A single multi-file request easily
       // exceeds Vercel's ~4.5MB serverless body limit (just a few phone
       // photos is enough), and the platform rejects it before our route even
-      // runs — which is what was silently failing every photo upload. One at
-      // a time keeps each request small and lets a single bad file fail on
-      // its own instead of taking the whole batch down.
-      let refPhotos = Array.isArray(booking?.reference_photos) ? booking.reference_photos : [];
-      let photoError = null;
-      // Tag each upload with its category ("without"/"with") so the admin card
-      // can group them. Encoded in the storage path, not a schema change.
+      // runs. Sequentially (not in parallel) because the route appends to
+      // reference_photos with a read-modify-write — concurrent writes would
+      // clobber each other and drop photos.
       const groups = isBridal ? [['without', withoutItems], ['with', withItems]] : [];
       const tagged = groups.flatMap(([category, items]) => items.map(it => ({ it, category })));
-      for (const { it, category } of tagged) {
-        try {
-          const compressed = await compressImage(it.file);
-          const pf = new FormData();
-          pf.append('file', compressed);
-          pf.append('token', token);
-          pf.append('category', category);
-          const pres = await fetch('/api/upload-client-photos', { method: 'POST', body: pf });
-          const praw = await pres.text();
-          let pdata = {};
-          try { pdata = praw ? JSON.parse(praw) : {}; } catch { /* not JSON */ }
-          if (!pres.ok) throw new Error(pdata.error || `Photo upload failed (${pres.status})`);
-          refPhotos = pdata.reference_photos || [...refPhotos, ...(pdata.urls || [])];
-        } catch (e) {
-          photoError = e;
+      if (tagged.length) {
+        let photoError = null;
+        for (const { it, category } of tagged) {
+          try {
+            const compressed = await compressImage(it.file);
+            const pf = new FormData();
+            pf.append('file', compressed);
+            pf.append('token', token);
+            pf.append('category', category);
+            const pres = await fetch('/api/upload-client-photos', { method: 'POST', body: pf });
+            const praw = await pres.text();
+            let pdata = {};
+            try { pdata = praw ? JSON.parse(praw) : {}; } catch { /* not JSON */ }
+            if (!pres.ok) throw new Error(pdata.error || `Photo upload failed (${pres.status})`);
+            // Merge progressively so each photo appears on the success card as
+            // soon as it finishes uploading.
+            setBooking(b => ({ ...b, reference_photos: pdata.reference_photos || [...(b?.reference_photos || []), ...(pdata.urls || [])] }));
+          } catch (e) {
+            photoError = e;
+          }
         }
-      }
-
-      setBooking(b => ({ ...b, zelle_screenshot: 'uploaded', screenshot_url: data.url, reference_photos: refPhotos }));
-      setUploaded(true);
-      if (photoError) {
-        setTimeout(() => alert('Your deposit was received! We had trouble uploading your photos. You can reopen this link any time to add them.'), 60);
+        if (photoError) {
+          setTimeout(() => alert('Your deposit was received! We had trouble uploading your photos. You can reopen this link any time to add them.'), 60);
+        }
       }
     } catch (err) {
       alert(err?.message ? `Upload failed: ${err.message}` : 'Upload failed. Please try again.');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -417,7 +458,7 @@ export default function UploadZelle() {
           </div>
           <h2 className="font-serif text-xl mb-2" style={{ color: VALUE }}>Invalid Link</h2>
           <p className="text-[0.82rem] leading-[1.7]" style={{ color: PLUM_DARK }}>{error}</p>
-          <p className="text-[0.75rem] mt-3" style={{ color: LABEL }}>Need help? Email <a href="mailto:makeupbyroko22@gmail.com" className="underline" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a></p>
+          <p className="text-[0.75rem] mt-3" style={{ color: LABEL }}>Need help? Email <a href="mailto:roko@makeupbyroko.org" className="underline" style={{ color: PLUM }}>roko@makeupbyroko.org</a></p>
         </div>
       </div>
     );
@@ -508,7 +549,7 @@ export default function UploadZelle() {
                 <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
                   <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-2" style={{ color: PLUM }}>Questions?</p>
                   <p className="text-[0.73rem] leading-[1.7]" style={{ color: PLUM_DARK }}>
-                    Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline font-medium" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
+                    Email <a href="mailto:roko@makeupbyroko.org" className="hover:underline font-medium" style={{ color: PLUM }}>roko@makeupbyroko.org</a>
                     {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="hover:underline font-medium" style={{ color: PLUM }}>@makeupbyroko_</a>
                   </p>
                 </div>
@@ -544,7 +585,7 @@ export default function UploadZelle() {
               <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
                 <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-2" style={{ color: PLUM }}>Questions?</p>
                 <p className="text-[0.73rem] leading-[1.7]" style={{ color: PLUM_DARK }}>
-                  Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline font-medium" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
+                  Email <a href="mailto:roko@makeupbyroko.org" className="hover:underline font-medium" style={{ color: PLUM }}>roko@makeupbyroko.org</a>
                   {' '}or DM <a href="https://instagram.com/makeupbyroko_" target="_blank" rel="noreferrer" className="hover:underline font-medium" style={{ color: PLUM }}>@makeupbyroko_</a>
                 </p>
               </div>
@@ -761,7 +802,7 @@ export default function UploadZelle() {
           </div>
 
           <p className="text-center text-[0.62rem] mt-4" style={{ color: LABEL }}>
-            Trouble? Email <a href="mailto:makeupbyroko22@gmail.com" className="hover:underline" style={{ color: PLUM }}>makeupbyroko22@gmail.com</a>
+            Trouble? Email <a href="mailto:roko@makeupbyroko.org" className="hover:underline" style={{ color: PLUM }}>roko@makeupbyroko.org</a>
           </p>
         </div>
       </div>

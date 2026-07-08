@@ -171,13 +171,13 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
               If you uploaded photos in the form, you're all set! If you haven't yet, or want to add more, send them here:
             </p>
             <div className="flex flex-col gap-2.5">
-              <a href="mailto:makeupbyroko22@gmail.com" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
+              <a href="mailto:roko@makeupbyroko.org" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
                 <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
                   </svg>
                 </div>
-                makeupbyroko22@gmail.com
+                roko@makeupbyroko.org
               </a>
               <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-[0.82rem] text-[#555] hover:text-[#C4849A] transition-colors">
                 <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0">
@@ -194,7 +194,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
         {/* Sign off */}
         <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
           <p className="font-serif italic text-[#C4849A] text-[1.1rem] mb-1">With love, Roko</p>
-          <p className="text-[0.7rem] text-[#999999]">makeupbyroko22@gmail.com · @makeupbyroko_</p>
+          <p className="text-[0.7rem] text-[#999999]">roko@makeupbyroko.org · @makeupbyroko_</p>
         </div>
 
         <div className="pb-4">
@@ -479,7 +479,15 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         service: bridalTitle,
         date: selectedDate || '',
         time: '',
-        notes: `Ready by: ${form.ready_by_time || 'Not specified'}. ${form.additional_details || ''} | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`.trim(),
+        // "Ready by" here is the BRIDE'S stated preference (makeup_ready_by_time),
+        // NOT when the hairstylist arrives (ready_by_time). Each piece is its own
+        // pipe-delimited segment so the admin card parses the time, the comment,
+        // and the agreement cleanly instead of lumping them together.
+        notes: [
+          `Ready by: ${form.makeup_ready_by_time || 'Not specified'}`,
+          form.additional_details?.trim() || null,
+          `✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`,
+        ].filter(Boolean).join(' | '),
         status: 'pending',
         upload_token: token,
         reference_photos: [],
@@ -1060,7 +1068,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <div className="mt-2 pt-2.5 border-t border-[#EDD5E2]">
                     <p className="text-[0.72rem] text-[#999]">
                       For pricing & details on out-of-state bookings, email us at{' '}
-                      <a href="mailto:makeupbyroko22@gmail.com" className="text-[#D4A0B0] hover:underline font-medium">makeupbyroko22@gmail.com</a>
+                      <a href="mailto:roko@makeupbyroko.org" className="text-[#D4A0B0] hover:underline font-medium">roko@makeupbyroko.org</a>
                       {' '}or DM{' '}
                       <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="text-[#D4A0B0] hover:underline font-medium">@makeupbyroko_</a>
                     </p>

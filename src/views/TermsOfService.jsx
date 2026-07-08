@@ -100,8 +100,8 @@ export default function TermsOfService() {
           <p className="font-serif text-[1.1rem] text-[#111] mb-2">Questions about these terms?</p>
           <p className="text-[0.8rem] text-[#888]">
             Email us at{' '}
-            <a href="mailto:makeupbyroko22@gmail.com" className="text-[#A0785A] underline underline-offset-2 hover:text-[#111] transition-colors">
-              makeupbyroko22@gmail.com
+            <a href="mailto:roko@makeupbyroko.org" className="text-[#A0785A] underline underline-offset-2 hover:text-[#111] transition-colors">
+              roko@makeupbyroko.org
             </a>
           </p>
         </div>

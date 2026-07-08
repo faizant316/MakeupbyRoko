@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Read-only mini month with the chosen day highlighted — mirrors how the date
 // looked on the booking calendar, shown inside the confirmation recap.
@@ -48,6 +48,22 @@ function MiniCalendar({ dateStr }) {
  */
 export default function SubmissionRecap({ dateStr, dateLabel = 'Selected Date', rows = [] }) {
   const [open, setOpen] = useState(false);
+
+  // These confirmation screens live inside a modal that runs its own Lenis
+  // instance (see modalLenis.js). Lenis caches the scrollable height, so when the
+  // recap expands its extra rows sit past the stale scroll limit and can't be
+  // reached. Recompute the enclosing Lenis (and the page one) once the newly
+  // revealed content has laid out so the whole submission scrolls smoothly.
+  useEffect(() => {
+    if (!open) return;
+    const resizeScrollers = () => {
+      document.querySelectorAll('[data-modal-scroll]').forEach((el) => el.__modalLenis?.resize());
+      window.dispatchEvent(new Event('resize'));
+    };
+    const raf = requestAnimationFrame(resizeScrollers);
+    const t = setTimeout(resizeScrollers, 260); // after the fade/slide settles
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+  }, [open, rows.length]);
 
   const filled = rows.filter(
     r => r.value !== undefined && r.value !== null && String(r.value).trim() !== ''
