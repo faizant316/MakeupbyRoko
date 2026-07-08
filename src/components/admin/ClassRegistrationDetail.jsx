@@ -571,6 +571,8 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const [confirmModal, setConfirmModal] = useState(null);
   const [showCompose, setShowCompose] = useState(false);
   const [contactSent, setContactSent] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [refunding, setRefunding] = useState(null); // 'full' | 'minus_fee' | null
 
   const cardBg    = dm ? '#26262e' : '#fff';
   const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
@@ -601,6 +603,8 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   // Prefer what Stripe actually charged; fall back to the per-format catalog
   // price for manually-added rows that never went through checkout.
   const totalPrice = regTotal(reg);
+  const amountPaid = Number(reg.amount_paid) || totalPrice || 0;
+  const refundMinusFee = Math.max(0, amountPaid - (amountPaid * 0.029 + 0.30));
   const fmt = FORMAT_META[reg.class_format];
   // Sign-ups reach this page because they paid through Stripe at checkout, so
   // "paid" is the baseline truth — the only meaningful payment action left is a
@@ -632,6 +636,38 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       confirmLabel: 'Yes, Update',
       onConfirm: () => {
         updateMutation.mutate({ payment_status: newStatus });
+      },
+    });
+  };
+
+  // Real Stripe refund (only for rows that actually went through checkout).
+  const doStripeRefund = (mode) => {
+    const isFull = mode === 'full';
+    confirm({
+      title: isFull ? 'Full refund?' : 'Refund minus card fee?',
+      body: isFull
+        ? 'Sends the entire amount back to the client, card fee included. Use this when you had to cancel.'
+        : 'Sends back the class fee minus the card processing fee. Use this when the client cancelled with 14 or more days notice.',
+      color: '#b91c1c', icon: '↩', confirmLabel: 'Yes, Refund',
+      onConfirm: async () => {
+        setRefunding(mode);
+        try {
+          const res = await fetch('/api/refund-class', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ registrationId: reg.id, mode }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Refund failed');
+          setReg(prev => ({ ...prev, payment_status: 'refunded' }));
+          queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
+          queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
+          setRefundOpen(false);
+        } catch (e) {
+          alert((e.message || 'Refund failed') + '\n\nYou can still refund directly in Stripe.');
+        } finally {
+          setRefunding(null);
+        }
       },
     });
   };
@@ -880,26 +916,74 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
               </button>
             </div>
           ) : !isRefunded ? (
-            <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
-              style={{ background: sectionBg, border: `1px solid ${cardBorder}` }}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <div className="rounded-xl overflow-hidden" style={{ background: sectionBg, border: `1px solid ${cardBorder}` }}>
+              <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#86efac' : '#15803d' }}>Paid in full</p>
+                    <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted }}>
+                      Settled at checkout{totalPrice > 0 ? ` · $${totalPrice.toLocaleString()}` : ''}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#86efac' : '#15803d' }}>Paid in full</p>
-                  <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted }}>
-                    Settled at checkout{totalPrice > 0 ? ` · $${totalPrice.toLocaleString()}` : ''}
-                  </p>
-                </div>
+                {reg.stripe_session_id ? (
+                  <button
+                    onClick={() => setRefundOpen(o => !o)}
+                    className="text-[0.65rem] font-semibold tracking-[0.04em] px-3 py-2 rounded-lg transition-all flex-shrink-0 flex items-center gap-1.5"
+                    style={{ color: '#b91c1c', border: '1px solid rgba(239,68,68,0.25)', background: refundOpen ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)' }}
+                  >
+                    Refund
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3 h-3" style={{ transform: refundOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => changePayment('refunded')}
+                    className="text-[0.65rem] font-semibold tracking-[0.04em] px-3 py-2 rounded-lg transition-all flex-shrink-0"
+                    style={{ color: '#b91c1c', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}
+                  >
+                    Mark as Refunded
+                  </button>
+                )}
               </div>
-              <button
-                onClick={() => changePayment('refunded')}
-                className="text-[0.65rem] font-semibold tracking-[0.04em] px-3 py-2 rounded-lg transition-all flex-shrink-0"
-                style={{ color: '#b91c1c', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}
-              >
-                Mark as Refunded
-              </button>
+
+              {reg.stripe_session_id && refundOpen && (
+                <div className="px-4 pb-4 pt-0.5 flex flex-col gap-2" style={{ borderTop: `1px solid ${cardBorder}` }}>
+                  <p className="text-[0.62rem] mt-2.5 mb-0.5 leading-relaxed" style={{ color: textMuted }}>
+                    Sends the money straight back to their card through Stripe.
+                  </p>
+                  <button
+                    type="button" disabled={!!refunding}
+                    onClick={() => doStripeRefund('minus_fee')}
+                    className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl text-left transition-all disabled:opacity-60 active:scale-[0.99]"
+                    style={{ background: dm ? '#1c1c28' : '#fff', border: `1px solid ${cardBorder}` }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[0.74rem] font-semibold" style={{ color: textMain }}>Refund minus card fee</p>
+                      <p className="text-[0.62rem] mt-0.5" style={{ color: textMuted }}>Client cancelled with 14+ days notice</p>
+                    </div>
+                    <span className="text-[0.82rem] font-semibold flex-shrink-0 tabular-nums" style={{ color: textMain }}>
+                      {refunding === 'minus_fee' ? '…' : `$${refundMinusFee.toFixed(2)}`}
+                    </span>
+                  </button>
+                  <button
+                    type="button" disabled={!!refunding}
+                    onClick={() => doStripeRefund('full')}
+                    className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl text-left transition-all disabled:opacity-60 active:scale-[0.99]"
+                    style={{ background: dm ? '#1c1c28' : '#fff', border: `1px solid ${cardBorder}` }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[0.74rem] font-semibold" style={{ color: textMain }}>Full refund <span style={{ color: textMuted, fontWeight: 400 }}>(card fee included)</span></p>
+                      <p className="text-[0.62rem] mt-0.5" style={{ color: textMuted }}>Use when you had to cancel</p>
+                    </div>
+                    <span className="text-[0.82rem] font-semibold flex-shrink-0 tabular-nums" style={{ color: textMain }}>
+                      {refunding === 'full' ? '…' : `$${amountPaid.toFixed(2)}`}
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
