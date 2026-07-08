@@ -436,7 +436,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
   // Validate the details, then advance to the Review & Sign step.
   const handleGoToSign = () => {
-    if (!form.bride_name) { alert('Please enter the bride\'s name.'); return; }
+    if (!form.bride_name) { alert('Please enter the bride\'s first name.'); return; }
+    if (!form.soon_to_be_last_name) { alert('Please enter the last name.'); return; }
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
     if (!selectedDate) { alert('Please select your wedding date from the calendar.'); return; }
@@ -870,7 +871,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <input value={form.bride_name} onChange={e => set('bride_name', e.target.value)} placeholder="First name" className={inputClass} />
               </div>
               <div>
-                <label className={labelClass}>Last Name</label>
+                <label className={labelClass}>Last Name *</label>
                 <input value={form.soon_to_be_last_name} onChange={e => set('soon_to_be_last_name', e.target.value)} placeholder="Last name" className={inputClass} />
               </div>
             </div>

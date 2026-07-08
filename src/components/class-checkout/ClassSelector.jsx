@@ -65,8 +65,9 @@ export default function ClassSelector({ classKeys, format, selected, onSelect, o
             </p>
           </div>
 
-          {/* Two classes side by side */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-5">
+          {/* Stacked on mobile (roomier boxes, easier to scroll the long
+              descriptions), side by side from tablet up. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
             {classKeys.map(key => {
               const cls = classMeta(key, format);
               const extra = CLASS_EXTRA[key] || {};
