@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
-import { groupByTime, daysUntil, timeToMinutes } from './timeline';
+import { groupByTime, timeToMinutes } from './timeline';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 
@@ -272,19 +272,6 @@ export default function BookingsList({
   const timeGroups = groupByTime(visibleActive, b => b.date);
 
   const today = new Date().toISOString().split('T')[0];
-
-  // Upcoming glance — counts every event on the calendar, not only service
-  // bookings: makeup classes and consultations count too, so the "this week"
-  // and "upcoming" totals match what's actually on the schedule.
-  const lessonEvents = (classRegs || []).filter(r => r.appointment_date && r.status !== 'cancelled');
-  const consultEvents = (allBookings || []).filter(b => b.consultation_date && b.status !== 'cancelled');
-  const inWeek = d => { const x = daysUntil(d); return x >= 0 && x <= 7; };
-  const weekCount = visibleActive.filter(b => inWeek(b.date)).length
-    + lessonEvents.filter(r => inWeek(r.appointment_date)).length
-    + consultEvents.filter(b => inWeek(b.consultation_date)).length;
-  const upcomingCount = visibleActive.length
-    + lessonEvents.filter(r => daysUntil(r.appointment_date) >= 0).length
-    + consultEvents.filter(b => daysUntil(b.consultation_date) >= 0).length;
 
   const consultationBookings = (allBookings || [])
     .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
@@ -984,22 +971,6 @@ export default function BookingsList({
           )}
         </div>
       )}
-
-      {/* Upcoming glance — reads as a plain sentence so the numbers explain
-          themselves ("57 upcoming inquiries"), instead of a row of bare counts.
-          Wording follows the Bridal / Non-Bridal tab. */}
-      {viewType === 'appointments' && !selectedDate && !loading && upcomingCount > 0 && (() => {
-        const kind = typeFilter === 'bridal' ? 'bridal ' : typeFilter === 'nonbridal' ? 'non-bridal ' : '';
-        const numStyle = { color: dm ? '#e4e4e7' : '#1a1a1a' };
-        return (
-          <div className="flex items-baseline flex-wrap gap-x-2.5 gap-y-1 mb-5 px-0.5 text-[0.85rem]"
-            style={{ color: dm ? '#a1a1aa' : '#93939b' }}>
-            <span><span className="font-serif text-[1.2rem] mr-1" style={numStyle}>{weekCount}</span>this week</span>
-            <span style={{ opacity: 0.35 }}>·</span>
-            <span><span className="font-serif text-[1.2rem] mr-1" style={numStyle}>{upcomingCount}</span>upcoming {kind}inquiries</span>
-          </div>
-        );
-      })()}
 
       {/* Appointments content */}
       {viewType === 'appointments' && (loading ? (
