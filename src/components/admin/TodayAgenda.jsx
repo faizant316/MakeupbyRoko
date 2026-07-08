@@ -30,11 +30,11 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
   const todayKey = localDateKey(new Date());
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  // Each group (Consultations / Appointments / Makeup Classes) is a collapsible
-  // dropdown, collapsed by default, so the Today card stays a compact summary
-  // (just the labelled counts) until Roko taps a section open.
-  const [openGroups, setOpenGroups] = useState({});
-  const toggleGroup = key => setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  // Each group (Consultations / Appointments / Makeup Classes) is expanded by
+  // default so today's actual clients — with their service, format and status —
+  // are visible at a glance. Each header can still be tapped to fold it away.
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+  const toggleGroup = key => setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
 
   const { groups, total } = useMemo(() => {
     const consults = [], appts = [], classes = [];
@@ -72,15 +72,6 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
 
   const hasItems = total > 0;
 
-  // The next thing on the clock today — a glanceable highlight so Roko sees
-  // what's immediately coming up even with every group collapsed. It falls away
-  // once the day's last item is behind her.
-  const nowMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
-  const nextUp = groups
-    .flatMap(g => g.items)
-    .filter(it => { const m = timeToMinutes(it.time); return m < 9999 && m >= nowMin; })
-    .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time))[0] || null;
-
   return (
     <div className="mb-8">
       {/* Header */}
@@ -96,34 +87,10 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
         )}
       </div>
 
-      {/* Next-up highlight — the soonest still-upcoming item today. Tapping it
-          opens that client/booking, same as its row. */}
-      {nextUp && (
-        <button
-          type="button"
-          onClick={nextUp.onClick}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-3 text-left transition-all hover:opacity-90 active:scale-[0.99]"
-          style={{
-            background: dm ? 'rgba(212,160,176,0.1)' : 'rgba(212,160,176,0.08)',
-            border: `1px solid ${dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.22)'}`,
-          }}
-        >
-          <span className="text-[0.5rem] font-bold tracking-[0.12em] uppercase px-1.5 py-1 rounded-md flex-shrink-0" style={{ background: '#D4A0B0', color: '#fff' }}>
-            Next up
-          </span>
-          <span className="text-[0.8rem] font-semibold truncate flex-1 min-w-0" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
-            {nextUp.name}
-          </span>
-          <span className="text-[0.74rem] font-bold tabular-nums flex-shrink-0" style={{ color: '#A0607A' }}>
-            {nextUp.time}
-          </span>
-        </button>
-      )}
-
       {hasItems ? (
         <div className="flex flex-col gap-4">
           {groups.map(group => {
-            const isOpen = !!openGroups[group.key];
+            const isOpen = !collapsedGroups[group.key];
             return (
             <div key={group.key} className="flex flex-col gap-1.5">
               {/* Group header — tap to expand/collapse this run so consultations,
@@ -139,7 +106,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                 <span className="text-[0.6rem] font-semibold" style={{ color: dm ? '#52525b' : '#b8b8c0' }}>{group.items.length}</span>
                 <svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className={`w-3.5 h-3.5 ml-auto transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 ml-auto transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
                   style={{ color: dm ? '#52525b' : '#c2c2ca' }}
                 >
                   <polyline points="6 9 12 15 18 9" />
