@@ -1,5 +1,12 @@
 import { useMemo } from 'react';
 import { classesOfReg } from '@/lib/classCatalog';
+import { relativeDate } from './timeline';
+
+// The date a class actually sits on: the confirmed appointment date, else (in
+// person only) the client's chosen Wednesday. Mirrors the Class Sign-Ups page.
+function classDate(reg) {
+  return reg.appointment_date || (reg.class_format === 'in_person' ? reg.preferred_date : null);
+}
 
 // Home overview card for class sign-ups. Replaces the old emoji + inline pills
 // with a clearer breakdown (Pending / Confirmed / Enrolled) and a real
@@ -54,7 +61,7 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[0.92rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
+          <p className="text-[1.25rem] font-serif leading-tight" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
           <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
             {classRegs.length} {classRegs.length === 1 ? 'registration' : 'registrations'}
           </p>
@@ -93,6 +100,11 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
             {recent.slice(0, 3).map(r => {
               const m = STATUS_META[r.status || 'pending'] || STATUS_META.pending;
               const initial = (r.full_name || '?').trim().charAt(0).toUpperCase() || '?';
+              const rel = relativeDate(classDate(r));
+              const dateColor = rel.tone === 'accent' ? '#A0607A'
+                : rel.tone === 'past' ? '#E0795B'
+                : rel.tone === 'muted' ? (dm ? '#71717a' : '#b0a59c')
+                : (dm ? '#a1a1aa' : '#83838d');
               return (
                 <button key={r.id} onClick={() => onOpenReg?.(r)}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors"
@@ -109,8 +121,14 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
                       {classLabelOf(r)} · {timeAgo(r.created_date)}
                     </p>
                   </div>
-                  <span className="text-[0.5rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: `${m.color}1a`, color: m.color }}>{m.label}</span>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-[0.65rem] font-semibold whitespace-nowrap" style={{ color: dateColor }}>
+                      {rel.label}
+                      {r.appointment_time && <span className="font-normal" style={{ color: dm ? '#71717a' : '#9c9ca4' }}> · {r.appointment_time}</span>}
+                    </span>
+                    <span className="text-[0.5rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
+                      style={{ background: `${m.color}1a`, color: m.color }}>{m.label}</span>
+                  </div>
                 </button>
               );
             })}

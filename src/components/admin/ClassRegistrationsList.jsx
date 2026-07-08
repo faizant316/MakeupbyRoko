@@ -229,6 +229,13 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   const weekCount = visible.filter(r => { const d = daysUntil(effectiveDate(r)); return d >= 0 && d <= 7; }).length;
   const countOf = (f) => registrations.filter(r => r.class_format === f).length;
 
+  // Just signed up: registrations created in the last 24 hrs, newest first. Shown
+  // as a callout at the very top so a fresh sign-up is impossible to miss — even
+  // when its class date lands deep in a collapsed group like "Later".
+  const recent = visible
+    .filter(r => r.created_date && (Date.now() - new Date(r.created_date).getTime()) < 24 * 60 * 60 * 1000)
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
   return (
     <div>
       {/* Time-aware summary glance */}
@@ -267,6 +274,25 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
           );
         })}
       </div>
+
+      {/* Just Signed Up — fresh registrations pulled to the top so they're
+          impossible to miss, even when the class date sits in a folded group. */}
+      {recent.length > 0 && (
+        <div className="mb-6 rounded-2xl p-3 sm:p-3.5"
+          style={{ background: dm ? 'rgba(160,96,122,0.08)' : '#FBF3F7', border: `1px solid ${dm ? 'rgba(160,96,122,0.28)' : '#F1DCE7'}` }}>
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0" style={{ background: '#A0607A' }} />
+            <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#c78fa3' : '#A0607A' }}>Just Signed Up</span>
+            <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{recent.length}</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {recent.map(reg => (
+              <ClassRow key={`recent-${reg.id}`} reg={reg} onSelect={onSelect} dm={dm} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {visible.length === 0 && (
         <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
