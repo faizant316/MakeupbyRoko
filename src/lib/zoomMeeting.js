@@ -54,9 +54,12 @@ export async function createZoomMeeting({ topic, duration = 30, date, time }) {
       duration,
       ...(start_time ? { start_time, timezone: 'America/Los_Angeles' } : {}),
       settings: {
-        // Host-controlled: the meeting can't start until Roko joins as host
-        // (via start_url), and she gets the "End meeting for all" option.
-        join_before_host: false,
+        // An open "room": anyone with the join link can enter at any time and
+        // the meeting starts without a host. Roko and the client use the exact
+        // same link, so whoever opens it first is simply in the room. No host
+        // start_url, no "waiting for the host to start this meeting."
+        join_before_host: true,
+        jbh_time: 0, // 0 = join anytime (not just minutes before the start time)
         waiting_room: false,
         auto_recording: 'none',
       },

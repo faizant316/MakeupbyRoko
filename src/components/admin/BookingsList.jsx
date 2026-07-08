@@ -3,7 +3,7 @@ import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, daysUntil, timeToMinutes } from './timeline';
-import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
+import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 
 // SSR-safe layout effect — measures the active tab to position the underline
@@ -735,20 +735,21 @@ export default function BookingsList({
                 {(() => {
                   const join = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1];
                   const meetingId = parseMeetingId(b.consultation_notes) || meetingIdFromUrl(join);
-                  if (!meetingId && !join) return null;
+                  const roomUrl = zoomRoomUrl(join, meetingId);
+                  if (!roomUrl) return null;
                   return (
                     <a
-                      href={join || '#'}
+                      href={roomUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={e => { e.stopPropagation(); if (meetingId) { e.preventDefault(); openZoomHost(meetingId, join); } }}
+                      onClick={e => e.stopPropagation()}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
                       style={{ background: '#D4A0B0', color: '#fff' }}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                         <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                       </svg>
-                      {meetingId ? 'Join as host' : 'Join'}
+                      Join
                     </a>
                   );
                 })()}
@@ -818,14 +819,14 @@ export default function BookingsList({
                 {isZoom && (meetingId || zoomMatch) ? (
                   <button
                     type="button"
-                    onClick={() => { if (meetingId) openZoomHost(meetingId, zoomMatch?.[1]); else window.open(zoomMatch[1], '_blank'); }}
+                    onClick={() => openZoomRoom(zoomMatch?.[1], meetingId)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
                     style={{ background: '#D4A0B0', color: '#fff' }}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                       <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                     </svg>
-                    {meetingId ? 'Join as host' : 'Join'}
+                    Join
                   </button>
                 ) : isPhone && r.phone ? (
                   <a
@@ -948,19 +949,19 @@ export default function BookingsList({
                         {b.consultation_type && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{b.consultation_type}</span>}
                       </p>
                     </div>
-                    {(meetingId || join) && (
+                    {zoomRoomUrl(join, meetingId) && (
                       <a
-                        href={join || '#'}
+                        href={zoomRoomUrl(join, meetingId)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={e => { e.stopPropagation(); if (meetingId) { e.preventDefault(); openZoomHost(meetingId, join); } }}
+                        onClick={e => e.stopPropagation()}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
                         style={{ background: '#D4A0B0', color: '#fff' }}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                           <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                         </svg>
-                        {meetingId ? 'Join as host' : 'Join'}
+                        Join
                       </a>
                     )}
                     <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
