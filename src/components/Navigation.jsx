@@ -277,7 +277,7 @@ export default function Navigation({ onCloseModal }) {
             <span className="text-[0.82rem] text-[#777] tracking-[0.02em]">@makeupbyroko_</span>
           </a>
           <p className="text-[0.68rem] text-[#ccc] mt-3 tracking-[0.04em]">
-            makeupbyroko22@gmail.com
+            roko@makeupbyroko.org
           </p>
           {isAdmin && (
             <button

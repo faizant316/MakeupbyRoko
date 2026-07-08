@@ -95,9 +95,9 @@ export default function ServicesFooter() {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:makeupbyroko22@gmail.com"
+                  <a href="mailto:roko@makeupbyroko.org"
                     className="text-[0.82rem] text-white/45 hover:text-[#D4A0B0] transition-colors duration-200">
-                    makeupbyroko22@gmail.com
+                    roko@makeupbyroko.org
                   </a>
                 </li>
                 <li>

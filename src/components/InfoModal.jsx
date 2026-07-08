@@ -198,7 +198,7 @@ export default function InfoModal({ topic, onClose }) {
               </div>
               <p className="text-[0.8rem] text-[#6B4055] leading-[1.7]">
                 Still have questions? Reach out at{' '}
-                <a href="mailto:makeupbyroko22@gmail.com" className="font-medium underline underline-offset-2 hover:text-[#111] transition-colors">makeupbyroko22@gmail.com</a>
+                <a href="mailto:roko@makeupbyroko.org" className="font-medium underline underline-offset-2 hover:text-[#111] transition-colors">roko@makeupbyroko.org</a>
                 {' '}or text <a href="sms:5104916497" className="font-medium underline underline-offset-2 hover:text-[#111] transition-colors">510-491-6497</a>.
               </p>
             </div>

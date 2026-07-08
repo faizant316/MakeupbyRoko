@@ -29,7 +29,7 @@ const SECTIONS = [
   },
   {
     title: 'Your Rights',
-    body: `You have the right to request access to, correction of, or deletion of your personal information at any time. To exercise these rights, please contact us at makeupbyroko22@gmail.com. We will respond to your request within a reasonable timeframe.`
+    body: `You have the right to request access to, correction of, or deletion of your personal information at any time. To exercise these rights, please contact us at roko@makeupbyroko.org. We will respond to your request within a reasonable timeframe.`
   },
   {
     title: 'Updates to This Policy',
@@ -37,7 +37,7 @@ const SECTIONS = [
   },
   {
     title: 'Contact',
-    body: `If you have any questions or concerns about this Privacy Policy, please contact us at makeupbyroko22@gmail.com or by text at 510-491-6497.`
+    body: `If you have any questions or concerns about this Privacy Policy, please contact us at roko@makeupbyroko.org or by text at 510-491-6497.`
   },
 ];
 
@@ -88,8 +88,8 @@ export default function PrivacyPolicy() {
           <p className="font-serif text-[1.1rem] text-[#111] mb-2">Questions about your data?</p>
           <p className="text-[0.8rem] text-[#888]">
             Email us at{' '}
-            <a href="mailto:makeupbyroko22@gmail.com" className="text-[#A0785A] underline underline-offset-2 hover:text-[#111] transition-colors">
-              makeupbyroko22@gmail.com
+            <a href="mailto:roko@makeupbyroko.org" className="text-[#A0785A] underline underline-offset-2 hover:text-[#111] transition-colors">
+              roko@makeupbyroko.org
             </a>
           </p>
         </div>
