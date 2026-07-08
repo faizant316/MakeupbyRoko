@@ -72,6 +72,15 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
 
   const hasItems = total > 0;
 
+  // The next thing on the clock today — a glanceable highlight so Roko sees
+  // what's immediately coming up even with every group collapsed. It falls away
+  // once the day's last item is behind her.
+  const nowMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
+  const nextUp = groups
+    .flatMap(g => g.items)
+    .filter(it => { const m = timeToMinutes(it.time); return m < 9999 && m >= nowMin; })
+    .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time))[0] || null;
+
   return (
     <div className="mb-8">
       {/* Header */}
@@ -86,6 +95,30 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
           </span>
         )}
       </div>
+
+      {/* Next-up highlight — the soonest still-upcoming item today. Tapping it
+          opens that client/booking, same as its row. */}
+      {nextUp && (
+        <button
+          type="button"
+          onClick={nextUp.onClick}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-3 text-left transition-all hover:opacity-90 active:scale-[0.99]"
+          style={{
+            background: dm ? 'rgba(212,160,176,0.1)' : 'rgba(212,160,176,0.08)',
+            border: `1px solid ${dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.22)'}`,
+          }}
+        >
+          <span className="text-[0.5rem] font-bold tracking-[0.12em] uppercase px-1.5 py-1 rounded-md flex-shrink-0" style={{ background: '#D4A0B0', color: '#fff' }}>
+            Next up
+          </span>
+          <span className="text-[0.8rem] font-semibold truncate flex-1 min-w-0" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
+            {nextUp.name}
+          </span>
+          <span className="text-[0.74rem] font-bold tabular-nums flex-shrink-0" style={{ color: '#A0607A' }}>
+            {nextUp.time}
+          </span>
+        </button>
+      )}
 
       {hasItems ? (
         <div className="flex flex-col gap-4">

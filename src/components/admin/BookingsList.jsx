@@ -1020,7 +1020,11 @@ export default function BookingsList({
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {timeGroups.map(group => {
+              {/* "Today" is intentionally dropped here — the Home overview's
+                  left-hand Today card already shows today in full (consultations,
+                  appointments AND classes), so a second "Today" in this pipeline
+                  was redundant. This list is the upcoming pipeline from here on. */}
+              {timeGroups.filter(g => g.key !== 'today').map(group => {
                 const open = !collapsedGroups[group.key];
                 return (
                   <div key={group.key}>
