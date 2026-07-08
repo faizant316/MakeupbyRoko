@@ -59,7 +59,7 @@ export async function POST(req) {
 
     const clientHtml = isBridal
       ? bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl, contractSection })
-      : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, contractSection });
+      : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection });
 
     const clientSubject = isBridal
       ? `Bridal Inquiry Received — ${bridalTitle} ✦`

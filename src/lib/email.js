@@ -14,8 +14,12 @@ function base(content) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
 <div style="max-width:500px;margin:0 auto;padding:24px 16px;">
-<div style="text-align:center;margin-bottom:16px;">
+<div style="text-align:center;margin-bottom:14px;">
   <p style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#C4849A;margin:0;">Makeup by Roko</p>
+</div>
+<div style="background:#16110F;border-radius:12px;padding:13px 18px;margin-bottom:16px;text-align:center;">
+  <p style="font-size:16px;font-weight:800;letter-spacing:0.26em;text-transform:uppercase;color:#ffffff;margin:0;">Admin Copy</p>
+  <p style="font-size:11px;color:rgba(255,255,255,0.65);margin:5px 0 0;">For your records. This was not sent to the client.</p>
 </div>
 ${content}
 <div style="text-align:center;padding:20px 0 8px;">
@@ -282,11 +286,12 @@ export async function sendEmailPair(emails) {
   });
 }
 
-export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, contractSection = '' }) {
+export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection = '' }) {
   const basePrice = hasTravelFee ? '$750+' : servicePrice;
   const summaryRows = [
     crow('Service', serviceName),
     crow('Date', dateFormatted),
+    readyByTime ? crow('Ready by', readyByTime) : '',
     crow('Base price', basePrice),
     hasTravelFee ? crow('Travel (bridal pricing)', '$750+', '#C4849A') : '',
     isEarlyArrival ? crow('Early arrival (before 7 AM)', '+$100', '#C4849A') : '',
@@ -796,7 +801,7 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
   const typeLabel = consultationType === 'Phone' ? '📞' : consultationType === 'In-Person' ? '📍' : '';
   return base(`
     ${card(`
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Admin Copy — Consultation Sent</p>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Consultation Sent</p>
       <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">📅 Consultation Scheduled</h2>
       <p style="font-size:13px;color:#444444;margin:0;">Consultation confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${serviceName}</strong>.</p>
     `)}
@@ -829,7 +834,7 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
 export function adminLessonEmail({ clientName, clientEmail, className, lessonDate, lessonTime, meetingType, zoomLink, notes }) {
   return base(`
     ${card(`
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Admin Copy — Lesson Scheduled</p>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Lesson Scheduled</p>
       <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">💄 Makeup Lesson Scheduled</h2>
       <p style="font-size:13px;color:#444444;margin:0;">Lesson confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${className}</strong>.</p>
     `)}
