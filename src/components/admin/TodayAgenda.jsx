@@ -1,7 +1,14 @@
 import { useMemo } from 'react';
-import { openZoomHost, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
+import { openZoomRoom, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { timeToMinutes } from './timeline';
+
+// Local calendar date "YYYY-MM-DD" (NOT UTC). toISOString() would roll to
+// tomorrow after ~5pm Pacific and make "Today" disagree with the calendar's
+// selected day (which uses local dates), so the card would show the wrong day.
+function localDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 // Always-on "Today" card for the Home overview. Surfaces everything happening
 // today, but grouped by what it is — Consultations, then Appointments, then
@@ -20,7 +27,7 @@ const STATUS_META = {
 };
 
 export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBooking, onSelectClassReg, darkMode: dm }) {
-  const todayKey = new Date().toISOString().split('T')[0];
+  const todayKey = localDateKey(new Date());
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   const { groups, total } = useMemo(() => {
@@ -112,7 +119,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                     {canJoin && (
                       <button
                         type="button"
-                        onClick={e => { e.stopPropagation(); if (item.meetingId) openZoomHost(item.meetingId, item.joinUrl); else window.open(item.joinUrl, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); openZoomRoom(item.joinUrl, item.meetingId); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.6rem] font-bold tracking-[0.06em] uppercase flex-shrink-0 transition-all hover:opacity-85 active:scale-95"
                         style={{ background: '#D4A0B0', color: '#fff' }}
                       >

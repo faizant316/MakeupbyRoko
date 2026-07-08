@@ -5,7 +5,7 @@ import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
 import { lenisScrollTo } from '@/lib/lenis';
-import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
+import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
@@ -348,13 +348,13 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
               </p>
               {(meetingId || parsed.meetingId) ? (
                 <button type="button"
-                  onClick={() => openZoomHost(meetingId || parsed.meetingId, meetLink || parsed.link)}
+                  onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
                   className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
                   style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
                     <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                   </svg>
-                  Join as host
+                  Join
                 </button>
               ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { openZoomHost, meetingIdFromUrl } from '@/lib/zoomHost';
+import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
 import { FORMAT_META } from './ClassRegistrationsList';
@@ -240,13 +240,13 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                   className="text-[0.65rem] mt-1 block truncate underline underline-offset-2" style={{ color: textMuted }}>{STUDIO_DISPLAY}</a>
               ) : (meetingId || parsed.meetingId) ? (
                 <button type="button"
-                  onClick={() => openZoomHost(meetingId || parsed.meetingId, meetLink || parsed.link)}
+                  onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
                   className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
                   style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
                     <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                   </svg>
-                  Join as host
+                  Join
                 </button>
               ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
