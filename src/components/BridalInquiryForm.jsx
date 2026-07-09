@@ -79,7 +79,7 @@ function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, block
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, recapDate, recapRows }) {
+function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, recapDate, recapRows, recapDateLabel = 'Wedding Date' }) {
   const firstName = (brideName || '').split(' ')[0] || 'there';
 
   useEffect(() => {
@@ -116,7 +116,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
         </div>
 
         {/* View submission recap */}
-        <SubmissionRecap dateStr={recapDate} dateLabel="Wedding Date" rows={recapRows || []} />
+        <SubmissionRecap dateStr={recapDate} dateLabel={recapDateLabel} rows={recapRows || []} />
 
         {/* What's next */}
         <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
@@ -352,6 +352,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','Professional touch-up kit','30-min Zoom consultation included','Bridesmaid add-ons available'];
   const bridalTitle = activeService?.title || 'Bridal Package';
 
+  // For the Bridal Trial, the date being picked is the trial date, not the wedding
+  // date — mirror that wording in the calendar copy so it matches "Tell me about
+  // your trial" on the next step.
+  const dateNoun = isTrial ? 'trial' : 'wedding';    // "your trial date"
+  const dateNounCap = isTrial ? 'Trial' : 'Wedding'; // "Trial Date" heading / label
+
   // Short "about" block shown above the form fields — gives every bridal service
   // the same thoughtfully-laid-out descriptor + Package Price line that Full Day has.
   const aboutTag = isFullDay ? 'Full Day Coverage' : isTrial ? 'Bridal Trial' : 'Wedding Day Look';
@@ -574,7 +580,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'How heard', value: form.how_heard },
       { label: 'Makeup vision & details', value: form.additional_details },
     ];
-    return <BridalSuccess onClose={onClose} brideName={form.bride_name} email={form.email} bookingId={newBookingId} uploadToken={uploadToken} recapDate={selectedDate} recapRows={recapRows} />;
+    return <BridalSuccess onClose={onClose} brideName={form.bride_name} email={form.email} bookingId={newBookingId} uploadToken={uploadToken} recapDate={selectedDate} recapRows={recapRows} recapDateLabel={`${dateNounCap} Date`} />;
   }
 
   const stepAnim = `${direction === 'back' ? 'stepInLeft' : 'stepInRight'} 0.4s cubic-bezier(0.22, 1, 0.36, 1)`;
@@ -672,14 +678,14 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </div>
               <div>
                 <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
-                <h3 className="font-serif text-[1.55rem] lg:text-[1.85rem] leading-none text-[#111]">Wedding <em className="not-italic text-[#D4A0B0]">Date</em></h3>
+                <h3 className="font-serif text-[1.55rem] lg:text-[1.85rem] leading-none text-[#111]">{dateNounCap} <em className="not-italic text-[#D4A0B0]">Date</em></h3>
               </div>
             </div>
 
             {/* Lead-time notice */}
             <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
               <p className="text-[0.72rem] text-[#888]">
-                Pick your wedding day below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                Pick your {isTrial ? 'trial date' : 'wedding day'} below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
             </div>
 
@@ -787,7 +793,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
               {/* Wedding dates aren't limited to Roko's regular open days — make that clear. */}
               <p className="text-center text-[0.66rem] text-gray-400 mt-3 leading-[1.6]">
-                Any day works for weddings. The dots just show Roko's current load. Tap a selected date again to clear it.
+                Any day works for {isTrial ? 'trials' : 'weddings'}. The dots just show Roko's current load. Tap a selected date again to clear it.
               </p>
             </div>
 
@@ -833,7 +839,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-0.5">Wedding Date</p>
+                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-0.5">{dateNounCap} Date</p>
                 <p className="text-[0.82rem] text-[#333]">{selectedDateLong}</p>
               </div>
               <span className="text-[0.7rem] font-medium text-[#D4A0B0] flex items-center gap-1 flex-shrink-0">
@@ -1129,7 +1135,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {selectedDate ? 'Continue →' : 'Select your wedding date'}
+              {selectedDate ? 'Continue →' : `Select your ${dateNoun} date`}
             </button>
           ) : (
             <button
