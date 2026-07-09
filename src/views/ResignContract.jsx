@@ -135,7 +135,9 @@ export default function ResignContract() {
             <p className="text-[0.6rem] font-bold tracking-[0.2em] uppercase mb-1.5" style={{ color: PLUM }}>Agreement Signed</p>
             <h1 className="font-serif text-[1.9rem] font-light leading-tight" style={{ color: VALUE }}>All <em className="italic" style={{ color: PLUM }}>set!</em></h1>
             <p className="text-[0.85rem] mt-3 leading-[1.7]" style={{ color: PLUM_DARK }}>
-              Thank you! Your updated agreement{booking?.time ? <> for <strong style={{ color: VALUE }}>{booking.time}</strong></> : ''} is signed. Roko will confirm once your deposit is in.
+              {booking?.status === 'confirmed'
+                ? <>Thank you! Your appointment is confirmed{booking?.time ? <> for <strong style={{ color: VALUE }}>{booking.time}</strong></> : ''}{dateFormatted ? ` on ${dateFormatted}` : ''}. A confirmation is on its way to your inbox.</>
+                : <>Thank you! Your updated agreement{booking?.time ? <> for <strong style={{ color: VALUE }}>{booking.time}</strong></> : ''} is signed. Roko will confirm once your deposit is in.</>}
             </p>
           </div>
         </div>

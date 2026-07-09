@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
-import { sendEmail, adminContractResignedEmail } from '../../../src/lib/email';
+import { sendEmail, adminContractResignedEmail, bookingConfirmedEmail } from '../../../src/lib/email';
 import { CONTRACT_VERSION } from '../../../src/lib/contract';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
 
 // Client-facing (token-gated) re-sign of the service agreement after Roko
-// changed the appointment time. Verifies the upload_token, records the new
-// signature, flips the booking back to pending (needs re-confirm), and pings Roko.
+// changed a detail (time / date / service). Verifies the upload_token and records
+// the new signature. The booking KEEPS its status: Roko set the change in motion
+// and already agreed to it, so a confirmed booking stays confirmed (no bounce
+// back to pending). It pings Roko, and if the booking is confirmed it sends the
+// client a short confirmation of the (possibly new) details so they have closure.
 export async function POST(req) {
   try {
     const supabase = createClient();
@@ -26,6 +29,8 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid link' }, { status: 404 });
     }
 
+    // Record the new signature only — the booking's status is deliberately left
+    // untouched so a confirmed booking stays confirmed through the re-sign.
     const { error: updErr } = await supabase
       .from('bookings')
       .update({
@@ -33,7 +38,6 @@ export async function POST(req) {
         contract_signed_at: signedAt || new Date().toISOString(),
         contract_photo_consent: photoConsent === true,
         contract_version: version || CONTRACT_VERSION,
-        status: 'pending',
       })
       .eq('id', booking.id);
     if (updErr) throw updErr;
@@ -55,6 +59,22 @@ export async function POST(req) {
         photoConsent: photoConsent === true,
       }),
     }).catch(err => console.error('resign admin notify:', err));
+
+    // The client just agreed to the updated details by re-signing, so if their
+    // booking is confirmed, close the loop with a fresh confirmation of the new
+    // time/date. (Pending bookings wait for Roko to confirm, as before.)
+    if (booking.status === 'confirmed' && booking.email) {
+      sendEmail({
+        to: booking.email,
+        subject: `You're confirmed for ${booking.service || 'your appointment'}${booking.time ? ` · ${booking.time}` : ''}`,
+        html: bookingConfirmedEmail({
+          firstName: (booking.name || '').split(' ')[0] || 'there',
+          serviceName: booking.service,
+          dateFormatted,
+          time: booking.time,
+        }),
+      }).catch(err => console.error('resign client confirm:', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

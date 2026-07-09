@@ -610,6 +610,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pendingWindow, setPendingWindow] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
+  // What Roko just changed (time / date / service), so the notify message can
+  // describe it. And whether an update+agreement has been sent for re-sign.
+  const [lastChange, setLastChange] = useState(null);
+  const [updateNoticeSent, setUpdateNoticeSent] = useState(false);
 
   const openTimePicker = () => {
     setPendingWindow(booking.time || '');
@@ -636,19 +640,47 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     setTimeout(() => { if (composeRef.current) lenisScrollTo(composeRef.current, { offset: -80 }); }, 60);
   };
 
-  // One-tap starter for the most common case: "your original time isn't open,
-  // here's the new one." Pulls in whatever window is currently on the booking.
-  const fillProposeTime = () => {
-    setComposeSubject('An update on your appointment time');
+  // A human sentence for a single changed field, used to pre-fill the notice.
+  const changeSentence = (it) => {
+    switch (it.key) {
+      case 'time': return `I've updated your appointment time to ${it.to}${dateFormatted ? ` on ${dateFormatted}` : ''}.`;
+      case 'date': return `I've moved your appointment to ${it.to}${booking.time ? ` at ${booking.time}` : ''}.`;
+      case 'service': return `I've updated your service to ${it.to}.`;
+      default: return `I've updated your ${String(it.label || 'details').toLowerCase()} to ${it.to}.`;
+    }
+  };
+
+  // The unified "something changed, tell the client" starter. Opens the Message
+  // Client composer pre-filled with a note describing exactly what changed, with
+  // the updated agreement attached for a quick re-sign. Works for any change
+  // (time, date, service, or several at once) — not just time.
+  const openChangeNotice = (change) => {
+    const items = change?.items || lastChange?.items || [];
+    let detail;
+    if (items.length === 1) {
+      detail = changeSentence(items[0]);
+    } else if (items.length > 1) {
+      detail = `I've updated a few details on your booking:\n` + items.map(it => `• ${it.label}: ${it.to}`).join('\n');
+    } else {
+      detail = `I wanted to reach out with a quick update about your ${booking.service || 'appointment'}.`;
+    }
+    setComposeSubject('An update on your appointment');
     setComposeBody(
       `Hi ${firstName},\n\n` +
-      `Thank you so much for booking with me! I wanted to reach out about your appointment time.` +
-      `${booking.time ? ` I currently have you down for ${booking.time}` : ''}${dateFormatted ? ` on ${dateFormatted}` : ''}. ` +
-      `Please let me know if that works for you.\n\n` +
-      `Once you confirm, I'll send over the updated agreement to sign so we can lock everything in.\n\n` +
+      `Thank you so much for booking with me! ${detail}\n\n` +
+      `I'm attaching the updated agreement, just give it a quick sign so we can lock everything in.\n\n` +
       `With love,\nRoko`
     );
     setAttachContract(true);
+    setShowReconfirmBanner(false);
+    setShowCompose(true);
+    setTimeout(() => { if (composeRef.current) lenisScrollTo(composeRef.current, { offset: -80 }); }, 60);
+  };
+
+  // Manual one-tap starter (when Roko opens the composer herself) for the common
+  // "let's lock in your time" note against the current window.
+  const fillProposeTime = () => {
+    openChangeNotice({ items: booking.time ? [{ key: 'time', label: 'Appointment time', to: booking.time }] : [] });
   };
 
   const sendCompose = async () => {
@@ -673,7 +705,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
       setShowCompose(false);
-      showToast(attachContract ? 'Email + agreement sent' : 'Email sent to client', '#22c55e');
+      if (attachContract) { setUpdateNoticeSent(true); setLastChange(null); }
+      showToast(attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client', '#22c55e');
     } catch (err) {
       alert(err?.message || 'Failed to send email. Please try again.');
     } finally {
@@ -865,6 +898,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   }, []);
 
   const handleSaveEdit = (data) => {
+    // Capture material changes before the booking is overwritten, so the
+    // "review & notify" flow can describe exactly what changed.
+    const changes = [];
+    if (data.date && data.date !== booking.date) {
+      changes.push({ key: 'date', label: 'Date', to: new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) });
+    }
+    if (data.time && data.time !== booking.time) {
+      changes.push({ key: 'time', label: 'Appointment time', to: data.time });
+    }
+    if (data.service && data.service !== booking.service) {
+      changes.push({ key: 'service', label: 'Service', to: data.service });
+    }
     onUpdateBooking(data);
     setShowEdit(false);
     const newStatus = data.status;
@@ -888,6 +933,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           body: JSON.stringify({ to: booking.email, name: (data.name || booking.name)?.split(' ')[0] || 'there', service: data.service || booking.service, date: editDate }),
         }).catch(err => console.error('cancelled email error:', err));
       }
+    } else if (changes.length && oldStatus === 'confirmed' && booking.email) {
+      // Details changed on a confirmed booking (status itself didn't change) →
+      // guide Roko into the review & notify flow instead of a silent update.
+      setUpdateNoticeSent(false);
+      setLastChange({ items: changes });
+      setShowReconfirmBanner(true);
+      setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 80);
     }
   };
 
@@ -1074,7 +1126,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <span>
                   <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
                   <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                    Adds a Review &amp; Sign link with {booking.time ? <>the current window <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong></> : 'the current appointment time'}. Signing marks it pending again for you to re-confirm.
+                    Adds a Review &amp; Sign link showing the updated details{booking.time ? <> (currently <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong>)</> : ''}. Signing keeps the booking confirmed and refreshes their agreement.
                   </span>
                 </span>
               </button>
@@ -1099,6 +1151,21 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Update-sent indicator — the booking stays confirmed the whole time.
+            The fresh signature appears in the Service Agreement panel once the
+            client re-signs; no bounce back to pending. */}
+        {updateNoticeSent && !showCompose && (
+          <div className="mb-6 flex items-start gap-2.5 px-4 py-3 rounded-[8px]"
+            style={{ background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.28)' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0 mt-0.5">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            <p className="text-[0.75rem] leading-[1.5] font-medium" style={{ color: dm ? '#93b4f5' : '#2563EB' }}>
+              Update sent to {firstName}, awaiting their quick re-sign. Their booking stays confirmed the whole time, the new signature will appear below once they sign.
+            </p>
           </div>
         )}
 
@@ -1351,10 +1418,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   disabled={!pendingStart}
                   onClick={() => {
                     if (!pendingStart) return;
+                    const changed = pendingWindow !== booking.time;
                     onUpdateBooking({ time: pendingWindow });
                     setShowTimePicker(false);
                     showToast(`Time set to ${pendingWindow}`, '#888');
-                    if (booking.status === 'confirmed') setShowReconfirmBanner(true);
+                    if (booking.status === 'confirmed' && changed) {
+                      setUpdateNoticeSent(false);
+                      setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: pendingWindow }] });
+                      setShowReconfirmBanner(true);
+                    }
                   }}
                   className="w-full mt-4 py-3 rounded-[8px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
                   style={pendingStart
@@ -1381,16 +1453,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Time was updated</p>
-                  <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Notify client of their new appointment time?</p>
+                  <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Booking updated</p>
+                  <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Review &amp; send {firstName} the update to re-sign</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-3 flex-shrink-0">
                 <button
-                  onClick={() => { setShowReconfirmBanner(false); setPendingStatus('reconfirm'); }}
+                  onClick={() => openChangeNotice()}
                   className="px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold text-white transition-all"
                   style={{ background: '#2563EB' }}>
-                  Reconfirm →
+                  Message {firstName} →
                 </button>
                 <button
                   onClick={() => setShowReconfirmBanner(false)}
