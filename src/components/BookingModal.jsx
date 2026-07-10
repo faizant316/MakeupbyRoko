@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { formatPhone } from '@/lib/phone';
-import { lenisStop, lenisStart, lenisScrollTo } from '@/lib/lenis';
+import { useScrollLock } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 
@@ -275,34 +275,10 @@ export default function BookingModal({ service: initialService, onClose }) {
     goStep('done');
   };
 
-  // Lock background scroll when modal is open.
-  // iOS Safari ignores overflow:hidden on body — position:fixed is the
-  // only reliable cross-browser fix. We capture scrollY first so we can
-  // restore the exact scroll position when the modal closes.
-  useEffect(() => {
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.overflow = 'hidden';
-    lenisStop();
-    return () => {
-      document.documentElement.style.scrollBehavior = 'auto';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, scrollY);
-      lenisStart();
-      // Resync Lenis to the restored position. While the body was fixed, Lenis's
-      // internal scroll offset drifted to 0; without this the first wheel tick
-      // after closing snaps the page up to the hero. immediate = no animation.
-      lenisScrollTo(scrollY, { immediate: true, force: true });
-      requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
-    };
-  }, []);
+  // Lock the page behind the sheet and restore the exact scroll position on
+  // close (shared, reference-counted lock so a service-preview → booking-sheet
+  // handoff never restarts the page scroller mid-flight). See useScrollLock.
+  useScrollLock();
 
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
@@ -340,17 +316,26 @@ export default function BookingModal({ service: initialService, onClose }) {
     <div
       className="fixed inset-0 z-[500] flex items-start sm:justify-center"
       style={{
+        // Lighter blur (was 22px): a full-viewport backdrop-filter re-rasterizes
+        // every frame while the sheet slides up over it, which is what made the
+        // form open choppy on the MacBook. 12px keeps the frosted look but
+        // roughly halves the per-frame blur cost.
         background: 'radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.45) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.38) 0%, transparent 45%), radial-gradient(ellipse at 50% 0%, rgba(212,160,176,0.25) 0%, transparent 50%), rgba(0,0,0,0.58)',
-        backdropFilter: 'blur(22px)'
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)'
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
+        // Give the sheet its own compositor layer for the entrance, then release
+        // it so it doesn't hold a layer for the modal's whole lifetime.
+        onAnimationEnd={(e) => { if (e.animationName === 'slideUpSheet') e.currentTarget.style.willChange = 'auto'; }}
         style={{
           // Top-anchored + dvh so the sticky header (back / ✕) is never cropped
           // behind the nav on mobile (100vh/100% overshoot the visible area).
           animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
           boxShadow: typeof window !== 'undefined' && window.innerWidth >= 640 ? 'inset 0 0 200px rgba(212,140,170,0.12), inset 100px 0 200px rgba(212,140,170,0.08), inset -100px 0 200px rgba(180,140,220,0.08), 0 -1px 0 rgba(212,160,176,0.35)' : undefined,
           marginTop: 'var(--nav-h, 52px)',
           height: 'calc(100dvh - var(--nav-h, 52px))',

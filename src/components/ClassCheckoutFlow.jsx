@@ -141,14 +141,20 @@ export default function ClassCheckoutFlow({ onClose }) {
     <div
       className="fixed inset-0 z-[500] flex items-start sm:justify-center"
       style={{
+        // Lighter blur (was 20px) so the sheet's slide-up doesn't have to
+        // re-rasterize a heavy full-viewport backdrop-filter every frame — that
+        // was the choppy course-form open on the MacBook.
         background: 'radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.4) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.33) 0%, transparent 45%), rgba(0,0,0,0.55)',
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         className="bg-white w-full flex flex-col rounded-t-2xl sm:rounded-none"
+        onAnimationEnd={(e) => { if (e.animationName === 'slideUpSheet') e.currentTarget.style.willChange = 'auto'; }}
         style={{
+          willChange: 'transform',
           // Top-anchored + dynamic viewport height (dvh) so the sheet's header
           // (back / ✕) always sits flush UNDER the nav and is never cropped —
           // on mobile Safari 100vh overshoots the visible area and a
