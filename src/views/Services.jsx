@@ -19,19 +19,30 @@ import MakeupClassModal from '../components/MakeupClassModal';
 import CoursesFeature from '../components/CoursesFeature';
 import ServiceDetailModal from '../components/ServiceDetailModal';
 
-// Hook to track scroll progress through the hero (0 = top, 1 = hero fully covered)
-function useHeroScrollProgress() {
-  const [progress, setProgress] = useState(0);
+// Drive the hero's scale/opacity straight from scroll into two CSS variables on
+// the hero element, batched through requestAnimationFrame. This deliberately
+// avoids React state: the old version called setState on every scroll tick,
+// which re-rendered the ENTIRE services page (every card, the whole grid) on
+// each frame — the single biggest cause of heavy scrolling on a laptop. Writing
+// a CSS var touches one element and never re-renders React.
+function useHeroParallax() {
+  const ref = useRef(null);
   useEffect(() => {
-    const onScroll = () => {
-      const heroH = window.innerHeight;
-      const p = Math.min(1, Math.max(0, window.scrollY / heroH));
-      setProgress(p);
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
+      const p = Math.min(1, Math.max(0, window.scrollY / window.innerHeight));
+      el.style.setProperty('--hero-scale', (1 - p * 0.06).toFixed(4));
+      el.style.setProperty('--hero-opacity', (1 - p * 0.6).toFixed(4));
     };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    apply(); // set the initial values before first paint
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
   }, []);
-  return progress;
+  return ref;
 }
 
 const CATEGORIES = [
@@ -193,19 +204,16 @@ export default function ServicesPage() {
 
 
 
-  const heroProgress = useHeroScrollProgress();
-
-  // Hero scale: shrinks slightly as content covers it
-  const heroScale = 1 - heroProgress * 0.06;
-  // Hero opacity: fades to 0.4 as fully covered
-  const heroOpacity = 1 - heroProgress * 0.6;
+  const heroRef = useHeroParallax();
 
   return (
     <div style={{ background: '#0C0A09' }}>
       <Navigation onCloseModal={() => setSelectedService(null)} />
 
-      {/* Hero — fixed behind everything */}
+      {/* Hero — fixed behind everything. Scale/opacity are driven by CSS vars
+          that useHeroParallax updates on scroll (no per-frame React render). */}
       <div
+        ref={heroRef}
         style={{
           position: 'fixed',
           top: 0,
@@ -213,8 +221,8 @@ export default function ServicesPage() {
           right: 0,
           bottom: 0,
           zIndex: 0,
-          transform: `scale(${heroScale})`,
-          opacity: heroOpacity,
+          transform: 'scale(var(--hero-scale, 1))',
+          opacity: 'var(--hero-opacity, 1)',
           transformOrigin: 'center center',
           transition: 'transform 0.05s linear, opacity 0.05s linear',
           willChange: 'transform, opacity',

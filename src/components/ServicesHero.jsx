@@ -42,17 +42,28 @@ function useReliableAutoplay(playFn) {
   }, [playFn]);
 }
 
-function useMobileHeroProgress() {
-  const [progress, setProgress] = useState(0);
+// Mobile hero parallax (video scale + text fade) driven by two CSS variables on
+// the mobile hero wrapper, batched through requestAnimationFrame. Same reason as
+// the page hero: the old setState-on-every-scroll re-rendered this whole hero
+// (two <video> elements and all) every frame. A CSS-var write does not.
+function useMobileHeroParallax() {
+  const ref = useRef(null);
   useEffect(() => {
-    const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
       const p = Math.min(1, Math.max(0, window.scrollY / window.innerHeight));
-      setProgress(p);
+      el.style.setProperty('--mh-scale', (1 - p * 0.15).toFixed(4));
+      el.style.setProperty('--mh-op', (1 - p * 0.4).toFixed(4));
     };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    apply();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
   }, []);
-  return progress;
+  return ref;
 }
 
 function useViewportHeight() {
@@ -186,11 +197,10 @@ function MobileVideoLoop({ src, poster, lqip, videoStyle, onError }) {
 
 export default function ServicesHero() {
   const desktopVideoRef = useRef(null);
-  const [scrolled, setScrolled] = useState(false);
   const [mobileVideoFailed, setMobileVideoFailed] = useState(false);
   const [desktopVideoFailed, setDesktopVideoFailed] = useState(false);
   const [desktopReady, setDesktopReady] = useState(false);
-  const mobileProgress = useMobileHeroProgress();
+  const mobileHeroRef = useMobileHeroParallax();
   const vh = useViewportHeight();
 
   // Same resilient autoplay coverage for the desktop split-panel video.
@@ -211,15 +221,6 @@ export default function ServicesHero() {
     };
   }, []);
 
-  // Track scroll for mobile fade effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 80);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const handleScrollDown = () => {
     window.scrollTo({ top: window.innerHeight * 0.85, behavior: 'smooth' });
   };
@@ -228,16 +229,18 @@ export default function ServicesHero() {
     <>
       {/* ═══════════ MOBILE: Full-screen video hero ═══════════ */}
       <div
+        ref={mobileHeroRef}
         className="md:hidden relative w-full flex flex-col"
         style={{ marginTop: 'var(--nav-h)' }}
       >
-        {/* Scaling video container — ONLY the video scales, not text */}
+        {/* Scaling video container — ONLY the video scales, not text.
+            --mh-scale is updated on scroll by useMobileHeroParallax. */}
         <div
           style={{
             position: 'relative',
             width: '100%',
             height: `calc(${vh}px - var(--nav-h))`,
-            transform: `scale3d(${1 - mobileProgress * 0.15}, ${1 - mobileProgress * 0.15}, 1)`,
+            transform: 'scale3d(var(--mh-scale, 1), var(--mh-scale, 1), 1)',
             transformOrigin: 'top center',
             WebkitBackfaceVisibility: 'hidden',
           }}
@@ -279,7 +282,7 @@ export default function ServicesHero() {
             flexDirection: 'column',
             justifyContent: 'flex-end',
             paddingBottom: 'calc(env(safe-area-inset-bottom) + 64px)',
-            opacity: 1 - mobileProgress * 0.4,
+            opacity: 'var(--mh-op, 1)',
             WebkitFontSmoothing: 'antialiased',
             WebkitTextSizeAdjust: '100%',
             pointerEvents: 'none',
