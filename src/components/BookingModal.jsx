@@ -245,7 +245,17 @@ export default function BookingModal({ service: initialService, onClose }) {
     // deployment-specific *.vercel.app URL that has Vercel Deployment Protection,
     // which would force clients into a Vercel login wall on the email link.
     const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
-    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&deposit=${encodeURIComponent(service.deposit || '')}&price=${encodeURIComponent(service.price || '')}`;
+    // Exact remaining balance for the upload page — only when it's actually
+    // exact. If travel ("bridal pricing $750+") or an early-arrival surcharge
+    // applies, the real total isn't a clean price − deposit, so we omit it and
+    // the upload page shows "due in cash on the day" instead of a wrong number.
+    const money = (s) => { const n = parseFloat(String(s || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
+    const priceN = money(service.price);
+    const depositN = money(service.deposit);
+    const remainingExact = (!hasTravelFee && !isEarlyArrival && priceN != null && depositN != null && priceN > depositN)
+      ? `$${(priceN - depositN).toLocaleString('en-US')}`
+      : '';
+    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&deposit=${encodeURIComponent(service.deposit || '')}&price=${encodeURIComponent(service.price || '')}${remainingExact ? `&remaining=${encodeURIComponent(remainingExact)}` : ''}`;
 
     try {
       await api.functions.invoke('sendBookingConfirmation', {

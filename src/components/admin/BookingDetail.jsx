@@ -299,6 +299,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
           consultationType: form.type,
           zoomLink: activeLink,
           consultationNotes: form.notes,
+          updated: hasConsult,
           ...(bridal ? { dateFormatted, time: booking.time } : {}),
         }),
       });
@@ -375,7 +376,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
           <button onClick={() => { setExpanded(true); setSent(false); }}
             className="ml-3 flex-shrink-0 px-3.5 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.08em] uppercase transition-all active:scale-95"
             style={{ background: CONSULT_BG, color: dm ? '#C4B5FD' : CONSULT_COLOR, border: `1px solid ${CONSULT_BORDER}` }}>
-            Edit
+            Reschedule
           </button>
         </div>
       )}
@@ -413,9 +414,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
               </svg>
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Schedule Consultation</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>{hasConsult ? 'Reschedule Consultation' : 'Schedule Consultation'}</p>
               <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
-                {bridal ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type'}
+                {hasConsult
+                  ? 'Pick a new time — the client gets an updated email automatically'
+                  : (bridal ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type')}
               </p>
             </div>
             <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }} aria-label="Close scheduler"
@@ -524,12 +527,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
                     ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                     : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                 }}>
-                Confirm & Notify Client
+                {hasConsult ? 'Reschedule & Notify Client' : 'Confirm & Notify Client'}
               </button>
             ) : (
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
                 <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#FBF9F7' }}>
-                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirm & Send Email?</p>
+                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{hasConsult ? 'Send Updated Time?' : 'Confirm & Send Email?'}</p>
                   <div className="flex flex-col gap-1.5 mb-4">
                     <div className="flex items-center justify-between">
                       <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Date</span>
@@ -544,7 +547,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
                       <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.type}</span>
                     </div>
                   </div>
-                  <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>An email will be sent to <span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{booking.email}</span>.</p>
+                  <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>{hasConsult ? 'An updated email with the new time will be sent to ' : 'An email will be sent to '}<span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{booking.email}</span>.</p>
                   <div className="flex gap-2">
                     <button onClick={() => setShowConfirmSend(false)}
                       className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
@@ -566,7 +569,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
                 <div className="w-4 h-4 rounded-full flex items-center justify-center bg-blue-500">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <p className="text-[0.75rem] font-medium text-blue-600">Consultation scheduled — client notified.</p>
+                <p className="text-[0.75rem] font-medium text-blue-600">{hasConsult ? 'Consultation rescheduled, client notified.' : 'Consultation scheduled, client notified.'}</p>
               </div>
             )}
           </div>
@@ -1512,7 +1515,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               dateFormatted={dateFormatted}
               expanded={consultExpanded}
               setExpanded={setConsultExpanded}
-              onSent={() => showToast(isBridal ? 'Confirmed — client notified' : 'Consultation sent', '#22c55e')}
+              onSent={() => showToast(booking.consultation_date ? 'Rescheduled, client notified' : (isBridal ? 'Confirmed, client notified' : 'Consultation sent'), '#22c55e')}
             />
           </div>
         </div>

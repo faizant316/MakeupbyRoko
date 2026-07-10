@@ -75,7 +75,12 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
       </tr></table>
     </td></tr>
     ${content}
-    <tr><td style="padding:26px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
+    <tr><td style="padding:22px 28px 0;background:#FBF5F8;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #F0E6EC;border-radius:12px;"><tr><td style="padding:14px 18px;text-align:center;">
+        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Questions, or need to change your time? Just <strong style="color:#16110F;">reply to this email</strong> and it comes straight to Roko.</p>
+      </td></tr></table>
+    </td></tr>
+    <tr><td style="padding:20px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
       <p style="font-family:Georgia,serif;font-style:italic;font-size:17px;color:#C4849A;margin:0 0 8px;">With love, Roko</p>
       <p style="font-size:12px;color:#9A8E94;margin:0;">roko@makeupbyroko.org · @makeupbyroko_</p>
       <p style="font-size:11px;color:#C3B8BE;margin:10px 0 0;">Makeup by Roko · Mountain House, CA</p>
@@ -493,14 +498,18 @@ export function classPaymentEmail({ firstName, classes = [], totalPaid, format, 
   });
 }
 
-export function consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }) {
+export function consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated }) {
   const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   return clientShell({
-    preheader: `Your consultation for ${serviceName} is scheduled.`,
+    preheader: updated ? `Your consultation time for ${serviceName} has been updated.` : `Your consultation for ${serviceName} is scheduled.`,
     content: `
-      ${clientHero({ emoji: '📅', eyebrow: 'Consultation Scheduled', title: "Let's", titleAccent: 'connect!', subtitle: "Can't wait to chat about your look ✦" })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> is set. Here are your details:`)}
-      ${cpanel(`${ctitle('Consultation Details')}${crows(
+      ${updated
+        ? clientHero({ emoji: '📅', eyebrow: 'Consultation Updated', title: 'New', titleAccent: 'time!', subtitle: 'Your consultation has been rescheduled ✦' })
+        : clientHero({ emoji: '📅', eyebrow: 'Consultation Scheduled', title: "Let's", titleAccent: 'connect!', subtitle: "Can't wait to chat about your look ✦" })}
+      ${updated
+        ? cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> has a <strong style="color:#16110F;">new time</strong>. Here are the updated details, please use these going forward:`)
+        : cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> is set. Here are your details:`)}
+      ${cpanel(`${ctitle(updated ? 'Updated Consultation Details' : 'Consultation Details')}${crows(
         crow('Date', `<strong>${consultationDate}</strong>`) +
         crow('Time', `<strong>${consultationTime}</strong>`) +
         crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
@@ -518,13 +527,16 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
 // Bridal: one concise email that merges the appointment confirmation, the
 // scheduled consultation, and (when the deposit isn't in yet) the Zelle + photo
 // upload link — so a bride gets a single email instead of three.
-export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived }) {
+export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived, updated }) {
   const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   const showDeposit = !depositReceived && uploadUrl;
   return clientShell({
-    preheader: `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment and consultation details.`,
+    preheader: updated
+      ? `Your consultation time has been updated. Your ${serviceName} is still confirmed${dateFormatted ? ` for ${dateFormatted}` : ''}.`
+      : `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment and consultation details.`,
     content: `
       ${clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day ✦" })}
+      ${updated ? cinfo(`🔄 <strong style="color:#16110F;">Heads up, your consultation time has changed.</strong> Your appointment${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''} is still confirmed, only the consultation call has a new time. The updated details are below.`) : ''}
       ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`)}
       ${cinfo(`📌 <strong style="color:#16110F;">This is your booking confirmation.</strong> It has everything for your appointment <em>and</em> your consultation call in one place, so please keep this email safe and don't delete it.`)}
       ${cpanel(`${ctitle('Your Appointment')}
@@ -535,7 +547,7 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
       )}`)}
-      ${cpanel(`${ctitle('Your Consultation Call')}
+      ${cpanel(`${ctitle(updated ? 'Your Consultation Call · Updated Time' : 'Your Consultation Call')}
         <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">A quick chat <em>before</em> your big day so we can go over your vision. This is separate from the appointment above, no extra booking needed.</p>
         ${crows(
         crow('Date', `<strong>${consultationDate}</strong>`) +

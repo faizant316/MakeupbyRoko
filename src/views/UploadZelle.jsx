@@ -28,6 +28,9 @@ const ICON = {
 // Keyframes + helpers scoped to this page (kept in-component so the change
 // stays self-contained — no shared CSS file edits).
 const PAGE_CSS = `
+/* Stop in-app browsers (Google app, some webviews) from auto-inflating text,
+   which was widening the booking-summary values until they clipped. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 @keyframes uzFadeUp { from { opacity:0; transform: translateY(16px) scale(.985); } to { opacity:1; transform:none; } }
 @keyframes uzInRight { from { opacity:0; transform: translateX(22px); } to { opacity:1; transform:none; } }
 @keyframes uzInLeft { from { opacity:0; transform: translateX(-22px); } to { opacity:1; transform:none; } }
@@ -66,20 +69,27 @@ function CardHead({ icon, children }) {
 }
 
 // One label / value row in the booking "spec sheet".
-function SummaryRow({ label, value, highlight }) {
+// The value column is min-w-0 + break-words so a long value (a service name,
+// the Zelle email, a wrapped balance note) wraps cleanly instead of overflowing
+// and getting clipped by the card's overflow-hidden — which is what was
+// happening in Roko's in-app (Google) browser.
+function SummaryRow({ label, value, caption, highlight }) {
   if (!value) return null;
   return (
     <div
-      className="flex items-center justify-between gap-4 px-5 py-3.5"
+      className="flex items-center justify-between gap-3 px-5 py-3.5"
       style={highlight ? { background: HEAD_BG } : undefined}
     >
       <span className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase flex-shrink-0" style={{ color: highlight ? PLUM : LABEL }}>{label}</span>
-      <span className={`text-right ${highlight ? 'text-[1rem] font-bold' : 'text-[0.85rem] font-semibold'}`} style={{ color: VALUE }}>{value}</span>
+      <span className="min-w-0 text-right">
+        <span className={`block break-words leading-snug ${highlight ? 'text-[1rem] font-bold' : 'text-[0.85rem] font-semibold'}`} style={{ color: VALUE }}>{value}</span>
+        {caption && <span className="block text-[0.6rem] font-medium mt-0.5" style={{ color: LABEL }}>{caption}</span>}
+      </span>
     </div>
   );
 }
 
-function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice }) {
+function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, remaining }) {
   return (
     <div className="bg-white overflow-hidden h-full flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
       <CardHead>Booking Summary</CardHead>
@@ -90,6 +100,13 @@ function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice })
           <SummaryRow label="Service Price" value={servicePrice} />
           <SummaryRow label="Date" value={dateFormatted || 'TBD'} />
           <SummaryRow label="Zelle deposit" value={depositAmount} highlight />
+          {/* Remaining balance: show the exact figure only when the link carries a
+              trustworthy amount (studio bookings with no travel/early surcharge).
+              Otherwise stay honest with "due in cash on the day", which matches
+              the confirmation email and Roko confirming the exact total. */}
+          {remaining
+            ? <SummaryRow label="Remaining balance" value={remaining} caption="due in cash on the day" />
+            : <SummaryRow label="Remaining balance" value="Due in cash on the day" />}
         </div>
       </div>
     </div>
@@ -288,6 +305,10 @@ export default function UploadZelle() {
   // Links may pass the deposit as "$375 deposit"; show just the amount in the hero.
   const depositDisplay = depositAmount ? depositAmount.replace(/\s*deposit\s*$/i, '').trim() : null;
   const servicePrice = params.get('price') || null;
+  // Exact remaining balance, computed at link-build time only when it's truthful
+  // (no travel fee / early-arrival surcharge). Absent → the summary falls back to
+  // "due in cash on the day".
+  const remaining = (params.get('remaining') || '').trim() || null;
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -485,19 +506,21 @@ export default function UploadZelle() {
   const Nav = (
     <div className="relative flex-shrink-0 px-4 sm:px-6 py-2.5 flex items-center" style={{ borderBottom: `1px solid ${HEAD_BORDER}`, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
       {/* Anchor sits above the centered title (z-20) and the title ignores pointer
-          events, so a single tap on the pill always registers on mobile. */}
+          events, so a single tap always lands on the pill (not the brand text).
+          Comfortable 40px tap target + a shorter "Back" label on mobile so it
+          never crowds the centered brand on a narrow phone. */}
       <a
         href="/"
         aria-label="Back to site"
-        className="group relative z-20 inline-flex items-center gap-1.5 pl-1.5 pr-3 py-2 rounded-full transition-all active:scale-95 touch-manipulation"
-        style={{ border: `1px solid ${HEAD_BORDER}`, color: PLUM, background: '#fff', WebkitTapHighlightColor: 'transparent' }}
+        className="group relative z-20 inline-flex items-center gap-1.5 pl-1.5 pr-3 rounded-full transition-all active:scale-95 touch-manipulation select-none"
+        style={{ minHeight: 40, border: `1px solid ${HEAD_BORDER}`, color: PLUM, background: '#fff', WebkitTapHighlightColor: 'transparent' }}
       >
-        <span className="flex items-center justify-center w-5 h-5 rounded-full transition-colors" style={{ background: HEAD_BG }}>
+        <span className="flex items-center justify-center w-6 h-6 rounded-full transition-colors" style={{ background: HEAD_BG }}>
           <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.2" className="w-3 h-3"><polyline points="15 18 9 12 15 6" /></svg>
         </span>
-        <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase">Back to site</span>
+        <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase whitespace-nowrap">Back<span className="hidden sm:inline"> to site</span></span>
       </a>
-      <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[0.62rem] font-bold tracking-[0.22em] uppercase" style={{ color: PLUM }}>Makeup by Roko</p>
+      <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[0.62rem] font-bold tracking-[0.22em] uppercase whitespace-nowrap" style={{ color: PLUM }}>Makeup by Roko</p>
     </div>
   );
 
@@ -525,7 +548,7 @@ export default function UploadZelle() {
           <div className="flex-1 max-w-5xl mx-auto w-full px-5 pb-10">
             {/* Desktop layout */}
             <div className="hidden lg:grid grid-cols-3 gap-5 items-stretch">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} remaining={remaining} />
 
               {booking?.screenshot_url && (
                 <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
@@ -561,7 +584,7 @@ export default function UploadZelle() {
 
             {/* Mobile layout */}
             <div className="lg:hidden flex flex-col gap-4">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} remaining={remaining} />
 
               {booking?.screenshot_url && (
                 <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
