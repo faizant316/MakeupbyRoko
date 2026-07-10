@@ -14,7 +14,7 @@ export async function POST(req) {
     const supabase = createClient();
     const {
       bookingId, clientEmail, clientName, serviceName, dateFormatted, time,
-      consultationDate, consultationTime, consultationType, zoomLink, consultationNotes,
+      consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated,
     } = await req.json();
 
     if (!bookingId || !clientEmail || !consultationDate || !consultationTime) {
@@ -58,11 +58,13 @@ export async function POST(req) {
     // Single client email: confirmation + consultation + upload link
     await sendEmail({
       to: clientEmail,
-      subject: `You're confirmed for ${serviceName}${dateFormatted ? ` ✦ ${dateFormatted}` : ''}`,
+      subject: updated
+        ? `Your consultation time has been updated ✦ ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}`
+        : `You're confirmed for ${serviceName}${dateFormatted ? ` ✦ ${dateFormatted}` : ''}`,
       html: bridalConfirmedEmail({
         firstName, serviceName, dateFormatted, time,
         consultationDate, consultationTime, consultationType, zoomLink, consultationNotes,
-        uploadUrl, depositReceived: booking?.deposit_received,
+        uploadUrl, depositReceived: booking?.deposit_received, updated,
       }),
     });
 
