@@ -7,6 +7,15 @@ module.exports = {
     ],
   theme: {
   	extend: {
+  		// Site-wide type: everything now renders in the admin dashboard's clean
+  		// sans (Söhne → Inter fallback stack). Both `font-sans` and `font-serif`
+  		// utilities resolve here, so legacy `font-serif` headings across the site
+  		// pick up the new font without touching 60+ component files. Cormorant
+  		// Garamond is retired brand-wide.
+  		fontFamily: {
+  			sans: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+  			serif: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

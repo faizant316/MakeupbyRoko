@@ -92,7 +92,7 @@ export default function ContractSign({ contract, clientName = '', submitting = f
           onChange={e => setName(e.target.value)}
           placeholder="Your full name"
           className="w-full px-0 py-2.5 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none"
-          style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '0.02em' }}
+          style={{ fontFamily: 'var(--font-admin)', fontStyle: 'italic', letterSpacing: '0.02em' }}
         />
         <p className="text-[0.66rem] text-gray-400 mt-1.5">Signed electronically on {signedAtLabel}</p>
       </div>

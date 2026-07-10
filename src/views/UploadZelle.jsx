@@ -100,14 +100,20 @@ function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, r
           <SummaryRow label="Service Price" value={servicePrice} />
           <SummaryRow label="Date" value={dateFormatted || 'TBD'} />
           <SummaryRow label="Zelle deposit" value={depositAmount} highlight />
-          {/* Remaining balance: show the exact figure only when the link carries a
-              trustworthy amount (studio bookings with no travel/early surcharge).
-              Otherwise stay honest with "due in cash on the day", which matches
-              the confirmation email and Roko confirming the exact total. */}
-          {remaining
-            ? <SummaryRow label="Remaining balance" value={remaining} caption="due in cash on the day" />
-            : <SummaryRow label="Remaining balance" value="Due in cash on the day" />}
         </div>
+      </div>
+      {/* Remaining balance — its own clean footer band so it reads as the bottom
+          line. Show the exact dollar figure whenever the link carries one (package
+          price − deposit); otherwise a tidy "cash on the day" chip. Either way the
+          caption keeps it honest: paid in cash on the appointment day. */}
+      <div className="flex items-center justify-between gap-3 px-5 py-4 bg-white" style={{ borderTop: `1px solid ${DIVIDER}` }}>
+        <div className="min-w-0">
+          <p className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase" style={{ color: PLUM }}>Remaining Balance</p>
+          <p className="text-[0.62rem] font-medium mt-1" style={{ color: LABEL }}>Due in cash on the day</p>
+        </div>
+        {remaining
+          ? <span className="flex-shrink-0 text-[1.4rem] font-bold leading-none whitespace-nowrap" style={{ color: VALUE }}>{remaining}</span>
+          : <span className="flex-shrink-0 text-[0.78rem] font-semibold px-3 py-1.5 rounded-full whitespace-nowrap" style={{ background: HEAD_BG, border: `1px solid ${HEAD_BORDER}`, color: PLUM_DARK }}>Cash on the day</span>}
       </div>
     </div>
   );
