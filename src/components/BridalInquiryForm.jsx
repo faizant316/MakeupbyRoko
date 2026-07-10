@@ -127,8 +127,11 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
             <p className="text-[0.82rem] text-[#6E6058] leading-[1.75]">
               Your bridal inquiry has been received. I'll be in touch within <strong className="text-[#2C1A14]">24–48 hours</strong> to confirm everything and schedule your consultation.
             </p>
-            <div className="mt-3 px-3 py-2.5 bg-[#F7F3F0] rounded-lg border-l-2 border-[#D4A0B0]">
-              <p className="text-[0.72rem] text-[#A0785A] font-medium">Full deposit details sent to your email.</p>
+            <div className="mt-3 px-3.5 py-3 bg-[#F7F3F0] rounded-lg border-l-2 border-[#D4A0B0]">
+              <p className="text-[0.72rem] font-semibold text-[#A0785A] mb-1">Check your email for your secure upload link</p>
+              <p className="text-[0.72rem] text-[#6E6058] leading-[1.65]">
+                One private link to send your <strong className="text-[#2C1A14]">Zelle deposit screenshot</strong> and your <strong className="text-[#2C1A14]">with &amp; without makeup photos</strong>, all in one place, whenever you're ready.
+              </p>
             </div>
           </div>
         </div>
@@ -137,6 +140,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
         <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
           <div className="px-5 pt-4 pb-1">
             <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Before Your Consultation</p>
+            <p className="text-[0.74rem] text-[#8A7F85] leading-[1.55] mt-1">Your consultation is about <strong className="text-[#C4849A]">1 month before</strong> your date. Have these ready:</p>
           </div>
           <div className="px-5 pb-4 pt-2 flex flex-col gap-2.5">
             {[
@@ -513,7 +517,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     // email link never points at a protected *.vercel.app deployment URL (which
     // would force clients into a Vercel login wall on mobile).
     const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
-    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}`;
+    // Carry the package price + remaining balance (price − deposit) on the upload
+    // link so the confirmation page can show the exact dollar figure owed, not a
+    // vague "cash on the day". Travel, when it applies, is a separate line item.
+    const money = (s) => { const n = parseFloat(String(s || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
+    const _priceN = money(bridalPrice);
+    const _depositN = money(bridalDeposit);
+    const bridalRemaining = (_priceN != null && _depositN != null && _priceN > _depositN)
+      ? `$${(_priceN - _depositN).toLocaleString('en-US')}`
+      : '';
+    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(bridalPrice || '')}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
     const bridalDateFormatted = selectedDate
       ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
       : 'your requested date';
@@ -632,7 +645,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <div className="w-px h-8 bg-gray-200" />
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Coverage</p>
-                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">Four Hours</p>
+                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">4 Hours</p>
               </div>
               <div className="w-px h-8 bg-gray-200" />
               <div className="text-center">
@@ -688,6 +701,32 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 Pick your {isTrial ? 'trial date' : 'wedding day'} below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
             </div>
+
+            {/* How bridal works — the private consultation is a real, required step,
+                so make the two-part flow unmistakable right at the top: a planning
+                consultation about a month out, then the day-of glam. */}
+            {!isTrial && (
+              <div className="relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F0E0E9', boxShadow: '0 1px 10px rgba(196,132,154,0.08)' }}>
+                <div className="flex items-center gap-2 px-4 pt-3 pb-2.5" style={{ background: 'linear-gradient(135deg,#FCF6F8,#FBF1F5)', borderBottom: '1px solid #F4E6ED' }}>
+                  <span className="text-[#C4849A] text-[0.72rem]">✦</span>
+                  <p className="text-[0.6rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Every bride gets a private consultation</p>
+                </div>
+                <div className="px-4 py-3.5 flex flex-col gap-3 bg-white">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.72rem] font-bold text-white mt-0.5" style={{ background: '#C4849A' }}>1</span>
+                    <p className="text-[0.82rem] leading-[1.6] text-[#5A5258]">
+                      <strong className="text-[#2C1A14]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong> your date. In person or over a call, we plan your entire bridal look together.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.72rem] font-bold text-white mt-0.5" style={{ background: '#D8B0BE' }}>2</span>
+                    <p className="text-[0.82rem] leading-[1.6] text-[#5A5258]">
+                      <strong className="text-[#2C1A14]">Your wedding day</strong>. I arrive and glam you flawlessly, exactly the way we planned.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Calendar */}
             <div className="relative z-10">
@@ -908,8 +947,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
             </div>
 
-            <div>
-              <label className={labelClass}>What time would you like to be ready by?</label>
+            {/* The bride's own ready-by preference — the one timing field that's
+                about her, so it gets a soft pink accent bar + plum label to stand
+                out from the vendor times around it. */}
+            <div className="relative pl-3.5">
+              <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
+              <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by?</label>
               <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
               <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                 Your preference for when you'd like your makeup finished. Roko sets the final timeline, but she'll plan around getting you ready by then.
@@ -926,17 +969,14 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
             </div>
 
-            {/* Heads-up note (refined card) */}
-            <div className="rounded-2xl p-4 sm:p-[1.15rem] flex items-start gap-3.5" style={{ background: 'linear-gradient(135deg, #FCF6F8, #FBF1F5)', border: '1px solid #F0E0E9' }}>
-              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 mt-0.5" style={{ border: '1px solid #F0E0E9' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-              </div>
-              <div>
-                <p className="text-[0.62rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-1.5">Heads up</p>
-                <p className="text-[0.84rem] leading-[1.7]" style={{ color: '#6B4055' }}>
-                  If your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2">@hairbyshak</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
-                </p>
-              </div>
+            {/* Heads-up note — subtle: a thin pink accent line + a small pink tag,
+                no filled box. */}
+            <div className="relative pl-3.5">
+              <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+              <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
+              <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                If your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
+              </p>
             </div>
 
             <div>
@@ -1003,18 +1043,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
             {/* Before & after photos are collected later, through the client's
                 personal upload link — not on this form. We only set expectations here. */}
+            {/* Photos note — subtle: thin pink accent line + small pink tag, with
+                "with / without makeup" as little highlighted pink chips. No box. */}
             <div>
               <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
-              <div className="rounded-2xl p-4 sm:p-[1.15rem] flex items-start gap-3.5 mt-1" style={{ background: 'linear-gradient(135deg, #FCF6F8, #FBF1F5)', border: '1px solid #F0E0E9' }}>
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 mt-0.5" style={{ border: '1px solid #F0E0E9' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </div>
-                <div>
-                  <p className="text-[0.62rem] font-bold tracking-[0.16em] uppercase text-[#C4849A] mb-1.5">After you reserve</p>
-                  <p className="text-[0.84rem] leading-[1.7]" style={{ color: '#6B4055' }}>
-                    You'll get a personal upload link to send recent photos of yourself <strong style={{ color: '#2C1A14' }}>with makeup</strong> and <strong style={{ color: '#2C1A14' }}>without makeup</strong>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
-                  </p>
-                </div>
+              <div className="relative pl-3.5 mt-1.5">
+                <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
+                <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
+                  You'll get a personal upload link to send recent photos of yourself <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without makeup</span>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
+                </p>
               </div>
             </div>
 

@@ -8,11 +8,17 @@ const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@res
 const REPLY_TO = process.env.REPLY_TO_EMAIL || 'makeupbyroko22@gmail.com';
 const ADMIN_URL = `${SITE_URL}/admin`;
 
+// Site-wide type is the admin dashboard's clean sans. Email clients can't load
+// Söhne/Inter reliably, so every email uses the same system-sans stack the admin
+// UI falls back to — no more Georgia/serif anywhere. One constant, used for every
+// font-family in this file (headings, hero titles, signatures, amounts).
+const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
 // ─── Admin email primitives (kept simple & info-dense) ─────────────────────────
 
 function base(content) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#ffffff;font-family:${EMAIL_FONT};">
 <div style="max-width:500px;margin:0 auto;padding:24px 16px;">
 <div style="text-align:center;margin-bottom:14px;">
   <p style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#C4849A;margin:0;">Makeup by Roko</p>
@@ -23,7 +29,7 @@ function base(content) {
 </div>
 ${content}
 <div style="text-align:center;padding:20px 0 8px;">
-  <p style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#C4849A;margin:0 0 5px;">With love, Roko</p>
+  <p style="font-family:${EMAIL_FONT};font-style:italic;font-size:16px;color:#C4849A;margin:0 0 5px;">With love, Roko</p>
   <p style="font-size:11px;color:#999999;margin:0;">roko@makeupbyroko.org · @makeupbyroko_</p>
 </div>
 </div></body></html>`;
@@ -62,15 +68,29 @@ function todayStr() {
   return new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' });
 }
 
+// Render a date as "July 31, 2026" (month, day, year) for every email/service.
+// An ISO date string (YYYY-MM-DD) is parsed as a plain calendar date so it never
+// slips a day across time zones; anything else is passed through unchanged.
+function longDate(value) {
+  if (!value) return '';
+  const s = String(value);
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+      .toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  return s;
+}
+
 function clientShell({ preheader, content }) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="color-scheme" content="light"></head>
-<body style="margin:0;padding:0;background:#F1EAED;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<body style="margin:0;padding:0;background:#F1EAED;font-family:${EMAIL_FONT};-webkit-font-smoothing:antialiased;">
 ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;opacity:0;color:#F1EAED;">${preheader}</div>` : ''}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1EAED;"><tr><td align="center" style="padding:24px 12px 32px;">
   <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:22px;overflow:hidden;box-shadow:0 4px 24px rgba(140,90,110,0.10);">
     <tr><td style="padding:20px 28px;border-bottom:1px solid #F0E6EC;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td align="left" style="font-family:Georgia,'Times New Roman',serif;font-size:19px;color:#16110F;letter-spacing:0.01em;">Makeup by <span style="color:#C4849A;font-style:italic;">Roko</span></td>
+        <td align="left" style="font-family:${EMAIL_FONT};font-size:19px;color:#16110F;letter-spacing:0.01em;">Makeup by <span style="color:#C4849A;font-style:italic;">Roko</span></td>
         <td align="right" style="font-size:12px;color:#A99FA4;white-space:nowrap;">${todayStr()}</td>
       </tr></table>
     </td></tr>
@@ -81,7 +101,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
       </td></tr></table>
     </td></tr>
     <tr><td style="padding:20px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
-      <p style="font-family:Georgia,serif;font-style:italic;font-size:17px;color:#C4849A;margin:0 0 8px;">With love, Roko</p>
+      <p style="font-family:${EMAIL_FONT};font-style:italic;font-size:17px;color:#C4849A;margin:0 0 8px;">With love, Roko</p>
       <p style="font-size:12px;color:#9A8E94;margin:0;">roko@makeupbyroko.org · @makeupbyroko_</p>
       <p style="font-size:11px;color:#C3B8BE;margin:10px 0 0;">Makeup by Roko · Mountain House, CA</p>
     </td></tr>
@@ -112,7 +132,7 @@ export function contractCopyEmail({ clientName, serviceName, dateFormatted, time
     <tr><td style="padding:18px 28px 26px;">
       <div style="background:#F7F1F4;border-radius:12px;padding:16px;">
         <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Signature</p>
-        <p style="font-family:Georgia,serif;font-style:italic;font-size:19px;color:#16110F;margin:0 0 6px;">${signedName || clientName || ''}</p>
+        <p style="font-family:${EMAIL_FONT};font-style:italic;font-size:19px;color:#16110F;margin:0 0 6px;">${signedName || clientName || ''}</p>
         <p style="font-size:12px;color:#6b6169;margin:0;">Signed electronically${signedAtLabel ? ` on ${signedAtLabel}` : ''} · Agreement ${c.version}</p>
         <p style="font-size:12px;color:#6b6169;margin:6px 0 0;">Photo permission: <strong style="color:#16110F;">${photoConsent ? 'Yes, may post' : 'No, keep private'}</strong></p>
       </div>
@@ -133,7 +153,7 @@ export function contractClientPanel({ clientName, serviceName, dateFormatted, ti
     <p style="font-size:12px;line-height:1.6;color:#5A5258;margin:0 0 4px;">${c.intro}</p>
     ${sectionsHtml}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF5F8;border-radius:10px;"><tr><td style="padding:12px 14px;">
-      <p style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#16110F;margin:0 0 4px;">${signedName || clientName || ''}</p>
+      <p style="font-family:${EMAIL_FONT};font-style:italic;font-size:16px;color:#16110F;margin:0 0 4px;">${signedName || clientName || ''}</p>
       <p style="font-size:11px;color:#6b6169;margin:0;">Signed electronically${signedAtLabel ? ` on ${signedAtLabel}` : ''} · Photo permission: <strong style="color:#16110F;">${photoConsent ? 'Yes' : 'No'}</strong></p>
     </td></tr></table>
   `);
@@ -143,7 +163,7 @@ function clientHero({ eyebrow, title, titleAccent, subtitle, emoji }) {
   return `<tr><td style="padding:40px 28px 32px;background:#FBF5F8;border-bottom:1px solid #F0E6EC;text-align:center;">
     ${emoji ? `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;"><tr><td width="54" height="54" align="center" valign="middle" bgcolor="#ffffff" style="border-radius:50%;font-size:24px;box-shadow:0 2px 10px rgba(196,132,154,0.20);">${emoji}</td></tr></table>` : ''}
     ${eyebrow ? `<p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4849A;margin:0 0 14px;">${eyebrow}</p>` : ''}
-    <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.16;font-weight:400;color:#16110F;margin:0;">${title}${titleAccent ? `<br><span style="color:#C4849A;font-style:italic;">${titleAccent}</span>` : ''}</h1>
+    <h1 style="font-family:${EMAIL_FONT};font-size:32px;line-height:1.16;font-weight:400;color:#16110F;margin:0;">${title}${titleAccent ? `<br><span style="color:#C4849A;font-style:italic;">${titleAccent}</span>` : ''}</h1>
     ${subtitle ? `<p style="font-size:14px;color:#857A80;margin:14px 0 0;line-height:1.55;">${subtitle}</p>` : ''}
   </td></tr>`;
 }
@@ -158,8 +178,8 @@ function cheadline(label, amount, sub) {
   return `<tr><td style="padding:18px 28px 4px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #F0E6EC;border-bottom:1px solid #F0E6EC;">
       <tr>
-        <td style="padding:18px 0;font-family:Georgia,serif;font-size:22px;color:#16110F;">${label}</td>
-        <td align="right" style="padding:18px 0;font-family:Georgia,serif;font-size:30px;color:#16110F;">${amount}</td>
+        <td style="padding:18px 0;font-family:${EMAIL_FONT};font-size:22px;color:#16110F;">${label}</td>
+        <td align="right" style="padding:18px 0;font-family:${EMAIL_FONT};font-size:30px;color:#16110F;">${amount}</td>
       </tr>
     </table>
     ${sub ? `<p style="font-size:12px;color:#9A8E94;margin:8px 0 0;text-align:right;">${sub}</p>` : ''}
@@ -191,8 +211,8 @@ function crow(label, value, color) {
 
 function ctotalRow(label, value) {
   return `<tr>
-    <td style="padding:16px 0 2px;font-family:Georgia,serif;font-size:17px;color:#16110F;">${label}</td>
-    <td align="right" style="padding:16px 0 2px;font-family:Georgia,serif;font-size:24px;color:#16110F;">${value}</td>
+    <td style="padding:16px 0 2px;font-family:${EMAIL_FONT};font-size:17px;color:#16110F;">${label}</td>
+    <td align="right" style="padding:16px 0 2px;font-family:${EMAIL_FONT};font-size:24px;color:#16110F;">${value}</td>
   </tr>`;
 }
 
@@ -250,7 +270,7 @@ function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
       <tr><td style="padding:26px 22px;text-align:center;">
         <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#C4849A;margin:0 0 ${hideAmount ? '4px' : '8px'};">${hideAmount ? 'Send Your Deposit' : 'Reserve Your Date'}</p>
-        ${hideAmount ? '' : `<p style="font-family:Georgia,serif;font-size:36px;line-height:1;color:#16110F;margin:0 0 4px;">${amount}</p>`}
+        ${hideAmount ? '' : `<p style="font-family:${EMAIL_FONT};font-size:36px;line-height:1;color:#16110F;margin:0 0 4px;">${amount}</p>`}
         <p style="font-size:13px;color:#8A7F85;margin:0 0 18px;">Send via Zelle to lock in your date</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -636,7 +656,7 @@ export function adminClassPaymentEmail({ reg, classes = [], totalPaid, formatLab
 
   return base(`
     ${card(`
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 10px;">New Class Booking</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 10px;">New Class Booking</h2>
       <p style="font-size:13px;color:#444444;margin:0;line-height:1.7;"><strong>${reg.full_name}</strong> just paid <strong>$${totalPaid.toLocaleString()}</strong> in full via Stripe.</p>
     `)}
     ${card(`
@@ -702,7 +722,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
 
   return base(`
     ${card(`
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">New Booking</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">New Booking</h2>
       <p style="font-size:13px;color:#444444;margin:0;line-height:1.6;">New booking request from <strong>${name}</strong>. Here's everything they submitted:</p>
     `)}
     ${card(`
@@ -756,8 +776,7 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
 
   const eventRows = [
     row('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),
-    weddingDate ? row('Wedding Date', `<strong>${weddingDate}</strong>`) : '',
-    bridalDateFormatted ? row('Preferred Appt', bridalDateFormatted) : '',
+    weddingDate ? row('Wedding Date', `<strong>${longDate(weddingDate)}</strong>`) : '',
     eventLocation ? row('Location', eventLocation) : '',
     outOfState !== undefined ? row('Out of State', outOfState ? 'Yes — out of state' : 'No, local (CA)', outOfState ? '#C4849A' : '#111111') : '',
     numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : '',
@@ -776,7 +795,7 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
   return base(`
     <div style="background:#C4849A;border-radius:14px;padding:20px;margin-bottom:10px;text-align:center;">
       <p style="font-size:28px;margin:0 0 8px;">💍</p>
-      <h2 style="font-family:Georgia,serif;font-size:22px;font-weight:300;color:#ffffff;margin:0 0 4px;">New Bridal Inquiry</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:22px;font-weight:300;color:#ffffff;margin:0 0 4px;">New Bridal Inquiry</h2>
       <p style="font-size:13px;color:rgba(255,255,255,0.85);margin:0;"><strong>${fullName}</strong> just submitted a bridal inquiry for <strong>${bridalTitle}</strong>.</p>
     </div>
     ${card(`
@@ -819,7 +838,7 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
   return base(`
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Consultation Sent</p>
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">📅 Consultation Scheduled</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">📅 Consultation Scheduled</h2>
       <p style="font-size:13px;color:#444444;margin:0;">Consultation confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${serviceName}</strong>.</p>
     `)}
     <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
@@ -852,7 +871,7 @@ export function adminLessonEmail({ clientName, clientEmail, className, lessonDat
   return base(`
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Lesson Scheduled</p>
-      <h2 style="font-family:Georgia,serif;font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">💄 Makeup Lesson Scheduled</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">💄 Makeup Lesson Scheduled</h2>
       <p style="font-size:13px;color:#444444;margin:0;">Lesson confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${className}</strong>.</p>
     `)}
     <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
