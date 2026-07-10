@@ -26,11 +26,14 @@ export function useModalLenis(ref) {
       return () => wrapper.removeAttribute("data-lenis-prevent");
     }
 
+    // lerp-based (see SmoothScroll for the why): duration-based smoothing feels
+    // laggy under a Mac trackpad's high-frequency wheel deltas, which is exactly
+    // the "choppy when scrolling inside the form" complaint. Damping toward a
+    // moving target keeps the modal's inner scroll responsive on the trackpad.
     const lenis = new Lenis({
       wrapper,
       content: wrapper.firstElementChild || wrapper,
-      duration: 1.05,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      lerp: 0.1,
       smoothWheel: true,
       overscroll: false,
     });

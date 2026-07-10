@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { lenisStop, lenisStart } from '@/lib/lenis';
+import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 
 function dedupeText(text, phrases) {
@@ -97,10 +97,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   useEffect(() => { setPhotoIdx(0); }, [svc?.key]);
 
   useEffect(() => {
-    const sbw = window.innerWidth - document.documentElement.clientWidth;
-    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
-    document.body.style.overflow = 'hidden';
-    lenisStop();
+    // Shared, reference-counted page lock. Using the same lock the booking/class
+    // sheets use means that when this preview hands off to one of those sheets
+    // (both mounted for a beat during the cross-fade), the page scroller stays
+    // stopped the whole time instead of this modal's cleanup restarting it
+    // mid-handoff — which used to fight the sheet's own inner scroll.
+    lockScroll();
 
     // Ensure mobile scroll starts at top so the photo is fully visible
     if (mobileScrollRef.current) mobileScrollRef.current.scrollTop = 0;
@@ -133,9 +135,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
     return () => {
       cancelAnimationFrame(t);
-      document.body.style.overflow     = '';
-      document.body.style.paddingRight = '';
-      lenisStart();
+      unlockScroll();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
