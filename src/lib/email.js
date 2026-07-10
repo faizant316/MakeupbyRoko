@@ -522,17 +522,22 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
   const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   const showDeposit = !depositReceived && uploadUrl;
   return clientShell({
-    preheader: `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} — consultation details inside.`,
+    preheader: `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment and consultation details.`,
     content: `
       ${clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day ✦" })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially confirmed${dateFormatted ? ` for <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}, and I've scheduled your consultation. Everything you need is right here.`)}
-      ${cpanel(`${ctitle('Appointment Details')}${crows(
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`)}
+      ${cinfo(`📌 <strong style="color:#16110F;">This is your booking confirmation.</strong> It has everything for your appointment <em>and</em> your consultation call in one place, so please keep this email safe and don't delete it.`)}
+      ${cpanel(`${ctitle('Your Appointment')}
+        <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">The day I do your makeup. This is your main booking.</p>
+        ${crows(
         crow('Service', serviceName) +
-        (dateFormatted ? crow('Date', dateFormatted) : '') +
+        (dateFormatted ? crow('Date', `<strong>${dateFormatted}</strong>`) : '') +
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
       )}`)}
-      ${cpanel(`${ctitle('Your Consultation')}${crows(
+      ${cpanel(`${ctitle('Your Consultation Call')}
+        <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">A quick chat <em>before</em> your big day so we can go over your vision. This is separate from the appointment above, no extra booking needed.</p>
+        ${crows(
         crow('Date', `<strong>${consultationDate}</strong>`) +
         crow('Time', `<strong>${consultationTime}</strong>`) +
         crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +

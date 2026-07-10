@@ -58,7 +58,7 @@ export async function POST(req) {
     // Single client email: confirmation + consultation + upload link
     await sendEmail({
       to: clientEmail,
-      subject: `You're confirmed for ${serviceName} ✦ Consultation ${consultationDate} at ${consultationTime}`,
+      subject: `You're confirmed for ${serviceName}${dateFormatted ? ` ✦ ${dateFormatted}` : ''}`,
       html: bridalConfirmedEmail({
         firstName, serviceName, dateFormatted, time,
         consultationDate, consultationTime, consultationType, zoomLink, consultationNotes,
