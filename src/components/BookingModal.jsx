@@ -120,6 +120,14 @@ export default function BookingModal({ service: initialService, onClose }) {
   const hasTravelFee = formData.travel_requested === true;
   const contractOverrides = useContractOverrides();
 
+  // Collapse the early-arrival surcharge into one clean figure everywhere it's
+  // shown (e.g. "$400" → "$500") instead of "$400 + $100". Keeps a trailing "+"
+  // if the base price already had one, and falls back to the raw string if the
+  // price can't be parsed to a number.
+  const _priceNum = (() => { const n = parseFloat(String(service?.price || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; })();
+  const _pricePlus = /\+/.test(String(service?.price || ''));
+  const earlyTotal = _priceNum != null ? `$${_priceNum + 100}${_pricePlus ? '+' : ''}` : `${service?.price} + $100`;
+
   const { data: blockedDates = [] } = useQuery({
     queryKey: ['blocked-dates'],
     queryFn: () => api.entities.BlockedDate.list(),
@@ -273,7 +281,7 @@ export default function BookingModal({ service: initialService, onClose }) {
         hasTravelFee,
         readyByTime: formData.ready_by_time,
         notes: formData.notes,
-        estimatedTotal: hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : isEarlyArrival ? `${service.price} + $100` : null,
+        estimatedTotal: hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : isEarlyArrival ? earlyTotal : null,
         contractSignedName: sig.name,
         contractSignedAt: sig.signedAt,
         contractPhotoConsent: sig.photoConsent,
@@ -302,7 +310,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Pinned footer CTA total (form step)
   const footerTotal = hasTravelFee && isEarlyArrival ? '$850+'
     : hasTravelFee ? '$750+'
-    : isEarlyArrival ? `${service.price} + $100`
+    : isEarlyArrival ? earlyTotal
     : service.price;
 
   const selectedDateLong = selectedDate
@@ -692,20 +700,19 @@ export default function BookingModal({ service: initialService, onClose }) {
                         ))}
                       </div>
                       {isEarlyArrival && (
-                        <div className="mt-2.5 bg-white border border-[#E2C4D2] rounded-xl px-3 py-2.5 flex items-start gap-2.5">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
-                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                          </svg>
-                          <div>
-                            <p className="text-[0.72rem] font-semibold text-[#B0708A]">Early Arrival Surcharge (+$100)</p>
-                            <p className="text-[0.68rem] text-[#C090A8] mt-0.5">Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.</p>
-                          </div>
+                        <div className="mt-3 relative pl-3.5">
+                          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                          <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Early arrival · +$100</p>
+                          <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                            Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    <div>
-                      <label className={labelClass}>What time would you like to be ready by?</label>
+                    <div className="relative pl-3.5">
+                      <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
+                      <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by?</label>
                       <TimePicker
                         value={formData.ready_by_time || ''}
                         onChange={v => setFormData({ ...formData, ready_by_time: v })}
@@ -740,14 +747,12 @@ export default function BookingModal({ service: initialService, onClose }) {
                         ))}
                       </div>
                       {hasTravelFee && (
-                        <div className="mt-2.5 bg-white border border-[#E2C4D2] rounded-xl px-3 py-2.5 flex items-start gap-2.5">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
-                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                          </svg>
-                          <div>
-                            <p className="text-[0.72rem] font-semibold text-[#B0708A]">Travel · Bridal Pricing Applies ($750+)</p>
-                            <p className="text-[0.68rem] text-[#C090A8] mt-0.5">For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.</p>
-                          </div>
+                        <div className="mt-3 relative pl-3.5">
+                          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                          <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel · bridal pricing $750+</p>
+                          <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                            For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -784,7 +789,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                           <div className="flex items-center justify-between px-4 py-2.5 bg-white">
                             <span className="text-[0.72rem] text-[#111] font-semibold">Estimated Total</span>
                             <span className="text-[0.72rem] text-[#111] font-bold">
-                              {hasTravelFee ? '$850+' : `${service.price} + $100`}
+                              {hasTravelFee ? '$850+' : earlyTotal}
                             </span>
                           </div>
                         )}
@@ -882,7 +887,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                           <div className="flex justify-between py-3 border-b border-[#F5E8EF] bg-[#FDF8FA] -mx-5 px-5">
                             <span className="text-[0.78rem] font-semibold text-[#111111]">Estimated Total</span>
                             <span className="text-[0.82rem] font-bold text-[#111111]">
-                              {hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : `${service.price} + $100`}
+                              {hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : earlyTotal}
                             </span>
                           </div>
                         )}
