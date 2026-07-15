@@ -684,21 +684,21 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
             <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
-            {/* Calendar heading */}
-            <div className="flex items-center gap-3 relative z-10">
-              <div className="w-11 h-11 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {/* Calendar heading — the main event of step one, so it reads large. */}
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-6 h-6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>
               <div>
-                <p className="text-[0.58rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
-                <h3 className="font-serif text-[1.55rem] lg:text-[1.85rem] leading-none text-[#111]">{dateNounCap} <em className="not-italic text-[#D4A0B0]">Date</em></h3>
+                <p className="text-[0.62rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
+                <h3 className="font-serif text-[1.9rem] lg:text-[2.25rem] leading-none text-[#111]">{dateNounCap} <em className="not-italic text-[#D4A0B0]">Date</em></h3>
               </div>
             </div>
 
-            {/* Lead-time notice */}
-            <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 relative z-10">
-              <p className="text-[0.72rem] text-[#888]">
-                Pick your {isTrial ? 'trial date' : 'wedding day'} below. Bridal must be booked at least <strong className="text-[#555]">2 weeks out</strong>. Earliest: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+            {/* Lead-time notice — sits right under the heading and shares its weight. */}
+            <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-3 relative z-10">
+              <p className="text-[0.85rem] leading-[1.55] text-[#777]">
+                Pick your {isTrial ? 'trial date' : 'wedding day'} below. Bridal must be booked at least <strong className="text-[#444]">2 weeks out</strong>. Earliest: <strong className="text-[#444]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
             </div>
 
@@ -706,22 +706,21 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 so make the two-part flow unmistakable right at the top: a planning
                 consultation about a month out, then the day-of glam. */}
             {!isTrial && (
-              <div className="relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F0E0E9', boxShadow: '0 1px 10px rgba(196,132,154,0.08)' }}>
-                <div className="flex items-center gap-2 px-4 pt-3 pb-2.5" style={{ background: 'linear-gradient(135deg,#FCF6F8,#FBF1F5)', borderBottom: '1px solid #F4E6ED' }}>
-                  <span className="text-[#C4849A] text-[0.72rem]">✦</span>
-                  <p className="text-[0.6rem] font-bold tracking-[0.16em] uppercase text-[#C4849A]">Every bride gets a private consultation</p>
+              <div className="relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
+                <div className="flex items-center gap-2 px-3.5 pt-2.5 pb-2" style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)', borderBottom: '1px solid #F5E9EF' }}>
+                  <p className="text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD]">Every bride gets a private consultation</p>
                 </div>
-                <div className="px-4 py-3.5 flex flex-col gap-3 bg-white">
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.72rem] font-bold text-white mt-0.5" style={{ background: '#C4849A' }}>1</span>
-                    <p className="text-[0.82rem] leading-[1.6] text-[#5A5258]">
-                      <strong className="text-[#2C1A14]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong> your date. In person or over a call, we plan your entire bridal look together.
+                <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white">
+                  <div className="flex items-start gap-2.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: '#CE9BAD' }}>1</span>
+                    <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">
+                      <strong className="text-[#3A2C26]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong> your date. In person or over a call, we plan your entire bridal look together.
                     </p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.72rem] font-bold text-white mt-0.5" style={{ background: '#D8B0BE' }}>2</span>
-                    <p className="text-[0.82rem] leading-[1.6] text-[#5A5258]">
-                      <strong className="text-[#2C1A14]">Your wedding day</strong>. I arrive and glam you flawlessly, exactly the way we planned.
+                  <div className="flex items-start gap-2.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: '#E0BCC8' }}>2</span>
+                    <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">
+                      <strong className="text-[#3A2C26]">Your wedding day</strong>. I arrive and glam you flawlessly, exactly the way we planned.
                     </p>
                   </div>
                 </div>
