@@ -1,14 +1,23 @@
-﻿import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/api/apiClient';
+import { lenisStop, lenisStart, lenisResize, lenisScrollTo, scrollToTarget } from '@/lib/lenis';
+
+// Height of the fixed nav bar plus a little breathing room, so a section never
+// lands tucked underneath it after a jump.
+const NAV_H = 60;
 
 export default function Navigation({ onCloseModal }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const pendingHrefRef = useRef(null);
   const router = useRouter();
+  // Scroll position captured when the mobile menu opened, and where to land once
+  // its scroll-lock releases: a section selector on a nav tap, 0 for Home, or
+  // null to simply restore the saved position on a plain close.
+  const savedScrollRef = useRef(0);
+  const restoreRef = useRef(null);
 
   useEffect(() => {
     api.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
@@ -23,67 +32,119 @@ export default function Navigation({ onCloseModal }) {
   // Collapse the Services dropdown whenever the whole menu closes.
   useEffect(() => { if (!mobileOpen) setServicesOpen(false); }, [mobileOpen]);
 
-  useEffect(() => {
-    if (mobileOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.overflow = '';
-        // A nav tap already released the lock and jumped to its target inside the
-        // tap handler (handleNavClick) — so here we must NOT restore the old
-        // position, or it would yank the page back to the hero.
-        if (pendingHrefRef.current != null) {
-          pendingHrefRef.current = null;
+  // Body-scroll lock for the full-screen mobile menu.
+  //
+  // Lenis owns the page scroll, so we MUST stop it while the body is pinned and
+  // hand the position back THROUGH Lenis on release — otherwise its RAF loop
+  // fights the unlock and snaps to the top (the old "hero flashes behind the
+  // menu, then the section appears" bug). useLayoutEffect so the release + the
+  // re-scroll both run before the browser paints the closing frame: the overlay
+  // fades out with the target section already in place, never the hero.
+  useLayoutEffect(() => {
+    if (!mobileOpen) return;
+    const y = window.scrollY;
+    savedScrollRef.current = y;
+    restoreRef.current = null;
+    lenisStop();
+    const b = document.body.style;
+    b.position = 'fixed';
+    b.top = `-${y}px`;
+    b.left = '0';
+    b.right = '0';
+    b.width = '100%';
+    b.overflow = 'hidden';
+    return () => {
+      b.position = '';
+      b.top = '';
+      b.left = '';
+      b.right = '';
+      b.width = '';
+      b.overflow = '';
+      lenisStart();
+      lenisResize(); // body is back in flow — let Lenis re-measure before the jump
+
+      // Destination: the nav target when navigating, else the saved position.
+      const r = restoreRef.current;
+      restoreRef.current = null;
+      let dest = savedScrollRef.current;
+      if (r !== null) {
+        if (r === 0) {
+          dest = 0;
         } else {
-          window.scrollTo(0, scrollY);
+          const el = document.querySelector(r);
+          // The body is un-pinned now (window is at 0), so rect.top is absolute.
+          if (el) dest = Math.max(0, Math.round(el.getBoundingClientRect().top - NAV_H));
         }
-      };
-    }
+      }
+
+      // Set the native scroll instantly (pre-paint) AND sync Lenis to the same
+      // spot so its next frame doesn't animate away from it.
+      const html = document.documentElement;
+      const prevBehavior = html.style.scrollBehavior;
+      html.style.scrollBehavior = 'auto';
+      window.scrollTo(0, dest);
+      lenisScrollTo(dest, { immediate: true });
+      requestAnimationFrame(() => { html.style.scrollBehavior = prevBehavior; });
+    };
   }, [mobileOpen]);
 
-  const scrollToHref = (href) => {
-    if (href === '#') {
-      window.scrollTo(0, 0);
-    } else {
-      document.querySelector(href)?.scrollIntoView({ behavior: 'instant' });
+  // Browser back / forward. Every nav tap pushes the section into history as a
+  // hash entry, so popstate just scrolls to whatever the hash now points at (or
+  // the top when there's none). This is what makes the phone's back/forward
+  // arrows actually move through the page instead of doing nothing.
+  useEffect(() => {
+    const onPop = () => {
+      const hash = window.location.hash;
+      const hasTarget = hash && hash !== '#' && document.querySelector(hash);
+      scrollToTarget(hasTarget ? hash : 0, { offset: -NAV_H });
+    };
+    window.addEventListener('popstate', onPop);
+    // Honor a deep link (e.g. /#reviews) once the page has mounted.
+    let t;
+    const hash = window.location.hash;
+    if (hash && hash !== '#') {
+      t = setTimeout(() => {
+        if (document.querySelector(hash)) scrollToTarget(hash, { immediate: true, offset: -NAV_H });
+      }, 140);
     }
+    return () => { window.removeEventListener('popstate', onPop); if (t) clearTimeout(t); };
+  }, []);
+
+  // Push the section into history so back/forward can walk between them. We reuse
+  // the current history.state (rather than null) so Next.js's router internals
+  // stay intact on these entries — otherwise landing back on one can trigger a
+  // full page reload.
+  const pushHash = (href) => {
+    try {
+      const url = (href === '#' || !href) ? (window.location.pathname + window.location.search) : href;
+      if (window.location.hash === href || (href === '#' && !window.location.hash)) return; // already here
+      window.history.pushState(window.history.state, '', url);
+    } catch { /* history unavailable — ignore */ }
   };
 
   const handleNavClick = (href) => {
     if (onCloseModal) onCloseModal();
+    pushHash(href);
+    const target = href === '#' ? 0 : href;
     if (mobileOpen) {
-      // Release the body-scroll lock and jump to the target RIGHT NOW — inside
-      // the tap handler, before React re-renders and the menu begins to fade.
-      // React flushes the close + this scroll before the next paint, so the page
-      // is already at the target section by the time the menu is even slightly
-      // transparent. The hero never flashes behind it.
-      pendingHrefRef.current = href; // tell the lock cleanup not to restore scroll
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      scrollToHref(href);
+      // Hand the destination to the scroll-lock cleanup, which runs pre-paint
+      // under the still-opaque overlay, then close the menu.
+      restoreRef.current = target;
       setMobileOpen(false);
     } else {
-      // Desktop / no lock active.
-      scrollToHref(href);
+      scrollToTarget(target, { offset: -NAV_H });
     }
   };
 
   const goHome = (e) => {
     e.preventDefault();
-    router.push('/');
-    setMobileOpen(false);
-    if (onCloseModal) onCloseModal();
+    if (window.location.pathname === '/') {
+      handleNavClick('#');
+    } else {
+      if (onCloseModal) onCloseModal();
+      setMobileOpen(false);
+      router.push('/');
+    }
   };
 
   const navItems = [

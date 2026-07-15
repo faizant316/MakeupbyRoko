@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { scrollToTarget } from '@/lib/lenis';
 
 import Navigation from '../components/Navigation';
 import BookingModal from '../components/BookingModal';
@@ -170,8 +171,10 @@ export default function ServicesPage() {
       const key = e.detail;
       if (!key) return;
       setActiveCategory(key);
+      // Go through Lenis (it owns the page scroll) with the fixed-nav offset, so
+      // the grid lands just below the bar instead of tucked under it.
       requestAnimationFrame(() => {
-        document.querySelector('#services-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollToTarget('#services-grid', { offset: -60 });
       });
     };
     window.addEventListener('roko:selectCategory', handler);
