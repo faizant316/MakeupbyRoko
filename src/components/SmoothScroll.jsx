@@ -6,7 +6,7 @@ import { setLenis } from "@/lib/lenis";
 // How tightly the page tracks your input. Lower = more glide (silky, weighty).
 // Higher = snappier, settles almost instantly (reads as "native").
 const MOUSE_LERP = 0.1; // desktop mouse wheel: keep the smooth, premium feel
-const TRACKPAD_LERP = 0.4; // Mac/precision trackpad: near-native, barely-there smoothing
+const TRACKPAD_LERP = 0.6; // Mac/precision trackpad: mostly native, only a whisper of smoothing
 
 // Tell a trackpad apart from a mouse wheel using the raw wheel event.
 // - Mouse wheels emit chunky, discrete deltas: line/page mode (deltaMode !== 0),
