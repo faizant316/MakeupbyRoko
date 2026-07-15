@@ -181,9 +181,15 @@ export default function BookingsList({
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
-  onMarkDepositReceived,
+  onMarkDepositReceived, onBulkUpdate, onBulkDelete,
 }) {
   const [showArchive, setShowArchive] = useState(false);
+  // iOS-style multi-select for the appointments list. `selectMode` flips rows
+  // into pickable checkboxes; `selectedIds` holds the chosen booking ids.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [showZellePanel, setShowZellePanel] = useState(false);
   const [markingIds, setMarkingIds] = useState(() => new Set());
@@ -287,6 +293,37 @@ export default function BookingsList({
     .filter(r => (!r.appointment_date || r.appointment_date >= today) && (!search || [r.full_name, r.email, r.phone].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
     .sort((a, b) => (a.appointment_date || '').localeCompare(b.appointment_date || ''));
 
+  // ── Multi-select plumbing (appointments list) ────────────────────────────
+  // Every booking the list is currently showing, for select-all + counts.
+  const selectableIds = [...visibleActive, ...visibleCompleted].map(b => b.id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id));
+  const selectedCount = selectedIds.size;
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const exitSelect = () => { setSelectMode(false); setSelectedIds(new Set()); setConfirmBulkDelete(false); };
+  const toggleSelectAll = () =>
+    setSelectedIds(prev => (selectableIds.every(id => prev.has(id)) ? new Set() : new Set(selectableIds)));
+
+  const runBulk = async (fn) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    try { await fn(ids); exitSelect(); }
+    catch (e) { console.error('bulk action failed:', e); }
+    finally { setBulkBusy(false); }
+  };
+  const bulkSetStatus = (status) => runBulk((ids) => onBulkUpdate?.(ids, { status }));
+  const bulkDelete = () => runBulk((ids) => onBulkDelete?.(ids));
+
+  // Leave select mode whenever the list context changes out from under it.
+  useEffect(() => { if (viewType !== 'appointments') exitSelect(); /* eslint-disable-next-line */ }, [viewType]);
+
   return (
     <div>
       {/* Month heading + Add Client */}
@@ -302,18 +339,39 @@ export default function BookingsList({
               : currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </p>
         </div>
-        {onAddClient && (
-          <button
-            onClick={onAddClient}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
-            style={{ background: dm ? '#2e2e38' : '#111', color: dm ? '#e4e4e7' : '#fff' }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add Client
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Select toggle — appointments only, when there's something to pick */}
+          {viewType === 'appointments' && (activeBookings.length > 0 || completedBookings.length > 0) && (
+            <button
+              onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+              style={selectMode
+                ? { background: dm ? 'rgba(37,99,235,0.16)' : 'rgba(37,99,235,0.1)', color: '#2563EB' }
+                : { background: dm ? '#26262e' : '#F3F3F7', color: dm ? '#d4d4d8' : '#4b4b53' }}
+            >
+              {selectMode ? 'Done' : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                    <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                  Select
+                </>
+              )}
+            </button>
+          )}
+          {onAddClient && !selectMode && (
+            <button
+              onClick={onAddClient}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+              style={{ background: dm ? '#2e2e38' : '#111', color: dm ? '#e4e4e7' : '#fff' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Client
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Deposits to Confirm — client sent a Zelle screenshot, awaiting review */}
@@ -1023,7 +1081,9 @@ export default function BookingsList({
             // buckets to hide them under, no collapse).
             <div className="flex flex-col gap-2">
               {visibleActive.map(b => (
-                <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} />
+                <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)}
+                  onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
+                  selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} />
               ))}
             </div>
           ) : (
@@ -1056,7 +1116,9 @@ export default function BookingsList({
                     <Collapse open={open}>
                       <div className="flex flex-col gap-2 pb-1">
                         {group.items.map(b => (
-                          <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} />
+                          <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)}
+                            onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
+                            selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} />
                         ))}
                       </div>
                     </Collapse>
@@ -1089,7 +1151,9 @@ export default function BookingsList({
               <Collapse open={showArchive || completedOnly}>
                 <div className="flex flex-col gap-2 pb-1">
                   {visibleCompleted.map(b => (
-                    <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} onClick={() => onSelect(b)} darkMode={dm} dimmed />
+                    <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)}
+                      onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
+                      selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} dimmed />
                   ))}
                 </div>
               </Collapse>
@@ -1097,6 +1161,111 @@ export default function BookingsList({
           )}
         </div>
       ))}
+
+      {/* ══ Floating bulk-action bar (iOS-style) — appointments select mode ══ */}
+      {selectMode && viewType === 'appointments' && (
+        <div
+          className="fixed left-1/2 bottom-4 z-[120] w-[calc(100%-1.5rem)] max-w-[560px]"
+          style={{ transform: 'translateX(-50%)', animation: 'fadeSlideUp 0.24s cubic-bezier(0.22,1,0.36,1)' }}
+        >
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: dm ? '#26262e' : '#fff',
+              border: `1px solid ${dm ? '#3a3a44' : '#EAEBF0'}`,
+              boxShadow: dm ? '0 14px 44px rgba(0,0,0,0.55)' : '0 14px 44px rgba(30,30,45,0.20)',
+            }}
+          >
+            {/* Count + select-all + done */}
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${dm ? '#33333d' : '#F0F0F4'}` }}>
+              <span className="text-[0.85rem] font-semibold" style={{ color: selectedCount ? (dm ? '#e4e4e7' : '#111') : (dm ? '#71717a' : '#9c9ca4') }}>
+                {selectedCount > 0 ? `${selectedCount} selected` : 'Tap appointments to select'}
+              </span>
+              <div className="flex items-center gap-3">
+                {selectableIds.length > 0 && (
+                  <button onClick={toggleSelectAll} className="text-[0.72rem] font-semibold transition-opacity hover:opacity-70" style={{ color: '#2563EB' }}>
+                    {allSelected ? 'Deselect all' : 'Select all'}
+                  </button>
+                )}
+                <button onClick={exitSelect} aria-label="Done selecting"
+                  className="w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
+                  style={{ background: dm ? '#33333d' : '#F0F0F4' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-4 gap-1 p-2">
+              {[
+                { key: 'confirm',  label: 'Confirm',  color: '#2563EB', onClick: () => bulkSetStatus('confirmed'),
+                  icon: <><path d="M20 6 9 17l-5-5" /></> },
+                { key: 'complete', label: 'Complete', color: dm ? '#A7B2C4' : '#475569', onClick: () => bulkSetStatus('completed'),
+                  icon: <><path d="M21 8v13H3V8" /><path d="M1 3h22v5H1z" /><path d="M10 12h4" /></> },
+                { key: 'cancel',   label: 'Cancel',   color: dm ? '#F5B83C' : '#B26A04', onClick: () => bulkSetStatus('cancelled'),
+                  icon: <><circle cx="12" cy="12" r="9" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></> },
+                { key: 'delete',   label: 'Delete',   color: '#DC2626', onClick: () => setConfirmBulkDelete(true),
+                  icon: <><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></> },
+              ].map(a => {
+                const disabled = selectedCount === 0 || bulkBusy;
+                return (
+                  <button
+                    key={a.key}
+                    onClick={a.onClick}
+                    disabled={disabled}
+                    className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl transition-all active:scale-95"
+                    style={{ opacity: disabled ? 0.4 : 1, background: dm ? 'transparent' : 'transparent', cursor: disabled ? 'not-allowed' : 'pointer' }}
+                    onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = dm ? '#31313b' : '#F5F5F8'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-[19px] h-[19px]">
+                      {a.icon}
+                    </svg>
+                    <span className="text-[0.66rem] font-semibold tracking-[0.01em]" style={{ color: a.color }}>{a.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation — destructive, so it always asks first */}
+      {confirmBulkDelete && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.55)', animation: 'fadeSlideDown 0.15s ease-out' }}
+          onClick={() => !bulkBusy && setConfirmBulkDelete(false)}>
+          <div onClick={e => e.stopPropagation()} className="w-full max-w-[360px] rounded-2xl p-6 text-center"
+            style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a44' : '#EAEBF0'}`, boxShadow: '0 20px 60px rgba(0,0,0,0.35)' }}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3.5" style={{ background: 'rgba(220,38,38,0.12)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </div>
+            <h3 className="font-serif text-[1.25rem] font-light mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+              Delete {selectedCount} appointment{selectedCount === 1 ? '' : 's'}?
+            </h3>
+            <p className="text-[0.8rem] leading-relaxed mb-5" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+              {selectedCount === 1 ? 'This appointment' : 'These appointments'} will be permanently removed from your dashboard. This can't be undone.
+            </p>
+            <div className="flex gap-2.5">
+              <button onClick={() => setConfirmBulkDelete(false)} disabled={bulkBusy}
+                className="flex-1 py-2.5 rounded-xl text-[0.8rem] font-semibold transition-all active:scale-95"
+                style={{ background: dm ? '#33333d' : '#F0F0F4', color: dm ? '#e4e4e7' : '#3f3f46' }}>
+                Keep
+              </button>
+              <button onClick={bulkDelete} disabled={bulkBusy}
+                className="flex-1 py-2.5 rounded-xl text-[0.8rem] font-semibold text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+                style={{ background: '#DC2626', opacity: bulkBusy ? 0.7 : 1 }}>
+                {bulkBusy && <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                {bulkBusy ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

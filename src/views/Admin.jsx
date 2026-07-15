@@ -21,6 +21,7 @@ import AddClientModal from '../components/admin/AddClientModal';
 import ClientsTab from '../components/admin/ClientsTab';
 import ResizableColumns from '../components/admin/ResizableColumns';
 import { daysUntil } from '../components/admin/timeline';
+import { isAdminEmail } from '@/lib/adminAllowlist';
 
 const DEFAULT_CAP = 3;
 
@@ -39,8 +40,8 @@ export default function Admin() {
   const [showAddClient, setShowAddClient] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
-  const [authChecked, setAuthChecked] = useState(true);   // DEV: bypassed
-  const [authGranted, setAuthGranted] = useState(true);   // DEV: bypassed
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authGranted, setAuthGranted] = useState(false);
   const [authError, setAuthError] = useState(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -59,18 +60,25 @@ export default function Admin() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // DEV MODE: auth bypassed — re-enable by uncommenting below and reverting useState defaults above
-  // useEffect(() => {
-  //   api.auth.me().then(u => {
-  //     if (u.full_name) setUserName(u.full_name.split(' ')[0]);
-  //     setAuthGranted(true);
-  //     setAuthChecked(true);
-  //   }).catch(() => {
-  //     setAuthChecked(true);
-  //     router.push('/login');
-  //   });
-  // // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
+  // Client-side auth gate (defense in depth — middleware already blocks the
+  // route at the edge). Confirms a live session AND that it's an allowlisted
+  // admin; anyone else is sent to the login screen.
+  useEffect(() => {
+    api.auth.me().then(u => {
+      if (!isAdminEmail(u.email)) {
+        setAuthChecked(true);
+        router.push('/login');
+        return;
+      }
+      if (u.full_name) setUserName(u.full_name.split(' ')[0]);
+      setAuthGranted(true);
+      setAuthChecked(true);
+    }).catch(() => {
+      setAuthChecked(true);
+      router.push('/login');
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: bookings = [], isLoading: loadingBookings } = useQuery({
     queryKey: ['admin-bookings'],
@@ -143,6 +151,18 @@ export default function Admin() {
       setSelectedBooking(null);
     },
   });
+
+  // Bulk actions for the home multi-select. Fire all the per-row calls, then a
+  // single refetch so the list re-renders once instead of flickering per item.
+  const bulkUpdateBookings = async (ids, data) => {
+    await Promise.all(ids.map((id) => api.entities.Booking.update(id, data)));
+    queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+  };
+  const bulkDeleteBookings = async (ids) => {
+    await Promise.all(ids.map((id) => api.entities.Booking.delete(id)));
+    queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+    setSelectedBooking(null);
+  };
 
   const updateReviewMutation = useMutation({
     mutationFn: ({ id, data }) => api.entities.Review.update(id, data),
@@ -483,6 +503,8 @@ export default function Admin() {
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
                     onMarkDepositReceived={(id) => updateBookingMutation.mutate({ id, data: { deposit_received: true } })}
+                    onBulkUpdate={bulkUpdateBookings}
+                    onBulkDelete={bulkDeleteBookings}
                   />
                 </div>
               }

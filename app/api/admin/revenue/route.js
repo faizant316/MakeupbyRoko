@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../../src/lib/supabase/server';
 import { requireAdmin } from '../../../../src/lib/requireAdmin';
+
+// Auth-gated (reads the session cookie), so it can never be statically rendered.
+export const dynamic = 'force-dynamic';
 import { CLASS_CATALOG, regTotal, classesOfReg } from '../../../../src/lib/classCatalog';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

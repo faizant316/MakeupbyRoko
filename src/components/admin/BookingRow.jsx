@@ -5,7 +5,7 @@ import { phoneHref } from '@/lib/phone';
 // Compact one-line list item for the appointments list. The rich detail lives
 // in the modal opened on click, so the row only carries what helps you scan:
 // who, when, what, and status. Bridal rows are tagged and tinted.
-export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dimmed }) {
+export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dimmed, selectable, selected }) {
   const rel = relativeDate(booking.date);
   const initial = (booking.name || '?').trim().charAt(0).toUpperCase() || '?';
 
@@ -35,19 +35,39 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         hoverBg: dm ? '#2e2e37' : '#FFFDFB',
       };
 
+  const selectedBg = dm ? 'rgba(37,99,235,0.16)' : 'rgba(37,99,235,0.07)';
+  const selectedBorder = '#2563EB';
+
   return (
     <button
       onClick={onClick}
       className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
       style={{
-        background: skin.bg,
-        border: `1px solid ${skin.border}`,
-        boxShadow: skin.shadow,
+        background: selected ? selectedBg : skin.bg,
+        border: `1px solid ${selected ? selectedBorder : skin.border}`,
+        boxShadow: selected ? `inset 3px 0 0 0 ${selectedBorder}` : skin.shadow,
         opacity: dimmed ? 0.62 : 1,
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = skin.hoverBg; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = skin.border; e.currentTarget.style.background = skin.bg; }}
+      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = skin.hoverBg; } }}
+      onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = skin.border; e.currentTarget.style.background = skin.bg; } }}
     >
+      {/* iOS-style selection circle — empty ring fills blue with a check when picked */}
+      {selectable && (
+        <span
+          className="w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150"
+          style={{
+            border: selected ? 'none' : `2px solid ${dm ? '#52525b' : '#d0d0d8'}`,
+            background: selected ? selectedBorder : 'transparent',
+          }}
+        >
+          {selected && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </span>
+      )}
+
       {/* Avatar initial — plum colorway + soft ring marks bridal, no emoji */}
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
@@ -97,8 +117,9 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         <StatusBadge status={booking.status} />
       </div>
 
-      {/* Hover quick actions — desktop only, fixed slot so the row doesn't shift */}
-      <div className="hidden md:flex items-center gap-1 flex-shrink-0 w-[60px] justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Hover quick actions — desktop only, fixed slot so the row doesn't shift.
+          Hidden while selecting so taps only toggle the checkbox. */}
+      <div className={`${selectable ? 'hidden' : 'hidden md:flex'} items-center gap-1 flex-shrink-0 w-[60px] justify-end opacity-0 group-hover:opacity-100 transition-opacity`}>
         {booking.email && (
           <a
             href={`mailto:${booking.email}?subject=Appointment%20with%20Roko%20—%20${encodeURIComponent(booking.service || '')}`}
