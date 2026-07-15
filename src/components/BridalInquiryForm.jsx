@@ -18,6 +18,7 @@ function useBookingCounts() {
 }
 import { scrollModalTop } from '@/lib/modalLenis';
 import CustomSelect from './CustomSelect';
+import CalendarNavSelect from './CalendarNavSelect';
 import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
@@ -731,32 +732,24 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             <div className="relative z-10">
               <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
                 <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">‹</button>
-                {/* Month + Year quick-jump (native selects render above the panel's overflow) */}
-                <div className="flex-1 flex items-center justify-center gap-2">
-                  <div className="relative">
-                    <select
-                      value={month}
-                      onChange={e => setCalDate(new Date(year, Number(e.target.value)))}
-                      className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5 text-right"
-                      style={{ WebkitAppearance: 'none' }}
-                      aria-label="Month"
-                    >
-                      {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
-                    </select>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-                  </div>
-                  <div className="relative">
-                    <select
-                      value={year}
-                      onChange={e => setCalDate(new Date(Number(e.target.value), month))}
-                      className="font-serif text-[1.2rem] text-[#111] tracking-tight bg-transparent appearance-none outline-none cursor-pointer pr-5"
-                      style={{ WebkitAppearance: 'none' }}
-                      aria-label="Year"
-                    >
-                      {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-                  </div>
+                {/* Month + Year quick-jump — custom portal dropdowns so they look
+                    polished on desktop and still escape the panel's overflow. */}
+                <div className="flex-1 flex items-center justify-center gap-1">
+                  <CalendarNavSelect
+                    ariaLabel="Month"
+                    align="right"
+                    value={month}
+                    onChange={v => setCalDate(new Date(year, Number(v)))}
+                    options={MONTHS.map((m, i) => ({ value: i, label: m }))}
+                  />
+                  <CalendarNavSelect
+                    ariaLabel="Year"
+                    align="left"
+                    menuMinWidth={120}
+                    value={year}
+                    onChange={v => setCalDate(new Date(Number(v), month))}
+                    options={Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => ({ value: y, label: String(y) }))}
+                  />
                 </div>
                 <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">›</button>
               </div>
