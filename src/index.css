@@ -239,6 +239,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Floating bar rising into view from the bottom (bulk-select action bar) */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* Subtle content rise-in (list refresh) */
 @keyframes fadeRiseIn {
   from { opacity: 0; transform: translateY(8px); }

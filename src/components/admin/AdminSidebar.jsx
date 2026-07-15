@@ -1,5 +1,6 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export const ADMIN_TABS = [
   { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments', icon: 'home'     },
@@ -11,6 +12,35 @@ export const ADMIN_TABS = [
   { key: 'analytics',    label: 'Analytics',      sub: 'Insights & trends',       icon: 'chart'    },
   { key: 'revenue',      label: 'Revenue',        sub: 'Revenue & booking stats', icon: 'revenue'  },
 ];
+
+// Per-device saved nav order. The saved order wins for tabs it knows about; any
+// tab added to ADMIN_TABS later that isn't in the saved list is appended, so a
+// new section can never disappear because of an old saved order.
+const NAV_ORDER_KEY = 'admin-nav-order-v1';
+
+function loadNavOrder() {
+  const known = ADMIN_TABS.map(t => t.key);
+  if (typeof window === 'undefined') return known;
+  try {
+    const saved = JSON.parse(localStorage.getItem(NAV_ORDER_KEY));
+    if (Array.isArray(saved)) {
+      const ordered = saved.filter(k => known.includes(k));
+      const missing = known.filter(k => !ordered.includes(k));
+      return [...ordered, ...missing];
+    }
+  } catch { /* ignore corrupt value */ }
+  return known;
+}
+
+// Six-dot grip shown on hover — the drag handle for reordering a nav row.
+function GripDots({ dm }) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill={dm ? '#6f6f78' : '#c2c2cc'} aria-hidden>
+      <circle cx="9" cy="6" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="9" cy="18" r="1.3" />
+      <circle cx="15" cy="6" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="15" cy="18" r="1.3" />
+    </svg>
+  );
+}
 
 /* Modern, crisp line icons (Lucide-style, 24px grid, round joins). stroke is
    currentColor so each icon inherits the nav item's active/muted color. */
@@ -99,6 +129,23 @@ export default function AdminSidebar({
   onBackToSite,
   onLogout,
 }) {
+  // Drag-to-reorder nav order, persisted per device.
+  const [order, setOrder] = useState(() => loadNavOrder());
+  useEffect(() => {
+    try { localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(order)); } catch { /* private mode */ }
+  }, [order]);
+  const orderedTabs = order.map(k => ADMIN_TABS.find(t => t.key === k)).filter(Boolean);
+
+  const onDragEnd = (result) => {
+    if (!result.destination || result.source.index === result.destination.index) return;
+    setOrder(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(result.source.index, 1);
+      next.splice(result.destination.index, 0, moved);
+      return next;
+    });
+  };
+
   // Lock body scroll when mobile nav is open — same robust technique the public
   // site's menu uses (pin the body with position:fixed and restore the exact
   // scroll position on close). Plain overflow:hidden lets the page lurch on
@@ -139,47 +186,80 @@ export default function AdminSidebar({
           background: dm ? '#1e1e24' : '#fff',
         }}
       >
-        {/* Nav items — icon + label rows, ChatGPT-style rounded highlight */}
-        <nav className="flex-1 flex flex-col gap-0.5 px-3 pt-6">
-          {ADMIN_TABS.map(tab => {
-            const isActive = activeTab === tab.key;
-            const activeColor = dm ? '#f4dce4' : '#A0607A';
-            const mutedColor = dm ? '#a1a1aa' : '#8a8a8a';
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className="w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-xl transition-all duration-200"
-                style={{
-                  background: isActive
-                    ? dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.12)'
-                    : 'transparent',
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.035)'; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+        {/* Nav items — drag the grip to reorder; order is saved on this device.
+            The grip only shows on hover so navigation clicks stay effortless. */}
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="admin-nav">
+            {(dropProvided) => (
+              <nav
+                ref={dropProvided.innerRef}
+                {...dropProvided.droppableProps}
+                className="flex-1 flex flex-col gap-0.5 px-3 pt-6"
               >
-                <NavIcon
-                  name={tab.icon}
-                  className="w-[18px] h-[18px] flex-shrink-0 transition-colors"
-                  style={{ color: isActive ? activeColor : mutedColor }}
-                />
-                <span className="flex flex-col min-w-0">
-                  <span
-                    className="text-[0.82rem] font-medium leading-tight truncate transition-colors"
-                    style={{ color: isActive ? activeColor : (dm ? '#d4d4d8' : '#3f3f46') }}
-                  >
-                    {tab.label}
-                  </span>
-                  {isActive && (
-                    <span className="text-[0.62rem] mt-0.5 leading-tight truncate" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
-                      {tab.sub}
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+                {orderedTabs.map((tab, index) => {
+                  const isActive = activeTab === tab.key;
+                  const activeColor = dm ? '#f4dce4' : '#A0607A';
+                  const mutedColor = dm ? '#a1a1aa' : '#8a8a8a';
+                  return (
+                    <Draggable key={tab.key} draggableId={tab.key} index={index}>
+                      {(dragProvided, snapshot) => (
+                        <div
+                          ref={dragProvided.innerRef}
+                          {...dragProvided.draggableProps}
+                          className="group flex items-center rounded-xl transition-colors duration-200"
+                          style={{
+                            ...dragProvided.draggableProps.style,
+                            background: snapshot.isDragging
+                              ? (dm ? '#2e2e38' : '#fff')
+                              : isActive
+                                ? dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.12)'
+                                : 'transparent',
+                            boxShadow: snapshot.isDragging ? '0 10px 28px rgba(0,0,0,0.22)' : 'none',
+                          }}
+                          onMouseEnter={e => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.035)'; }}
+                          onMouseLeave={e => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <span
+                            {...dragProvided.dragHandleProps}
+                            className="flex items-center self-stretch pl-1.5 pr-0.5 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label={`Reorder ${tab.label}`}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <GripDots dm={dm} />
+                          </span>
+                          <button
+                            onClick={() => setActiveTab(tab.key)}
+                            className="flex-1 min-w-0 flex items-center gap-3 text-left pr-3 py-2.5"
+                          >
+                            <NavIcon
+                              name={tab.icon}
+                              className="w-[18px] h-[18px] flex-shrink-0 transition-colors"
+                              style={{ color: isActive ? activeColor : mutedColor }}
+                            />
+                            <span className="flex flex-col min-w-0">
+                              <span
+                                className="text-[0.82rem] font-medium leading-tight truncate transition-colors"
+                                style={{ color: isActive ? activeColor : (dm ? '#d4d4d8' : '#3f3f46') }}
+                              >
+                                {tab.label}
+                              </span>
+                              {isActive && (
+                                <span className="text-[0.62rem] mt-0.5 leading-tight truncate" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
+                                  {tab.sub}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {dropProvided.placeholder}
+              </nav>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         {/* Utility actions at bottom of sidebar — icon chips with a sun/moon
             toggle, matching the mobile menu's cleaner look */}
@@ -275,9 +355,10 @@ export default function AdminSidebar({
           </button>
         </div>
 
-        {/* Nav items — icon chip + label rows, sized so all sections fit */}
+        {/* Nav items — icon chip + label rows, sized so all sections fit.
+            Honors the order set by dragging on desktop. */}
         <nav className="flex-1 overflow-y-auto px-5 pt-1">
-          {ADMIN_TABS.map(tab => {
+          {orderedTabs.map(tab => {
             const isActive = activeTab === tab.key;
             const activeColor = '#D4A0B0';
             return (

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { OAuth2Client } from 'google-auth-library';
+
+// Auth-gated (reads the session cookie), so it can never be statically rendered.
+export const dynamic = 'force-dynamic';
 import { requireAdmin } from '../../../../src/lib/requireAdmin';
 
 const PROPERTY = `properties/${process.env.GA4_PROPERTY_ID || '536969013'}`;

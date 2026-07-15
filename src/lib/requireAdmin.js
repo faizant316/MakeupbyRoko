@@ -1,21 +1,23 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { isAdminEmail } from './adminAllowlist';
 
+// Gate for admin-only API routes. Every route that reads or mutates client data
+// must call this first and return `authError` when present. It verifies there is
+// a real Supabase session AND that the session's email is on the admin allowlist
+// (see adminAllowlist.js) — a logged-in stranger is still turned away.
 export async function requireAdmin() {
-  // DEV MODE: auth bypassed — re-enable by uncommenting below and removing the return
-  return { session: { user: { id: 'dev', email: 'dev@local' } } };
-
-  // try {
-  //   const supabase = createRouteHandlerClient({ cookies });
-  //   const { data: { session } } = await supabase.auth.getSession();
-  //   if (!session?.user) {
-  //     return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  //   }
-  //   return { session };
-  // } catch {
-  //   return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  // }
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user || !isAdminEmail(session.user.email)) {
+      return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+    }
+    return { session };
+  } catch {
+    return { authError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
 }
 
 // Allowed image MIME types and max size for uploads
