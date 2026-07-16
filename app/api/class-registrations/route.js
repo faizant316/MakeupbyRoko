@@ -19,6 +19,11 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  // Admin-only: the public class flow creates its registration through the
+  // Stripe checkout route, never here. This endpoint is only used by the admin
+  // "Add Client" modal, so it must not accept anonymous inserts.
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const supabase = createClient();
     const body = await req.json();

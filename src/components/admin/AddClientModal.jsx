@@ -222,7 +222,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           readyByTime: nb.ready_by_time, notes: form.notes,
         };
     await fetch('/api/send-booking-confirmation', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: booking.id, ...payload }),
     }).catch(() => {});
   };
 

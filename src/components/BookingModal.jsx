@@ -267,6 +267,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
     try {
       await api.functions.invoke('sendBookingConfirmation', {
+        bookingId: newBooking.id,
         bookingType: 'nonbridal',
         to: formData.email,
         firstName: formData.fname,

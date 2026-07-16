@@ -25,13 +25,27 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const {
-      bookingType, to, firstName, lastName, serviceName, servicePrice, serviceDeposit,
+      bookingId, bookingType, to, firstName, lastName, serviceName, servicePrice, serviceDeposit,
       dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, notes,
       bridalTitle, bridalDeposit, bridalDateFormatted, makeupReadyByTime,
       phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
       photographer, hairstylist, numPeopleGlam, outOfState, weddingDate, additionalDetails, howHeard,
       contractSignedName, contractSignedAt, contractPhotoConsent,
     } = body;
+
+    // Never trust the caller's `to`. The recipient is read from the booking row
+    // (created immediately before this call), so this endpoint can only ever
+    // email a real client of the site, not an arbitrary address supplied by an
+    // abuser trying to use it as an open relay.
+    if (!bookingId) {
+      return NextResponse.json({ error: 'Missing bookingId' }, { status: 400 });
+    }
+    const supabase = createClient();
+    const { data: bookingRow } = await supabase.from('bookings').select('email').eq('id', bookingId).maybeSingle();
+    if (!bookingRow?.email) {
+      return NextResponse.json({ error: 'Unknown booking' }, { status: 400 });
+    }
+    const recipient = bookingRow.email;
 
     const isBridal = bookingType === 'bridal';
     const clientName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
@@ -71,20 +85,20 @@ export async function POST(req) {
 
     const adminHtml = isBridal
       ? adminBridalEmail({
-          firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email: to, phone, instagram,
+          firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email: recipient, phone, instagram,
           eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy: readyByTime, makeupReadyByTime, photographerArrival,
           photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard,
           contractSignedName, contractSignedAt, contractPhotoConsent,
         })
       : adminBookingEmail({
           name: clientName,
-          service: serviceName, date: dateFormatted, email: to, phone,
+          service: serviceName, date: dateFormatted, email: recipient, phone,
           servicePrice, deposit: serviceDeposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes,
           contractSignedName, contractSignedAt, contractPhotoConsent,
         });
 
     await sendEmailPair([
-      { to, subject: clientSubject, html: clientHtml },
+      { to: recipient, subject: clientSubject, html: clientHtml },
       { to: ADMIN_EMAIL, subject: adminSubject, html: adminHtml },
     ]);
 

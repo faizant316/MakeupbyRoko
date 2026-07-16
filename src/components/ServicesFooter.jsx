@@ -125,12 +125,6 @@ export default function ServicesFooter() {
             <p className="text-[0.7rem] text-white/20 tracking-[0.02em]">
               © {currentYear} Roqia Moshref. All rights reserved.
             </p>
-            <button
-              onClick={() => router.push('/admin')}
-              className="text-[0.7rem] text-[#D4A0B0]/30 hover:text-[#D4A0B0] transition-colors duration-200 tracking-[0.06em] uppercase"
-            >
-              Admin
-            </button>
           </div>
 
         </div>
