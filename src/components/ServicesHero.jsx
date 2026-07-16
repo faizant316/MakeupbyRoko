@@ -11,36 +11,53 @@ const POSTER_URL = '/hero-poster.jpg';  // crisp still shown instantly; video fa
 // cold cellular load, before the (small) crisp poster JPG has arrived.
 const LQIP = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD//gAQTGF2YzYyLjI4LjEwMQD/2wBDAAgQEBMQExYWFhYWFhoYGhsbGxoaGhobGxsdHR0iIiIdHR0bGx0dICAiIiUmJSMjIiMmJigoKDAwLi44ODpFRVP/xABkAAEBAQEBAQAAAAAAAAAAAAAHBggEAgUBAQAAAAAAAAAAAAAAAAAAAAAQAAIABQEHBQEBAAAAAAAAAAECAwARMQQhUQVBYXM0shNyEgYUIpERAQAAAAAAAAAAAAAAAAAAAAD/wAARCAASACADASIAAhEAAxEA/9oADAMBAAIRAxEAPwAEQ/FlOwg/5NXvGMkaLDdDoU11qa1sdkyIvNLiYpy2ENF9SK7AJDrQUAqzO3BRy1kOVkdQCwIqKiulRtHKfitcy95+58uPjooWF6sJACPkTXShCFrV4cJBnRobsrAhlJBBuCDQiQ8C4lg+pgfuinZAanL+lkfFxLD9S72L0D5LIPDXPunHm8O9yevF8zOw2ufdOPN4d7k9eL5mQ//Z';
 
-// Keeps trying to start playback through the events that typically unblock
-// autoplay on mobile: the video finishing its initial buffer, the tab becoming
-// visible, or the user's first tap/scroll/click. That last one is the key to
-// getting near-100% coverage — a single real "user gesture" satisfies iOS Low
-// Power Mode, iOS Low Data Mode, and Android Data Saver, all of which hard-block
-// silent autoplay no matter what attributes the <video> has. `playFn` must
-// return the play() promise so we can stop retrying once it succeeds.
-function useReliableAutoplay(playFn) {
+// Keeps the hero video playing for the life of the page. Autoplay can be
+// blocked at load or revoked later by many things (iOS Low Power / Low Data
+// Mode, Android Data Saver, desktop Chrome's Energy Saver, prerendered or
+// background-loaded tabs, the browser pausing media to save power), so a
+// single successful play() is not enough. Two layers of coverage:
+//  1. Retry on the events that typically unblock autoplay: the tab becoming
+//     visible and the user's first tap/scroll/click. A real user gesture
+//     satisfies every power/data-saver mode that hard-blocks silent autoplay.
+//  2. A light watchdog that, while the tab is visible, restarts a video the
+//     browser paused and un-wedges a "playing" one whose clock stopped
+//     advancing (rare decoder stall). Listeners stay attached for the whole
+//     session, because a video that was happily playing can still be paused
+//     by the browser later; kicking an already-playing video is a no-op.
+// `getVideo` returns the video element that should currently be playing.
+function useReliableAutoplay(getVideo) {
   useEffect(() => {
-    let done = false;
-    const gestureEvents = ['touchstart', 'pointerdown', 'click', 'scroll', 'keydown'];
-    const cleanup = () => {
-      done = true;
-      document.removeEventListener('visibilitychange', onVis);
-      gestureEvents.forEach((e) => window.removeEventListener(e, attempt));
+    const gestureEvents = ['touchstart', 'pointerdown', 'click', 'scroll', 'keydown', 'wheel'];
+    const kick = () => {
+      const v = getVideo();
+      if (v && v.paused) v.play().catch(() => {});
     };
-    const attempt = () => {
-      if (done) return;
-      const p = playFn();
-      if (p && typeof p.then === 'function') {
-        p.then(() => cleanup()).catch(() => {});
+    const onVis = () => { if (document.visibilityState === 'visible') kick(); };
+
+    let lastTime = -1;
+    const watchdog = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const v = getVideo();
+      if (!v) return;
+      if (v.paused) { v.play().catch(() => {}); lastTime = -1; return; }
+      // Claims to be playing, has frames buffered ahead, but time is frozen:
+      // nudge the decoder with a micro-seek, then play again.
+      if (v.readyState >= 3 && v.currentTime === lastTime) {
+        try { v.currentTime = v.currentTime + 0.001; } catch { /* noop */ }
+        v.play().catch(() => {});
       }
-    };
-    const onVis = () => { if (document.visibilityState === 'visible') attempt(); };
+      lastTime = v.currentTime;
+    }, 2000);
 
     document.addEventListener('visibilitychange', onVis);
-    gestureEvents.forEach((e) => window.addEventListener(e, attempt, { passive: true }));
-    attempt(); // immediate best-effort
-    return cleanup;
-  }, [playFn]);
+    gestureEvents.forEach((e) => window.addEventListener(e, kick, { passive: true }));
+    kick(); // immediate best-effort
+    return () => {
+      clearInterval(watchdog);
+      document.removeEventListener('visibilitychange', onVis);
+      gestureEvents.forEach((e) => window.removeEventListener(e, kick));
+    };
+  }, [getVideo]);
 }
 
 // Mobile hero parallax (video scale + text fade) driven by two CSS variables on
@@ -97,13 +114,13 @@ function MobileVideoLoop({ src, poster, lqip, videoStyle, onError }) {
   const [front, setFront] = useState('A');
   const [ready, setReady] = useState(false); // true once the video is truly playing
 
-  // Play whichever video is currently in front. Returns the play() promise so
-  // useReliableAutoplay can stop retrying on success.
-  const playFront = useCallback(() => {
-    const v = activeRef.current === 'A' ? refA.current : refB.current;
-    return v ? v.play() : undefined;
-  }, []);
-  useReliableAutoplay(playFront);
+  // Hand useReliableAutoplay whichever video is currently in front so its
+  // keep-alive always watches the copy that should be playing.
+  const getFrontVideo = useCallback(
+    () => (activeRef.current === 'A' ? refA.current : refB.current),
+    [],
+  );
+  useReliableAutoplay(getFrontVideo);
 
   useEffect(() => {
     const HANDOFF = 1.5;
@@ -205,8 +222,8 @@ export default function ServicesHero() {
   const vh = useViewportHeight();
 
   // Same resilient autoplay coverage for the desktop split-panel video.
-  const playDesktop = useCallback(() => desktopVideoRef.current?.play(), []);
-  useReliableAutoplay(playDesktop);
+  const getDesktopVideo = useCallback(() => desktopVideoRef.current, []);
+  useReliableAutoplay(getDesktopVideo);
 
   // Reveal the desktop video (crossfade off its poster) only once it is truly
   // playing and advancing frames.
