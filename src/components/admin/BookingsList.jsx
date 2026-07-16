@@ -179,7 +179,7 @@ const LESSON_COLOR = '#C76BA6';
 export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
-  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient,
+  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient, onBulkImport,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
   onMarkDepositReceived, onBulkUpdate, onBulkDelete,
 }) {
@@ -357,6 +357,19 @@ export default function BookingsList({
                   Select
                 </>
               )}
+            </button>
+          )}
+          {onBulkImport && !selectMode && (
+            <button
+              onClick={onBulkImport}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+              style={{ background: dm ? '#26262e' : '#F3F3F7', color: dm ? '#d4d4d8' : '#4b4b53' }}
+              title="Import clients from a Booksy CSV export"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Import
             </button>
           )}
           {onAddClient && !selectMode && (

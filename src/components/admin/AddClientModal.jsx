@@ -3,6 +3,10 @@ import { lenisStop, lenisStart } from '@/lib/lenis';
 import { formatPhone } from '@/lib/phone';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { CLASS_FORMATS, CLASS_CATALOG, classMeta, startWindows } from '@/lib/classCatalog';
+import { parseRange } from '@/lib/timeWindow';
+import { STUDIO_DISPLAY } from '@/lib/studio';
 
 const TIMES = [
   '6:00 AM','6:30 AM','7:00 AM','7:30 AM','8:00 AM','8:30 AM',
@@ -18,7 +22,8 @@ const STATUSES = [
   { value: 'completed', label: 'Completed', color: '#64748B' },
 ];
 
-const HOW_HEARD = ['Instagram', 'TikTok', 'Google', 'Referral / Word of Mouth', 'Other'];
+const HOW_HEARD = ['Instagram', 'TikTok', 'Facebook', 'Vendor Referral', 'Client Referral', 'Google', 'Other'];
+const LESSON_ACCENT = '#5BB0CC';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,27 +70,6 @@ function StyledDropdown({ value, onChange, options, placeholder, dm }) {
   );
 }
 
-// Native <select> for the many secondary time/detail fields. A native control's
-// option list renders in the browser's top layer, so it is NEVER clipped by the
-// modal's scroll container (unlike a custom popover) — bulletproof in a dense form.
-function NativeSelect({ value, onChange, options, placeholder, dm }) {
-  const border = dm ? '#3f3f46' : '#E2E4EA';
-  const bg = dm ? '#18181b' : '#ffffff';
-  const text = dm ? '#f4f4f5' : '#111';
-  const muted = dm ? '#71717a' : '#999';
-  return (
-    <div className="relative">
-      <select value={value} onChange={e => onChange(e.target.value)}
-        className="w-full pl-3.5 pr-9 py-2.5 rounded-xl outline-none focus:border-[#D4A0B0]"
-        style={{ background: bg, border: `1px solid ${border}`, color: value ? text : muted, WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', fontSize: '16px' }}>
-        <option value="">{placeholder}</option>
-        {options.map(o => <option key={o} value={o} style={{ color: '#111' }}>{o}</option>)}
-      </select>
-      <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-  );
-}
-
 function YesNo({ value, onChange, dm, yes = 'Yes', no = 'No' }) {
   const border = dm ? '#3f3f46' : '#E2E4EA';
   const idle = { background: dm ? '#1e1e24' : '#fafafa', color: dm ? '#71717a' : '#999', border: `1px solid ${border}` };
@@ -99,33 +83,62 @@ function YesNo({ value, onChange, dm, yes = 'Yes', no = 'No' }) {
   );
 }
 
+const CLASS_OPTIONS = Object.entries(CLASS_CATALOG).map(([key, c]) => ({ key, title: c.title }));
+
 export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
   const [services, setServices] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', service: '', date: '', time: '',
-    notes: '', status: 'confirmed', deposit_received: false,
+    first_name: '', last_name: '', email: '', phone: '', service: '', date: '', time: '',
+    notes: '', status: 'confirmed', deposit_received: false, notify: false,
   });
   const [nb, setNb] = useState({ ready_by_time: '', early_arrival: null, travel_requested: null });
   const [bridal, setBridal] = useState({
-    bride_name: '', soon_to_be_last_name: '', wedding_date: '', event_start_time: '',
-    venue_access_time: '', ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', num_people_glam: '',
-    event_location: '', photographer: '', hairstylist: '', instagram_handle: '', how_heard: '', additional_details: '',
+    event_start_time: '', venue_access_time: '', ready_by_time: '', makeup_ready_by_time: '',
+    photographer_arrival_time: '', bridal_party_glam: null, num_people_glam: '',
+    event_location: '', photographer: '', hairstylist: '', instagram_handle: '',
+    how_heard: '', out_of_state: null, additional_details: '',
   });
+  const [cls, setCls] = useState({ format: '', classKey: '', slot: '', amount_paid: '', zoom_link: '', meeting_id: '' });
+  const [genZoom, setGenZoom] = useState(false);
 
-  const isBridal = /bridal|bride|wedding|full.?day/i.test(form.service);
+  const selectedService = services.find(s => s.title === form.service) || null;
+  const category = selectedService?.category || '';
+  const isBridal = category === 'bridal';
+  const isClass = category === 'lessons';
+  const isNonBridal = !!form.service && !isBridal && !isClass;
+  const isFullDay = /full.?day/i.test(form.service);
+  const isTrial = /trial/i.test(form.service);
+  const dateNounCap = isTrial ? 'Trial' : 'Wedding';
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setBr = (k, v) => setBridal(b => ({ ...b, [k]: v }));
   const setN = (k, v) => setNb(n => ({ ...n, [k]: v }));
+  const setC = (k, v) => setCls(c => ({ ...c, [k]: v }));
+
+  // One human-readable answer for "who needs glam" (matches the public bridal form).
+  const glamSummary =
+    bridal.bridal_party_glam === true ? (bridal.num_people_glam.trim() || 'Yes, final count to confirm')
+    : bridal.bridal_party_glam === false ? 'Just the bride'
+    : (bridal.num_people_glam || '');
+
+  const classMetaSel = isClass && cls.classKey && cls.format ? classMeta(cls.classKey, cls.format) : null;
+  const windows = classMetaSel ? startWindows(cls.classKey, cls.format) : [];
 
   useEffect(() => {
     fetch('/api/services')
       .then(r => r.json())
-      .then(data => setServices(Array.isArray(data) ? data.map(s => s.title).filter(Boolean) : []))
+      .then(data => setServices(Array.isArray(data) ? data.filter(s => s?.title) : []))
       .catch(() => {});
   }, []);
+
+  // Auto-fill the class amount from the catalog whenever class/format changes.
+  useEffect(() => {
+    if (classMetaSel) setCls(c => ({ ...c, amount_paid: String(classMetaSel.price ?? '') }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cls.classKey, cls.format]);
 
   useEffect(() => {
     const sbw = window.innerWidth - document.documentElement.clientWidth;
@@ -145,11 +158,13 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  const fullName = `${form.first_name} ${form.last_name}`.trim();
+
   // Non-bridal ready-by / early arrival / travel fold into the notes string in
   // the same format the public form uses, so the card parses them into chips.
   const buildNotes = () => {
     const parts = [form.notes.trim()];
-    if (!isBridal) {
+    if (isNonBridal) {
       if (nb.early_arrival === true) parts.push('⏰ Early arrival (before 7 AM) — +$100 surcharge');
       if (nb.ready_by_time) parts.push(`Ready by: ${nb.ready_by_time}`);
       if (nb.travel_requested === true) parts.push('✈️ Travel requested — bridal pricing ($750+) applies');
@@ -157,20 +172,118 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
     return parts.filter(Boolean).join(' | ');
   };
 
+  const generateZoom = async () => {
+    if (!classMetaSel) { setError('Pick a class and format first.'); return; }
+    setError('');
+    setGenZoom(true);
+    try {
+      const res = await fetch('/api/create-zoom-meeting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: `Makeup by Roko · ${classMetaSel.title}`,
+          duration: classMetaSel.durationMinutes || 180,
+          date: form.date || undefined,
+          time: cls.slot || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not generate a Zoom link.');
+      setCls(c => ({ ...c, zoom_link: data.join_url || '', meeting_id: data.meeting_id ? String(data.meeting_id) : '' }));
+    } catch (err) {
+      setError(err.message || 'Could not generate a Zoom link.');
+    } finally {
+      setGenZoom(false);
+    }
+  };
+
+  const dateFormatted = form.date
+    ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    : null;
+
+  // Fire the matching client confirmation email (only when the Notify toggle is on).
+  const notifyBooking = async (booking) => {
+    const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
+    const uploadUrl = `${siteBase}/upload-zelle?id=${booking.id}&token=${booking.upload_token}`;
+    const payload = isBridal
+      ? {
+          bookingType: 'bridal', to: form.email.trim(), firstName: form.first_name.trim(), lastName: form.last_name.trim(),
+          phone: form.phone, instagram: bridal.instagram_handle, bridalTitle: form.service,
+          bridalDeposit: selectedService?.deposit, bridalDateFormatted: dateFormatted, uploadUrl,
+          eventLocation: bridal.event_location, eventStartTime: bridal.event_start_time, venueAccessTime: bridal.venue_access_time,
+          readyByTime: bridal.ready_by_time, makeupReadyByTime: bridal.makeup_ready_by_time, photographerArrival: bridal.photographer_arrival_time,
+          photographer: bridal.photographer, hairstylist: bridal.hairstylist, numPeopleGlam: glamSummary,
+          outOfState: bridal.out_of_state, weddingDate: form.date, additionalDetails: bridal.additional_details, howHeard: bridal.how_heard,
+        }
+      : {
+          bookingType: 'nonbridal', to: form.email.trim(), firstName: form.first_name.trim(), lastName: form.last_name.trim(),
+          phone: form.phone, serviceName: form.service, servicePrice: selectedService?.price, serviceDeposit: selectedService?.deposit,
+          dateFormatted, uploadUrl, isEarlyArrival: nb.early_arrival === true, hasTravelFee: nb.travel_requested === true,
+          readyByTime: nb.ready_by_time, notes: form.notes,
+        };
+    await fetch('/api/send-booking-confirmation', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    }).catch(() => {});
+  };
+
+  const submitClass = async () => {
+    const insert = {
+      full_name: fullName, email: form.email.trim(), phone: form.phone,
+      [cls.classKey]: true,
+      class_format: cls.format,
+      preferred_date: form.date || null,
+      appointment_date: form.date || null,
+      preferred_time: cls.slot || null,
+      appointment_time: cls.slot || null,
+      amount_paid: cls.amount_paid ? Number(cls.amount_paid) : (classMetaSel?.price ?? null),
+      payment_status: 'paid',
+      status: 'confirmed',
+      consultation_type: cls.format === 'online' ? 'Zoom' : 'In-Person',
+      lesson_notes: cls.format === 'online' && cls.zoom_link
+        ? [`Link: ${cls.zoom_link}`, cls.meeting_id ? `MeetingId: ${cls.meeting_id}` : null].filter(Boolean).join('\n')
+        : null,
+      additional_notes: form.notes.trim() || null,
+    };
+    const res = await fetch('/api/class-registrations', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(insert),
+    });
+    const reg = await res.json();
+    if (!res.ok) throw new Error(reg.error || 'Failed to create class registration');
+
+    if (form.notify && form.date && cls.slot) {
+      await fetch('/api/send-class-lesson', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          registrationId: reg.id, clientEmail: form.email.trim(), clientName: fullName, clientPhone: form.phone,
+          className: classMetaSel?.title, lessonDate: form.date, lessonTime: cls.slot,
+          meetingType: cls.format === 'online' ? 'Zoom' : 'In-Person', zoomLink: cls.zoom_link, notes: form.notes,
+        }),
+      }).catch(() => {});
+    }
+    return reg;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!form.name.trim()) { setError('Please enter the client name.'); return; }
+    if (!form.first_name.trim()) { setError('Please enter the client\'s first name.'); return; }
     if (!form.email.trim() || !EMAIL_RE.test(form.email.trim())) { setError('A valid email is required to add a client.'); return; }
     if (!form.service.trim()) { setError('Please choose a service.'); return; }
+    if (isClass && (!cls.format || !cls.classKey)) { setError('Please choose the class format and which class.'); return; }
     setSaving(true);
     try {
+      if (isClass) {
+        const reg = await submitClass();
+        onSave(reg, 'class');
+        return;
+      }
+
       const bookingRes = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.name.trim(), email: form.email.trim(), phone: form.phone,
-          service: form.service, date: form.date, time: form.time,
+          name: fullName, email: form.email.trim(), phone: form.phone,
+          service: form.service, date: form.date || null, time: form.time || null,
           notes: buildNotes(), status: form.status, deposit_received: form.deposit_received,
         }),
       });
@@ -178,22 +291,39 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
       if (!bookingRes.ok) throw new Error(booking.error || 'Failed to create booking');
 
       // Bridal: store the rich details in a linked inquiry (shares the booking's
-      // upload_token so the card pairs them 1:1).
+      // upload_token so the card pairs them 1:1). Required columns are sent as ''
+      // (never null) so the insert survives a sparse admin entry.
       if (isBridal) {
         await fetch('/api/bridal-inquiries', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ...bridal,
-            bride_name: bridal.bride_name.trim() || form.name.trim(),
+            bride_name: form.first_name.trim(),
+            soon_to_be_last_name: form.last_name.trim(),
             email: form.email.trim(), phone: form.phone, service: form.service,
-            wedding_date: bridal.wedding_date || form.date || undefined,
+            instagram_handle: bridal.instagram_handle,
+            wedding_date: form.date || '',
+            event_location: bridal.event_location || '',
+            event_start_time: bridal.event_start_time || '',
+            venue_access_time: bridal.venue_access_time || '',
+            ready_by_time: bridal.ready_by_time,
+            makeup_ready_by_time: bridal.makeup_ready_by_time,
+            photographer_arrival_time: bridal.photographer_arrival_time,
+            photographer: bridal.photographer,
+            hairstylist: bridal.hairstylist,
+            num_people_glam: glamSummary,
+            additional_details: bridal.additional_details,
+            how_heard: bridal.how_heard,
+            out_of_state: bridal.out_of_state,
+            preferred_date: form.date || '',
             upload_token: booking.upload_token, status: 'new',
           }),
         }).catch(() => {});
       }
 
-      onSave(booking);
+      if (form.notify) await notifyBooking(booking);
+
+      onSave(booking, 'booking');
     } catch (err) {
       setError(err.message || 'Something went wrong.');
       setSaving(false);
@@ -221,11 +351,8 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
     </p>
   );
 
-  const dateFormatted = form.date
-    ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    : null;
-
-  const canSave = form.name.trim() && form.email.trim() && form.service.trim();
+  const canSave = form.first_name.trim() && form.email.trim() && form.service.trim() && (!isClass || (cls.format && cls.classKey));
+  const dateLabel = isTrial ? 'Trial Date' : isBridal ? 'Wedding Date' : 'Appointment Date';
 
   return (
     <div
@@ -262,9 +389,15 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
 
           {/* CLIENT */}
           <Section>Client</Section>
-          <div>
-            <label style={labelStyle}>Name *</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Client name" className={inputClass} style={inputStyle} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label style={labelStyle}>First Name *</label>
+              <input value={form.first_name} onChange={e => set('first_name', e.target.value)} placeholder="First name" className={inputClass} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Last Name</label>
+              <input value={form.last_name} onChange={e => set('last_name', e.target.value)} placeholder="Last name" className={inputClass} style={inputStyle} />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -281,33 +414,118 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           <Section>Service</Section>
           <div>
             <label style={labelStyle}>Service *</label>
-            <StyledDropdown value={form.service} onChange={v => set('service', v)} options={services} placeholder="Select a service…" dm={dm} />
+            <StyledDropdown value={form.service} onChange={v => set('service', v)} options={services.map(s => s.title)} placeholder="Select a service…" dm={dm} />
             {isBridal && (
               <p className="mt-2 text-[0.68rem] font-medium px-3 py-2 rounded-lg" style={{ background: 'rgba(212,160,176,0.1)', color: '#A0607A' }}>
-                Bridal service selected — fill in the full bridal details below.
+                Bridal service. Fill in the full bridal details below.
+              </p>
+            )}
+            {isClass && (
+              <p className="mt-2 text-[0.68rem] font-medium px-3 py-2 rounded-lg" style={{ background: 'rgba(91,176,204,0.12)', color: '#3E8AA3' }}>
+                Makeup course. Choose the format, class, date and time below.
               </p>
             )}
           </div>
 
-          {/* DATE & TIME */}
-          <Section>Date &amp; Time</Section>
-          <div>
-            <label style={labelStyle}>Date</label>
-            <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent="#D4A0B0" />
-            {dateFormatted && <p className="text-[0.72rem] font-medium mt-2" style={{ color: '#D4A0B0' }}>{dateFormatted}</p>}
-          </div>
-          <div>
-            <label style={labelStyle}>Appointment Time Window</label>
-            <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIMES} dm={dm} accent="#D4A0B0" />
-          </div>
-
-          {/* NON-BRIDAL DETAILS */}
-          {form.service && !isBridal && (
+          {/* ───────── CLASS ───────── */}
+          {isClass && (
             <>
+              <Section accent={LESSON_ACCENT}>Class Format</Section>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.values(CLASS_FORMATS).map(f => {
+                  const active = cls.format === f.key;
+                  return (
+                    <button key={f.key} type="button" onClick={() => setC('format', f.key)}
+                      className="py-3 px-3 rounded-xl text-left transition-all"
+                      style={active
+                        ? { background: LESSON_ACCENT, color: '#fff', border: `1px solid ${LESSON_ACCENT}` }
+                        : { background: subtleBg, color: textMuted, border: `1px solid ${borderColor}` }}>
+                      <span className="block text-[0.8rem] font-semibold">{f.label}</span>
+                      <span className="block text-[0.62rem] opacity-80 mt-0.5">{f.key === 'online' ? 'Live over Zoom' : 'Mountain House studio'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div>
+                <label style={labelStyle}>Which Class</label>
+                <StyledDropdown value={CLASS_OPTIONS.find(o => o.key === cls.classKey)?.title || ''}
+                  onChange={t => setC('classKey', CLASS_OPTIONS.find(o => o.title === t)?.key || '')}
+                  options={CLASS_OPTIONS.map(o => o.title)} placeholder="Select a class…" dm={dm} />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Class Date</label>
+                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={LESSON_ACCENT} />
+                {dateFormatted && <p className="text-[0.72rem] font-medium mt-2" style={{ color: LESSON_ACCENT }}>{dateFormatted}</p>}
+              </div>
+
+              {windows.length > 0 && (
+                <div>
+                  <label style={labelStyle}>Start Time</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {windows.map(w => {
+                      const sel = cls.slot === w;
+                      return (
+                        <button key={w} type="button" onClick={() => setC('slot', sel ? '' : w)}
+                          className="py-2.5 px-2 rounded-xl text-[0.72rem] font-semibold tabular-nums text-center transition-all"
+                          style={sel
+                            ? { background: LESSON_ACCENT, color: '#fff', border: `1px solid ${LESSON_ACCENT}` }
+                            : { background: subtleBg, color: dm ? '#cdd3dd' : '#3f3f46', border: `1px solid ${borderColor}` }}>
+                          {parseRange(w).start}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label style={labelStyle}>Amount Paid ($)</label>
+                <input type="number" min="0" value={cls.amount_paid} onChange={e => setC('amount_paid', e.target.value)} placeholder="e.g. 520" className={inputClass} style={inputStyle} />
+              </div>
+
+              {cls.format === 'online' && (
+                <div>
+                  <label style={labelStyle}>Zoom Link</label>
+                  <div className="flex gap-2">
+                    <input value={cls.zoom_link} onChange={e => setC('zoom_link', e.target.value)} placeholder="Paste a link or generate one" className={`${inputClass} flex-1`} style={inputStyle} />
+                    <button type="button" onClick={generateZoom} disabled={genZoom || !cls.classKey}
+                      className="px-3.5 py-2.5 rounded-xl text-[0.72rem] font-semibold whitespace-nowrap transition-all disabled:opacity-50 flex items-center gap-1.5"
+                      style={{ background: LESSON_ACCENT, color: '#fff' }}>
+                      {genZoom ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> …</> : 'Generate'}
+                    </button>
+                  </div>
+                  {cls.zoom_link && <p className="text-[0.68rem] mt-1.5" style={{ color: LESSON_ACCENT }}>Link ready. It saves with this class.</p>}
+                </div>
+              )}
+              {cls.format === 'in_person' && (
+                <div className="px-4 py-3 rounded-xl" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
+                  <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: LESSON_ACCENT }}>Studio Location</p>
+                  <p className="text-[0.78rem]" style={{ color: textPrimary }}>{STUDIO_DISPLAY}</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ───────── NON-BRIDAL ───────── */}
+          {isNonBridal && (
+            <>
+              <Section>Date &amp; Time</Section>
+              <div>
+                <label style={labelStyle}>{dateLabel}</label>
+                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent="#D4A0B0" />
+                {dateFormatted && <p className="text-[0.72rem] font-medium mt-2" style={{ color: '#D4A0B0' }}>{dateFormatted}</p>}
+              </div>
+              <div>
+                <label style={labelStyle}>Appointment Time Window</label>
+                <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIMES} dm={dm} accent="#D4A0B0" />
+              </div>
+
               <Section>Appointment Details</Section>
               <div>
                 <label style={labelStyle}>Ready By (client wants to be done)</label>
-                <NativeSelect value={nb.ready_by_time} onChange={v => setN('ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
+                <StyledDropdown value={nb.ready_by_time} onChange={v => setN('ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -322,59 +540,51 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
             </>
           )}
 
-          {/* BRIDAL DETAILS */}
+          {/* ───────── BRIDAL ───────── */}
           {isBridal && (
             <>
-              <Section accent="#C4849A">Bridal Details</Section>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label style={labelStyle}>Bride's First Name</label>
-                  <input value={bridal.bride_name} onChange={e => setBr('bride_name', e.target.value)} placeholder="First name" className={inputClass} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Soon-to-be Last Name</label>
-                  <input value={bridal.soon_to_be_last_name} onChange={e => setBr('soon_to_be_last_name', e.target.value)} placeholder="Last name" className={inputClass} style={inputStyle} />
-                </div>
-              </div>
+              <Section accent="#C4849A">{dateNounCap} Date</Section>
               <div>
-                <label style={labelStyle}>Wedding Date</label>
-                <input type="date" value={bridal.wedding_date} onChange={e => setBr('wedding_date', e.target.value)} className={inputClass} style={{ ...inputStyle, fontSize: '16px' }} />
+                <label style={labelStyle}>{dateLabel}</label>
+                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent="#C4849A" />
+                {dateFormatted && <p className="text-[0.72rem] font-medium mt-2" style={{ color: '#C4849A' }}>{dateFormatted}</p>}
+              </div>
+
+              <Section accent="#C4849A">Bridal Details</Section>
+              <div>
+                <label style={labelStyle}>Instagram / TikTok Handle</label>
+                <input value={bridal.instagram_handle} onChange={e => setBr('instagram_handle', e.target.value)} placeholder="@handle" className={inputClass} style={inputStyle} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label style={labelStyle}>Event Start Time</label>
-                  <NativeSelect value={bridal.event_start_time} onChange={v => setBr('event_start_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
+                  <StyledDropdown value={bridal.event_start_time} onChange={v => setBr('event_start_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Venue Access Time</label>
-                  <NativeSelect value={bridal.venue_access_time} onChange={v => setBr('venue_access_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
+                  <label style={labelStyle}>What time to be ready by</label>
+                  <StyledDropdown value={bridal.makeup_ready_by_time} onChange={v => setBr('makeup_ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
                 <div>
                   <label style={labelStyle}>Hairstylist Arrive By</label>
-                  <NativeSelect value={bridal.ready_by_time} onChange={v => setBr('ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Ready By (Requested)</label>
-                  <NativeSelect value={bridal.makeup_ready_by_time} onChange={v => setBr('makeup_ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
+                  <StyledDropdown value={bridal.ready_by_time} onChange={v => setBr('ready_by_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
                 <div>
                   <label style={labelStyle}>Photographer Arrival</label>
-                  <NativeSelect value={bridal.photographer_arrival_time} onChange={v => setBr('photographer_arrival_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
+                  <StyledDropdown value={bridal.photographer_arrival_time} onChange={v => setBr('photographer_arrival_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label style={labelStyle}># People Getting Glam</label>
-                  <input type="number" min="1" value={bridal.num_people_glam} onChange={e => setBr('num_people_glam', e.target.value)} placeholder="e.g. 4" className={inputClass} style={inputStyle} />
+                  <label style={labelStyle}>Venue Access Time</label>
+                  <StyledDropdown value={bridal.venue_access_time} onChange={v => setBr('venue_access_time', v)} options={TIMES} placeholder="Select time…" dm={dm} />
                 </div>
                 <div>
                   <label style={labelStyle}>How Did They Hear About You</label>
-                  <NativeSelect value={bridal.how_heard} onChange={v => setBr('how_heard', v)} options={HOW_HEARD} placeholder="Select…" dm={dm} />
+                  <StyledDropdown value={bridal.how_heard} onChange={v => setBr('how_heard', v)} options={HOW_HEARD} placeholder="Select…" dm={dm} />
                 </div>
               </div>
+
               <div>
                 <label style={labelStyle}>Event / Venue Location</label>
-                <input value={bridal.event_location} onChange={e => setBr('event_location', e.target.value)} placeholder="Venue name or address" className={inputClass} style={inputStyle} />
+                <LocationAutocomplete value={bridal.event_location} onChange={v => setBr('event_location', v)} placeholder="Venue name or address" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -386,10 +596,23 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
                   <input value={bridal.hairstylist} onChange={e => setBr('hairstylist', e.target.value)} placeholder="@handle or name" className={inputClass} style={inputStyle} />
                 </div>
               </div>
+
               <div>
-                <label style={labelStyle}>Bride's Instagram / TikTok</label>
-                <input value={bridal.instagram_handle} onChange={e => setBr('instagram_handle', e.target.value)} placeholder="@handle" className={inputClass} style={inputStyle} />
+                <label style={labelStyle}>Does the bridal party need glam too?</label>
+                <YesNo value={bridal.bridal_party_glam} onChange={v => { setBr('bridal_party_glam', v); if (!v) setBr('num_people_glam', ''); }} dm={dm} yes="Yes, add glam" no="Just the bride" />
+                {bridal.bridal_party_glam === true && (
+                  <div className="mt-2.5">
+                    <label style={labelStyle}>How many need glam? (besides the bride)</label>
+                    <input value={bridal.num_people_glam} onChange={e => setBr('num_people_glam', e.target.value)} placeholder="e.g. 3 bridesmaids + mom" className={inputClass} style={inputStyle} />
+                  </div>
+                )}
               </div>
+
+              <div>
+                <label style={labelStyle}>Out-of-state event?</label>
+                <YesNo value={bridal.out_of_state} onChange={v => setBr('out_of_state', v)} dm={dm} yes="Yes, out of state" no="No, local" />
+              </div>
+
               <div>
                 <label style={labelStyle}>Makeup Vision / Additional Details</label>
                 <textarea value={bridal.additional_details} onChange={e => setBr('additional_details', e.target.value)}
@@ -404,30 +627,47 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
             placeholder="Anything else worth remembering for this client…"
             className={`${inputClass} resize-none`} style={{ ...inputStyle, minHeight: 84, fontSize: '16px' }} />
 
-          {/* STATUS */}
-          <Section>Status</Section>
-          <div className="grid grid-cols-3 gap-2">
-            {STATUSES.map(s => (
-              <button key={s.value} type="button" onClick={() => set('status', s.value)}
-                className="py-2.5 rounded-xl text-[0.7rem] font-semibold tracking-[0.04em] uppercase transition-all"
-                style={form.status === s.value
-                  ? { background: s.color, color: '#fff', border: `1px solid ${s.color}` }
-                  : { background: subtleBg, color: textMuted, border: `1px solid ${borderColor}` }
-                }>{s.label}</button>
-            ))}
-          </div>
+          {/* STATUS + DEPOSIT — bookings only (classes carry their own paid state) */}
+          {!isClass && (
+            <>
+              <Section>Status</Section>
+              <div className="grid grid-cols-3 gap-2">
+                {STATUSES.map(s => (
+                  <button key={s.value} type="button" onClick={() => set('status', s.value)}
+                    className="py-2.5 rounded-xl text-[0.7rem] font-semibold tracking-[0.04em] uppercase transition-all"
+                    style={form.status === s.value
+                      ? { background: s.color, color: '#fff', border: `1px solid ${s.color}` }
+                      : { background: subtleBg, color: textMuted, border: `1px solid ${borderColor}` }
+                    }>{s.label}</button>
+                ))}
+              </div>
 
-          {/* DEPOSIT */}
+              <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
+                <div>
+                  <p className="text-[0.82rem] font-medium" style={{ color: textPrimary }}>Zelle Deposit Received</p>
+                  <p className="text-[0.7rem]" style={{ color: textMuted }}>Turn on if this client already paid their deposit</p>
+                </div>
+                <button type="button" onClick={() => set('deposit_received', !form.deposit_received)}
+                  className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
+                  style={{ background: form.deposit_received ? '#22c55e' : (dm ? '#3f3f46' : '#e2e8f0') }}>
+                  <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
+                    style={{ background: '#fff', transform: form.deposit_received ? 'translateX(20px)' : 'translateX(0px)' }} />
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* NOTIFY */}
           <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
             <div>
-              <p className="text-[0.82rem] font-medium" style={{ color: textPrimary }}>Zelle Deposit Received</p>
-              <p className="text-[0.7rem]" style={{ color: textMuted }}>Turn on if this client already paid their deposit</p>
+              <p className="text-[0.82rem] font-medium" style={{ color: textPrimary }}>Notify client by email</p>
+              <p className="text-[0.7rem]" style={{ color: textMuted }}>Off = silent import. On = send the usual confirmation{isClass ? ' + Zoom/studio details' : ''}.</p>
             </div>
-            <button type="button" onClick={() => set('deposit_received', !form.deposit_received)}
+            <button type="button" onClick={() => set('notify', !form.notify)}
               className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
-              style={{ background: form.deposit_received ? '#22c55e' : (dm ? '#3f3f46' : '#e2e8f0') }}>
+              style={{ background: form.notify ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
               <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
-                style={{ background: '#fff', transform: form.deposit_received ? 'translateX(20px)' : 'translateX(0px)' }} />
+                style={{ background: '#fff', transform: form.notify ? 'translateX(20px)' : 'translateX(0px)' }} />
             </button>
           </div>
 
@@ -443,7 +683,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           <button type="submit" form="add-client-form" disabled={saving || !canSave}
             className="flex-1 py-3 text-[0.82rem] font-medium tracking-[0.04em] rounded-xl transition-all shadow-sm disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
             style={{ background: dm ? '#f4f4f5' : '#111111', color: dm ? '#111111' : '#ffffff' }}>
-            {saving ? <><div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Adding…</> : 'Add to Appointments'}
+            {saving ? <><div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" /> Adding…</> : (isClass ? 'Add Class Registration' : 'Add to Appointments')}
           </button>
         </div>
       </div>
