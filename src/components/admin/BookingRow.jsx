@@ -102,6 +102,15 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
               Signed
             </span>
           )}
+          {booking.source === 'booksy' && (
+            <span
+              className="inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}
+              title="Imported from Booksy"
+            >
+              Booksy
+            </span>
+          )}
         </div>
         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
           {booking.service || 'Service not set'}

@@ -780,11 +780,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const notes = parseBookingNotes(booking.notes);
   const hasNotes = !!(notes.readyBy || notes.comment || notes.flags.length);
 
-  const totalVisits = allBookings.filter(b => b.email === booking.email).length;
-  const completedVisits = allBookings.filter(b => b.email === booking.email && b.status === 'completed').length;
+  // Same-client matcher: email when present, else phone. Booksy imports can be
+  // phone-only (email null), and matching on a shared null email would lump
+  // every emailless client together as one person's visit history.
+  const sameClient = (b) => booking.email
+    ? b.email === booking.email
+    : booking.phone ? b.phone === booking.phone : b.id === booking.id;
+  const totalVisits = allBookings.filter(sameClient).length;
+  const completedVisits = allBookings.filter(b => sameClient(b) && b.status === 'completed').length;
   // Sort chronologically: earliest date first, undated last
   const clientBookings = allBookings
-    .filter(b => b.email === booking.email && b.id !== booking.id)
+    .filter(b => sameClient(b) && b.id !== booking.id)
     .sort((a, b) => {
       if (!a.date && !b.date) return 0;
       if (!a.date) return 1;
@@ -799,7 +805,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
   })();
-  const allClientBookings = (booking.email ? allBookings.filter(b => b.email === booking.email) : [booking])
+  const allClientBookings = ((booking.email || booking.phone) ? allBookings.filter(sameClient) : [booking])
     .slice()
     .sort((a, b) => {
       if (!a.date && !b.date) return 0;
@@ -1028,6 +1034,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {booking.service}
                 </span>
               )}
+              {booking.source === 'booksy' && (
+                <span className="inline-block mb-1.5 ml-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-[0.08em] text-[0.6rem] leading-none align-middle"
+                  style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}
+                  title="Imported from Booksy">
+                  Booksy import
+                </span>
+              )}
               <button onClick={() => setShowClientPanel(true)}
                 className="group font-serif text-[1.5rem] leading-tight transition-colors text-left flex items-center gap-1.5 max-w-full"
                 style={{ color: dm ? '#e4e4e7' : '#111' }}>
@@ -1200,7 +1213,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             {notes.comment && (
               <div className="px-4 py-3" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
                 <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM }}>Additional Comments</p>
-                <p className="text-[0.85rem] leading-relaxed" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>
+                <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>
                   {notes.comment}
                 </p>
               </div>

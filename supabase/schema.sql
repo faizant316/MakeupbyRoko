@@ -13,7 +13,7 @@ create table if not exists bookings (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz default now() not null,
   name text not null,
-  email text not null,
+  email text, -- optional since 0007: Booksy imports may only have a phone
   phone text,
   service text not null,
   date date,
@@ -26,7 +26,8 @@ create table if not exists bookings (
   feedback_request_sent boolean default false,
   zelle_screenshot text,
   upload_token text,
-  reference_photos text[]
+  reference_photos text[],
+  source text -- 'booksy' for CSV-imported clients, null for site bookings
 );
 
 create index if not exists bookings_created_at_idx on bookings(created_at desc);
