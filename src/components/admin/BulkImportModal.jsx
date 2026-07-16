@@ -84,6 +84,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
   const [headers, setHeaders] = useState([]);
   const [dataRows, setDataRows] = useState([]);
   const [mapping, setMapping] = useState({});
+  const [keepExtras, setKeepExtras] = useState(true);
   const [defaultService, setDefaultService] = useState('Non-Bridal Makeup');
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -152,24 +153,38 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
 
   const records = useMemo(() => {
     const g = (o, t) => (mapping[t] ? (o[mapping[t]] || '').trim() : '');
+    const usedHeaders = new Set(Object.values(mapping).filter(Boolean));
     return dataRows.map(o => {
       const first = g(o, 'first_name'), last = g(o, 'last_name');
       let name = [first, last].filter(Boolean).join(' ').trim();
       if (!name) name = g(o, 'name');
-      const email = g(o, 'email');
+      const rawEmail = g(o, 'email');
+      const email = EMAIL_RE.test(rawEmail) ? rawEmail : '';
+      const phone = g(o, 'phone');
       const service = g(o, 'service') || defaultService.trim();
       const rawDate = g(o, 'date');
       const isoDate = toISODate(rawDate);
-      let notes = g(o, 'notes');
-      if (rawDate && !isoDate) notes = [notes, `Date: ${rawDate}`].filter(Boolean).join(' | ');
+      const noteParts = [g(o, 'notes')];
+      if (rawDate && !isoDate) noteParts.push(`Date: ${rawDate}`);
+      if (rawEmail && !email) noteParts.push(`Email (unverified): ${rawEmail}`);
+      // Everything Booksy exported that we have no field for still comes
+      // along — dropped into notes as "Column: value" so nothing is lost.
+      if (keepExtras) {
+        for (const h of headers) {
+          if (usedHeaders.has(h)) continue;
+          const v = (o[h] || '').trim();
+          if (v) noteParts.push(`${h}: ${v}`);
+        }
+      }
+      const notes = noteParts.filter(Boolean).join('\n');
       return {
-        name, email, phone: g(o, 'phone'), service,
+        name, email, phone, service,
         date: isoDate, time: g(o, 'time') || null,
         status: normStatus(g(o, 'status')), notes: notes || null,
-        _valid: !!(name && EMAIL_RE.test(email) && service),
+        _valid: !!(name && service && (email || phone)),
       };
     });
-  }, [dataRows, mapping, defaultService]);
+  }, [dataRows, headers, mapping, defaultService, keepExtras]);
 
   const validCount = records.filter(r => r._valid).length;
   const skipCount = records.length - validCount;
@@ -185,7 +200,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
         const r = valid[i];
         const res = await fetch('/api/bookings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: r.name, email: r.email, phone: r.phone, service: r.service, date: r.date, time: r.time, notes: r.notes, status: r.status }),
+          body: JSON.stringify({ name: r.name, email: r.email || null, phone: r.phone, service: r.service, date: r.date, time: r.time, notes: r.notes, status: r.status, source: 'booksy' }),
         });
         if (res.ok) ok++; else fail++;
       } catch { fail++; }
@@ -244,10 +259,10 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
               <p className="text-[0.85rem]" style={{ color: textMuted }}>
                 Added <strong style={{ color: textPrimary }}>{result.ok}</strong> {result.ok === 1 ? 'client' : 'clients'}
                 {result.fail > 0 && <> · <span style={{ color: '#ef4444' }}>{result.fail} failed</span></>}
-                {skipCount > 0 && <> · {skipCount} skipped (missing name / email)</>}
+                {skipCount > 0 && <> · {skipCount} skipped (missing name or contact info)</>}
               </p>
               <p className="text-[0.72rem] max-w-[380px]" style={{ color: textMuted }}>
-                These are basic appointment records. Open any client to add bridal or class detail, and no emails were sent.
+                Imported clients are tagged with a <strong style={{ color: '#0E8F98' }}>Booksy</strong> chip. Open any client to add bridal or class detail — no emails were sent.
               </p>
             </div>
           ) : step === 'input' ? (
@@ -296,6 +311,24 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
                 <input value={defaultService} onChange={e => setDefaultService(e.target.value)} placeholder="e.g. Non-Bridal Makeup" className={inputClass} style={inputStyle} />
               </div>
 
+              {/* Zero-data-loss safety net: columns without a mapped field ride along in notes */}
+              <button type="button" onClick={() => setKeepExtras(v => !v)}
+                className="flex items-start gap-3 px-4 py-3 rounded-xl text-left transition-all"
+                style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
+                <span className="w-[18px] h-[18px] rounded-md flex items-center justify-center flex-shrink-0 mt-[1px] transition-all"
+                  style={{ background: keepExtras ? '#D4A0B0' : 'transparent', border: keepExtras ? 'none' : `2px solid ${dm ? '#52525b' : '#d0d0d8'}` }}>
+                  {keepExtras && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+                  )}
+                </span>
+                <span>
+                  <span className="block text-[0.78rem] font-semibold" style={{ color: textPrimary }}>Keep unmapped columns in notes</span>
+                  <span className="block text-[0.68rem] mt-0.5" style={{ color: textMuted }}>
+                    Any Booksy column without a field above is saved into each client's notes, so nothing from the export is lost.
+                  </span>
+                </span>
+              </button>
+
               {/* Preview */}
               <div>
                 <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: textMuted }}>
@@ -316,7 +349,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
                           <td className="px-2.5 py-2">
                             {r._valid
                               ? <span style={{ color: '#22c55e' }}>●</span>
-                              : <span title="Skipped: needs a name + valid email" style={{ color: '#ef4444' }}>○</span>}
+                              : <span title="Skipped: needs a name + an email or phone" style={{ color: '#ef4444' }}>○</span>}
                           </td>
                           <td className="px-2.5 py-2 whitespace-nowrap">{r.name || '·'}</td>
                           <td className="px-2.5 py-2 whitespace-nowrap">{r.email || '·'}</td>

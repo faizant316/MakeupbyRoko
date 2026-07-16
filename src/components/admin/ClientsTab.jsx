@@ -246,6 +246,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
                     <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                       {rel.label}{b.time ? ` · ${b.time}` : ''}
                       {isBridalService(b.service) ? ' · Bridal' : ''}
+                      {b.source === 'booksy' && <span style={{ color: dm ? '#5EEAD4' : '#0E8F98', fontWeight: 600 }}> · Booksy</span>}
                     </p>
                   </div>
                   <StatusBadge status={b.status} />

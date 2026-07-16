@@ -28,15 +28,27 @@ export async function POST(req) {
     const supabase = createClient();
     const body = await req.json();
 
-    const { name, email, phone, service, date, time, notes, status, reference_photos, deposit_received } = body;
-    if (!name || !email || !service) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    if (!EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
+    const { name, email, phone, service, date, time, notes, status, reference_photos, deposit_received, source } = body;
+    if (!name || !service) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    // Site bookings must carry an email. Imported clients (Booksy CSV) often
+    // only have a phone number, so imports may omit it — but never fake it.
+    const isImport = source === 'booksy';
+    if (!email && !isImport) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (email && !EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
+    if (!email && !phone) return NextResponse.json({ error: 'Need an email or phone' }, { status: 400 });
 
     const upload_token = body.upload_token || uuidv4();
-    const insert = { name, email, phone, service, date, time, notes, status, reference_photos, upload_token };
+    const insert = { name, email: email || null, phone, service, date, time, notes, status, reference_photos, upload_token };
     if (deposit_received !== undefined) insert.deposit_received = deposit_received;
+    if (source) insert.source = source;
 
-    const { data, error } = await supabase.from('bookings').insert(insert).select().single();
+    let { data, error } = await supabase.from('bookings').insert(insert).select().single();
+    // If migration 0007 hasn't been applied yet the `source` column doesn't
+    // exist — retry without it so the import itself still lands.
+    if (error && source && /source/i.test(error.message || '')) {
+      delete insert.source;
+      ({ data, error } = await supabase.from('bookings').insert(insert).select().single());
+    }
     if (error) throw error;
 
     // Attach signed-contract fields as a separate, best-effort update. Kept
