@@ -43,7 +43,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
     : isFillingUp
     ? { background: dm ? 'rgba(180,120,20,0.22)' : undefined, border: `1px solid ${dm ? 'rgba(200,145,30,0.55)' : undefined}` }
     : hasBookings
-    ? { background: dm ? 'rgba(29,78,216,0.15)' : undefined, border: `1px solid ${dm ? 'rgba(29,78,216,0.3)' : undefined}` }
+    ? { background: dm ? 'rgba(100,116,139,0.14)' : undefined, border: `1px solid ${dm ? 'rgba(100,116,139,0.32)' : undefined}` }
     : {};
 
   return (
@@ -63,7 +63,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
           : isFillingUp
           ? dm ? '' : 'bg-amber-50 border border-amber-200 text-[#111] hover:border-amber-300 hover:bg-amber-100'
           : hasBookings
-          ? dm ? '' : 'bg-blue-50 border border-blue-100 text-[#111] hover:border-blue-300 hover:bg-blue-100'
+          ? dm ? '' : 'bg-[#F4F3F1] border border-[#E9E6E2] text-[#8a8a8a] hover:bg-[#EFEDEA]'
           : dm ? 'text-[#71717a]' : 'text-[#555] hover:bg-[#f5f0ec] hover:text-[#111]'
       }`}
       style={dm ? cellStyle : {}}
@@ -80,7 +80,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
         </>
       ) : (
         <>
-          <span className={`text-[0.875rem] font-${isSel || isToday ? 'bold' : 'medium'} ${isToday && dm ? 'text-indigo-200' : isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : isBlocked && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{day}</span>
+          <span className={`text-[0.875rem] font-${isSel || isToday ? 'bold' : 'medium'} ${isToday && dm ? 'text-indigo-200' : isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : isBlocked && dm ? 'text-red-200' : hasBookings && dm ? 'text-slate-400' : dm ? 'text-zinc-300' : ''}`}>{day}</span>
           {isFull ? (
             <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
           ) : (
@@ -134,7 +134,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
     : isFillingUp
     ? { background: dm ? 'rgba(180,120,20,0.22)' : undefined, border: `1px solid ${dm ? 'rgba(200,145,30,0.55)' : undefined}` }
     : hasBookings
-    ? { background: dm ? 'rgba(29,78,216,0.15)' : undefined, border: `1px solid ${dm ? 'rgba(29,78,216,0.3)' : undefined}` }
+    ? { background: dm ? 'rgba(100,116,139,0.14)' : undefined, border: `1px solid ${dm ? 'rgba(100,116,139,0.32)' : undefined}` }
     : {};
 
   return (
@@ -154,7 +154,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
           : isFillingUp
           ? dm ? '' : 'bg-amber-50 border border-amber-200 text-[#111] hover:bg-amber-100'
           : hasBookings
-          ? dm ? '' : 'bg-blue-50 border border-blue-100 text-[#111] hover:bg-blue-100'
+          ? dm ? '' : 'bg-[#F4F3F1] border border-[#E9E6E2] text-[#8a8a8a] hover:bg-[#EFEDEA]'
           : dm ? 'text-[#71717a]' : 'text-[#777] hover:bg-[#f5f0ec] hover:text-[#111]'
       }`}
       style={dm ? cellStyle : {}}
@@ -165,7 +165,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
           style={{ background: isSel ? 'rgba(255,255,255,0.9)' : '#A0607A' }} title="Custom limit" />
       )}
       <span className={`text-[0.6rem] font-semibold tracking-[0.08em] ${isSel ? 'text-white/70' : isToday ? (dm ? 'text-indigo-400' : 'text-indigo-500') : 'text-[#aaa]'}`}>{dayName}</span>
-      <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-blue-100' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
+      <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-slate-400' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
       {isBlocked ? (
         <span className={`text-[0.65rem] ${dm ? 'text-red-400/70' : 'text-red-400'}`}>✕</span>
       ) : isFull ? (
