@@ -18,6 +18,7 @@ import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail
 import AnalyticsTab from '../components/admin/AnalyticsTab';
 import RevenueTab from '../components/admin/RevenueTab';
 import AddClientModal from '../components/admin/AddClientModal';
+import BulkImportModal from '../components/admin/BulkImportModal';
 import ClientsTab from '../components/admin/ClientsTab';
 import ResizableColumns from '../components/admin/ResizableColumns';
 import { daysUntil } from '../components/admin/timeline';
@@ -38,6 +39,7 @@ export default function Admin() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showNavFab, setShowNavFab] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -499,7 +501,7 @@ export default function Admin() {
                     selectedDate={selectedDate} setSelectedDate={setSelectedDate}
                     onSelect={setSelectedBooking} currentMonth={currentMonth}
                     allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
-                    darkMode={dm} onAddClient={() => setShowAddClient(true)}
+                    darkMode={dm} onAddClient={() => setShowAddClient(true)} onBulkImport={() => setShowBulkImport(true)}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
                     onMarkDepositReceived={(id) => updateBookingMutation.mutate({ id, data: { deposit_received: true } })}
@@ -511,12 +513,29 @@ export default function Admin() {
             />
             {showAddClient && (
               <AddClientModal
-                onSave={(newBooking) => {
-                  queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+                onSave={(record, kind) => {
                   setShowAddClient(false);
-                  setSelectedBooking(newBooking);
+                  if (kind === 'class') {
+                    queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
+                    queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
+                    setActiveTab('classes');
+                    setSelectedClassReg(record);
+                  } else {
+                    queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+                    setSelectedBooking(record);
+                  }
                 }}
                 onClose={() => setShowAddClient(false)}
+                darkMode={dm}
+              />
+            )}
+            {showBulkImport && (
+              <BulkImportModal
+                onClose={() => setShowBulkImport(false)}
+                onDone={() => {
+                  queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+                  setShowBulkImport(false);
+                }}
                 darkMode={dm}
               />
             )}
