@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { scrollToTarget } from '@/lib/lenis';
 
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
@@ -339,7 +340,7 @@ export default function ServicesHero() {
           {/* CTA ghost button — same position as desktop */}
           <a
             href="#services-grid"
-            onClick={(e) => { e.preventDefault(); document.getElementById('services-grid')?.scrollIntoView({ behavior: 'smooth' }); }}
+            onClick={(e) => { e.preventDefault(); scrollToTarget('#services-grid', { offset: -60 }); }}
             style={{
               pointerEvents: 'auto',
               display: 'inline-flex',

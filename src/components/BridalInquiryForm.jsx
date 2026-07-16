@@ -424,6 +424,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        bookingId: newBooking.id,
         bookingType: 'bridal',
         to: form.email,
         firstName: brideFirst,

@@ -1,3 +1,5 @@
+import { scrollToTarget } from '@/lib/lenis';
+
 export default function ServiceModal({ service, onClose }) {
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-[4px] z-300 flex items-center justify-center p-6 opacity-100 pointer-events-auto transition-opacity duration-300" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -37,7 +39,7 @@ export default function ServiceModal({ service, onClose }) {
               <div className="font-serif text-4xl leading-none text-[var(--text)]">{service.price}</div>
               <div className="text-[0.8rem] text-[var(--text-light)] mt-1">{service.deposit}</div>
             </div>
-            <button className="btn btn-primary" onClick={() => { onClose(); setTimeout(() => { document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>Book This Service</button>
+            <button className="btn btn-primary" onClick={() => { onClose(); setTimeout(() => { scrollToTarget('#book', { offset: -64 }); }, 100); }}>Book This Service</button>
           </div>
         </div>
       </div>
