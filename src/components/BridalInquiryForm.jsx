@@ -855,7 +855,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
               <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
               <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                If your hairstylist isn't <a href="https://instagram.com/hairbyshak" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
+                If your hairstylist isn't <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
               </p>
             </div>
 
