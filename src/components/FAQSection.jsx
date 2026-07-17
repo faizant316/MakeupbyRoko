@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: 'Do you travel for events?',
-    a: 'Yes! Roko is a traveling artist available for destination bookings. Travel fees may apply depending on distance. Contact her directly for a custom quote for out-of-area events.',
+    a: 'Yes! Roko is a traveling artist available for destination bookings. Studio appointments in Mountain House have no travel fee. On-location services add a flat $200 travel fee, regardless of distance. For destination events, travel and lodging are arranged with the client directly.',
   },
   {
     q: 'How do I secure my booking?',
@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'Deposits are non-refundable. If you need to reschedule, please reach out at least 7 days before your appointment. Roko will do her best to accommodate a new date based on availability.',
+    a: 'Deposits are non-refundable and non-transferable. If you need to cancel or reschedule, please reach out at least 24 hours before your appointment. Roko will do her best to accommodate based on availability.',
   },
   {
     q: 'Can you accommodate sensitive skin or allergies?',
