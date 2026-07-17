@@ -530,13 +530,13 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
       : (isUpdate ? `Your consultation time for ${serviceName} has been updated.` : `Your consultation for ${serviceName} is scheduled.`),
     content: `
       ${migrated
-        ? clientHero({ emoji: '✨', eyebrow: 'New Booking Home', title: "We've", titleAccent: 'moved!', subtitle: 'Your consultation is all set ✦' })
+        ? clientHero({ emoji: '', eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your consultation is all set' })
         : isUpdate
-        ? clientHero({ emoji: '📅', eyebrow: 'Consultation Updated', title: 'New', titleAccent: 'time!', subtitle: 'Your consultation has been rescheduled ✦' })
-        : clientHero({ emoji: '📅', eyebrow: 'Consultation Scheduled', title: "Let's", titleAccent: 'connect!', subtitle: "Can't wait to chat about your look ✦" })}
-      ${migrated ? cinfo(`✨ <strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your consultation right along with me. Nothing has changed on your end, the details below are exactly as we planned.`) : ''}
+        ? clientHero({ emoji: '📅', eyebrow: 'Consultation Updated', title: 'New', titleAccent: 'time!', subtitle: 'Your consultation has been rescheduled' })
+        : clientHero({ emoji: '📅', eyebrow: 'Consultation Scheduled', title: "Let's", titleAccent: 'connect!', subtitle: "Can't wait to chat about your look" })}
+      ${migrated ? cinfo(`<strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your consultation right along with me. Nothing has changed on your end, the details below are exactly as we planned.`) : ''}
       ${migrated
-        ? cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Here's everything for your consultation for <strong style="color:#16110F;">${serviceName}</strong>, all in one place:`)
+        ? cintro(`Here's everything for your consultation for <strong style="color:#16110F;">${serviceName}</strong>, all in one place:`)
         : isUpdate
         ? cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> has a <strong style="color:#16110F;">new time</strong>. Here are the updated details, please use these going forward:`)
         : cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> is set. Here are your details:`)}
@@ -572,11 +572,12 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
       ? `Your consultation time has been updated. Your ${serviceName} is still confirmed${dateFormatted ? ` for ${dateFormatted}` : ''}.`
       : `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment and consultation details.`,
     content: `
-      ${clientHero({ emoji: migrated ? '✨' : '✓', eyebrow: migrated ? 'New Booking Home' : 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day ✦" })}
-      ${migrated ? cinfo(`✨ <strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your booking right along with me. Nothing has changed on your end, your appointment and consultation are exactly as we planned. Everything now lives in this one email.`) : ''}
-      ${isUpdate ? cinfo(`🔄 <strong style="color:#16110F;">Heads up, your consultation time has changed.</strong> Your appointment${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''} is still confirmed, only the consultation call has a new time. The updated details are below.`) : ''}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`)}
-      ${cinfo(`📌 <strong style="color:#16110F;">This is your booking confirmation.</strong> It has everything for your appointment <em>and</em> your consultation call in one place, so please keep this email safe and don't delete it.`)}
+      ${migrated
+        ? clientHero({ emoji: '', eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your appointment and consultation are all set' })
+        : clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day" })}
+      ${migrated ? cinfo(`<strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your booking right along with me. Nothing has changed on your end, your appointment and consultation are exactly as we planned. Everything now lives in this one email.`) : ''}
+      ${isUpdate ? cinfo(`<strong style="color:#16110F;">Heads up, your consultation time has changed.</strong> Your appointment${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''} is still confirmed, only the consultation call has a new time. The updated details are below.`) : ''}
+      ${cintro(`${migrated ? '' : `Hey <strong style="color:#16110F;">${firstName}</strong>! `}You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`)}
       ${cpanel(`${ctitle('Your Appointment')}
         <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">The day I do your makeup. This is your main booking.</p>
         ${crows(
