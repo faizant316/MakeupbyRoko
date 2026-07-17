@@ -594,8 +594,8 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
         (consultationNotes ? crow('Notes', consultationNotes) : '')
       )}${zoomLink ? cZoom(zoomLink) : ''}`)}
-      ${showDeposit ? cdeposit({ amount: 'Deposit', uploadUrl, photos: true }) : ''}
-      ${!showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
+      ${!migrated && showDeposit ? cdeposit({ amount: 'Deposit', uploadUrl, photos: true }) : ''}
+      ${!migrated && !showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
       ${cstepsPanel('To Prepare', [
         ['1', 'Save your inspiration', 'Screenshots, Pinterest boards, anything you love'],
         ['2', 'Think about your vibe', 'Soft glam, bold, natural, anything goes!'],
