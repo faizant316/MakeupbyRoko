@@ -193,9 +193,14 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
 
 export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm, onSelectBooking, onSelectClassReg, defaultDay = false }) {
   // The Home page lands on the day grid (matches the Booksy app: today's
-  // appointments front and center). The Availability tab keeps the month
-  // overview for blocking dates at a glance.
-  const [view, setView] = useState(defaultDay ? 'day' : 'month');
+  // appointments front and center), but remembers Roko's last choice if she
+  // switches to Week/Month. The Availability tab always opens on Month.
+  const [view, setView] = useState(() => {
+    if (defaultDay && typeof window !== 'undefined') {
+      return localStorage.getItem('admin-home-cal-view') || 'day';
+    }
+    return defaultDay ? 'day' : 'month';
+  });
   const [blockPopup, setBlockPopup] = useState(null);
   const queryClient = useQueryClient();
 
@@ -265,6 +270,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   // stays put whether you look at it by day, week, or month.
   const changeView = (v) => {
     setView(v);
+    if (defaultDay && typeof window !== 'undefined') localStorage.setItem('admin-home-cal-view', v);
     if (selectedDate) setCurrentMonth(new Date(selectedDate + 'T00:00:00'));
   };
   const handleDoubleClick = (key) => setBlockPopup({ date: key });

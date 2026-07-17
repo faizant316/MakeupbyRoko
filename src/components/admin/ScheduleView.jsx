@@ -81,16 +81,18 @@ export default function ScheduleView({
     return d;
   });
 
-  // Dates in this week that have anything scheduled (for the strip dots).
-  const busyDates = useMemo(() => {
-    const set = new Set();
+  // Dates in this week that have something scheduled (for the strip dots).
+  // Split by kind so a consultation day gets its own purple dot, matching the
+  // month/week grids — Roko can spot consult days without opening them.
+  const { apptDates, consultDates } = useMemo(() => {
+    const appt = new Set(), consult = new Set();
     bookings.forEach(b => {
       if (b.status === 'cancelled') return;
-      if (b.date) set.add(b.date);
-      if (b.consultation_date) set.add(b.consultation_date);
+      if (b.date) appt.add(b.date);
+      if (b.consultation_date) consult.add(b.consultation_date);
     });
-    classRegs.forEach(r => { if (r.appointment_date && r.status !== 'cancelled') set.add(r.appointment_date); });
-    return set;
+    classRegs.forEach(r => { if (r.appointment_date && r.status !== 'cancelled') appt.add(r.appointment_date); });
+    return { apptDates: appt, consultDates: consult };
   }, [bookings, classRegs]);
 
   // ── Build the day's events ──
@@ -177,7 +179,8 @@ export default function ScheduleView({
             const k = keyOf(d);
             const isSel = k === dateKey;
             const isTod = k === todayKey;
-            const busy = busyDates.has(k);
+            const hasConsult = consultDates.has(k);
+            const hasAppt = apptDates.has(k);
             return (
               <button key={k} onClick={() => onChangeDate(k)}
                 className="flex flex-col items-center gap-1 py-1.5 min-w-0 select-none"
@@ -190,8 +193,10 @@ export default function ScheduleView({
                     : { color: isTod ? '#E05B7F' : (dm ? '#d4d4d8' : '#333') }}>
                   {d.getDate()}
                 </span>
-                <span className="w-1 h-1 rounded-full"
-                  style={{ background: busy ? (isSel ? '#D4A0B0' : (dm ? '#8a6a76' : '#D4A0B0')) : 'transparent' }} />
+                <span className="flex items-center gap-[2px] h-1">
+                  {hasConsult && <span className="w-1 h-1 rounded-full" title="Consultation" style={{ background: '#A855F7' }} />}
+                  {hasAppt && <span className="w-1 h-1 rounded-full" title="Appointment" style={{ background: dm ? '#8a6a76' : '#D4A0B0' }} />}
+                </span>
               </button>
             );
           })}

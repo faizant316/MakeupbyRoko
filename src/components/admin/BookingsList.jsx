@@ -742,13 +742,14 @@ export default function BookingsList({
           </div>
           <button
             onClick={() => setSelectedDate(null)}
-            aria-label="Clear date filter"
-            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
-            style={{ background: dm ? '#34343d' : '#E8E9EE', touchAction: 'manipulation' }}
+            aria-label="Show all appointments"
+            className="flex items-center gap-1.5 pl-3 pr-3.5 py-2 rounded-full flex-shrink-0 transition-all active:scale-95 text-[0.68rem] font-semibold tracking-[0.04em]"
+            style={{ background: dm ? '#34343d' : '#E8E9EE', color: dm ? '#d4d4d8' : '#6b6b73', touchAction: 'manipulation' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="w-3 h-3">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
+            Show all
           </button>
         </div>
       )}
