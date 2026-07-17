@@ -9,8 +9,7 @@ export const ADMIN_TABS = [
   { key: 'services',     label: 'Services',       sub: 'Edit & update offerings',  icon: 'sparkles' },
   { key: 'reviews',      label: 'Reviews',        sub: 'Approve & manage',        icon: 'star'     },
   { key: 'classes',      label: 'Class Sign-Ups', sub: 'Registrations',           icon: 'cap'      },
-  { key: 'analytics',    label: 'Analytics',      sub: 'Insights & trends',       icon: 'chart'    },
-  { key: 'revenue',      label: 'Revenue',        sub: 'Revenue & booking stats', icon: 'revenue'  },
+  { key: 'reports',      label: 'Reports',        sub: 'Revenue & traffic',       icon: 'reports'  },
 ];
 
 // Per-device saved nav order. The saved order wins for tabs it knows about; any
@@ -112,6 +111,16 @@ function NavIcon({ name, className, style }) {
         <svg {...common}>
           <path d="M12 2v20" />
           <path d="M17 5.5H9.75a3.25 3.25 0 0 0 0 6.5h4.5a3.25 3.25 0 0 1 0 6.5H6" />
+        </svg>
+      );
+    case 'reports':
+      // Bar-chart columns with a dollar tick — revenue + traffic in one mark.
+      return (
+        <svg {...common}>
+          <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+          <rect x="7"  y="12" width="3" height="5" rx="0.6" />
+          <rect x="12" y="8"  width="3" height="9" rx="0.6" />
+          <rect x="17" y="5"  width="3" height="12" rx="0.6" />
         </svg>
       );
     default:

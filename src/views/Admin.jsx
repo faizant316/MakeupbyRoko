@@ -15,8 +15,7 @@ import TodayAgenda from '../components/admin/TodayAgenda';
 import ClassSignupsCard from '../components/admin/ClassSignupsCard';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
-import AnalyticsTab from '../components/admin/AnalyticsTab';
-import RevenueTab from '../components/admin/RevenueTab';
+import ReportsTab from '../components/admin/ReportsTab';
 import AddClientModal from '../components/admin/AddClientModal';
 import BulkImportModal from '../components/admin/BulkImportModal';
 import ClientsTab from '../components/admin/ClientsTab';
@@ -602,12 +601,8 @@ export default function Admin() {
           />
         )}
 
-        {activeTab === 'analytics' && (
-          <AnalyticsTab darkMode={dm} />
-        )}
-
-        {activeTab === 'revenue' && (
-          <RevenueTab darkMode={dm} />
+        {activeTab === 'reports' && (
+          <ReportsTab darkMode={dm} />
         )}
         </div> {/* /main content */}
       </div> {/* /flex row */}

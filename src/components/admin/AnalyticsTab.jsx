@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Activity, Clock, RefreshCw,
-  Smartphone, FileText, BarChart2, ExternalLink, Zap, Monitor,
+  Smartphone, FileText, BarChart2, ExternalLink, Zap, Monitor, Globe,
 } from 'lucide-react';
 
 const GA = 'https://analytics.google.com/analytics/web/#/p536969013';
@@ -57,6 +57,21 @@ function SectionHead({ label, desc, dm }) {
         {label}
       </p>
       {desc && <p className="text-[0.65rem] mt-0.5 leading-snug" style={{ color: mu }}>{desc}</p>}
+    </div>
+  );
+}
+
+// A calm, intentional empty slot — shown while a freshly-launched site is still
+// gathering its first real visitors, so a blank box never reads as "broken".
+function EmptyState({ icon: Icon, text, dm, compact }) {
+  const tx = dm ? '#e4e4e7' : '#111';
+  const mu = dm ? '#71717a' : '#999';
+  return (
+    <div className={`flex flex-col items-center text-center gap-1.5 ${compact ? 'py-6' : 'py-8'}`}>
+      <Icon size={compact ? 18 : 22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#e0d8d4' }} />
+      <p className="text-[0.72rem] max-w-[260px] leading-relaxed" style={{ color: mu }}>
+        <span style={{ color: tx, fontWeight: 600 }}>Collecting data.</span> {text}
+      </p>
     </div>
   );
 }
@@ -182,7 +197,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
                 </div>
               ))
             : (data?.traffic || []).length === 0
-              ? <p className="px-4 py-6 text-center text-[0.72rem]" style={{ color: mu }}>No traffic data yet</p>
+              ? <EmptyState icon={Activity} dm={dm} text="Traffic sources show up here as people find the site through Google, Instagram, and direct visits." />
               : (data?.traffic || []).map((ch, i, arr) => {
                   const m   = CHANNEL_MAP[ch.channel] || { label: ch.channel, dot: '#6B7280', letter: '?' };
                   const bar = totalTrafficSess ? (ch.sessions / totalTrafficSess) * 100 : 0;
@@ -224,7 +239,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
                 </div>
               ))
             : (data?.topPages || []).length === 0
-              ? <p className="px-4 py-6 text-center text-[0.72rem]" style={{ color: mu }}>No page data yet</p>
+              ? <EmptyState icon={FileText} dm={dm} compact text="Your most-visited pages rank here once people start browsing." />
               : (data?.topPages || []).map((p, i, arr) => (
                   <div key={p.path} className="flex items-center gap-3 px-4 py-3"
                     style={{ borderBottom: i < arr.length - 1 ? `1px solid ${bd}` : 'none' }}>
@@ -260,6 +275,8 @@ export default function AnalyticsTab({ darkMode: dm }) {
                     <Skel dm={dm} h={5} className="w-full rounded-full" />
                   </div>
                 ))
+              : (data?.devices || []).length === 0
+              ? <EmptyState icon={Smartphone} dm={dm} compact text="Mobile vs. desktop splits appear once visitors arrive." />
               : (data?.devices || []).map(d => {
                   const p    = totalDeviceUsers ? Math.round(d.users / totalDeviceUsers * 100) : 0;
                   const Ico  = d.device === 'mobile' ? Smartphone : d.device === 'tablet' ? FileText : Monitor;
@@ -294,6 +311,8 @@ export default function AnalyticsTab({ darkMode: dm }) {
                     <Skel dm={dm} h={11} className="w-8 flex-shrink-0" />
                   </div>
                 ))
+              : (data?.locations || []).length === 0
+              ? <EmptyState icon={Globe} dm={dm} compact text="Where your visitors are based shows here soon." />
               : (data?.locations || []).map(loc => (
                   <div key={loc.country} className="flex items-center gap-2">
                     <span className="text-base leading-none flex-shrink-0">
