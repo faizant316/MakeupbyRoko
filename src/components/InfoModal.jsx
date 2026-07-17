@@ -49,11 +49,11 @@ const INFO_CONTENT = {
     sections: [
       {
         title: 'Home Base',
-        body: 'Roqia Moshref is based in Mountain House, California. Local clients within a reasonable driving distance may not incur travel fees. Please inquire for details.'
+        body: 'Roqia Moshref is based in Mountain House, California. Studio appointments there have no travel fee. On-location services (the artist traveling to you) add a flat travel fee, regardless of distance.'
       },
       {
         title: 'Travel Fee',
-        body: 'For on-location services (bridal, event, photoshoot), a travel fee applies based on distance from Mountain House, CA, starting at $200. Travel fees are quoted at the time of booking confirmation and are due along with the remaining balance.'
+        body: 'For on-location services (bridal, event, photoshoot), a flat travel fee of $200 applies regardless of distance, in addition to the service price. Studio appointments in Mountain House have no travel fee. The travel fee is due along with the remaining balance.'
       },
       {
         title: 'Destination Bookings',
@@ -99,15 +99,15 @@ const INFO_CONTENT = {
     sections: [
       {
         title: 'Deposits Are Non-Refundable',
-        body: 'All deposits paid to secure a booking are strictly non-refundable. This policy exists because your date is held exclusively for you and cannot be offered to other clients once reserved.'
+        body: 'All deposits paid to secure a booking are strictly non-refundable and non-transferable. This policy exists because your date is held exclusively for you and cannot be offered to other clients once reserved.'
       },
       {
         title: 'Cancellation by Client',
-        body: 'If you need to cancel, please notify Roko as soon as possible via email or text. Cancellations made less than 14 days before the appointment date forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount.'
+        body: 'If you need to cancel, please notify Roko as soon as possible via email or text. Cancellations made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount.'
       },
       {
         title: 'Rescheduling',
-        body: 'With at least 14 days notice, your deposit may be transferred one time to a new appointment date. Changes made with less than 14 days notice forfeit the deposit.'
+        body: 'Please give at least 24 hours notice to cancel or reschedule. Deposits are non-refundable and non-transferable. Changes made with less than 24 hours notice forfeit the deposit.'
       },
       {
         title: 'Cancellation by Artist',

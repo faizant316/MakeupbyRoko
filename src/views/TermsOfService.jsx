@@ -17,7 +17,7 @@ const SECTIONS = [
   },
   {
     title: 'Cancellations & Rescheduling',
-    body: `All deposits are strictly non-refundable. If you cancel your appointment less than 14 days before the scheduled date, you forfeit your deposit in full. Bridal bookings cancelled less than 30 days prior may incur additional fees. You may reschedule once at no charge with at least 14 days notice, provided the new date is within 60 days of the original. Same-day cancellations and no-shows are charged the full service amount.`
+    body: `All deposits are strictly non-refundable and non-transferable. Please give at least 24 hours notice to cancel or reschedule. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount.`
   },
   {
     title: 'Late Arrivals',
@@ -33,7 +33,7 @@ const SECTIONS = [
   },
   {
     title: 'Travel Fees',
-    body: `On-location services may be subject to a travel fee based on distance from Mountain House, California. Travel fees will be disclosed at the time of booking confirmation. For destination events, all travel-related expenses (flights, hotel, per diem) are the client's responsibility.`
+    body: `Studio appointments in Mountain House, California have no travel fee. On-location services (the artist traveling to you) are subject to a flat travel fee starting at $200, regardless of distance. For destination events, all travel-related expenses (flights, hotel, per diem) are the client's responsibility.`
   },
   {
     title: 'Limitation of Liability',
