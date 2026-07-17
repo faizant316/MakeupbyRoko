@@ -71,7 +71,11 @@ export async function GET(req) {
 
     const [{ data: classRegs, error: e1 }, { data: bookings, error: e2 }] = await Promise.all([
       supabase.from('class_registrations').select('*').in('payment_status', ['paid', 'paid_in_full']),
-      supabase.from('bookings').select('service, status, created_at').order('created_at', { ascending: false }),
+      // `source` is required so the Booksy filter below actually works — without
+      // it, bk.source is undefined and every imported CRM row leaks into the
+      // stats (the "563 Non-Bridal Makeup" bug). `date` distinguishes real
+      // scheduled items from contact-only imports if we ever need it.
+      supabase.from('bookings').select('service, status, created_at, source, date').order('created_at', { ascending: false }),
     ]);
     if (e1) throw e1;
     if (e2) throw e2;
@@ -133,6 +137,12 @@ export async function GET(req) {
     const peakDayIdx = dayCount.indexOf(Math.max(...dayCount));
     const peakDay    = siteBookings.length ? DAY_NAMES[peakDayIdx] : null;
 
+    // How many rows came in from the Booksy CSV. These live in the Clients list
+    // as the contact base and are deliberately kept OUT of every booking stat;
+    // we surface the count so the dashboard can honestly acknowledge them
+    // without inflating site activity.
+    const importedClients = (bookings || []).filter(b => b.source === 'booksy').length;
+
     return NextResponse.json({
       summary: {
         totalRevenue, thisMonthRevenue, lastMonthRevenue,
@@ -141,6 +151,7 @@ export async function GET(req) {
         paidClassSignups:  classRegs?.length || 0,
         completedBookings: siteBookings.filter(b => b.status === 'completed').length,
         peakDay,
+        importedClients,
       },
       monthlyTrend: buckets,
       classByType,

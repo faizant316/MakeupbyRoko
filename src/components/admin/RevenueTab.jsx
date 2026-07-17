@@ -4,116 +4,9 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { DollarSign, TrendingUp, Users, BookOpen, CheckCircle, Star, Calendar } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, BookOpen, CheckCircle, Star, Calendar, Sparkles } from 'lucide-react';
 
-// ─── Demo data ───────────────────────────────────────────────────────────────
-
-const DEMO_SUMMARY = {
-  totalRevenue:      61400,
-  thisMonthRevenue:  8400,
-  lastMonthRevenue:  7200,
-  totalBookings:     187,
-  thisMonthBookings: 28,
-  lastMonthBookings: 24,
-  paidClassSignups:  18,
-  completedBookings: 143,
-  peakDay:           'Sat',
-};
-
-const DEMO_CLASS_BY_TYPE = [
-  { key: 'private_basic_lesson', title: 'Beginner Makeup Lesson',          price: 520,  count: 12, revenue: 6240 },
-  { key: 'masterclass',          title: 'Advanced Makeup Artist Training', price: 1445, count: 4,  revenue: 5780 },
-];
-
-const DEMO_TOP_SERVICES = [
-  { name: 'Luxury Bridal Look',     count: 24, completed: 22 },
-  { name: 'Non-Bridal Makeup',      count: 19, completed: 17 },
-  { name: 'Full Day Service',       count: 8,  completed: 7  },
-  { name: 'Photoshoot Makeup',      count: 7,  completed: 6  },
-  { name: 'Bridal Trial',           count: 5,  completed: 5  },
-  { name: 'Basic Makeup Lesson',    count: 4,  completed: 4  },
-  { name: 'Advanced Makeup Lesson', count: 2,  completed: 2  },
-];
-
-const DEMO_TRENDS = {
-  '1d': [
-    { shortLabel: '12a', revenue: 0,    bookings: 0 },
-    { shortLabel: '2a',  revenue: 0,    bookings: 0 },
-    { shortLabel: '4a',  revenue: 0,    bookings: 0 },
-    { shortLabel: '6a',  revenue: 0,    bookings: 0 },
-    { shortLabel: '8a',  revenue: 400,  bookings: 1 },
-    { shortLabel: '10a', revenue: 750,  bookings: 1 },
-    { shortLabel: '12p', revenue: 0,    bookings: 0 },
-    { shortLabel: '2p',  revenue: 400,  bookings: 1 },
-    { shortLabel: '4p',  revenue: 0,    bookings: 0 },
-    { shortLabel: '6p',  revenue: 1200, bookings: 1 },
-    { shortLabel: '8p',  revenue: 0,    bookings: 0 },
-    { shortLabel: '10p', revenue: 0,    bookings: 0 },
-  ],
-  '7d': [
-    { shortLabel: 'Mon', revenue: 400,  bookings: 1 },
-    { shortLabel: 'Tue', revenue: 0,    bookings: 0 },
-    { shortLabel: 'Wed', revenue: 750,  bookings: 2 },
-    { shortLabel: 'Thu', revenue: 1700, bookings: 1 },
-    { shortLabel: 'Fri', revenue: 1750, bookings: 3 },
-    { shortLabel: 'Sat', revenue: 2700, bookings: 4 },
-    { shortLabel: 'Sun', revenue: 600,  bookings: 1 },
-  ],
-  '30d': [
-    { shortLabel: '1',  revenue: 400,  bookings: 1 },
-    { shortLabel: '2',  revenue: 0,    bookings: 0 },
-    { shortLabel: '3',  revenue: 400,  bookings: 1 },
-    { shortLabel: '4',  revenue: 400,  bookings: 1 },
-    { shortLabel: '5',  revenue: 1200, bookings: 2 },
-    { shortLabel: '6',  revenue: 2100, bookings: 3 },
-    { shortLabel: '7',  revenue: 600,  bookings: 1 },
-    { shortLabel: '8',  revenue: 0,    bookings: 0 },
-    { shortLabel: '9',  revenue: 400,  bookings: 1 },
-    { shortLabel: '10', revenue: 750,  bookings: 1 },
-    { shortLabel: '11', revenue: 0,    bookings: 0 },
-    { shortLabel: '12', revenue: 1200, bookings: 2 },
-    { shortLabel: '13', revenue: 2100, bookings: 3 },
-    { shortLabel: '14', revenue: 0,    bookings: 0 },
-    { shortLabel: '15', revenue: 400,  bookings: 1 },
-    { shortLabel: '16', revenue: 0,    bookings: 0 },
-    { shortLabel: '17', revenue: 400,  bookings: 1 },
-    { shortLabel: '18', revenue: 1700, bookings: 1 },
-    { shortLabel: '19', revenue: 1200, bookings: 2 },
-    { shortLabel: '20', revenue: 2100, bookings: 3 },
-    { shortLabel: '21', revenue: 400,  bookings: 1 },
-    { shortLabel: '22', revenue: 0,    bookings: 0 },
-    { shortLabel: '23', revenue: 400,  bookings: 1 },
-    { shortLabel: '24', revenue: 750,  bookings: 1 },
-    { shortLabel: '25', revenue: 0,    bookings: 0 },
-    { shortLabel: '26', revenue: 1200, bookings: 2 },
-    { shortLabel: '27', revenue: 2100, bookings: 3 },
-    { shortLabel: '28', revenue: 0,    bookings: 0 },
-    { shortLabel: '29', revenue: 0,    bookings: 0 },
-    { shortLabel: '30', revenue: 400,  bookings: 1 },
-  ],
-  '6m': [
-    { shortLabel: 'Dec', revenue: 4200, bookings: 18 },
-    { shortLabel: 'Jan', revenue: 5800, bookings: 22 },
-    { shortLabel: 'Feb', revenue: 7100, bookings: 26 },
-    { shortLabel: 'Mar', revenue: 6400, bookings: 24 },
-    { shortLabel: 'Apr', revenue: 8200, bookings: 31 },
-    { shortLabel: 'May', revenue: 8400, bookings: 28 },
-  ],
-  '12m': [
-    { shortLabel: 'Jun', revenue: 2100, bookings: 10 },
-    { shortLabel: 'Jul', revenue: 2800, bookings: 13 },
-    { shortLabel: 'Aug', revenue: 3600, bookings: 16 },
-    { shortLabel: 'Sep', revenue: 4500, bookings: 19 },
-    { shortLabel: 'Oct', revenue: 3800, bookings: 16 },
-    { shortLabel: 'Nov', revenue: 4200, bookings: 18 },
-    { shortLabel: 'Dec', revenue: 4200, bookings: 18 },
-    { shortLabel: 'Jan', revenue: 5800, bookings: 22 },
-    { shortLabel: 'Feb', revenue: 7100, bookings: 26 },
-    { shortLabel: 'Mar', revenue: 6400, bookings: 24 },
-    { shortLabel: 'Apr', revenue: 8200, bookings: 31 },
-    { shortLabel: 'May', revenue: 8400, bookings: 28 },
-  ],
-};
+// ─── Ranges ──────────────────────────────────────────────────────────────────
 
 const RANGE_OPTS = [
   { key: '1d',  label: 'Today'    },
@@ -215,19 +108,17 @@ function ChartTooltip({ active, payload, label, dm }) {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function RevenueTab({ darkMode: dm }) {
-  const [range, setRange]           = useState('6m');
-  const [data, setData]             = useState(null);
-  const [initialLoad, setInitial]   = useState(true);
-  const [error, setError]           = useState(null);
-  const [demoMode, setDemoMode]     = useState(false);
+  const [range, setRange]         = useState('6m');
+  const [data, setData]           = useState(null);
+  const [initialLoad, setInitial] = useState(true);
+  const [error, setError]         = useState(null);
 
   useEffect(() => {
-    if (demoMode) { setInitial(false); return; }
     fetch(`/api/admin/revenue?range=${range}`)
       .then(r => r.json())
       .then(d => { setData(d); setInitial(false); })
       .catch(err => { setError(err.message); setInitial(false); });
-  }, [range, demoMode]);
+  }, [range]);
 
   const bg      = dm ? '#26262e' : '#fff';
   const bd      = dm ? '#3a3a48' : '#E2E4EA';
@@ -244,14 +135,11 @@ export default function RevenueTab({ darkMode: dm }) {
     );
   }
 
-  if (error && !demoMode) {
-    return <p className="text-center py-14 text-[0.8rem]" style={{ color: mu }}>Could not load analytics. Try refreshing.</p>;
+  if (error) {
+    return <p className="text-center py-14 text-[0.8rem]" style={{ color: mu }}>Could not load revenue data. Try refreshing.</p>;
   }
 
-  const active = demoMode
-    ? { summary: DEMO_SUMMARY, monthlyTrend: DEMO_TRENDS[range], classByType: DEMO_CLASS_BY_TYPE, topServices: DEMO_TOP_SERVICES }
-    : (data || {});
-  const { summary = {}, monthlyTrend = [], classByType = [], topServices = [] } = active;
+  const { summary = {}, monthlyTrend = [], classByType = [], topServices = [] } = data || {};
 
   const revDelta        = pctDelta(summary.thisMonthRevenue,  summary.lastMonthRevenue);
   const bookDelta       = pctDelta(summary.thisMonthBookings, summary.lastMonthBookings);
@@ -259,35 +147,36 @@ export default function RevenueTab({ darkMode: dm }) {
   const completionRate  = summary.totalBookings ? Math.round((summary.completedBookings / summary.totalBookings) * 100) : 0;
   const avgClassRev     = summary.paidClassSignups ? Math.round(summary.totalRevenue / summary.paidClassSignups) : 0;
   const xInterval       = range === '30d' ? 4 : 0;
+  const importedClients = summary.importedClients || 0;
+
+  // Nothing has been booked or sold through the site yet. Show an honest,
+  // intentional empty hero instead of a wall of zeros that reads as broken.
+  const noActivity = !summary.totalBookings && !summary.totalRevenue && !summary.paidClassSignups;
 
   return (
     <div className="flex flex-col gap-6">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[0.57rem] font-semibold tracking-[0.18em] uppercase mb-0.5" style={{ color: '#D4A0B0' }}>
-            Revenue & Insights
-          </p>
-          <h2 className="text-[1.1rem] font-serif font-light" style={{ color: tx }}>Business Analytics</h2>
-          <p className="text-[0.67rem] mt-0.5" style={{ color: mu }}>
-            Class revenue via Stripe · Appointment booking trends
-          </p>
+      {/* ── Empty-state hero (only before any real site activity) ─────────── */}
+      {noActivity && (
+        <div className="rounded-2xl px-5 py-6 flex items-start gap-4"
+          style={{ background: dm ? '#1a1118' : '#fff9fb', border: '1px solid rgba(212,160,176,0.25)' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(212,160,176,0.14)', border: '1px solid rgba(212,160,176,0.22)' }}>
+            <Sparkles size={17} color="#D4A0B0" strokeWidth={1.5} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[0.9rem] font-semibold mb-1" style={{ color: tx }}>Your revenue starts here</p>
+            <p className="text-[0.74rem] leading-relaxed" style={{ color: mu }}>
+              These numbers track what happens on this website: appointments booked online and classes paid through Stripe.
+              As soon as your first client books or buys a class, it appears here in real time.
+              {importedClients > 0 && (
+                <> Your {importedClients.toLocaleString()} imported Booksy {importedClients === 1 ? 'client is' : 'clients are'} kept
+                in the <span style={{ color: dm ? '#e4b8c6' : '#8A4A63', fontWeight: 600 }}>Clients</span> list as your contact base, and aren't counted as new site bookings.</>
+              )}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => setDemoMode(v => !v)}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full mt-1"
-          style={{
-            background: demoMode ? 'rgba(212,160,176,0.15)' : dm ? '#2e2e38' : '#f5f0ec',
-            border: `1px solid ${demoMode ? 'rgba(212,160,176,0.35)' : dm ? '#3a3a48' : '#E2E4EA'}`,
-          }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: demoMode ? '#D4A0B0' : dm ? '#52525b' : '#ccc' }} />
-          <span className="text-[0.58rem] font-semibold tracking-[0.08em] uppercase" style={{ color: demoMode ? '#D4A0B0' : mu }}>
-            {demoMode ? 'Sample Data' : 'Live Data'}
-          </span>
-        </button>
-      </div>
+      )}
 
       {/* ── Range Selector ──────────────────────────────────── */}
       <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
@@ -330,7 +219,7 @@ export default function RevenueTab({ darkMode: dm }) {
         <p className="text-[0.57rem] font-semibold tracking-[0.16em] uppercase mb-0.5" style={{ color: mu }}>
           {RANGE_TITLE[range]}
         </p>
-        <p className="text-[0.78rem] font-semibold mb-4" style={{ color: tx }}>Bookings & Class Revenue</p>
+        <p className="text-[0.78rem] font-semibold mb-4" style={{ color: tx }}>Bookings &amp; Class Revenue</p>
         <ResponsiveContainer width="100%" height={176}>
           <ComposedChart data={monthlyTrend} margin={{ top: 4, right: 10, left: -22, bottom: 0 }}>
             <CartesianGrid strokeDasharray="2 4" stroke={grid} vertical={false} />
@@ -387,7 +276,13 @@ export default function RevenueTab({ darkMode: dm }) {
         </p>
         <p className="text-[0.78rem] font-semibold mb-4" style={{ color: tx }}>Most Booked Services</p>
         {topServices.length === 0 ? (
-          <p className="text-[0.78rem]" style={{ color: mu }}>No bookings recorded yet.</p>
+          <div className="flex flex-col items-center text-center gap-1.5 py-7">
+            <Calendar size={22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#e0d8d4' }} />
+            <p className="text-[0.76rem] font-medium" style={{ color: tx }}>No online bookings yet</p>
+            <p className="text-[0.66rem] max-w-[260px] leading-relaxed" style={{ color: mu }}>
+              When clients book through the site, your most-requested services rank here automatically.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-3.5">
             {topServices.map((svc, i) => {
@@ -417,10 +312,25 @@ export default function RevenueTab({ darkMode: dm }) {
           </div>
         )}
         <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: `1px solid ${bd}` }}>
-          <span className="text-[0.62rem]" style={{ color: mu }}>{summary.totalBookings || 0} total appointments</span>
+          <span className="text-[0.62rem]" style={{ color: mu }}>{summary.totalBookings || 0} online appointment{summary.totalBookings === 1 ? '' : 's'}</span>
           <span className="text-[0.62rem]" style={{ color: mu }}>{summary.completedBookings || 0} completed</span>
         </div>
       </div>
+
+      {/* ── Booksy import context — kept out of the stats, acknowledged here ── */}
+      {importedClients > 0 && (
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3"
+          style={{ background: dm ? '#1e1e24' : '#FAFAFB', border: `1px solid ${bd}` }}>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(14,143,152,0.1)' }}>
+            <Users size={13} color="#0E8F98" strokeWidth={1.6} />
+          </div>
+          <p className="text-[0.68rem] leading-snug" style={{ color: mu }}>
+            <span style={{ color: tx, fontWeight: 600 }}>{importedClients.toLocaleString()} clients</span> imported from Booksy live in your
+            Clients list. They're your history and contact base, so they're kept out of these site-activity stats.
+          </p>
+        </div>
+      )}
 
     </div>
   );
