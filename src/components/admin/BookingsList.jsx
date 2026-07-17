@@ -352,7 +352,7 @@ export default function BookingsList({
           {viewType === 'appointments' && (activeBookings.length > 0 || completedBookings.length > 0) && (
             <button
               onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
               style={selectMode
                 ? { background: dm ? 'rgba(37,99,235,0.16)' : 'rgba(37,99,235,0.1)', color: '#2563EB' }
                 : { background: dm ? '#26262e' : '#F3F3F7', color: dm ? '#d4d4d8' : '#4b4b53' }}
@@ -370,7 +370,7 @@ export default function BookingsList({
           {onBulkImport && !selectMode && (
             <button
               onClick={onBulkImport}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
               style={{ background: dm ? '#26262e' : '#F3F3F7', color: dm ? '#d4d4d8' : '#4b4b53' }}
               title="Import clients from a Booksy CSV export"
             >
@@ -383,7 +383,7 @@ export default function BookingsList({
           {onAddClient && !selectMode && (
             <button
               onClick={onAddClient}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap"
               style={{ background: dm ? '#2e2e38' : '#111', color: dm ? '#e4e4e7' : '#fff' }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 flex-shrink-0">
