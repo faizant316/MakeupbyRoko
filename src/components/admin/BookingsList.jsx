@@ -239,12 +239,20 @@ export default function BookingsList({
     .filter(b => b.source !== 'booksy' && b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
+  // A booking earns a spot on the appointments list only if it's an actual
+  // appointment or consultation. Booksy-imported CRM contacts (no date and no
+  // consultation) live in the Clients tab, not here, so they never clutter the
+  // list or the Completed Archive. `ed` = the date a booking is scheduled by:
+  // its appointment date, or its consultation date when it's consult-only.
+  const ed = (b) => b.date || b.consultation_date || '';
+  const listable = (bookings || []).filter(b => b.date || b.consultation_date);
+
   // Apply the month filter (appointments list only), then sort chronologically
   const monthScoped = effectiveMonth
-    ? (bookings || []).filter(b => (b.date || '').slice(0, 7) === effectiveMonth)
-    : bookings;
+    ? listable.filter(b => ed(b).slice(0, 7) === effectiveMonth)
+    : listable;
   const sorted = [...monthScoped].sort((a, b) => {
-    const dateCompare = (a.date || '').localeCompare(b.date || '');
+    const dateCompare = ed(a).localeCompare(ed(b));
     if (dateCompare !== 0) return dateCompare;
     return (a.created_date || '').localeCompare(b.created_date || '');
   });
@@ -266,8 +274,8 @@ export default function BookingsList({
   const visibleActive = activeBookings
     .filter(b => (isBridalBooking(b) ? showBridal : showNonBridal))
     .sort((a, b) => {
-      const ad = a.date || '9999-12-31';
-      const bd = b.date || '9999-12-31';
+      const ad = ed(a) || '9999-12-31';
+      const bd = ed(b) || '9999-12-31';
       if (ad !== bd) return ad.localeCompare(bd);
       const ab = isBridalBooking(a) ? 0 : 1;
       const bb = isBridalBooking(b) ? 0 : 1;
@@ -277,7 +285,7 @@ export default function BookingsList({
 
   // Bucket by how soon each appointment is, so the list reads as a timeline
   // instead of one endless run. "Later" folds away by default.
-  const timeGroups = groupByTime(visibleActive, b => b.date);
+  const timeGroups = groupByTime(visibleActive, ed);
 
   const today = new Date().toISOString().split('T')[0];
 
