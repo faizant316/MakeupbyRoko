@@ -14,6 +14,10 @@ const FAQS = [
     a: 'Yes! Roko is a traveling artist available for destination bookings. Studio appointments in Mountain House have no travel fee. On-location services add a flat $200 travel fee, regardless of distance. For destination events, travel and lodging are arranged with the client directly.',
   },
   {
+    q: 'What travel costs apply to destination and out-of-state weddings?',
+    a: 'For all destination and out-of-state bookings, the client covers round-trip airfare, hotel accommodations, and ground transportation (airport transfers, rideshare, or a rental car). If a hairstylist (Hair by Shak) is not also booked for the event, the client also covers airfare for Roko\'s assistant. Saturday destination weddings include reserved travel days before and after the wedding to allow for travel and scheduling.',
+  },
+  {
     q: 'How do I secure my booking?',
     a: 'A deposit via Zelle is required to lock in your date. Once your booking request is received, Roko will confirm within 24–48 hours. The remaining balance is due in cash on the day of your appointment.',
   },
