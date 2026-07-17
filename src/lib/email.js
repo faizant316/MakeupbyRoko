@@ -253,7 +253,7 @@ function cStudio() {
     <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Your Class Location</p>
     <p style="font-size:15px;font-weight:600;color:#16110F;margin:0 0 12px;line-height:1.5;">${STUDIO_DISPLAY}</p>
     ${STUDIO_ADDRESS ? clientButton(STUDIO_MAPS_URL, 'Get Directions', true) : ''}
-    <p style="font-size:11px;color:#A99FA4;margin:12px 0 0;">Roko's studio · Mountain House, CA</p>
+    <p style="font-size:11px;color:#A99FA4;margin:12px 0 0;">Roko's studio</p>
   </td></tr></table>`;
 }
 
