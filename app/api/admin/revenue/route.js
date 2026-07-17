@@ -110,7 +110,12 @@ export async function GET(req) {
     const dayCount    = [0, 0, 0, 0, 0, 0, 0]; // Sun=0 … Sat=6
     let thisMonthBookings = 0, lastMonthBookings = 0;
 
-    (bookings || []).forEach(bk => {
+    // Booksy-imported clients are historical CRM records, not site activity —
+    // they'd swamp every counter (563 "completed" rows on import day), so all
+    // booking analytics ignore them. Class revenue is untouched either way.
+    const siteBookings = (bookings || []).filter(bk => bk.source !== 'booksy');
+
+    siteBookings.forEach(bk => {
       const mk     = bk.created_at.substring(0, 7);
       const bktKey = getBucketKey(bk.created_at, range);
       if (mk === thisMonthKey) thisMonthBookings++;
@@ -126,15 +131,15 @@ export async function GET(req) {
     });
 
     const peakDayIdx = dayCount.indexOf(Math.max(...dayCount));
-    const peakDay    = bookings?.length ? DAY_NAMES[peakDayIdx] : null;
+    const peakDay    = siteBookings.length ? DAY_NAMES[peakDayIdx] : null;
 
     return NextResponse.json({
       summary: {
         totalRevenue, thisMonthRevenue, lastMonthRevenue,
-        totalBookings:     bookings?.length || 0,
+        totalBookings:     siteBookings.length,
         thisMonthBookings, lastMonthBookings,
         paidClassSignups:  classRegs?.length || 0,
-        completedBookings: bookings?.filter(b => b.status === 'completed').length || 0,
+        completedBookings: siteBookings.filter(b => b.status === 'completed').length,
         peakDay,
       },
       monthlyTrend: buckets,

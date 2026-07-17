@@ -195,11 +195,14 @@ export default function Admin() {
 
   const today = new Date().toISOString().split('T')[0];
   const todayCount = bookings.filter(b => b.date === today).length;
-  const pendingCount = bookings.filter(b => b.status === 'pending').length;
-  const confirmedCount = bookings.filter(b => b.status === 'confirmed').length;
-  const completedCount = bookings.filter(b => b.status === 'completed').length;
-  const cancelledCount = bookings.filter(b => b.status === 'cancelled').length;
-  const statusCounts = { all: bookings.length, pending: pendingCount, confirmed: confirmedCount, completed: completedCount, cancelled: cancelledCount };
+  // Status chips count site activity only — Booksy-imported clients are CRM
+  // records (they live in Clients), not appointments needing action.
+  const siteBookings = bookings.filter(b => b.source !== 'booksy');
+  const pendingCount = siteBookings.filter(b => b.status === 'pending').length;
+  const confirmedCount = siteBookings.filter(b => b.status === 'confirmed').length;
+  const completedCount = siteBookings.filter(b => b.status === 'completed').length;
+  const cancelledCount = siteBookings.filter(b => b.status === 'cancelled').length;
+  const statusCounts = { all: siteBookings.length, pending: pendingCount, confirmed: confirmedCount, completed: completedCount, cancelled: cancelledCount };
 
   const dm = darkMode;
 

@@ -232,10 +232,11 @@ export default function BookingsList({
     setCollapsedGroups(effectiveMonth ? {} : { later: true });
   }, [effectiveMonth]);
 
-  // Recent bookings: created within the last 24 hours (uses allBookings, unfiltered)
+  // Recent bookings: created within the last 24 hours (uses allBookings, unfiltered).
+  // Booksy imports are excluded — importing 563 clients shouldn't wall the rail.
   const now = Date.now();
   const recentBookings = (allBookings || [])
-    .filter(b => b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
+    .filter(b => b.source !== 'booksy' && b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   // Apply the month filter (appointments list only), then sort chronologically
