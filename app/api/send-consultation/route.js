@@ -11,7 +11,7 @@ export async function POST(req) {
     const supabase = createClient();
     const {
       bookingId, clientEmail, clientName, serviceName,
-      consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated,
+      consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated, migrated,
     } = await req.json();
 
     if (!bookingId || !clientEmail || !consultationDate || !consultationTime) {
@@ -41,10 +41,12 @@ export async function POST(req) {
     // Client email
     await sendEmail({
       to: clientEmail,
-      subject: updated
+      subject: migrated
+        ? `Makeup by Roko has a new home ✦ your consultation on ${consultationDate}`
+        : updated
         ? `Updated consultation time: ${consultationDate} at ${consultationTime}`
         : `Your consultation is scheduled for ${consultationDate} at ${consultationTime}`,
-      html: consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated }),
+      html: consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated, migrated }),
     });
 
     // Admin notification (fire-and-forget, don't fail the request if this errors)
