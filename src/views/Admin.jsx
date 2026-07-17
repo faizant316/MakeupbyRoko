@@ -473,7 +473,7 @@ export default function Admin() {
                 <>
                   <div className="mb-8">
                     <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
-                      defaultDayOnMobile
+                      defaultDay
                       onSelectBooking={setSelectedBooking}
                       onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
                   </div>
