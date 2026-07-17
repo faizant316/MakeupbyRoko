@@ -195,10 +195,10 @@ export default function Admin() {
 
   const today = new Date().toISOString().split('T')[0];
   const todayCount = bookings.filter(b => b.date === today).length;
-  // Status chips count real appointments only. Booksy-imported rows WITHOUT a
-  // date are CRM records (they live in Clients); imported rows WITH a date are
-  // migrated upcoming appointments and count like any other booking.
-  const siteBookings = bookings.filter(b => b.source !== 'booksy' || b.date);
+  // Status chips count real appointments/consultations only. Booksy-imported
+  // rows with neither a date nor a consultation are CRM contacts (they live in
+  // Clients); rows with a date OR a consultation are real scheduled items.
+  const siteBookings = bookings.filter(b => b.source !== 'booksy' || b.date || b.consultation_date);
   const pendingCount = siteBookings.filter(b => b.status === 'pending').length;
   const confirmedCount = siteBookings.filter(b => b.status === 'confirmed').length;
   const completedCount = siteBookings.filter(b => b.status === 'completed').length;

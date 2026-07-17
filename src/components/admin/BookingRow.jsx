@@ -6,7 +6,11 @@ import { phoneHref } from '@/lib/phone';
 // in the modal opened on click, so the row only carries what helps you scan:
 // who, when, what, and status. Bridal rows are tagged and tinted.
 export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dimmed, selectable, selected }) {
-  const rel = relativeDate(booking.date);
+  // Consult-only bookings have no appointment date — show their consultation
+  // date/time so they read as scheduled, not "No date".
+  const consultOnly = !booking.date && !!booking.consultation_date;
+  const rel = relativeDate(booking.date || booking.consultation_date);
+  const rowTime = booking.date ? booking.time : booking.consultation_time;
   const initial = (booking.name || '?').trim().charAt(0).toUpperCase() || '?';
 
   const dateColor = rel.tone === 'accent'
@@ -119,9 +123,9 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
 
       {/* Date + status */}
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: dateColor }}>
+        <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: consultOnly ? '#8B5CF6' : dateColor }}>
           {rel.label}
-          {booking.time && <span className="font-normal" style={{ color: mutedColor }}> · {booking.time}</span>}
+          {rowTime && <span className="font-normal" style={{ color: mutedColor }}> · {rowTime}</span>}
         </span>
         <StatusBadge status={booking.status} />
       </div>
