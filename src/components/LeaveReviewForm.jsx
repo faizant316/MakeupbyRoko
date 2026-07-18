@@ -140,7 +140,7 @@ export default function LeaveReviewForm() {
     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4 relative z-10 pointer-events-auto">
       {/* Star rating with live label */}
       <div>
-        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2">Your Rating</label>
+        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-2">Your Rating</label>
         <div className="flex items-center gap-3">
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -166,7 +166,7 @@ export default function LeaveReviewForm() {
       </div>
 
       <div>
-        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Your Name *</label>
+        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-1.5">Your Name *</label>
         <input
           required
           value={form.name}
@@ -179,7 +179,7 @@ export default function LeaveReviewForm() {
       {/* Service + Location side by side on wider screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Service</label>
+          <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-1.5">Service</label>
           {/* Mobile: native select — triggers iOS wheel picker / Android dialog */}
           <div className="relative md:hidden">
             <select
@@ -210,7 +210,7 @@ export default function LeaveReviewForm() {
         </div>
 
         <div>
-          <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Occasion / Location</label>
+          <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-1.5">Occasion / Location</label>
           <input
             value={form.location}
             onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -222,7 +222,7 @@ export default function LeaveReviewForm() {
 
       {/* Highlight chips */}
       <div>
-        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2">
+        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-2">
           What did you love? <span className="font-normal lowercase tracking-normal text-[#bbb]">· optional</span>
         </label>
         <div className="flex flex-wrap gap-1.5">
@@ -246,7 +246,7 @@ export default function LeaveReviewForm() {
       </div>
 
       <div>
-        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">Your Review *</label>
+        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-1.5">Your Review *</label>
         <textarea
           required
           value={form.message}
@@ -258,7 +258,7 @@ export default function LeaveReviewForm() {
 
       {/* Optional photo */}
       <div>
-        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-1.5">
+        <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-1.5">
           Add a Photo <span className="font-normal lowercase tracking-normal text-[#bbb]">· optional</span>
         </label>
         {form.photo ? (
