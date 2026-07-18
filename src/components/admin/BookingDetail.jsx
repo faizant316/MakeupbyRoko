@@ -620,6 +620,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
   });
   const openSchedule = () => { setScheduleDay(booking.date || scheduleDay); setShowSchedule(true); };
+  // Roko's own private notes on this booking (never shown to the client). Seeded
+  // from the row; re-synced whenever a different booking is opened.
+  const [adminNotes, setAdminNotes] = useState(booking.admin_notes || '');
+  const [notesEditing, setNotesEditing] = useState(false);
+  useEffect(() => { setAdminNotes(booking.admin_notes || ''); setNotesEditing(false); }, [booking.id, booking.admin_notes]);
   const [celebrate, setCelebrate] = useState(false);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -794,6 +799,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     setTimeout(() => setToast(null), 2200);
   };
 
+  const saveAdminNotes = () => {
+    const v = adminNotes.trim();
+    onUpdateBooking({ admin_notes: v || null });
+    setNotesEditing(false);
+    showToast('Notes saved', '#888');
+  };
+
   const handleStatusChange = (s) => {
     if (booking.status === s) return;
     // Bridal: confirming happens by scheduling the consultation, which sends one
@@ -844,7 +856,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     : '';
 
   const notes = parseBookingNotes(booking.notes);
-  const hasNotes = !!(notes.readyBy || notes.comment || notes.flags.length);
 
   // Same-client matcher: email when present, else phone. Booksy imports can be
   // phone-only (email null), and matching on a shared null email would lump
@@ -1296,51 +1307,220 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </div>
         )}
 
-        {hasNotes && (
-          <div className="mb-6">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
-
-            {/* Ready-by + appointment window + flags as their own labeled chips.
-                The appointment chip sits right beside ready-by so Roko can sanity
-                check the two together (e.g. ready-by 3 PM vs appointment 12–2). */}
-            {(notes.readyBy || notes.flags.length > 0 || booking.time) && (
-              <div className="flex flex-wrap gap-2 mb-2.5">
-                {booking.time && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                    style={{ background: dm ? 'rgba(196,132,154,0.16)' : 'rgba(196,132,154,0.12)', border: `1px solid ${dm ? 'rgba(196,132,154,0.35)' : 'rgba(196,132,154,0.32)'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#c89aab' : '#A0607A' }}>Appointment</span>
-                    <span className="text-[0.78rem] font-semibold tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{booking.time}</span>
-                  </span>
+        {/* ── Appointment & Notes hub ───────────────────────────────────────────
+            One always-visible place for everything about timing: the appointment
+            window, what the client asked to be ready by, and Roko's own private
+            notes. Changing the time and opening the day schedule both live here,
+            so there's no separate time section further down the card. */}
+        <div ref={timeSectionRef} className="mb-6 flex flex-col gap-3">
+          {/* Appointment / ready-by card */}
+          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, background: dm ? '#1e1e24' : '#fff' }}>
+            <div className="flex items-center justify-between gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
+              <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
+              <div className="flex items-center gap-1.5">
+                <button type="button" onClick={openSchedule} title="See your day side by side"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.62rem] font-semibold transition-all hover:opacity-85"
+                  style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Schedule
+                </button>
+                {!showTimePicker && (
+                  <button type="button" onClick={openTimePicker}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-90"
+                    style={{ background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.3)' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    {booking.time ? 'Change time' : 'Set time'}
+                  </button>
                 )}
-                {notes.readyBy && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                    style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.3)'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Ready by</span>
-                    <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{notes.readyBy}</span>
-                  </span>
-                )}
-                {notes.flags.map((f, i) => (
-                  <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
-                    style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#C76BA6' }}>
-                    {f}
-                  </span>
-                ))}
               </div>
-            )}
+            </div>
 
-            {/* Free-text comment, clearly labeled as the client's own note */}
-            {notes.comment && (
-              <div className="px-4 py-3" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
-                <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM }}>Additional Comments</p>
-                <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>
-                  {notes.comment}
-                </p>
+            {!showTimePicker ? (
+              <>
+                <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
+                  {/* Appointment window */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(196,132,154,0.12)' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment</p>
+                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums truncate" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#2C1A14') : (dm ? '#71717a' : '#b6aeb2') }}>
+                        {booking.time || 'Not set yet'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Ready-by — laid out beside the appointment so the two read
+                      together at a glance (e.g. appointment 7–9 AM · ready by 11). */}
+                  {notes.readyBy ? (
+                    <>
+                      <div className="hidden sm:block w-px self-stretch" style={{ background: dm ? '#2e2e38' : '#f0eae4' }} />
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Client wants to be ready by</p>
+                          <p className="text-[1.02rem] font-semibold leading-tight tabular-nums truncate" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{notes.readyBy}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : <span className="hidden sm:block" />}
+                </div>
+
+                {/* Travel / early-arrival flags */}
+                {notes.flags.length > 0 && (
+                  <div className="px-4 pb-4 -mt-1 flex flex-wrap gap-2">
+                    {notes.flags.map((f, i) => (
+                      <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
+                        style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#C76BA6' }}>
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Inline time picker (opened by Change time or the hero card) */
+              <div className="px-4 py-4">
+                <TimeWindowPicker value={pendingWindow} onChange={setPendingWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
+                <div className="flex gap-2 mt-4">
+                  <button type="button" onClick={() => setShowTimePicker(false)}
+                    className="px-5 py-3 rounded-[8px] text-[0.72rem] font-semibold transition-all touch-manipulation"
+                    style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!pendingStart}
+                    onClick={() => {
+                      if (!pendingStart) return;
+                      const changed = pendingWindow !== booking.time;
+                      onUpdateBooking({ time: pendingWindow });
+                      setShowTimePicker(false);
+                      showToast(`Time set to ${pendingWindow}`, '#888');
+                      if (booking.status === 'confirmed' && changed) {
+                        setUpdateNoticeSent(false);
+                        setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: pendingWindow }] });
+                        setShowReconfirmBanner(true);
+                      }
+                    }}
+                    className="flex-1 py-3 rounded-[8px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
+                    style={pendingStart
+                      ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
+                      : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                    }
+                  >
+                    {pendingStart ? `Set to ${pendingWindow}` : 'Tap a start time above'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-        )}
+
+          {/* Reconfirm banner — appears when the time changes on a confirmed booking */}
+          {showReconfirmBanner && booking.status === 'confirmed' && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-[10px]"
+              style={{
+                background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.07)',
+                border: '1px solid rgba(59,130,246,0.3)',
+                animation: 'fadeSlideDown 0.3s ease-out',
+              }}>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.15)' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Booking updated</p>
+                  <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Review &amp; send {firstName} the update to re-sign</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                <button
+                  onClick={() => openChangeNotice()}
+                  className="px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold text-white transition-all"
+                  style={{ background: '#2563EB' }}>
+                  Message {firstName} →
+                </button>
+                <button
+                  onClick={() => setShowReconfirmBanner(false)}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg"
+                  style={{ background: 'rgba(0,0,0,0.06)', color: dm ? '#71717a' : '#aaa' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Notes card — the client's own comment, plus Roko's private notes */}
+          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, background: dm ? '#1e1e24' : '#fff' }}>
+            <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
+              <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
+            </div>
+            <div className="px-4 py-4 flex flex-col gap-4">
+              {/* Client's additional comments */}
+              {notes.comment && (
+                <div>
+                  <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM }}>From the client</p>
+                  <div className="px-4 py-3" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
+                    <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{notes.comment}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Roko's private notes */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+                    My Notes <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400, color: dm ? '#52525b' : '#c4b8bf' }}>· private, only you</span>
+                  </p>
+                  {!notesEditing && (
+                    <button type="button" onClick={() => setNotesEditing(true)}
+                      className="inline-flex items-center gap-1 text-[0.62rem] font-semibold transition-opacity hover:opacity-75" style={{ color: '#C4849A' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      {adminNotes ? 'Edit' : 'Add'}
+                    </button>
+                  )}
+                </div>
+
+                {notesEditing ? (
+                  <div>
+                    <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} autoFocus
+                      placeholder="Jot anything just for you — allergies, skin notes, reminders…"
+                      className="w-full px-3.5 py-3 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
+                      style={{ fontSize: '15px', minHeight: '84px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                    <div className="flex gap-2 mt-2">
+                      <button type="button" onClick={() => { setAdminNotes(booking.admin_notes || ''); setNotesEditing(false); }}
+                        className="px-4 py-2.5 rounded-[8px] text-[0.72rem] font-semibold transition-all"
+                        style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+                        Cancel
+                      </button>
+                      <button type="button" onClick={saveAdminNotes}
+                        className="flex-1 py-2.5 rounded-[8px] text-[0.73rem] font-semibold tracking-[0.04em] transition-all"
+                        style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                        Save note
+                      </button>
+                    </div>
+                  </div>
+                ) : adminNotes ? (
+                  <button type="button" onClick={() => setNotesEditing(true)}
+                    className="w-full text-left px-4 py-3 rounded-[10px] transition-all hover:opacity-90"
+                    style={{ background: dm ? '#27272a' : '#FBF9F7', border: `1px solid ${dm ? '#3a3a48' : '#eee'}` }}>
+                    <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#d4d4d8' : '#4a4a52' }}>{adminNotes}</p>
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setNotesEditing(true)}
+                    className="w-full flex items-center gap-2 px-4 py-3 rounded-[10px] transition-all hover:opacity-90"
+                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px dashed ${dm ? '#3a3a48' : '#d9d1cb'}`, color: dm ? '#71717a' : '#a99f9a' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-3.5 h-3.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span className="text-[0.78rem] font-medium">Add a private note…</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Bridal Inquiry Details */}
         {isBridal && bridalInquiry && (
@@ -1354,7 +1534,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {/* Wedding timeline */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5">
                 <BField dm={dm} label="Wedding Date" value={biWedding} />
-                <BField dm={dm} label="Preferred Appt" value={biPreferred} />
+                {/* Preferred Appt only when it actually differs from the wedding
+                    date — otherwise it just repeats the same day (redundant). */}
+                {bridalInquiry.preferred_date && bridalInquiry.preferred_date !== bridalInquiry.wedding_date && (
+                  <BField dm={dm} label="Preferred Appt" value={biPreferred} />
+                )}
                 <BField dm={dm} label="Event Start" value={bridalInquiry.event_start_time} />
                 <BField dm={dm} label="Ready By (Requested)" value={bridalInquiry.makeup_ready_by_time} accent />
                 <BField dm={dm} label="Venue Access" value={bridalInquiry.venue_access_time} />
@@ -1493,132 +1677,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Reference Photos */}
         <BookingReferencePhotos booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
-
-        {/* Appointment Time Setter */}
-        <div ref={timeSectionRef} className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0]">Appointment Time</p>
-            <button type="button" onClick={openSchedule} title="See your day side by side"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.62rem] font-semibold transition-all hover:opacity-85"
-              style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Schedule
-            </button>
-          </div>
-
-          {/* Trigger — current time window (clickable) or empty state button */}
-          {!showTimePicker && (
-            booking.time ? (
-              <button
-                type="button"
-                onClick={openTimePicker}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[6px] transition-all touch-manipulation hover:opacity-80 active:opacity-60"
-                style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  </div>
-                  <p className="text-[0.9rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>{booking.time}</p>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#ccc'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={openTimePicker}
-                className="w-full flex items-center justify-between px-4 py-3.5 rounded-[6px] touch-manipulation transition-all hover:opacity-80"
-                style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  </div>
-                  <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#71717a' : '#888' }}>Set Appointment Time</p>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" className="w-3.5 h-3.5 opacity-40"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            )
-          )}
-
-          {/* Time picker — modern two-tap window (start → end) */}
-          {showTimePicker && (
-            <div className="rounded-[10px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-              <div className="flex items-center justify-between px-4 py-3" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f0f0f0'}` }}>
-                <p className="text-[0.55rem] font-bold tracking-[0.16em] uppercase" style={{ color: '#D4A0B0' }}>Set Time Window</p>
-                <button type="button" onClick={() => setShowTimePicker(false)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full transition-all touch-manipulation"
-                  style={{ background: dm ? '#3f3f46' : '#f0f0f0', color: dm ? '#71717a' : '#888' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-
-              <div className="p-4" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-                <TimeWindowPicker value={pendingWindow} onChange={setPendingWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
-
-                <button
-                  type="button"
-                  disabled={!pendingStart}
-                  onClick={() => {
-                    if (!pendingStart) return;
-                    const changed = pendingWindow !== booking.time;
-                    onUpdateBooking({ time: pendingWindow });
-                    setShowTimePicker(false);
-                    showToast(`Time set to ${pendingWindow}`, '#888');
-                    if (booking.status === 'confirmed' && changed) {
-                      setUpdateNoticeSent(false);
-                      setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: pendingWindow }] });
-                      setShowReconfirmBanner(true);
-                    }
-                  }}
-                  className="w-full mt-4 py-3 rounded-[8px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
-                  style={pendingStart
-                    ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
-                    : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
-                  }
-                >
-                  {pendingStart ? `Set to ${pendingWindow}` : 'Tap a start time above'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Reconfirm banner — appears when time changes on a confirmed booking */}
-          {showReconfirmBanner && booking.status === 'confirmed' && (
-            <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-[6px]"
-              style={{
-                background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.07)',
-                border: '1px solid rgba(59,130,246,0.3)',
-                animation: 'fadeSlideDown 0.3s ease-out',
-              }}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Booking updated</p>
-                  <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Review &amp; send {firstName} the update to re-sign</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                <button
-                  onClick={() => openChangeNotice()}
-                  className="px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold text-white transition-all"
-                  style={{ background: '#2563EB' }}>
-                  Message {firstName} →
-                </button>
-                <button
-                  onClick={() => setShowReconfirmBanner(false)}
-                  className="w-6 h-6 flex items-center justify-center rounded-lg"
-                  style={{ background: 'rgba(0,0,0,0.06)', color: dm ? '#71717a' : '#aaa' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Status & Consultation — for bridal these act as one unit: confirming a
             bridal booking happens by scheduling the consultation (one combined email). */}
