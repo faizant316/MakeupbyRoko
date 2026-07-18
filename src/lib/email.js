@@ -784,6 +784,9 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
 
 export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
+  // A trial is a studio appointment, so its one time field is the bride's
+  // preferred time, not an "event start" — label it accordingly for Roko.
+  const isTrialPkg = /trial/i.test(bridalTitle || '');
 
   const clientRows = [
     row('Name', fullName),
@@ -802,7 +805,7 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
   ].filter(Boolean).join('');
 
   const timingRows = [
-    eventStartTime ? row('Event Starts', eventStartTime) : '',
+    eventStartTime ? row(isTrialPkg ? 'Preferred Time' : 'Event Starts', eventStartTime) : '',
     makeupReadyByTime ? row('Ready By (Requested)', makeupReadyByTime) : '',
     venueAccessTime ? row('Venue Access', venueAccessTime) : '',
     hairstylistArriveBy ? row('Hairstylist Arrive By', hairstylistArriveBy) : '',
