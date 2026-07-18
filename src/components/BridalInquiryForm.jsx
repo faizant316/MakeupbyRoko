@@ -315,6 +315,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     });
   }, [registerBack]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Trials are always held at the studio, so there's no location question on the
+  // form — we quietly stamp the studio as the location so the admin card + recap
+  // + email still show where it's happening.
+  useEffect(() => {
+    if (isTrial) setForm(f => f.event_location ? f : { ...f, event_location: STUDIO_READY_VALUE });
+  }, [isTrial]);
+
   const year = calDate.getFullYear();
   const month = calDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -334,7 +341,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   };
 
   const handleContinue = () => {
-    if (!selectedDate) { alert('Please select your wedding date from the calendar.'); return; }
+    if (!selectedDate) { alert(`Please select your ${dateNoun} date from the calendar.`); return; }
     goStep('form');
   };
 
@@ -344,10 +351,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     if (!form.soon_to_be_last_name) { alert('Please enter the last name.'); return; }
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
-    if (!selectedDate) { alert('Please select your wedding date from the calendar.'); return; }
-    // Standard Luxury Bridal Look asks "where would you like to get ready?" (studio
-    // vs. somewhere else); Full Day / Trial keep the plain on-location fields.
-    if (isFullDay || isTrial) {
+    if (!selectedDate) { alert(`Please select your ${dateNoun} date from the calendar.`); return; }
+    // A trial is a studio appointment — the only detail we need here is her
+    // preferred time (Roko confirms + can move it). No venue / vendor fields.
+    if (isTrial) {
+      if (!form.event_start_time) { alert('Please pick a preferred time for your trial.'); return; }
+      goStep('sign');
+      return;
+    }
+    // Full Day travels on-location; the standard Luxury Bridal Look asks "where
+    // would you like to get ready?" (studio vs. somewhere else).
+    if (isFullDay) {
       if (!form.event_location) { alert('Please enter the event location.'); return; }
       if (!form.venue_access_time) { alert('Please select the venue access time.'); return; }
     } else {
@@ -396,7 +410,11 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         // pipe-delimited segment so the admin card parses the time, the comment,
         // and the agreement cleanly instead of lumping them together.
         notes: [
-          `Ready by: ${form.makeup_ready_by_time || 'Not specified'}`,
+          // A trial has no "ready by" — its one time is her preferred appointment
+          // time (stored in event_start_time), so surface that instead.
+          isTrial
+            ? `Preferred time: ${form.event_start_time || 'Flexible'}`
+            : `Ready by: ${form.makeup_ready_by_time || 'Not specified'}`,
           form.additional_details?.trim() || null,
           `✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`,
         ].filter(Boolean).join(' | '),
@@ -482,8 +500,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Email', value: form.email },
       { label: 'Phone', value: form.phone },
       { label: 'Instagram / TikTok', value: form.instagram_handle },
-      { label: (isFullDay || isTrial) ? 'Event location' : 'Getting ready', value: form.event_location },
-      { label: 'Event start time', value: form.event_start_time },
+      { label: isTrial ? 'Location' : isFullDay ? 'Event location' : 'Getting ready', value: form.event_location },
+      { label: isTrial ? 'Preferred time' : 'Event start time', value: form.event_start_time },
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
@@ -803,6 +821,25 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <p className="text-[0.85rem] text-gray-400">Fields marked * are required.</p>
             </div>
 
+            {/* Studio-only note for trials — prominent (its own card, right at the
+                top of the details) but calm: soft border, muted pink accent, no
+                loud fill. Replaces the old "Event Location" question entirely. */}
+            {isTrial && (
+              <div className="rounded-xl border border-[#EDDFE6] bg-[#FDFAFB] px-4 py-3.5 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-4 h-4">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#C4849A] mb-0.5">Held at Roko's Studio</p>
+                  <p className="text-[0.82rem] leading-[1.6] text-[#6E6058]">
+                    All trials take place at Roko's studio in <strong className="text-[#4A423E]">Mountain House</strong>. She'll share the exact address once your date is confirmed.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Bride's First Name *</label>
@@ -830,6 +867,56 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <input value={form.instagram_handle} onChange={e => set('instagram_handle', e.target.value)} placeholder="@yourusername" className={inputClass} />
             </div>
 
+            {isTrial ? (
+              <>
+                <div className="w-full h-px bg-gray-100" />
+
+                {/* Preferred trial time — her preference; Roko sets + can move it
+                    with the clean time picker in admin. The one timing field a
+                    trial needs, so it gets the soft pink "about you" accent. */}
+                <div className="relative pl-3.5">
+                  <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
+                  <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time works best for you? *</label>
+                  <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
+                  <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
+                    Your preferred start time for the trial. Roko confirms the final time and can move it with you if needed.
+                  </p>
+                </div>
+
+                <div className="w-full h-px bg-gray-100" />
+
+                {/* Makeup vision — the whole point of a trial, so it leads the details. */}
+                <div>
+                  <label className={labelClass}>The Look You're Going For</label>
+                  <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Tell Roko the vibe you want to try, skin concerns, or anything specific. Inspo pics welcome.</p>
+                  <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="Soft glam, a bold eye, dewy skin... whatever you're dreaming of. Anything I should know before your trial." className={`${inputClass} resize-none h-[90px] border-b`} />
+                </div>
+
+                {/* Photos note — same personal upload-link flow, framed for the trial. */}
+                <div>
+                  <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
+                  <div className="relative pl-3.5 mt-1.5">
+                    <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                    <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
+                    <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
+                      You'll get a personal upload link to send recent photos of yourself <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without makeup</span>. These help Roko study your features and plan your look before the trial. You'll add them from that link, not here.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <CustomSelect
+                    label="How Did You Hear About Me?"
+                    labelClass={labelClass}
+                    value={form.how_heard}
+                    onChange={(v) => set('how_heard', v)}
+                    placeholder="Select an option"
+                    options={['Instagram','TikTok','Facebook','Vendor Referral','Client Referral','Google','Other']}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
             <div className="w-full h-px bg-gray-100" />
 
             {/* Timing — each on its own line so nothing feels crammed. Hairstylist
@@ -872,7 +959,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </p>
             </div>
 
-            {isFullDay || isTrial ? (
+            {isFullDay ? (
               <div>
                 <label className={labelClass}>Event Location *</label>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
@@ -937,7 +1024,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
 
-            {(isFullDay || isTrial) && (
+            {isFullDay && (
               <div>
                 <label className={labelClass}>Venue Access Time *</label>
                 <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
@@ -1073,6 +1160,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <label className={labelClass}>Makeup Vision & Additional Details</label>
               <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="Your makeup vision, anything I should know about your day, and any out-of-state notes. Inspo welcome." className={`${inputClass} resize-none h-[80px] border-b`} />
             </div>
+              </>
+            )}
 
             <p className="text-[0.65rem] text-center text-gray-400">
               Roko will confirm within 24–48 hours · {bridalDeposit} secures your date <span className="text-[#D4A0B0]">✦</span>
