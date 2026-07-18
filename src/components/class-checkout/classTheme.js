@@ -10,6 +10,7 @@ export const PLUM = {
   rose: '#C4849A',      // rose accent — eyebrows, labels, note border
   pink: '#D4A0B0',      // brand pink accent
   gray: '#8b868d',      // muted gray text
+  label: '#6b676d',     // darker gray — field labels (a touch stronger than gray)
   grayLt: '#b7b3b8',    // light gray — hints / disabled text
   tint: '#FCFBFC',      // near-white (faintest warm) card base
   tint2: '#F7F4F5',     // light neutral for card headers / footers

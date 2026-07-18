@@ -25,8 +25,14 @@ import ServiceFAQ from './ServiceFAQ';
 import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
 import LocationAutocomplete from './LocationAutocomplete';
+import { STUDIO_TOWN } from '@/lib/studio';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
+
+// When a bride chooses to get ready at the studio, we store this readable label
+// as her location so it flows into the admin card + email exactly like a typed
+// address would (no separate "is it the studio?" flag needed downstream).
+const STUDIO_READY_VALUE = `Roko's Studio (${STUDIO_TOWN})`;
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
@@ -38,7 +44,7 @@ function getMinBookingDate() {
 }
 
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
-const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#999] uppercase mb-2";
+const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
 
 function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -271,7 +277,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const [uploadToken, setUploadToken] = useState(null);
   const [form, setForm] = useState({
     bride_name: '', soon_to_be_last_name: '', email: '', phone: '',
-    instagram_handle: '', wedding_date: '', event_location: '',
+    instagram_handle: '', wedding_date: '', event_location: '', ready_location_type: undefined,
     event_start_time: '', photographer: '', hairstylist: '',
     venue_access_time: '', bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
     ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
@@ -339,9 +345,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     if (!form.email) { alert('Please enter your email address.'); return; }
     if (!form.phone) { alert('Please enter your phone number.'); return; }
     if (!selectedDate) { alert('Please select your wedding date from the calendar.'); return; }
-    if (!form.event_location) { alert('Please enter the event location.'); return; }
+    // Standard Luxury Bridal Look asks "where would you like to get ready?" (studio
+    // vs. somewhere else); Full Day / Trial keep the plain on-location fields.
+    if (isFullDay || isTrial) {
+      if (!form.event_location) { alert('Please enter the event location.'); return; }
+      if (!form.venue_access_time) { alert('Please select the venue access time.'); return; }
+    } else {
+      if (!form.ready_location_type) { alert('Please choose where you\'d like to get ready.'); return; }
+      if (form.ready_location_type === 'elsewhere' && !form.event_location) { alert('Please add the address or venue where you\'ll be getting ready.'); return; }
+    }
     if (!form.event_start_time) { alert('Please select the event start time.'); return; }
-    if (!form.venue_access_time) { alert('Please select the venue access time.'); return; }
     if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
     goStep('sign');
   };
@@ -469,7 +482,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Email', value: form.email },
       { label: 'Phone', value: form.phone },
       { label: 'Instagram / TikTok', value: form.instagram_handle },
-      { label: 'Event location', value: form.event_location },
+      { label: (isFullDay || isTrial) ? 'Event location' : 'Getting ready', value: form.event_location },
       { label: 'Event start time', value: form.event_start_time },
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
@@ -859,10 +872,60 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </p>
             </div>
 
-            <div>
-              <label className={labelClass}>Event Location *</label>
-              <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
-            </div>
+            {isFullDay || isTrial ? (
+              <div>
+                <label className={labelClass}>Event Location *</label>
+                <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
+              </div>
+            ) : (
+              <div>
+                <label className={labelClass}>Where would you like to get ready? *</label>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Wherever you'll be when Roko does your makeup, not necessarily the venue. Get ready at her studio, or she'll come to your hotel, home, or venue.</p>
+                <div className="flex gap-3 mt-1">
+                  {[
+                    { key: 'studio', title: "Roko's studio", sub: 'Mountain House' },
+                    { key: 'elsewhere', title: 'Somewhere else', sub: 'Hotel, home or venue' },
+                  ].map(opt => {
+                    const active = form.ready_location_type === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => {
+                          set('ready_location_type', opt.key);
+                          // Keep event_location in lockstep: studio stores the readable
+                          // studio label, "somewhere else" clears it for the bride to type.
+                          set('event_location', opt.key === 'studio' ? STUDIO_READY_VALUE : '');
+                        }}
+                        className={`flex-1 px-4 py-3 rounded-xl border text-left transition-all ${
+                          active ? 'bg-[#111] border-[#111]' : 'bg-white border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <span className={`block text-[0.82rem] font-medium ${active ? 'text-white' : 'text-[#333]'}`}>{opt.title}</span>
+                        <span className={`block text-[0.66rem] mt-0.5 ${active ? 'text-white/65' : 'text-gray-400'}`}>{opt.sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {form.ready_location_type === 'elsewhere' && (
+                  <div className="mt-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
+                    <label className={labelClass}>Where will you be getting ready? *</label>
+                    <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
+                  </div>
+                )}
+
+                {form.ready_location_type === 'studio' && (
+                  <div className="mt-3 relative pl-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
+                    <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                    <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>You're all set</p>
+                    <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                      You'll come to Roko's studio in Mountain House. She'll share the exact address once your date is confirmed.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className={labelClass}>Photographer</label>
@@ -874,10 +937,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
 
-            <div>
-              <label className={labelClass}>Venue Access Time *</label>
-              <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
-            </div>
+            {(isFullDay || isTrial) && (
+              <div>
+                <label className={labelClass}>Venue Access Time *</label>
+                <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
+              </div>
+            )}
 
             <div>
               <label className={labelClass}>Does your bridal party need glam too?</label>

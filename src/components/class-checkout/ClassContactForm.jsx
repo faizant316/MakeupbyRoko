@@ -167,30 +167,30 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                 <div className="flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>First Name *</label>
+                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.label }}>First Name *</label>
                       <input required value={form.first_name} onChange={e => set('first_name', e.target.value)}
                         onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="Jane" style={inputStyle} />
                     </div>
                     <div>
-                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Last Name *</label>
+                      <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.label }}>Last Name *</label>
                       <input required value={form.last_name} onChange={e => set('last_name', e.target.value)}
                         onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="Smith" style={inputStyle} />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Email Address *</label>
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.label }}>Email Address *</label>
                     <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
                       onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="you@email.com" style={inputStyle} />
                   </div>
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Phone Number *</label>
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.label }}>Phone Number *</label>
                     <input required type="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))}
                       onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="(555) 000-0000" style={inputStyle} />
                   </div>
 
                   <div>
-                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.gray }}>Additional Notes</label>
+                    <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.label }}>Additional Notes</label>
                     <textarea value={form.additional_notes} onChange={e => set('additional_notes', e.target.value)}
                       onFocus={inputFocusHandler} onBlur={inputBlurHandler}
                       placeholder="Anything else Roko should know…" rows={3} style={{ ...inputStyle, resize: 'none' }} />

@@ -93,7 +93,7 @@ function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick
 // Sized to match the bridal form's fields so non-bridal (photoshoot / other
 // services) inquiries feel just as substantial on desktop, not shrunken.
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
-const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] uppercase text-[#999] mb-2";
+const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] uppercase text-[#6E6660] mb-2";
 
 export default function BookingModal({ service: initialService, onClose }) {
   const [service, setService] = useState(initialService);
