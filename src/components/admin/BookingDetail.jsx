@@ -11,6 +11,7 @@ import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
+import ScheduleView from './ScheduleView';
 import { parseRange } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS } from './statusColors';
@@ -606,10 +607,19 @@ function ApptRow({ b, isCurrent, last, dm }) {
   );
 }
 
-export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdateBooking, onDelete, allBookings, darkMode: dm }) {
+export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdateBooking, onDelete, allBookings, classRegs = [], darkMode: dm }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showClientPanel, setShowClientPanel] = useState(false);
+  // Side-by-side day schedule drawer (so Roko can eyeball her real day while
+  // proposing a new time). Defaults to this booking's date, falls back to today.
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState(() => {
+    if (booking.date) return booking.date;
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  });
+  const openSchedule = () => { setScheduleDay(booking.date || scheduleDay); setShowSchedule(true); };
   const [celebrate, setCelebrate] = useState(false);
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -638,11 +648,54 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [composeBody, setComposeBody] = useState('');
   const [attachContract, setAttachContract] = useState(false);
   const [sending, setSending] = useState(false);
+  // Propose-a-new-time lives INSIDE the composer now: picking a window and
+  // writing the note are one action. `proposedTime` is the window she's picking;
+  // when it differs from the booked time, sending commits it + emails the client.
+  // `bodyIsAuto` tracks whether the message is still the generated draft (so we
+  // can re-draft as she changes the time) or something she's since edited.
+  const [proposeOpen, setProposeOpen] = useState(false);
+  const [proposedTime, setProposedTime] = useState(booking.time || '');
+  const [bodyIsAuto, setBodyIsAuto] = useState(false);
   const firstName = booking.name?.split(' ')[0] || 'there';
+  const pendingTimeChange = !!proposedTime && proposedTime !== booking.time && !!parseRange(proposedTime).start;
+
+  // The auto-drafted note for a proposed time. Tone flips with `attach`: attaching
+  // the agreement is a firm "your time changed, sign to lock in"; without it, it's
+  // a softer "would this work?" ask. Returns a plain greeting when nothing changed.
+  const draftBody = (newTime, attach) => {
+    const changed = !!newTime && newTime !== booking.time && !!parseRange(newTime).start;
+    const on = dateFormatted ? ` on ${dateFormatted}` : '';
+    if (!changed) return `Hi ${firstName},\n\n`;
+    if (attach) {
+      return `Hi ${firstName},\n\n` +
+        `Thank you so much for booking with me! I've updated your appointment time to ${newTime}${on}.\n\n` +
+        `I'm attaching your updated agreement, just give it a quick sign so we can lock everything in.\n\n` +
+        `With love,\nRoko`;
+    }
+    return `Hi ${firstName},\n\n` +
+      `Thank you so much for booking with me! Would ${newTime}${on} work for your ${booking.service || 'appointment'}${booking.time ? ` instead of ${booking.time}` : ''}? Just let me know and I'll lock it in.\n\n` +
+      `With love,\nRoko`;
+  };
+
+  // Picking a window re-drafts the note (only while it's still the auto draft, so
+  // we never clobber something Roko has typed).
+  const onPickProposed = (v) => {
+    setProposedTime(v);
+    if (bodyIsAuto) setComposeBody(draftBody(v, attachContract));
+  };
+  const toggleAttach = () => {
+    setAttachContract(a => {
+      const next = !a;
+      if (bodyIsAuto) setComposeBody(draftBody(proposedTime, next));
+      return next;
+    });
+  };
 
   const openCompose = () => {
+    setProposeOpen(false);
+    setProposedTime(booking.time || '');
     if (!composeSubject) setComposeSubject(`Your ${booking.service || 'appointment'} with Makeup by Roko`);
-    if (!composeBody) setComposeBody(`Hi ${firstName},\n\n`);
+    if (!composeBody) { setComposeBody(`Hi ${firstName},\n\n`); setBodyIsAuto(true); }
     setShowCompose(true);
     setTimeout(() => { if (composeRef.current) lenisScrollTo(composeRef.current, { offset: -80 }); }, 60);
   };
@@ -678,22 +731,26 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       `I'm attaching the updated agreement, just give it a quick sign so we can lock everything in.\n\n` +
       `With love,\nRoko`
     );
+    // The time is already committed by the time we get here (the change came from
+    // the standalone picker or Edit), so mirror it into the propose control and
+    // leave the tailored message intact (bodyIsAuto off).
+    setProposedTime(booking.time || '');
+    setProposeOpen(false);
+    setBodyIsAuto(false);
     setAttachContract(true);
     setShowReconfirmBanner(false);
     setShowCompose(true);
     setTimeout(() => { if (composeRef.current) lenisScrollTo(composeRef.current, { offset: -80 }); }, 60);
   };
 
-  // Manual one-tap starter (when Roko opens the composer herself) for the common
-  // "let's lock in your time" note against the current window.
-  const fillProposeTime = () => {
-    openChangeNotice({ items: booking.time ? [{ key: 'time', label: 'Appointment time', to: booking.time }] : [] });
-  };
-
   const sendCompose = async () => {
     if (!booking.email) { alert('This client has no email on file.'); return; }
     if (!composeSubject.trim() || !composeBody.trim()) { alert('Add a subject and a message first.'); return; }
     setSending(true);
+    // If she proposed a new window, commit it first so the email + re-sign link
+    // (and the card) all reflect the new time in one send.
+    const effectiveTime = pendingTimeChange ? proposedTime : booking.time;
+    if (pendingTimeChange) onUpdateBooking({ time: proposedTime });
     try {
       const res = await fetch('/api/contact-client', {
         method: 'POST',
@@ -707,13 +764,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           includeContract: attachContract,
           serviceName: booking.service,
           dateFormatted,
-          time: booking.time,
+          time: effectiveTime,
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
       setShowCompose(false);
+      setProposeOpen(false);
+      setShowReconfirmBanner(false);
       if (attachContract) { setUpdateNoticeSent(true); setLastChange(null); }
-      showToast(attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client', '#22c55e');
+      const msg = pendingTimeChange
+        ? (attachContract ? 'New time sent, awaiting re-sign' : 'New time proposed to client')
+        : (attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client');
+      showToast(msg, '#22c55e');
     } catch (err) {
       alert(err?.message || 'Failed to send email. Please try again.');
     } finally {
@@ -966,7 +1028,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     : null;
 
   return (
-    <div className="max-w-[1100px] mx-auto">
+    <div className={`max-w-[1100px] mx-auto transition-[margin] duration-300 ${showSchedule ? '2xl:mr-[420px]' : ''}`}>
       {/* ── Booksy-style status hero ── */}
       <div className="relative mb-6">
         <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
@@ -1111,13 +1173,55 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </div>
 
             <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-              {/* Quick starter */}
-              <button type="button" onClick={fillProposeTime}
-                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.64rem] font-semibold transition-all hover:opacity-85"
-                style={{ background: dm ? '#2e2e38' : '#FBF3E8', color: dm ? '#e8c89a' : '#C76BA6', border: `1px solid ${dm ? '#3a3a48' : '#F0E0C8'}` }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Propose new time {booking.time ? `(${booking.time})` : ''}
-              </button>
+              {/* Appointment time — pick/propose a new window right here, hand in
+                  hand with the message. Selecting a time drafts the note below. */}
+              <div className="rounded-[12px] overflow-hidden"
+                style={{ border: `1px solid ${pendingTimeChange ? '#D4A0B0' : (dm ? '#3a3a48' : '#eee')}`, background: dm ? '#27272a' : '#FBF9F7' }}>
+                <div className="flex items-center justify-between gap-2 px-3.5 py-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.14)' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment time</p>
+                      <p className="text-[0.9rem] font-semibold truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
+                        {pendingTimeChange ? (
+                          <>
+                            <span style={{ textDecoration: 'line-through', opacity: 0.5, marginRight: 6 }}>{booking.time || '—'}</span>
+                            <span style={{ color: '#C4849A' }}>{proposedTime}</span>
+                          </>
+                        ) : (booking.time || 'Not set yet')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button type="button" onClick={openSchedule} title="See your day side by side"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.62rem] font-semibold transition-all hover:opacity-85"
+                      style={{ background: dm ? '#1e1e24' : '#fff', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      Schedule
+                    </button>
+                    <button type="button" onClick={() => setProposeOpen(o => !o)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-90"
+                      style={proposeOpen
+                        ? { background: dm ? '#3f3f46' : '#f0e6ea', color: dm ? '#e4e4e7' : '#8A4A63', border: `1px solid ${dm ? '#52525b' : '#e2cdd6'}` }
+                        : { background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.3)' }}>
+                      {proposeOpen ? 'Close' : (booking.time ? 'Change time' : 'Set time')}
+                    </button>
+                  </div>
+                </div>
+
+                {proposeOpen && (
+                  <div className="px-3.5 pb-3.5 pt-1" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0e8ec'}` }}>
+                    <TimeWindowPicker value={proposedTime} onChange={onPickProposed} slots={APPT_TIMES} dm={dm} accent="#C4849A" />
+                    <p className="text-[0.64rem] mt-2.5 leading-relaxed" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
+                      {pendingTimeChange
+                        ? <>Sending moves this appointment to <strong style={{ color: '#C4849A' }}>{proposedTime}</strong> and emails {firstName} the note below.{attachContract ? ' They just re-sign to lock it in.' : ''}</>
+                        : <>Pick a new window, then write your note. Selecting a time drafts the message for you. Tap <strong>Schedule</strong> to see your day.</>}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
@@ -1128,15 +1232,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               <div>
                 <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Message</label>
-                <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
+                <textarea value={composeBody} onChange={e => { setComposeBody(e.target.value); setBodyIsAuto(false); }} rows={7}
                   placeholder="Write your message…"
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                   style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                 <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
               </div>
 
-              {/* Attach updated agreement */}
-              <button type="button" onClick={() => setAttachContract(a => !a)}
+              {/* Attach updated agreement — applies to any appointment (bridal or
+                  non-bridal): a re-sign locks in the new time and keeps it confirmed. */}
+              <button type="button" onClick={toggleAttach}
                 className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
                 style={{ background: attachContract ? (dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), border: `1px solid ${attachContract ? '#D4A0B0' : (dm ? '#3a3a48' : '#e5e5e5')}` }}>
                 <span className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
@@ -1146,7 +1251,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <span>
                   <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
                   <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                    Adds a Review &amp; Sign link showing the updated details{booking.time ? <> (currently <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong>)</> : ''}. Signing keeps the booking confirmed and refreshes their agreement.
+                    Adds a Review &amp; Sign link showing the {pendingTimeChange ? <>new time <strong style={{ color: '#D4A0B0' }}>{proposedTime}</strong></> : <>updated details{booking.time ? <> (currently <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong>)</> : ''}</>}. Recommended whenever the time changes, so their signed agreement matches. Keeps the booking confirmed.
                   </span>
                 </span>
               </button>
@@ -1166,7 +1271,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                         </svg>
-                        {attachContract ? 'Send email + agreement' : 'Send email'}
+                        {pendingTimeChange
+                          ? (attachContract ? 'Send new time + agreement' : 'Send new time')
+                          : (attachContract ? 'Send email + agreement' : 'Send email')}
                       </>}
                 </button>
               </div>
@@ -1193,9 +1300,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <div className="mb-6">
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
 
-            {/* Ready-by + flags as their own labeled chips */}
-            {(notes.readyBy || notes.flags.length > 0) && (
+            {/* Ready-by + appointment window + flags as their own labeled chips.
+                The appointment chip sits right beside ready-by so Roko can sanity
+                check the two together (e.g. ready-by 3 PM vs appointment 12–2). */}
+            {(notes.readyBy || notes.flags.length > 0 || booking.time) && (
               <div className="flex flex-wrap gap-2 mb-2.5">
+                {booking.time && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                    style={{ background: dm ? 'rgba(196,132,154,0.16)' : 'rgba(196,132,154,0.12)', border: `1px solid ${dm ? 'rgba(196,132,154,0.35)' : 'rgba(196,132,154,0.32)'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#c89aab' : '#A0607A' }}>Appointment</span>
+                    <span className="text-[0.78rem] font-semibold tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{booking.time}</span>
+                  </span>
+                )}
                 {notes.readyBy && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
                     style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)', border: `1px solid ${dm ? '#3a3a48' : 'rgba(212,160,176,0.3)'}` }}>
@@ -1379,7 +1496,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Appointment Time Setter */}
         <div ref={timeSectionRef} className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-3">Appointment Time</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0]">Appointment Time</p>
+            <button type="button" onClick={openSchedule} title="See your day side by side"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.62rem] font-semibold transition-all hover:opacity-85"
+              style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Schedule
+            </button>
+          </div>
 
           {/* Trigger — current time window (clickable) or empty state button */}
           {!showTimePicker && (
@@ -1681,6 +1806,61 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </div>
         </div>
       )}
+
+      {/* ── Day schedule drawer ───────────────────────────────────────────────
+          Roko's real day, docked to the right so she can eyeball conflicts while
+          proposing a new time. On wide screens it sits beside the card (no
+          backdrop); on smaller screens it's a dimmed sheet. The proposed window
+          shows as a pending (dashed) block so she can see exactly where it lands. */}
+      {showSchedule && (
+        <div className="fixed inset-0 z-[9995] 2xl:hidden" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
+          onClick={() => setShowSchedule(false)} aria-hidden="true" />
+      )}
+      <aside
+        aria-hidden={!showSchedule}
+        className="fixed inset-y-0 right-0 z-[9996] flex flex-col"
+        style={{
+          width: 'min(400px, 92vw)',
+          transform: showSchedule ? 'translateX(0)' : 'translateX(105%)',
+          transition: 'transform 0.32s cubic-bezier(0.4,0,0.2,1)',
+          background: dm ? '#141418' : '#fff',
+          borderLeft: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}`,
+          boxShadow: showSchedule ? '-16px 0 40px rgba(30,20,25,0.16)' : 'none',
+          pointerEvents: showSchedule ? 'auto' : 'none',
+        }}
+      >
+        <div className="flex items-center gap-3 px-4 py-3.5 flex-shrink-0"
+          style={{ borderBottom: `1px solid ${dm ? '#2a2a32' : '#f0e8ec'}` }}>
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#27272a' : 'rgba(212,160,176,0.14)' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>My Schedule</p>
+            <p className="text-[0.64rem] mt-0.5 truncate" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>See your day while you pick a time</p>
+          </div>
+          <button type="button" onClick={() => setShowSchedule(false)} aria-label="Close schedule"
+            className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
+            style={{ background: dm ? '#27272a' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3.5 py-4" data-lenis-prevent>
+          <ScheduleView
+            bookings={
+              pendingTimeChange && scheduleDay === booking.date
+                ? [
+                    ...allBookings,
+                    { id: '__proposed__', name: `${firstName} · proposed`, service: booking.service, date: scheduleDay, time: proposedTime, status: 'pending', consultation_date: null },
+                  ]
+                : allBookings
+            }
+            classRegs={classRegs}
+            dateKey={scheduleDay}
+            onChangeDate={setScheduleDay}
+            dm={dm}
+          />
+        </div>
+      </aside>
 
       {/* Toast notification */}
       {toast && (

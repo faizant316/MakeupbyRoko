@@ -553,6 +553,7 @@ export default function Admin() {
             onUpdateBooking={(data) => updateBookingMutation.mutate({ id: selectedBooking.id, data })}
             onDelete={() => deleteBookingMutation.mutate(selectedBooking.id)}
             allBookings={bookings}
+            classRegs={classRegs}
             darkMode={dm}
           />
         )}
