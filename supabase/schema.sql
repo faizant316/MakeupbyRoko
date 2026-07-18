@@ -19,6 +19,7 @@ create table if not exists bookings (
   date date,
   time text,
   notes text,
+  admin_notes text, -- 0008: Roko's own private notes, never shown to the client
   status text default 'pending' check (status in ('pending','confirmed','completed','cancelled')),
   deposit_received boolean default false,
   deposit_reminder_sent boolean default false,
