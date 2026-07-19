@@ -82,10 +82,12 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         {initial}
       </div>
 
-      {/* Name + service */}
+      {/* Name + service. flex-wrap lets a long name keep the whole line (never
+          truncated — Roko needs full names on mobile) while the tag chips wrap
+          to the next line instead of squeezing the name down to an initial. */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-[0.875rem] font-semibold leading-snug break-words min-w-0" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
             {booking.name || 'Unnamed'}
           </p>
           {bridal && (
@@ -121,12 +123,15 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         </p>
       </div>
 
-      {/* Date + status */}
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+      {/* Date + time + status. Date and time stack on their own lines so a full
+          window ("11:00 AM – 1:00 PM") never gets cut off on narrow screens. */}
+      <div className="flex flex-col items-end gap-1 flex-shrink-0 text-right">
         <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: consultOnly ? '#8B5CF6' : dateColor }}>
           {rel.label}
-          {rowTime && <span className="font-normal" style={{ color: mutedColor }}> · {rowTime}</span>}
         </span>
+        {rowTime && (
+          <span className="text-[0.68rem] whitespace-nowrap tabular-nums -mt-0.5" style={{ color: mutedColor }}>{rowTime}</span>
+        )}
         <StatusBadge status={booking.status} />
       </div>
 

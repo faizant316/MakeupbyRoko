@@ -52,8 +52,10 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
 
   return (
     <div>
-      {/* Summary: Start → End with live duration */}
-      <div className="flex items-stretch gap-2">
+      {/* Desktop summary: Start → End chips with live duration (the tap grid
+          below fills them). Hidden on mobile, where the native inputs ARE the
+          chips — one row, no duplicate bubbles. */}
+      <div className="hidden md:flex items-stretch gap-2">
         <Chip label="Start" val={start} active={!start} onClearOne={() => onChange('')} />
         <div className="flex flex-col items-center justify-center px-0.5">
           <svg viewBox="0 0 24 24" fill="none" stroke={p.muted} strokeWidth="2" className="w-4 h-4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -62,24 +64,34 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
         <Chip label="End" val={end} active={!!start && !end} onClearOne={() => onChange(formatRange(start, ''))} />
       </div>
 
+      {/* Mobile: one row — two big tap targets that open the native time wheel
+          directly. min-w-0 is required: grid items default to min-width:auto and
+          a native <input type="time"> can overflow a shrunk column. */}
+      <div className="md:hidden grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+        {[
+          ['Start', to24h(start), onStartInput, !start],
+          null,
+          ['End', to24h(end), onEndInput, !!start && !end],
+        ].map((cell, i) => cell === null ? (
+          <div key="arrow" className="flex flex-col items-center justify-center px-0.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke={p.muted} strokeWidth="2" className="w-4 h-4"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            {durLabel && <span className="text-[0.52rem] font-bold mt-0.5 whitespace-nowrap" style={{ color: accent }}>{durLabel}</span>}
+          </div>
+        ) : (
+          <label key={cell[0]} className="block min-w-0 rounded-xl px-3 py-2 cursor-pointer"
+            style={{ background: p.chip, border: `1.5px solid ${cell[3] ? accent : p.border}`, boxShadow: cell[3] ? `0 0 0 3px ${accent}22` : 'none' }}>
+            <span className="block text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: cell[3] ? accent : p.muted }}>{cell[0]}</span>
+            <input type="time" value={cell[1]} onChange={e => cell[2](e.target.value)}
+              style={{ width: '100%', minWidth: 0, maxWidth: '100%', fontSize: '16px', fontWeight: 600, padding: '2px 0 0', border: 'none', background: 'transparent', color: p.text, outline: 'none', boxSizing: 'border-box' }} />
+          </label>
+        ))}
+      </div>
+
       <div className="flex items-center justify-between mt-2.5 mb-1.5 px-0.5">
         <span className="text-[0.62rem] font-medium" style={{ color: p.muted }}>{hint}</span>
         {(start || end) && (
           <button type="button" onClick={() => onChange('')} className="text-[0.62rem] font-medium underline underline-offset-2 transition-opacity hover:opacity-60" style={{ color: p.muted }}>Clear</button>
         )}
-      </div>
-
-      {/* Mobile: two native time wheels. min-w-0 is required here — grid items
-          default to min-width:auto, and a native <input type="time">'s
-          intrinsic width can exceed a shrunk column, overflowing the card. */}
-      <div className="md:hidden grid grid-cols-2 gap-2.5">
-        {[['Start', to24h(start), onStartInput], ['End', to24h(end), onEndInput]].map(([lbl, v, handler]) => (
-          <label key={lbl} className="block min-w-0">
-            <span className="block text-[0.52rem] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: p.muted }}>{lbl}</span>
-            <input type="time" value={v} onChange={e => handler(e.target.value)}
-              style={{ width: '100%', minWidth: 0, maxWidth: '100%', fontSize: '16px', padding: '11px 13px', borderRadius: '11px', border: `1.5px solid ${p.border}`, background: p.bg, color: p.text, outline: 'none', boxSizing: 'border-box' }} />
-          </label>
-        ))}
       </div>
 
       {/* Desktop: tap grid, window highlighted */}

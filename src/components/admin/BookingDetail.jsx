@@ -12,7 +12,7 @@ import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 import ScheduleView from './ScheduleView';
-import { parseRange } from '@/lib/timeWindow';
+import { parseRange, formatRange } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS } from './statusColors';
 
@@ -146,6 +146,46 @@ const PLUM = '#C4849A';
 // Universal Google Maps link — works on desktop + mobile, no API key required.
 function mapsUrl(address) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+// "2:00 PM" / "2 PM" / "11 AM" → minutes since midnight. Ready-by strings come
+// from form pickers but older rows can be hour-only, which apptToMin rejects.
+// Returns null (never guesses) when there's no AM/PM to anchor the hour.
+function clockToMin(val) {
+  if (!val) return null;
+  const m = String(val).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
+  if (h < 1 || h > 12 || min > 59) return null;
+  const pm = m[3].toUpperCase() === 'PM';
+  if (pm && h !== 12) h += 12;
+  if (!pm && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+// minutes since midnight → "2:00 PM"
+function minToClock(min) {
+  if (min == null) return '';
+  const h = Math.floor(min / 60), m = min % 60;
+  const ap = h < 12 ? 'AM' : 'PM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
+}
+
+// Service duration text ("2 hours", "1.5 hours", "1 hr 45 min", "Up to 4 hours")
+// → minutes, rounded UP to the 30-minute grid the pickers use (1h45 → 2h, no
+// 12:15-style starts). null when unparseable; callers fall back to 2 hours.
+function durationToMin(text) {
+  if (!text) return null;
+  const s = String(text).toLowerCase();
+  let min = 0;
+  const h = s.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/);
+  if (h) min += Math.round(parseFloat(h[1]) * 60);
+  const m = s.match(/(\d+)\s*min/);
+  if (m) min += parseInt(m[1], 10);
+  if (!min) return null;
+  return Math.min(Math.max(Math.ceil(min / 30) * 30, 60), 360);
 }
 
 // One label/value pair in the bridal details "spec sheet" grid.
@@ -637,37 +677,25 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [lastChange, setLastChange] = useState(null);
   const [updateNoticeSent, setUpdateNoticeSent] = useState(false);
 
-  const openTimePicker = () => {
-    setPendingWindow(booking.time || '');
-    setShowTimePicker(true);
-    setShowReconfirmBanner(false);
-  };
+  const firstName = booking.name?.split(' ')[0] || 'there';
   const pendingStart = parseRange(pendingWindow).start;
 
-  // ── In-admin Contact composer ────────────────────────────────────────────
-  // Roko writes the client a personal email straight from the card (sent as
-  // roko@makeupbyroko.org). When she's changed the time she can attach an
-  // updated agreement for the client to re-sign.
-  const [showCompose, setShowCompose] = useState(false);
-  const [composeSubject, setComposeSubject] = useState('');
-  const [composeBody, setComposeBody] = useState('');
-  const [attachContract, setAttachContract] = useState(false);
-  const [sending, setSending] = useState(false);
-  // Propose-a-new-time lives INSIDE the composer now: picking a window and
-  // writing the note are one action. `proposedTime` is the window she's picking;
-  // when it differs from the booked time, sending commits it + emails the client.
-  // `bodyIsAuto` tracks whether the message is still the generated draft (so we
-  // can re-draft as she changes the time) or something she's since edited.
-  const [proposeOpen, setProposeOpen] = useState(false);
-  const [proposedTime, setProposedTime] = useState(booking.time || '');
-  const [bodyIsAuto, setBodyIsAuto] = useState(false);
-  const firstName = booking.name?.split(' ')[0] || 'there';
-  const pendingTimeChange = !!proposedTime && proposedTime !== booking.time && !!parseRange(proposedTime).start;
+  // ── The ONE time panel ───────────────────────────────────────────────────
+  // Every way of changing the time (hero card, Appointment card, ready-by
+  // decision buttons) opens this single panel, so there is exactly one copy of
+  // the window being picked — the note, the email's appointment box, and the
+  // re-sign link are all built from it and can never disagree.
+  const [notifyClient, setNotifyClient] = useState(false);
+  const [panelSubject, setPanelSubject] = useState('An update on your appointment');
+  const [panelBody, setPanelBody] = useState('');
+  const [panelEdited, setPanelEdited] = useState(false); // true once Roko types — stop re-drafting
+  const [panelAttach, setPanelAttach] = useState(false);
+  const [panelSending, setPanelSending] = useState(false);
 
-  // The auto-drafted note for a proposed time. Tone flips with `attach`: attaching
-  // the agreement is a firm "your time changed, sign to lock in"; without it, it's
-  // a softer "would this work?" ask. Returns a plain greeting when nothing changed.
-  const draftBody = (newTime, attach) => {
+  // The auto-drafted note for a time change. Tone flips with `attach`: with the
+  // agreement it's a firm "your time changed, sign to lock in"; without it, a
+  // softer "would this work?" ask. Plain greeting when nothing changed yet.
+  const draftTimeBody = (newTime, attach) => {
     const changed = !!newTime && newTime !== booking.time && !!parseRange(newTime).start;
     const on = dateFormatted ? ` on ${dateFormatted}` : '';
     if (!changed) return `Hi ${firstName},\n\n`;
@@ -682,25 +710,100 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       `With love,\nRoko`;
   };
 
-  // Picking a window re-drafts the note (only while it's still the auto draft, so
-  // we never clobber something Roko has typed).
-  const onPickProposed = (v) => {
-    setProposedTime(v);
-    if (bodyIsAuto) setComposeBody(draftBody(v, attachContract));
+  // Open the panel, optionally pre-filled (ready-by "yes" path passes a window).
+  // Notify default follows what a good human would do: a confirmed client was
+  // promised a time, so tell them; a pending one wasn't, so arrange quietly.
+  const openTimePicker = (prefill) => {
+    const win = typeof prefill === 'string' ? prefill : (booking.time || '');
+    const notify = booking.status === 'confirmed' && !!booking.email;
+    setPendingWindow(win);
+    setNotifyClient(notify);
+    setPanelAttach(notify);
+    setPanelSubject('An update on your appointment');
+    setPanelBody(draftTimeBody(win, notify));
+    setPanelEdited(false);
+    setShowTimePicker(true);
+    setShowReconfirmBanner(false);
+    setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 60);
   };
-  const toggleAttach = () => {
-    setAttachContract(a => {
+
+  // Picking a window re-drafts the note (only while it's still the auto draft,
+  // so we never clobber something Roko has typed). Same on attach toggle.
+  const onPickWindow = (v) => {
+    setPendingWindow(v);
+    if (!panelEdited) setPanelBody(draftTimeBody(v, panelAttach));
+  };
+  const togglePanelAttach = () => {
+    setPanelAttach(a => {
       const next = !a;
-      if (bodyIsAuto) setComposeBody(draftBody(proposedTime, next));
+      if (!panelEdited) setPanelBody(draftTimeBody(pendingWindow, next));
       return next;
     });
   };
 
+  // The panel's single CTA: save the window, and (if notifying) send the note +
+  // optional agreement in the same tap. The email is built from `pendingWindow`
+  // directly, so it always matches what was just saved.
+  const commitTime = async () => {
+    if (!pendingStart || panelSending) return;
+    const changed = pendingWindow !== booking.time;
+    const willEmail = notifyClient && changed && !!booking.email;
+    onUpdateBooking({ time: pendingWindow });
+    if (!willEmail) {
+      setShowTimePicker(false);
+      showToast(changed ? `Time set to ${pendingWindow}` : 'Time unchanged', '#888');
+      if (changed && booking.status === 'confirmed' && booking.email) {
+        // She changed a confirmed booking quietly — leave the reminder banner
+        // so the client (who still believes the old time) doesn't get forgotten.
+        setUpdateNoticeSent(false);
+        setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: pendingWindow }] });
+        setShowReconfirmBanner(true);
+      }
+      return;
+    }
+    setPanelSending(true);
+    try {
+      const res = await fetch('/api/contact-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          to: booking.email,
+          firstName: booking.name?.split(' ')[0] || '',
+          subject: panelSubject.trim() || 'An update on your appointment',
+          message: panelBody.trim() || draftTimeBody(pendingWindow, panelAttach),
+          includeContract: panelAttach,
+          serviceName: booking.service,
+          dateFormatted,
+          time: pendingWindow,
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
+      setShowTimePicker(false);
+      setShowReconfirmBanner(false);
+      if (panelAttach) { setUpdateNoticeSent(true); setLastChange(null); }
+      showToast(panelAttach ? `New time sent, awaiting re-sign` : `New time emailed to ${firstName}`, '#22c55e');
+    } catch (err) {
+      alert(`The time was saved, but the email didn't send (${err?.message || 'unknown error'}). You can message ${firstName} from the card.`);
+      setShowTimePicker(false);
+    } finally {
+      setPanelSending(false);
+    }
+  };
+
+  // ── In-admin Contact composer ────────────────────────────────────────────
+  // Roko writes the client a personal email straight from the card (sent as
+  // roko@makeupbyroko.org). Plain messages only — time changes live in the
+  // Appointment panel above, which handles its own notify email.
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [attachContract, setAttachContract] = useState(false);
+  const [sending, setSending] = useState(false);
+
   const openCompose = () => {
-    setProposeOpen(false);
-    setProposedTime(booking.time || '');
     if (!composeSubject) setComposeSubject(`Your ${booking.service || 'appointment'} with Makeup by Roko`);
-    if (!composeBody) { setComposeBody(`Hi ${firstName},\n\n`); setBodyIsAuto(true); }
+    if (!composeBody) setComposeBody(`Hi ${firstName},\n\n`);
     setShowCompose(true);
     setTimeout(() => { if (composeRef.current) lenisScrollTo(composeRef.current, { offset: -80 }); }, 60);
   };
@@ -736,12 +839,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       `I'm attaching the updated agreement, just give it a quick sign so we can lock everything in.\n\n` +
       `With love,\nRoko`
     );
-    // The time is already committed by the time we get here (the change came from
-    // the standalone picker or Edit), so mirror it into the propose control and
-    // leave the tailored message intact (bodyIsAuto off).
-    setProposedTime(booking.time || '');
-    setProposeOpen(false);
-    setBodyIsAuto(false);
     setAttachContract(true);
     setShowReconfirmBanner(false);
     setShowCompose(true);
@@ -752,10 +849,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     if (!booking.email) { alert('This client has no email on file.'); return; }
     if (!composeSubject.trim() || !composeBody.trim()) { alert('Add a subject and a message first.'); return; }
     setSending(true);
-    // If she proposed a new window, commit it first so the email + re-sign link
-    // (and the card) all reflect the new time in one send.
-    const effectiveTime = pendingTimeChange ? proposedTime : booking.time;
-    if (pendingTimeChange) onUpdateBooking({ time: proposedTime });
     try {
       const res = await fetch('/api/contact-client', {
         method: 'POST',
@@ -769,18 +862,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           includeContract: attachContract,
           serviceName: booking.service,
           dateFormatted,
-          time: effectiveTime,
+          time: booking.time,
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
       setShowCompose(false);
-      setProposeOpen(false);
       setShowReconfirmBanner(false);
       if (attachContract) { setUpdateNoticeSent(true); setLastChange(null); }
-      const msg = pendingTimeChange
-        ? (attachContract ? 'New time sent, awaiting re-sign' : 'New time proposed to client')
-        : (attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client');
-      showToast(msg, '#22c55e');
+      showToast(attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client', '#22c55e');
     } catch (err) {
       alert(err?.message || 'Failed to send email. Please try again.');
     } finally {
@@ -856,6 +945,26 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     : '';
 
   const notes = parseBookingNotes(booking.notes);
+
+  // ── Ready-by decision helpers ─────────────────────────────────────────────
+  // The pre-filled window for "yes, that ready-by works" ends exactly at the
+  // client's ready-by and starts one service-length earlier (durations read
+  // live from the services table, so editing a service updates this too).
+  const { data: allServices } = useQuery({
+    queryKey: ['services-for-durations'],
+    queryFn: () => api.entities.Service.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const serviceDurMin = durationToMin(
+    (allServices || []).find(s => s.title === booking.service)?.duration
+  ) || 120;
+  const readyByMin = clockToMin(notes.readyBy);
+  const apptEndMin = clockToMin(parseRange(booking.time || '').end);
+  const readyPrefill = readyByMin != null
+    ? formatRange(minToClock(Math.max(readyByMin - serviceDurMin, 6 * 60)), minToClock(readyByMin))
+    : '';
+  // Green/amber alignment between the set window and the client's ready-by.
+  const endsOnTime = readyByMin != null && apptEndMin != null ? apptEndMin <= readyByMin : null;
 
   // Same-client matcher: email when present, else phone. Booksy imports can be
   // phone-only (email null), and matching on a shared null email would lump
@@ -1184,55 +1293,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </div>
 
             <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-              {/* Appointment time — pick/propose a new window right here, hand in
-                  hand with the message. Selecting a time drafts the note below. */}
-              <div className="rounded-[12px] overflow-hidden"
-                style={{ border: `1px solid ${pendingTimeChange ? '#D4A0B0' : (dm ? '#3a3a48' : '#eee')}`, background: dm ? '#27272a' : '#FBF9F7' }}>
-                <div className="flex items-center justify-between gap-2 px-3.5 py-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.14)' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment time</p>
-                      <p className="text-[0.9rem] font-semibold truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
-                        {pendingTimeChange ? (
-                          <>
-                            <span style={{ textDecoration: 'line-through', opacity: 0.5, marginRight: 6 }}>{booking.time || '—'}</span>
-                            <span style={{ color: '#C4849A' }}>{proposedTime}</span>
-                          </>
-                        ) : (booking.time || 'Not set yet')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button type="button" onClick={openSchedule} title="See your day side by side"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.62rem] font-semibold transition-all hover:opacity-85"
-                      style={{ background: dm ? '#1e1e24' : '#fff', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                      Schedule
-                    </button>
-                    <button type="button" onClick={() => setProposeOpen(o => !o)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-90"
-                      style={proposeOpen
-                        ? { background: dm ? '#3f3f46' : '#f0e6ea', color: dm ? '#e4e4e7' : '#8A4A63', border: `1px solid ${dm ? '#52525b' : '#e2cdd6'}` }
-                        : { background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.3)' }}>
-                      {proposeOpen ? 'Close' : (booking.time ? 'Change time' : 'Set time')}
-                    </button>
-                  </div>
-                </div>
-
-                {proposeOpen && (
-                  <div className="px-3.5 pb-3.5 pt-1" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0e8ec'}` }}>
-                    <TimeWindowPicker value={proposedTime} onChange={onPickProposed} slots={APPT_TIMES} dm={dm} accent="#C4849A" />
-                    <p className="text-[0.64rem] mt-2.5 leading-relaxed" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
-                      {pendingTimeChange
-                        ? <>Sending moves this appointment to <strong style={{ color: '#C4849A' }}>{proposedTime}</strong> and emails {firstName} the note below.{attachContract ? ' They just re-sign to lock it in.' : ''}</>
-                        : <>Pick a new window, then write your note. Selecting a time drafts the message for you. Tap <strong>Schedule</strong> to see your day.</>}
-                    </p>
-                  </div>
-                )}
-              </div>
+              {/* Time changes don't live here — route her to the one time panel. */}
+              <button type="button" onClick={() => { setShowCompose(false); openTimePicker(); }}
+                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.64rem] font-semibold transition-all hover:opacity-85"
+                style={{ background: dm ? '#2e2e38' : '#FBF5F7', color: dm ? '#e7c9d5' : '#8A4A63', border: `1px solid ${dm ? '#3a3a48' : '#EFDFE6'}` }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Changing the time{booking.time ? ` (${booking.time})` : ''}? Do it here →
+              </button>
 
               <div>
                 <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
@@ -1243,7 +1310,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               <div>
                 <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Message</label>
-                <textarea value={composeBody} onChange={e => { setComposeBody(e.target.value); setBodyIsAuto(false); }} rows={7}
+                <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
                   placeholder="Write your message…"
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                   style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
@@ -1252,7 +1319,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               {/* Attach updated agreement — applies to any appointment (bridal or
                   non-bridal): a re-sign locks in the new time and keeps it confirmed. */}
-              <button type="button" onClick={toggleAttach}
+              <button type="button" onClick={() => setAttachContract(a => !a)}
                 className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
                 style={{ background: attachContract ? (dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), border: `1px solid ${attachContract ? '#D4A0B0' : (dm ? '#3a3a48' : '#e5e5e5')}` }}>
                 <span className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
@@ -1262,7 +1329,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <span>
                   <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
                   <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                    Adds a Review &amp; Sign link showing the {pendingTimeChange ? <>new time <strong style={{ color: '#D4A0B0' }}>{proposedTime}</strong></> : <>updated details{booking.time ? <> (currently <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong>)</> : ''}</>}. Recommended whenever the time changes, so their signed agreement matches. Keeps the booking confirmed.
+                    Adds a Review &amp; Sign link showing the updated details{booking.time ? <> (currently <strong style={{ color: '#D4A0B0' }}>{booking.time}</strong>)</> : ''}. Signing keeps the booking confirmed and refreshes their agreement.
                   </span>
                 </span>
               </button>
@@ -1282,9 +1349,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                         </svg>
-                        {pendingTimeChange
-                          ? (attachContract ? 'Send new time + agreement' : 'Send new time')
-                          : (attachContract ? 'Send email + agreement' : 'Send email')}
+                        {attachContract ? 'Send email + agreement' : 'Send email'}
                       </>}
                 </button>
               </div>
@@ -1324,8 +1389,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   Schedule
                 </button>
-                {!showTimePicker && (
-                  <button type="button" onClick={openTimePicker}
+                {!showTimePicker && !(readyByMin != null && !booking.time) && (
+                  <button type="button" onClick={() => openTimePicker()}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-90"
                     style={{ background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.3)' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1336,6 +1401,36 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </div>
 
             {!showTimePicker ? (
+              readyByMin != null && !booking.time ? (
+                /* ── Decision row: no time yet, but the client said when they
+                   want to be ready. Lead with the question, not two neutral
+                   facts — "does that work?" is the actual decision. ── */
+                <div className="px-4 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-5 h-5"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[0.95rem] font-semibold leading-snug" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>
+                        {firstName} wants to be ready by <span style={{ color: '#C4849A' }} className="tabular-nums">{notes.readyBy}</span>
+                      </p>
+                      <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>Does that work for you?</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-3.5">
+                    <button type="button" onClick={() => openTimePicker(readyPrefill)}
+                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.75rem] font-semibold tracking-[0.02em] transition-all touch-manipulation active:scale-[0.99]"
+                      style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                      Yes — set <span className="tabular-nums">{readyPrefill}</span>
+                    </button>
+                    <button type="button" onClick={() => openTimePicker('')}
+                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.75rem] font-semibold transition-all touch-manipulation active:scale-[0.99]"
+                      style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#e4e4e7' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#e2cdd6'}` }}>
+                      No — pick another time
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <>
                 <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
                   {/* Appointment window */}
@@ -1345,14 +1440,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     </span>
                     <div className="min-w-0">
                       <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment</p>
-                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums truncate" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#2C1A14') : (dm ? '#71717a' : '#b6aeb2') }}>
+                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#2C1A14') : (dm ? '#71717a' : '#b6aeb2') }}>
                         {booking.time || 'Not set yet'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Ready-by — laid out beside the appointment so the two read
-                      together at a glance (e.g. appointment 7–9 AM · ready by 11). */}
+                  {/* Ready-by — beside the appointment so the two read together */}
                   {notes.readyBy ? (
                     <>
                       <div className="hidden sm:block w-px self-stretch" style={{ background: dm ? '#2e2e38' : '#f0eae4' }} />
@@ -1361,13 +1455,29 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                           <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                         </span>
                         <div className="min-w-0">
-                          <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Client wants to be ready by</p>
-                          <p className="text-[1.02rem] font-semibold leading-tight tabular-nums truncate" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{notes.readyBy}</p>
+                          <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Wants to be ready by</p>
+                          <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{notes.readyBy}</p>
                         </div>
                       </div>
                     </>
                   ) : <span className="hidden sm:block" />}
                 </div>
+
+                {/* Alignment between the window and their ready-by, at a glance */}
+                {endsOnTime != null && (
+                  <div className="px-4 pb-3.5 -mt-1.5">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.66rem] font-semibold"
+                      style={endsOnTime
+                        ? { background: dm ? 'rgba(34,197,94,0.12)' : '#F0FAF3', color: dm ? '#6EE7A0' : '#15803d', border: `1px solid ${dm ? 'rgba(34,197,94,0.3)' : '#CBEBD6'}` }
+                        : { background: dm ? 'rgba(245,158,11,0.12)' : '#FDF6EA', color: dm ? '#F5B83C' : '#B26A04', border: `1px solid ${dm ? 'rgba(245,158,11,0.3)' : '#F2DFB8'}` }}>
+                      {endsOnTime ? (
+                        <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg> Ends by their {notes.readyBy} ready-by</>
+                      ) : (
+                        <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Runs past their {notes.readyBy} ready-by</>
+                      )}
+                    </span>
+                  </div>
+                )}
 
                 {/* Travel / early-arrival flags */}
                 {notes.flags.length > 0 && (
@@ -1381,10 +1491,71 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   </div>
                 )}
               </>
+              )
             ) : (
-              /* Inline time picker (opened by Change time or the hero card) */
+              /* ── The ONE time panel: pick the window, optionally notify the
+                 client (note + agreement) — one CTA does it all. ── */
               <div className="px-4 py-4">
-                <TimeWindowPicker value={pendingWindow} onChange={setPendingWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
+                {notes.readyBy && (
+                  <p className="text-[0.7rem] mb-3 -mt-1" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
+                    {firstName} wants to be ready by <strong className="tabular-nums" style={{ color: '#C4849A' }}>{notes.readyBy}</strong>
+                  </p>
+                )}
+                <TimeWindowPicker value={pendingWindow} onChange={onPickWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
+
+                {/* Notify the client — pre-flipped to what a good human would do */}
+                <div className="mt-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${notifyClient ? '#D4A0B0' : (dm ? '#3a3a48' : '#e8e0d8')}` }}>
+                  <button type="button" onClick={() => booking.email && setNotifyClient(v => !v)}
+                    className="w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left transition-all"
+                    style={{ background: notifyClient ? (dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), cursor: booking.email ? 'pointer' : 'default' }}>
+                    <span className="min-w-0">
+                      <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Email {firstName} about this change</span>
+                      <span className="block text-[0.64rem] mt-0.5" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
+                        {!booking.email ? 'No email on file — the time just updates quietly.'
+                          : notifyClient ? 'They get your note below with the new time.'
+                          : 'Off — the time updates quietly, no email.'}
+                      </span>
+                    </span>
+                    <span className="w-10 h-6 rounded-full flex-shrink-0 relative transition-all"
+                      style={{ background: notifyClient ? '#C4849A' : (dm ? '#3f3f46' : '#ddd'), opacity: booking.email ? 1 : 0.4 }}>
+                      <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all" style={{ left: notifyClient ? 18 : 2, boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+                    </span>
+                  </button>
+
+                  {notifyClient && booking.email && (
+                    <div className="px-3.5 py-3.5 flex flex-col gap-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0e8ec'}`, background: dm ? '#1e1e24' : '#fff' }}>
+                      <div>
+                        <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
+                        <input value={panelSubject} onChange={e => setPanelSubject(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
+                          style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                      </div>
+                      <div>
+                        <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>
+                          Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>— written for you, edit freely</span>
+                        </label>
+                        <textarea value={panelBody} onChange={e => { setPanelBody(e.target.value); setPanelEdited(true); }} rows={6}
+                          className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
+                          style={{ fontSize: '15px', minHeight: '130px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                      </div>
+                      <button type="button" onClick={togglePanelAttach}
+                        className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
+                        style={{ background: panelAttach ? (dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), border: `1px solid ${panelAttach ? '#D4A0B0' : (dm ? '#3a3a48' : '#e5e5e5')}` }}>
+                        <span className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
+                          style={panelAttach ? { background: '#D4A0B0', border: '1px solid #D4A0B0' } : { background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#52525b' : '#ccc'}` }}>
+                          {panelAttach && <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </span>
+                        <span>
+                          <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
+                          <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
+                            They review &amp; sign the agreement with the new time — everything stays confirmed.
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-2 mt-4">
                   <button type="button" onClick={() => setShowTimePicker(false)}
                     className="px-5 py-3 rounded-[8px] text-[0.72rem] font-semibold transition-all touch-manipulation"
@@ -1393,26 +1564,21 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   </button>
                   <button
                     type="button"
-                    disabled={!pendingStart}
-                    onClick={() => {
-                      if (!pendingStart) return;
-                      const changed = pendingWindow !== booking.time;
-                      onUpdateBooking({ time: pendingWindow });
-                      setShowTimePicker(false);
-                      showToast(`Time set to ${pendingWindow}`, '#888');
-                      if (booking.status === 'confirmed' && changed) {
-                        setUpdateNoticeSent(false);
-                        setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: pendingWindow }] });
-                        setShowReconfirmBanner(true);
-                      }
-                    }}
-                    className="flex-1 py-3 rounded-[8px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation"
+                    disabled={!pendingStart || panelSending}
+                    onClick={commitTime}
+                    className="flex-1 py-3 rounded-[8px] text-[0.75rem] font-semibold tracking-[0.04em] transition-all touch-manipulation flex items-center justify-center gap-2"
                     style={pendingStart
-                      ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }
+                      ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: panelSending ? 0.7 : 1 }
                       : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                     }
                   >
-                    {pendingStart ? `Set to ${pendingWindow}` : 'Tap a start time above'}
+                    {panelSending
+                      ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                      : !pendingStart
+                        ? 'Tap a start time above'
+                        : (notifyClient && booking.email && pendingWindow !== booking.time)
+                          ? <>Set to <span className="tabular-nums">{pendingWindow}</span>&nbsp;&amp; email {firstName}</>
+                          : <>Set to <span className="tabular-nums">{pendingWindow}</span></>}
                   </button>
                 </div>
               </div>
@@ -1905,10 +2071,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="flex-1 overflow-y-auto px-3.5 py-4" data-lenis-prevent>
           <ScheduleView
             bookings={
-              pendingTimeChange && scheduleDay === booking.date
+              // While the time panel is open with a new window, ghost it onto the
+              // day as a pending (dashed) block so she can see where it lands.
+              showTimePicker && pendingStart && pendingWindow !== booking.time && scheduleDay === booking.date
                 ? [
-                    ...allBookings,
-                    { id: '__proposed__', name: `${firstName} · proposed`, service: booking.service, date: scheduleDay, time: proposedTime, status: 'pending', consultation_date: null },
+                    ...allBookings.filter(b => b.id !== booking.id),
+                    { ...booking, time: pendingWindow, status: 'pending', name: `${firstName} · new time` },
                   ]
                 : allBookings
             }
