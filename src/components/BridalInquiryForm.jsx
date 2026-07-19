@@ -368,7 +368,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       if (!form.ready_location_type) { alert('Please choose where you\'d like to get ready.'); return; }
       if (form.ready_location_type === 'elsewhere' && !form.event_location) { alert('Please add the address or venue where you\'ll be getting ready.'); return; }
     }
-    if (!form.event_start_time) { alert('Please select the event start time.'); return; }
     if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
     goStep('sign');
   };
@@ -500,8 +499,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Email', value: form.email },
       { label: 'Phone', value: form.phone },
       { label: 'Instagram / TikTok', value: form.instagram_handle },
-      { label: isTrial ? 'Location' : isFullDay ? 'Event location' : 'Getting ready', value: form.event_location },
-      { label: isTrial ? 'Preferred time' : 'Event start time', value: form.event_start_time },
+      { label: isTrial ? 'Location' : 'Getting ready', value: form.event_location },
+      { label: 'Preferred time', value: isTrial ? form.event_start_time : '' },
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
@@ -919,13 +918,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <>
             <div className="w-full h-px bg-gray-100" />
 
-            {/* Timing — each on its own line so nothing feels crammed. Hairstylist
-                Arrive By sits directly above the heads-up note so the note reads in
-                context. */}
-            <div>
-              <label className={labelClass}>Event Start Time *</label>
-              <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
-            </div>
+            {/* Timing and location. The bride's ready-by preference leads, then
+                where she'll get ready, then the vendor arrival times. Event start
+                time was dropped: Roko builds the timeline around the ready-by. */}
 
             {/* The bride's own ready-by preference — the one timing field that's
                 about her, so it gets a soft pink accent bar + plum label to stand
@@ -939,29 +934,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </p>
             </div>
 
-            <div>
-              <label className={labelClass}>Photographer Arrives</label>
-              <TimePicker value={form.photographer_arrival_time} onChange={v => set('photographer_arrival_time', v)} placeholder="Select time" />
-            </div>
-
-            <div>
-              <label className={labelClass}>Hairstylist Arrive By *</label>
-              <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
-            </div>
-
-            {/* Heads-up note — subtle: a thin pink accent line + a small pink tag,
-                no filled box. */}
-            <div className="relative pl-3.5">
-              <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-              <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
-              <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                If your hairstylist isn't <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
-              </p>
-            </div>
-
+            {/* Where she'll get ready — grouped right under the ready-by so the two
+                "about you" questions sit together, above the vendor arrival times. */}
             {isFullDay ? (
               <div>
-                <label className={labelClass}>Event Location *</label>
+                <label className={labelClass}>Where would you like to get ready? *</label>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Wherever you'll be getting ready, hotel, home, or venue. Roko travels to you for full-day coverage, she doesn't do full days at her studio.</p>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
               </div>
             ) : (
@@ -1013,6 +991,26 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 )}
               </div>
             )}
+
+            <div>
+              <label className={labelClass}>Photographer Arrives</label>
+              <TimePicker value={form.photographer_arrival_time} onChange={v => set('photographer_arrival_time', v)} placeholder="Select time" />
+            </div>
+
+            <div>
+              <label className={labelClass}>Hairstylist Arrive By *</label>
+              <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
+            </div>
+
+            {/* Heads-up note — subtle: a thin pink accent line + a small pink tag,
+                no filled box. */}
+            <div className="relative pl-3.5">
+              <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+              <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
+              <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                If your hairstylist isn't <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
+              </p>
+            </div>
 
             <div>
               <label className={labelClass}>Photographer</label>
