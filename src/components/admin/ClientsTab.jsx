@@ -129,7 +129,7 @@ function ActionCircle({ href, label, dm, children }) {
   return (
     <a href={href}
       className="flex flex-col items-center gap-1.5 flex-1 py-3 rounded-2xl transition-all hover:opacity-80 active:scale-[0.97]"
-      style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#2e2e38' : '#f0eae4'}`, minWidth: 0 }}>
+      style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}`, minWidth: 0 }}>
       <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
         {children}
       </span>
@@ -140,7 +140,7 @@ function ActionCircle({ href, label, dm, children }) {
 
 // ── Client card (detail) ──
 function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
-  const line = dm ? '#2e2e38' : '#f0eae4';
+  const line = dm ? '#2e2e38' : '#EAEAF0';
   const apptRows = [...client.appts].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const classRows = [...client.classes].sort((a, b) => (b.appointment_date || '').localeCompare(a.appointment_date || ''));
   const memberSince = client.firstSeen
@@ -331,7 +331,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
 
   const selectedClient = selectedKey ? clients.find(c => c.key === selectedKey) : null;
 
-  const line = dm ? '#2e2e38' : '#f0eae4';
+  const line = dm ? '#2e2e38' : '#EAEAF0';
   const muted = dm ? '#71717a' : '#a8a8b1';
 
   if (selectedClient) {
@@ -354,7 +354,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
     <div className="max-w-[1100px]">
       {/* List | Groups segmented control (Booksy style) */}
       <div className="flex sm:inline-flex w-full sm:w-auto rounded-full p-1 mb-5"
-        style={{ background: dm ? '#26262e' : '#F3EDE7', border: `1px solid ${dm ? '#2e2e38' : '#EBE3DB'}` }}>
+        style={{ background: dm ? '#26262e' : '#EDEDF3', border: `1px solid ${dm ? '#2e2e38' : '#E3E3EB'}` }}>
         {[
           { key: 'list', label: `List (${clients.length})` },
           { key: 'groups', label: `Groups (${groups.length})` },
@@ -364,7 +364,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
             <button key={s.key} onClick={() => setView(s.key)}
               className="flex-1 sm:flex-none sm:min-w-[170px] py-2 px-6 rounded-full text-[0.78rem] font-semibold transition-all duration-200 whitespace-nowrap"
               style={active
-                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#ECEDF1' : '#111', boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 5px rgba(60,45,35,0.14)' }
+                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#ECEDF1' : '#111', boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 5px rgba(30, 30, 40,0.14)' }
                 : { background: 'transparent', color: muted }}>
               {s.label}
             </button>
@@ -381,7 +381,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
               className="w-full flex items-center gap-4 py-4 text-left transition-opacity hover:opacity-75"
               style={{ borderBottom: i < groups.length - 1 ? `1px solid ${line}` : 'none' }}>
               <span className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ border: `1px solid ${dm ? '#3a3a44' : '#e4dcd4'}` }}>
+                style={{ border: `1px solid ${dm ? '#3a3a44' : '#DCDCE4'}` }}>
                 <GroupIcon color={dm ? '#8a8a93' : '#a8a8b1'} />
               </span>
               <span className="flex-1 min-w-0">
@@ -411,7 +411,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
             {search && (
               <button type="button" onClick={() => setSearch('')} aria-label="Clear search"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: dm ? '#3f3f46' : '#e9e2da', touchAction: 'manipulation' }}>
+                style={{ background: dm ? '#3f3f46' : '#E2E2EA', touchAction: 'manipulation' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -449,7 +449,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                   <span className="w-10 flex-shrink-0" />
                   <span className="flex-1 min-w-0 grid grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] gap-4">
                     {['Client', 'Phone', 'Email', 'Next visit'].map(h => (
-                      <span key={h} className="text-[0.56rem] font-bold tracking-[0.14em] uppercase truncate" style={{ color: dm ? '#5a5a63' : '#c9beb4' }}>{h}</span>
+                      <span key={h} className="text-[0.56rem] font-bold tracking-[0.14em] uppercase truncate" style={{ color: dm ? '#5a5a63' : '#BEBEC7' }}>{h}</span>
                     ))}
                   </span>
                 </div>
@@ -464,7 +464,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                           className="w-full flex items-center gap-3.5 py-3 text-left transition-opacity hover:opacity-75"
                           style={{ borderBottom: i < list.length - 1 ? `1px solid ${line}` : 'none' }}>
                           <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[0.78rem] font-semibold"
-                            style={{ background: dm ? '#2e2e38' : '#EFE9E3', color: dm ? '#a1a1aa' : '#83838d' }}>
+                            style={{ background: dm ? '#2e2e38' : '#E9E9EF', color: dm ? '#a1a1aa' : '#83838d' }}>
                             {initialsOf(c.name)}
                           </span>
                           <span className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] sm:gap-4 sm:items-center">
@@ -488,7 +488,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                           {c.upcomingCount > 0 && (
                             <span className="sm:hidden w-2 h-2 rounded-full flex-shrink-0" title="Has an upcoming appointment" style={{ background: '#2563EB' }} />
                           )}
-                          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#3f3f46' : '#ddd2c8'} strokeWidth="2" className="hidden sm:block w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#3f3f46' : '#D2D2DB'} strokeWidth="2" className="hidden sm:block w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
                         </button>
                       );
                     })}
@@ -504,7 +504,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
                     return (
                       <button key={l} onClick={() => has && jumpTo(l)} disabled={!has}
                         className="w-5 text-[0.58rem] font-semibold leading-[15px] text-center"
-                        style={{ color: has ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#3a3a44' : '#e0d8d0'), cursor: has ? 'pointer' : 'default', touchAction: 'manipulation' }}>
+                        style={{ color: has ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#3a3a44' : '#D8D8E0'), cursor: has ? 'pointer' : 'default', touchAction: 'manipulation' }}>
                         {l}
                       </button>
                     );

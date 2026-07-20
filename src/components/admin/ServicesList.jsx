@@ -87,7 +87,7 @@ export default function ServicesList({ darkMode: dm }) {
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingService(svc); setShowForm(true); } }}
             className={`group rounded-2xl p-3 sm:p-3.5 flex items-center gap-3.5 cursor-pointer transition-all hover:shadow-md ${!svc.is_active ? 'opacity-55' : ''}`}
             style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = dm ? '#52525b' : '#d8cfc7'; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = dm ? '#52525b' : '#CFCFD8'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = cardBorder; }}>
             {/* Photo */}
             {svc.photo ? (
@@ -149,7 +149,7 @@ export default function ServicesList({ darkMode: dm }) {
               {/* Chevron — affordance that the row opens */}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
-                style={{ color: dm ? '#52525b' : '#cfc7bf' }}>
+                style={{ color: dm ? '#52525b' : '#C7C7CF' }}>
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
             </div>

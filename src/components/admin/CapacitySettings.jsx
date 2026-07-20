@@ -214,7 +214,7 @@ export default function CapacitySettings({ selectedDate, darkMode: dm }) {
                 className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all"
                 style={{
                   background: isActive ? (dm ? '#2e2030' : '#FDF0F7') : (dm ? '#1e1e24' : '#FAFAFB'),
-                  border: `1px solid ${isActive ? '#D4A0B0' : (dm ? '#3a3a48' : '#f0e8e0')}`,
+                  border: `1px solid ${isActive ? '#D4A0B0' : (dm ? '#3a3a48' : '#E8E8F0')}`,
                   boxShadow: isActive ? '0 0 0 1px #D4A0B0' : 'none',
                 }}>
                 <div className="flex items-center gap-3">

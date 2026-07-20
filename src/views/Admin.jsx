@@ -345,7 +345,7 @@ export default function Admin() {
       {/* ── Header ──────────────────────────────────────────── */}
       <div
         className="sticky top-0 z-[100]"
-        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#e8e2dc'}`, background: dm ? '#26262e' : '#fff' }}
+        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#E2E2E8'}`, background: dm ? '#26262e' : '#fff' }}
       >
         <div className="px-4 sm:px-6 lg:px-8 flex items-center h-14">
           {/* Branding + active section chip (mobile). pr-14 on mobile reserves
@@ -380,7 +380,7 @@ export default function Admin() {
         onClick={() => setMobileNavOpen(o => !o)}
         className="sm:hidden fixed top-[6px] right-4 z-[110] w-11 h-11 flex items-center justify-center rounded-full transition-transform duration-200 active:scale-90"
         style={{
-          background: mobileNavOpen ? (dm ? '#3f3f46' : '#f0ebe6') : 'transparent',
+          background: mobileNavOpen ? (dm ? '#3f3f46' : '#EBEBF0') : 'transparent',
           touchAction: 'manipulation',
           WebkitTapHighlightColor: 'transparent',
         }}
@@ -390,19 +390,19 @@ export default function Admin() {
           className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
             mobileNavOpen ? 'rotate-45 translate-y-0' : '-translate-y-[5px]'
           }`}
-          style={{ background: dm ? '#F0EBE6' : '#111' }}
+          style={{ background: dm ? '#EBEBF0' : '#111' }}
         />
         <span
           className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
             mobileNavOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
           }`}
-          style={{ background: dm ? '#F0EBE6' : '#111' }}
+          style={{ background: dm ? '#EBEBF0' : '#111' }}
         />
         <span
           className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
             mobileNavOpen ? '-rotate-45 translate-y-0' : 'translate-y-[5px]'
           }`}
-          style={{ background: dm ? '#F0EBE6' : '#111' }}
+          style={{ background: dm ? '#EBEBF0' : '#111' }}
         />
       </button>
 

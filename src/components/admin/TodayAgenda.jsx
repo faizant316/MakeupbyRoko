@@ -76,7 +76,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
     <div className="mb-8">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-4">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasItems ? 'animate-pulse' : ''}`} style={{ background: hasItems ? '#D4A0B0' : (dm ? '#52525b' : '#d8cfc8') }} />
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasItems ? 'animate-pulse' : ''}`} style={{ background: hasItems ? '#D4A0B0' : (dm ? '#52525b' : '#D0D0D8') }} />
         <h2 className="font-serif text-[1.2rem] leading-none" style={{ color: dm ? '#e4e4e7' : '#111' }}>Today</h2>
         <span className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{todayLabel}</span>
         {hasItems && (
@@ -161,7 +161,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
         </div>
       ) : (
         <div className="flex items-center gap-2.5 py-1">
-          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#cbbfb6'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#C0C0C9'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
             <path d="M20 6 9 17l-5-5" />
           </svg>
           <p className="text-[0.8rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>Nothing scheduled today. You're all clear.</p>

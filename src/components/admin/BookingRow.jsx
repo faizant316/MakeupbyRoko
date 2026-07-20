@@ -21,7 +21,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   const mutedColor = dm ? '#71717a' : '#9c9ca4';
 
   const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
-  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#ece5e0'}` };
+  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
 
   // Non-bridal rows get their own quiet card presence so they lift off the
   // page (same #fff / #1e1e24 as the background) without competing with bridal.
@@ -34,8 +34,8 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       }
     : {
         bg: dm ? '#26262d' : '#FBF9F7',
-        border: dm ? '#34343d' : '#ece4dc',
-        shadow: dm ? 'none' : '0 1px 2px rgba(60,45,35,0.05), 0 2px 5px rgba(60,45,35,0.04)',
+        border: dm ? '#34343d' : '#E4E4EC',
+        shadow: dm ? 'none' : '0 1px 2px rgba(30, 30, 40,0.05), 0 2px 5px rgba(30, 30, 40,0.04)',
         hoverBg: dm ? '#2e2e37' : '#FFFDFB',
       };
 
@@ -77,7 +77,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
         style={bridal
           ? { background: dm ? 'rgba(154,84,116,0.22)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#8A4A63', boxShadow: `0 0 0 1.5px ${dm ? 'rgba(176,106,133,0.4)' : 'rgba(154,84,116,0.4)'}` }
-          : { background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#b0a59c' }}
+          : { background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#A6A6AF' }}
       >
         {initial}
       </div>
@@ -146,7 +146,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
             className={iconBtn}
             style={iconBtnStyle}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece5e0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -161,7 +161,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
             className={iconBtn}
             style={iconBtnStyle}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece5e0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>

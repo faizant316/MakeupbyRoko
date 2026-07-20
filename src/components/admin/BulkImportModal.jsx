@@ -112,7 +112,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
   const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
   const inputClass = 'w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]';
-  const labelStyle = { display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#8a7f76' };
+  const labelStyle = { display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#808089' };
 
   const autoMap = (hdrs) => {
     const norm = (x) => x.trim().toLowerCase();
@@ -232,7 +232,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
         <div className="flex-none flex justify-between items-center px-5 sm:px-6 border-b"
           style={{ borderColor, paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#f8f1ee' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#F2F2F7' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <div>
@@ -242,7 +242,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
           </div>
           <button onClick={() => !importing && onClose()} type="button"
             className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#3f3f46' : '#f4f0ec', color: textMuted }}>
+            style={{ background: dm ? '#3f3f46' : '#F0F0F4', color: textMuted }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>

@@ -124,7 +124,7 @@ export default function RevenueTab({ darkMode: dm }) {
   const bd      = dm ? '#3a3a48' : '#E2E4EA';
   const tx      = dm ? '#e4e4e7' : '#111';
   const mu      = dm ? '#71717a' : '#999';
-  const grid    = dm ? '#2e2e38' : '#f3eeea';
+  const grid    = dm ? '#2e2e38' : '#EEEEF3';
   const barFill = dm ? '#3a3a48' : '#e6dfe0';
 
   if (initialLoad) {
@@ -188,7 +188,7 @@ export default function RevenueTab({ darkMode: dm }) {
               onClick={() => setRange(key)}
               className="px-3.5 py-1.5 rounded-full text-[0.62rem] font-semibold tracking-[0.04em] flex-shrink-0 transition-all"
               style={{
-                background: isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#2e2e38' : '#f5f0ec',
+                background: isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#2e2e38' : '#F0F0F5',
                 color:      isActive ? (dm ? '#1e1e24' : '#fff') : mu,
                 border:     `1px solid ${isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#3a3a48' : '#E2E4EA'}`,
               }}
@@ -259,7 +259,7 @@ export default function RevenueTab({ darkMode: dm }) {
                 <p className="text-[1.15rem] font-semibold leading-none" style={{ color: tx }}>${cls.revenue.toLocaleString()}</p>
                 <p className="text-[0.6rem] mt-0.5" style={{ color: mu }}>{cls.count} signup{cls.count !== 1 ? 's' : ''}</p>
                 {cls.count > 0 && (
-                  <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}>
+                  <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
                     <div className="h-full rounded-full" style={{ width: `${Math.min(100, (cls.count / 15) * 100)}%`, background: '#D4A0B0' }} />
                   </div>
                 )}
@@ -277,7 +277,7 @@ export default function RevenueTab({ darkMode: dm }) {
         <p className="text-[0.78rem] font-semibold mb-4" style={{ color: tx }}>Most Booked Services</p>
         {topServices.length === 0 ? (
           <div className="flex flex-col items-center text-center gap-1.5 py-7">
-            <Calendar size={22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#e0d8d4' }} />
+            <Calendar size={22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#D9D9DF' }} />
             <p className="text-[0.76rem] font-medium" style={{ color: tx }}>No online bookings yet</p>
             <p className="text-[0.66rem] max-w-[260px] leading-relaxed" style={{ color: mu }}>
               When clients book through the site, your most-requested services rank here automatically.
@@ -293,7 +293,7 @@ export default function RevenueTab({ darkMode: dm }) {
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="w-4 h-4 rounded flex items-center justify-center text-[0.52rem] font-bold flex-shrink-0"
-                        style={{ background: i === 0 ? 'rgba(212,160,176,0.15)' : dm ? '#2e2e38' : '#f5f0ec', color: i === 0 ? '#D4A0B0' : mu }}>
+                        style={{ background: i === 0 ? 'rgba(212,160,176,0.15)' : dm ? '#2e2e38' : '#F0F0F5', color: i === 0 ? '#D4A0B0' : mu }}>
                         {i + 1}
                       </span>
                       <p className="text-[0.75rem] font-medium leading-tight" style={{ color: tx }}>{svc.name}</p>
@@ -303,8 +303,8 @@ export default function RevenueTab({ darkMode: dm }) {
                       <span className="text-[0.68rem] font-semibold" style={{ color: mu }}>{svc.count}</span>
                     </div>
                   </div>
-                  <div className="h-1 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}>
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: i === 0 ? '#D4A0B0' : dm ? '#3a3a48' : '#d9d0cc', transition: 'width 0.6s ease' }} />
+                  <div className="h-1 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: i === 0 ? '#D4A0B0' : dm ? '#3a3a48' : '#D2D2D9', transition: 'width 0.6s ease' }} />
                   </div>
                 </div>
               );

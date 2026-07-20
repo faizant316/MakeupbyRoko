@@ -278,7 +278,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
             {scheduled && (
               <button onClick={() => setExpanded(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
-                style={{ background: dm ? '#3f3f46' : '#f0ece8', color: dm ? '#71717a' : '#888' }}>
+                style={{ background: dm ? '#3f3f46' : '#ECECF0', color: dm ? '#71717a' : '#888' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             )}
@@ -324,7 +324,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 {/* Notes */}
                 <div>
                   <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                    Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                    Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
                   </label>
                   <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
                     placeholder="Any extra info for the client…"
@@ -379,7 +379,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 {/* Notes */}
                 <div>
                   <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                    Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                    Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
                   </label>
                   <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
                     placeholder="Any extra info for the client…"
@@ -392,7 +392,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                   style={{
                     minHeight: '50px', fontSize: '14px',
                     ...(!time
-                      ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                      ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                       : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                   }}>
                   {saving
@@ -449,12 +449,12 @@ function ClassContactComposer({ reg, dm, onClose, onSent }) {
     }
   };
 
-  const fieldStyle = { fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' };
+  const fieldStyle = { fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' };
 
   return (
     <div className="mb-8 rounded-2xl overflow-hidden"
-      style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
-      <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f3ede7'}` }}>
+      style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
+      <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#EDEDF3'}` }}>
         <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -463,25 +463,25 @@ function ClassContactComposer({ reg, dm, onClose, onSent }) {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Message Client</p>
-          <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
+          <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#9A9AA3' }}>
             To <span style={{ color: dm ? '#e7c9d5' : '#8A4A63', fontWeight: 600 }}>{reg.email}</span> · sends from roko@makeupbyroko.org
           </p>
         </div>
         <button type="button" onClick={onClose} aria-label="Close composer"
           className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-          style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+          style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
       <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
         <div>
-          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
+          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Subject</label>
           <input value={subject} onChange={e => setSubject(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30" style={fieldStyle} />
         </div>
         <div>
-          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Message</label>
+          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Message</label>
           <textarea value={body} onChange={e => setBody(e.target.value)} rows={7}
             placeholder="Write your message…"
             className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
@@ -491,7 +491,7 @@ function ClassContactComposer({ reg, dm, onClose, onSent }) {
         <div className="flex items-center gap-2 pt-1">
           <button type="button" onClick={onClose}
             className="px-5 py-3 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.98]"
-            style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+            style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
             Cancel
           </button>
           <button type="button" onClick={send} disabled={sending}
@@ -721,18 +721,18 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           style={{
             background: dm ? '#27272a' : '#fff',
             border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
-            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(50,35,30,0.12)',
+            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
           }}>
           <div className="px-4 min-w-0">
-            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Start</p>
+            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Start</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroWin.start || (reg.class_format === 'in_person' ? 'In studio' : 'Not set')}
             </p>
             {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroWin.end}</p>}
           </div>
-          <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#f0eae4' }} />
+          <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#EAEAF0' }} />
           <div className="px-4 min-w-0">
-            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Date</p>
+            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Date</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
           </div>
         </div>
@@ -768,7 +768,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[0.6rem] font-semibold tracking-[0.04em]"
                   style={reg.contract_photo_consent
                     ? { background: dm ? 'rgba(212,160,176,0.18)' : 'rgba(212,160,176,0.16)', color: dm ? '#e7c9d5' : '#A0607A' }
-                    : { background: dm ? '#33333c' : '#F1EEEA', color: dm ? '#a1a1aa' : '#83838d' }}>
+                    : { background: dm ? '#33333c' : '#EEEEF2', color: dm ? '#a1a1aa' : '#83838d' }}>
                   Photos: {reg.contract_photo_consent ? 'Yes' : 'No'}
                 </span>
               </div>

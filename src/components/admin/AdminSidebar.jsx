@@ -282,7 +282,7 @@ export default function AdminSidebar({
             className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
           >
             <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#f5f0ec' }}>
+              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F0F0F5' }}>
               {dm ? (
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]">
                   <circle cx="12" cy="12" r="4"/>
@@ -304,7 +304,7 @@ export default function AdminSidebar({
             onClick={onBackToSite}
             className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
           >
-            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}>
+            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
               </svg>
@@ -356,7 +356,7 @@ export default function AdminSidebar({
           <button
             onClick={() => setMobileOpen(false)}
             className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}
+            style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#111'} strokeWidth="2.2" className="w-4 h-4">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -382,7 +382,7 @@ export default function AdminSidebar({
                   style={{
                     background: isActive
                       ? 'rgba(212,160,176,0.16)'
-                      : dm ? '#2a2a32' : '#f5f0ec',
+                      : dm ? '#2a2a32' : '#F0F0F5',
                   }}
                 >
                   <NavIcon
@@ -426,7 +426,7 @@ export default function AdminSidebar({
           >
             <span
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#f5f0ec' }}
+              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F0F0F5' }}
             >
               {dm ? (
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
@@ -451,7 +451,7 @@ export default function AdminSidebar({
           >
             <span
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: dm ? '#2e2e38' : '#f5f0ec' }}
+              style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
