@@ -12,9 +12,9 @@ import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 import ScheduleView from './ScheduleView';
-import { parseRange } from '@/lib/timeWindow';
+import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
-import { STATUS_COLORS } from './statusColors';
+import { STATUS_COLORS, EVENT_COLORS, isBridalService } from './statusColors';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -266,7 +266,63 @@ function parseConsultNotes(raw) {
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
-function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, confirmed, dateFormatted, expanded, setExpanded }) {
+// A one-glance strip of what's already on Roko's plate for a given day, shown
+// inline under the consultation date picker (only when the schedule drawer
+// isn't open, so there's never a double schedule on screen).
+function DayPeek({ dateKey, bookings = [], classRegs = [], dm, excludeConsultOf, onOpenFull }) {
+  if (!dateKey) return null;
+  const events = [];
+  bookings.forEach(b => {
+    if (b.status === 'cancelled') return;
+    if (b.date === dateKey) {
+      events.push({ id: `a-${b.id}`, color: isBridalService(b.service) ? EVENT_COLORS.bridal : EVENT_COLORS.appt, time: b.time, name: b.name || 'Client', detail: b.service || 'Appointment' });
+    }
+    if (b.consultation_date === dateKey && b.id !== excludeConsultOf) {
+      events.push({ id: `c-${b.id}`, color: EVENT_COLORS.consult, time: b.consultation_time, name: b.name || 'Client', detail: 'Consultation' });
+    }
+  });
+  classRegs.forEach(r => {
+    if (r.status === 'cancelled' || r.appointment_date !== dateKey) return;
+    events.push({ id: `l-${r.id}`, color: EVENT_COLORS.class, time: r.appointment_time, name: r.full_name || 'Client', detail: 'Class' });
+  });
+  events.sort((a, b) =>
+    (apptToMin(parseRange(a.time || '').start) ?? 1e9) - (apptToMin(parseRange(b.time || '').start) ?? 1e9));
+  const label = new Date(dateKey + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  return (
+    <div className="mt-2 rounded-[10px] px-3.5 py-3" style={{ background: dm ? '#1e1e24' : '#FBF9FB', border: `1px dashed ${dm ? '#3a3a48' : '#e3d7de'}` }}>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <p className="text-[0.58rem] font-bold tracking-[0.12em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+          Your {label}
+        </p>
+        {onOpenFull && (
+          <button type="button" onClick={onOpenFull}
+            className="text-[0.62rem] font-semibold underline underline-offset-2 transition-opacity hover:opacity-75"
+            style={{ color: dm ? '#C4B5FD' : '#7C3AED' }}>
+            Open full schedule
+          </button>
+        )}
+      </div>
+      {events.length === 0 ? (
+        <p className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>Nothing scheduled, the day is wide open.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {events.map(ev => (
+            <div key={ev.id} className="flex items-center gap-2 text-[0.72rem] min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: ev.color }} />
+              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: dm ? '#d4d4d8' : '#444', minWidth: 58 }}>
+                {ev.time ? parseRange(ev.time).start : 'No time'}
+              </span>
+              <span className="truncate" style={{ color: dm ? '#a1a1aa' : '#666' }}>{ev.name}</span>
+              <span className="truncate ml-auto text-[0.62rem] flex-shrink-0 max-w-[38%]" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>{ev.detail}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, confirmed, dateFormatted, expanded, setExpanded, onDraftChange, renderDayPeek }) {
   const hasConsult = !!booking.consultation_date;
   // Bridal booking already confirmed (via "confirm now, schedule later") but
   // with no consultation yet: send just the consultation email, don't re-send
@@ -290,7 +346,20 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
     notes: parsed.notes,
   });
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    const next = { ...form, [k]: v };
+    setForm(next);
+    // Let the parent mirror the draft (schedule drawer sync + ghost block).
+    onDraftChange?.({ date: next.date, time: next.time, type: next.type });
+  };
+
+  // Report the draft when the panel opens, clear it when the panel closes, so
+  // the ghost consultation only ever exists while she's actually picking.
+  useEffect(() => {
+    if (expanded) onDraftChange?.({ date: form.date, time: form.time, type: form.type });
+    else onDraftChange?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded]);
 
   const generateZoomLink = async () => {
     setGeneratingLink(true);
@@ -490,6 +559,9 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
                 <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR} />
+                {/* What that day already holds, so picking a time never means
+                    leaving the card to go check the schedule. */}
+                {renderDayPeek?.(form.date)}
               </div>
               <div>
                 <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
@@ -701,7 +773,46 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
   });
-  const openSchedule = () => { setScheduleDay((showTimePicker && pendingDate) ? pendingDate : (booking.date || scheduleDay)); setShowSchedule(true); };
+  // Live mirror of the consultation scheduler's draft (date/time/type) — used
+  // to keep the drawer on the day she's picking and to ghost the meeting there.
+  const [consultDraft, setConsultDraft] = useState(null);
+  const handleConsultDraft = (draft) => {
+    setConsultDraft(draft);
+    if (draft?.date) setScheduleDay(draft.date);
+  };
+  const openSchedule = () => {
+    setScheduleDay(
+      (consultExpanded && consultDraft?.date) ? consultDraft.date
+        : (showTimePicker && pendingDate) ? pendingDate
+        : (booking.date || scheduleDay)
+    );
+    setShowSchedule(true);
+  };
+  // Drag-to-resize drawer width, remembered across sessions.
+  const [scheduleW, setScheduleW] = useState(() => {
+    try {
+      const w = parseInt(localStorage.getItem('admin-schedule-width'), 10);
+      return Number.isFinite(w) ? Math.min(Math.max(w, 340), 760) : 400;
+    } catch { return 400; }
+  });
+  const scheduleWRef = useRef(scheduleW);
+  const resizeSchedule = (e) => {
+    if (e.buttons !== 1) return;
+    const w = Math.min(Math.max(window.innerWidth - e.clientX, 340), Math.min(760, Math.round(window.innerWidth * 0.95)));
+    scheduleWRef.current = w;
+    setScheduleW(w);
+  };
+  const persistScheduleW = () => {
+    try { localStorage.setItem('admin-schedule-width', String(scheduleWRef.current)); } catch { /* private mode */ }
+  };
+  // The card only slides aside for the drawer on very wide screens (2xl).
+  const [wide2xl, setWide2xl] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1536px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1536px)');
+    const fn = (ev) => setWide2xl(ev.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
   // Roko's own private notes on this booking (never shown to the client). Seeded
   // from the row; re-synced whenever a different booking is opened.
   const [adminNotes, setAdminNotes] = useState(booking.admin_notes || '');
@@ -1179,6 +1290,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       dateFormatted={dateFormatted}
       expanded={consultExpanded}
       setExpanded={setConsultExpanded}
+      onDraftChange={handleConsultDraft}
+      renderDayPeek={(d) => (!showSchedule && d ? (
+        <DayPeek
+          dateKey={d}
+          bookings={allBookings}
+          classRegs={classRegs}
+          dm={dm}
+          excludeConsultOf={booking.id}
+          onOpenFull={() => { setScheduleDay(d); setShowSchedule(true); }}
+        />
+      ) : null)}
       onSent={() => showToast(
         booking.consultation_date ? 'Rescheduled, client notified'
           : isBridal && booking.status !== 'confirmed' ? 'Confirmed, client notified'
@@ -1296,7 +1418,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     : null;
 
   return (
-    <div className={`max-w-[1100px] mx-auto transition-[margin] duration-300 ${showSchedule ? '2xl:mr-[420px]' : ''}`}>
+    <div className="max-w-[1100px] mx-auto transition-[margin] duration-300"
+      style={{ marginRight: showSchedule && wide2xl ? scheduleW + 20 : undefined }}>
       {/* ── Booksy-style status hero ── */}
       <div className="relative mb-6">
         <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
@@ -1532,10 +1655,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
               <div className="flex items-center gap-1.5">
                 <button type="button" onClick={openSchedule} title="See your day side by side"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.62rem] font-semibold transition-all hover:opacity-85"
-                  style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-85 active:scale-95"
+                  style={{
+                    background: dm ? 'rgba(196,132,154,0.16)' : '#FBF5F7',
+                    color: dm ? '#e7c9d5' : '#8A4A63',
+                    border: `1.5px solid ${dm ? '#5a4750' : '#DFB8C8'}`,
+                    boxShadow: dm ? 'none' : '0 1px 6px rgba(196,132,154,0.18)',
+                  }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Schedule
+                  My Schedule
                 </button>
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
                   <button type="button" onClick={() => openTimePicker()}
@@ -1607,27 +1735,31 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                      rail. The ready-by sits beside the header as the client's
                      ask — context, not part of Roko's working time. ── */
                   <div className="px-4 py-4">
-                    <div className="flex items-start gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3">
                       {isBridal && <StepDot n={1} state="done" dm={dm} />}
-                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mt-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
-                      <span className="ml-auto text-right min-w-0">
-                        <span className="block text-[0.8rem] font-semibold tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>Ready by {notes.readyBy}</span>
-                        <span className="block text-[0.58rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>what {firstName} asked for</span>
-                      </span>
+                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
                     </div>
-                    <div className="flex items-center" aria-hidden="true">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#C4849A' }} />
-                      <span className="flex-1 h-[3px] mx-1 rounded-full" style={{ background: '#C4849A' }} />
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#C4849A' }} />
-                    </div>
-                    <div className="flex justify-between gap-2 mt-2">
-                      <div className="min-w-0">
-                        <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).start}</p>
-                        <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
+                    {/* Compact start→done rail tucked left; the client's ask gets
+                        its own clear spot on the right instead of a tiny caption. */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).start}</p>
+                          <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
+                        </div>
+                        <div className="flex items-center flex-shrink-0" aria-hidden="true">
+                          <span className="w-2 h-2 rounded-full" style={{ background: '#C4849A' }} />
+                          <span className="w-10 h-[2.5px] mx-1 rounded-full" style={{ background: '#C4849A' }} />
+                          <span className="w-2 h-2 rounded-full" style={{ background: '#C4849A' }} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).end}</p>
+                          <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
+                        </div>
                       </div>
-                      <div className="min-w-0 text-right">
-                        <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).end}</p>
-                        <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
+                      <div className="sm:text-right pt-3 sm:pt-0 border-t sm:border-t-0" style={{ borderColor: dm ? '#2e2e38' : '#f3ede7' }}>
+                        <p className="text-[1.05rem] font-semibold leading-tight tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>Ready by {notes.readyBy}</p>
+                        <p className="text-[0.62rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>what {firstName} asked for</p>
                       </div>
                     </div>
                     {runsPastReady && (
@@ -1980,7 +2112,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {bridalInquiry.preferred_date && bridalInquiry.preferred_date !== bridalInquiry.wedding_date && (
                   <BField dm={dm} label="Preferred Appt" value={biPreferred} />
                 )}
-                <BField dm={dm} label="Ready By (Requested)" value={bridalInquiry.makeup_ready_by_time} accent />
+                {/* The requested ready-by sometimes lives only in the booking
+                    notes, but it's still an inquiry answer — always show it here. */}
+                <BField dm={dm} label="Ready By (Requested)" value={bridalInquiry.makeup_ready_by_time || notes.readyBy} accent />
                 <BField dm={dm} label="Venue Access" value={bridalInquiry.venue_access_time} />
                 <BField dm={dm} label="Hairstylist Arrive By" value={bridalInquiry.ready_by_time} />
                 <BField dm={dm} label="Photographer Arrives" value={bridalInquiry.photographer_arrival_time} />
@@ -2316,7 +2450,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         aria-hidden={!showSchedule}
         className="fixed inset-y-0 right-0 z-[9996] flex flex-col"
         style={{
-          width: 'min(400px, 92vw)',
+          width: `min(${scheduleW}px, 92vw)`,
           transform: showSchedule ? 'translateX(0)' : 'translateX(105%)',
           transition: 'transform 0.32s cubic-bezier(0.4,0,0.2,1)',
           background: dm ? '#141418' : '#fff',
@@ -2325,6 +2459,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           pointerEvents: showSchedule ? 'auto' : 'none',
         }}
       >
+        {/* Drag the left edge to make the calendar wider or narrower */}
+        <div
+          className="hidden sm:flex absolute inset-y-0 left-0 w-3.5 -ml-1.5 z-10 items-center justify-center"
+          style={{ cursor: 'ew-resize', touchAction: 'none' }}
+          onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); }}
+          onPointerMove={resizeSchedule}
+          onPointerUp={persistScheduleW}
+          title="Drag to resize"
+        >
+          <span className="w-[3px] h-10 rounded-full" style={{ background: dm ? '#3a3a48' : '#e2d6dc' }} />
+        </div>
         <div className="flex items-center gap-3 px-4 py-3.5 flex-shrink-0"
           style={{ borderBottom: `1px solid ${dm ? '#2a2a32' : '#f0e8ec'}` }}>
           <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#27272a' : 'rgba(212,160,176,0.14)' }}>
@@ -2342,21 +2487,37 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         </div>
         <div className="flex-1 overflow-y-auto px-3.5 py-4" data-lenis-prevent>
           <ScheduleView
-            bookings={
-              // While the panel is open with a new date/window, ghost it onto the
-              // day (the pending date if she moved it) as a dashed block so she can
-              // see exactly where it lands.
-              showTimePicker && pendingStart && (pendingWindow !== booking.time || pendingDate !== booking.date) && scheduleDay === (pendingDate || booking.date)
-                ? [
-                    ...allBookings.filter(b => b.id !== booking.id),
-                    { ...booking, date: pendingDate || booking.date, time: pendingWindow, status: 'pending', name: `${firstName} · new time` },
-                  ]
-                : allBookings
-            }
+            bookings={(() => {
+              // While a picker is open, ghost the draft onto the day as a dashed
+              // block so she can see exactly where it lands: the reschedule
+              // panel's new window, and/or the consultation being scheduled.
+              let list = allBookings;
+              if (showTimePicker && pendingStart && (pendingWindow !== booking.time || pendingDate !== booking.date) && scheduleDay === (pendingDate || booking.date)) {
+                list = [
+                  ...list.filter(b => b.id !== booking.id),
+                  { ...booking, date: pendingDate || booking.date, time: pendingWindow, status: 'pending', name: `${firstName} · new time` },
+                ];
+              }
+              if (consultExpanded && consultDraft?.date && consultDraft?.time) {
+                list = [
+                  ...list.map(b => (b.id === booking.id ? { ...b, consultation_date: null } : b)),
+                  {
+                    id: `consult-draft-${booking.id}`,
+                    name: `${firstName} · consultation`,
+                    consultation_date: consultDraft.date,
+                    consultation_time: consultDraft.time,
+                    consultation_type: consultDraft.type || 'Zoom',
+                    status: 'pending',
+                  },
+                ];
+              }
+              return list;
+            })()}
             classRegs={classRegs}
             dateKey={scheduleDay}
             onChangeDate={setScheduleDay}
             dm={dm}
+            withViews
           />
         </div>
       </aside>

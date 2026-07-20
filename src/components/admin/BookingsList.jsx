@@ -239,6 +239,14 @@ export default function BookingsList({
     .filter(b => b.source !== 'booksy' && b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
+  // "2h ago" labels for the Just Booked rail
+  const timeAgo = (iso) => {
+    const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    return `${Math.round(mins / 60)}h ago`;
+  };
+
   // A booking earns a spot on the appointments list only if it's an actual
   // appointment or consultation. Booksy-imported CRM contacts (no date and no
   // consultation) live in the Clients tab, not here, so they never clutter the
@@ -509,33 +517,69 @@ export default function BookingsList({
           <button
             onClick={() => setShowRecentPanel(v => !v)}
             aria-expanded={showRecentPanel}
-            className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-colors"
+            className="w-full flex items-center gap-3 pl-4 pr-4 py-3.5 rounded-2xl text-left transition-all active:scale-[0.995]"
             style={{
-              background: dm ? '#26262e' : '#fff',
-              border: `1px solid ${dm ? '#34343d' : '#EAEBF0'}`,
-              borderLeft: '3px solid #D4A0B0',
-              boxShadow: dm ? 'none' : '0 1px 3px rgba(60,45,35,0.05), 0 4px 14px rgba(60,45,35,0.05)',
+              background: dm
+                ? 'linear-gradient(120deg, rgba(212,160,176,0.16) 0%, #26262e 58%)'
+                : 'linear-gradient(120deg, #FDF1F5 0%, #FFFFFF 62%)',
+              border: `1px solid ${dm ? '#453640' : '#F2DAE4'}`,
+              boxShadow: dm ? 'none' : '0 1px 3px rgba(160,96,122,0.06), 0 6px 20px rgba(160,96,122,0.09)',
             }}
           >
-            <div className="flex items-center gap-2.5">
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: dm ? '#c47a92' : '#D4A0B0' }} />
-              <span className="text-[0.6rem] font-bold tracking-[0.18em] uppercase" style={{ color: dm ? '#c47a92' : '#A0607A' }}>Just Booked</span>
-              <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.3)', color: dm ? '#c47a92' : '#A0607A' }}>
-                {recentBookings.length}
+            {/* Icon badge with a live ping — the thing that catches the eye */}
+            <span className="relative w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #E2A4BA, #B9758F)', boxShadow: '0 2px 8px rgba(196,132,154,0.35)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/>
+              </svg>
+              <span className="absolute -top-1 -right-1 flex w-3 h-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: '#E05B7F' }} />
+                <span className="relative inline-flex rounded-full w-3 h-3" style={{ background: '#E05B7F', border: `2px solid ${dm ? '#26262e' : '#fff'}` }} />
               </span>
-              <span className="text-[0.58rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>last 24 hrs</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[0.7rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>
-                {showRecentPanel ? 'collapse' : 'view all'}
+            </span>
+
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                <span className="text-[0.84rem] font-bold" style={{ color: dm ? '#ECD5DE' : '#7E4059' }}>Just Booked</span>
+                <span className="text-[0.6rem] font-bold px-1.5 py-[1.5px] rounded-full tabular-nums"
+                  style={{ background: dm ? 'rgba(224,91,127,0.2)' : 'rgba(224,91,127,0.12)', color: '#E05B7F' }}>
+                  {recentBookings.length} new
+                </span>
+              </span>
+              <span className="block text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#a18994' : '#B08A99' }}>
+                {(recentBookings[0].name || 'Someone').split(' ')[0]} booked {timeAgo(recentBookings[0].created_date)}
+                {recentBookings.length > 1 ? ` · ${recentBookings.length - 1} more in the last 24 hrs` : ''}
+              </span>
+            </span>
+
+            {/* Stacked initials of the newest clients */}
+            <span className="hidden sm:flex items-center flex-shrink-0" style={{ paddingLeft: 8 }}>
+              {recentBookings.slice(0, 3).map((b, i) => (
+                <span key={b.id} className="w-7 h-7 rounded-full flex items-center justify-center font-serif text-[0.72rem]"
+                  style={{ background: dm ? '#3a2e35' : '#F6E3EA', color: dm ? '#e7c9d5' : '#A0607A',
+                    border: `2px solid ${dm ? '#26262e' : '#fff'}`, marginLeft: i === 0 ? 0 : -8 }}>
+                  {(b.name || '?').trim().charAt(0).toUpperCase()}
+                </span>
+              ))}
+              {recentBookings.length > 3 && (
+                <span className="w-7 h-7 rounded-full flex items-center justify-center text-[0.6rem] font-bold tabular-nums"
+                  style={{ background: dm ? '#2e2e36' : '#FBF5F7', color: dm ? '#a18994' : '#A0607A',
+                    border: `2px solid ${dm ? '#26262e' : '#fff'}`, marginLeft: -8 }}>
+                  +{recentBookings.length - 3}
+                </span>
+              )}
+            </span>
+
+            <span className="flex items-center gap-1.5 flex-shrink-0 pl-1">
+              <span className="text-[0.68rem] font-semibold" style={{ color: dm ? '#c47a92' : '#A0607A' }}>
+                {showRecentPanel ? 'Hide' : 'View'}
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#c47a92' : '#A0607A'} strokeWidth="2"
                 className="w-3.5 h-3.5"
                 style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showRecentPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
-            </div>
+            </span>
           </button>
 
           {/* Floating dropdown — animates transform + opacity only (GPU-composited), so it stays
@@ -583,17 +627,20 @@ export default function BookingsList({
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {recentBookings
                 .filter(b => !recentSearch || [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase())))
-                .map((b, i) => (
+                .map(b => (
                   <button
                     key={b.id}
                     onClick={() => onSelect(b)}
-                    className="flex items-center gap-4 w-full text-left px-5 py-4 transition-colors group"
+                    className="flex items-center gap-3.5 w-full text-left px-5 py-4 transition-colors"
                     style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(160,120,90,0.08)'}` }}
                     onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
-                      <span className="font-serif text-[#D4A0B0] text-[0.85rem]">{i + 1}</span>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: dm ? '#3a2e35' : '#F6E3EA' }}>
+                      <span className="font-serif text-[0.85rem]" style={{ color: dm ? '#e7c9d5' : '#A0607A' }}>
+                        {(b.name || '?').trim().charAt(0).toUpperCase()}
+                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
@@ -602,10 +649,12 @@ export default function BookingsList({
                         {b.date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                       </p>
                     </div>
-                    <StatusBadge status={b.status} />
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                    </svg>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-[0.6rem] font-medium tabular-nums" style={{ color: dm ? '#a06070' : '#c48090' }}>
+                        {timeAgo(b.created_date)}
+                      </span>
+                      <StatusBadge status={b.status} />
+                    </div>
                   </button>
                 ))
               }
