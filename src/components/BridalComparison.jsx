@@ -1,64 +1,71 @@
 import { useState } from 'react';
 
-const ROWS = [
-  {
-    category: 'Pricing',
-    icon: '💰',
-    rows: [
-      { label: 'Price', luxury: '$750', fullday: '$1,700' },
-      { label: 'Deposit (Zelle)', luxury: '$375', fullday: '$850' },
-      { label: 'Remaining Balance', luxury: 'Cash day-of', fullday: 'Cash day-of' },
-      { label: 'Bridesmaid Add-ons', luxury: 'Available', fullday: 'Available' },
-    ],
-  },
-  {
-    category: 'Service Scope',
-    icon: '✨',
-    rows: [
-      { label: 'Duration', luxury: '2 hours', fullday: 'Four hours' },
-      { label: 'Full Bridal Makeup', luxury: true, fullday: true },
-      { label: 'Lash Application', luxury: true, fullday: true },
-      { label: 'Touch-up Kit', luxury: true, fullday: true },
-      { label: 'Second Look / Bridal Switch', luxury: null, fullday: true },
-      { label: 'Zoom Consultation (30 min)', luxury: true, fullday: null },
-    ],
-  },
-  {
-    category: 'Travel & Location',
-    icon: '🚗',
-    rows: [
-      { label: 'Studio (Mountain House, CA)', luxury: true, fullday: true },
-      { label: 'On-Location Travel', luxury: '+$200 fee', fullday: '+$200 fee' },
-      { label: 'Start Before 7 AM', luxury: 'Upgrade required', fullday: 'Included' },
-      { label: 'Location Over 1 hr Away', luxury: 'Upgrade required', fullday: 'Included' },
-    ],
-  },
-  {
-    category: 'When to Choose',
-    icon: '💡',
-    rows: [
-      { label: 'Studio / elopement wedding', luxury: true, fullday: null },
-      { label: 'Venue wedding with bridal suite', luxury: null, fullday: true },
-      { label: 'Early morning ceremony', luxury: null, fullday: true },
-      { label: 'Need a second look on the day', luxury: null, fullday: true },
-    ],
-  },
-];
+// Package comparison, shown under the bridal cards behind a disclosure.
+//
+// Price, deposit and duration are read off the live service records rather than
+// retyped here. They used to be hardcoded, which had already drifted: the table
+// claimed Full Day was "Four hours" while the service itself says "Up to 4
+// hours". Anything below the Pricing/Duration rows is editorial (it isn't in the
+// services table), so it stays as config.
+const cleanDeposit = (d) => (d || '').replace(/\s*deposit\s*$/i, '').trim();
+
+function buildSections(luxury, fullday) {
+  return [
+    {
+      category: 'Pricing',
+      rows: [
+        { label: 'Price', luxury: luxury.price, fullday: fullday.price },
+        { label: 'Deposit (Zelle)', luxury: cleanDeposit(luxury.deposit), fullday: cleanDeposit(fullday.deposit) },
+        { label: 'Remaining balance', luxury: 'Cash day-of', fullday: 'Cash day-of' },
+        { label: 'Bridesmaid add-ons', luxury: 'Available', fullday: 'Available' },
+      ],
+    },
+    {
+      category: 'Service scope',
+      rows: [
+        { label: 'Duration', luxury: luxury.duration, fullday: fullday.duration },
+        { label: 'Full bridal makeup', luxury: true, fullday: true },
+        { label: 'Lash application', luxury: true, fullday: true },
+        { label: 'Touch-up kit', luxury: true, fullday: true },
+        { label: 'Second look / bridal switch', luxury: null, fullday: true },
+        { label: 'Zoom consultation (30 min)', luxury: true, fullday: null },
+      ],
+    },
+    {
+      category: 'Travel & location',
+      rows: [
+        { label: 'Studio (Mountain House, CA)', luxury: true, fullday: true },
+        { label: 'On-location travel', luxury: '+$200 fee', fullday: '+$200 fee' },
+        { label: 'Start before 7 AM', luxury: 'Upgrade required', fullday: 'Included' },
+        { label: 'Location over 1 hr away', luxury: 'Upgrade required', fullday: 'Included' },
+      ],
+    },
+    {
+      category: 'When to choose',
+      rows: [
+        { label: 'Studio / elopement wedding', luxury: true, fullday: null },
+        { label: 'Venue wedding with bridal suite', luxury: null, fullday: true },
+        { label: 'Early morning ceremony', luxury: null, fullday: true },
+        { label: 'Need a second look on the day', luxury: null, fullday: true },
+      ],
+    },
+  ];
+}
 
 function Cell({ value }) {
   if (value === true) return (
-    <span className="flex items-center justify-center">
-      <span className="w-5 h-5 rounded-full bg-[#D4A0B0]/15 flex items-center justify-center">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-      </span>
+    <span className="flex items-center justify-center" aria-label="Included">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
     </span>
   );
   if (value === null) return (
-    <span className="flex items-center justify-center">
-      <span className="w-4 h-px bg-[#e0e0e0] block" />
+    <span className="flex items-center justify-center" aria-label="Not included">
+      <span className="w-3 h-px bg-[#D8D8DE] block" />
     </span>
   );
-  return <span className="text-[0.75rem] text-[#555] font-medium text-center block leading-tight">{value}</span>;
+  return <span className="text-[0.78rem] text-[#3F3F46] text-center block leading-snug">{value}</span>;
 }
 
 export default function BridalComparison({ bridalServices, onSelect }) {
@@ -69,65 +76,78 @@ export default function BridalComparison({ bridalServices, onSelect }) {
 
   if (!luxury || !fullday) return null;
 
+  const sections = buildSections(luxury, fullday);
+  const cols = [
+    { svc: luxury, name: 'Luxury' },
+    { svc: fullday, name: 'Full Day' },
+  ];
+
+  const GRID = 'grid grid-cols-[minmax(96px,132px)_1fr_1fr] sm:grid-cols-[180px_1fr_1fr]';
+
   return (
-    <div className="-mt-1">
-      {/* Toggle button */}
+    <div>
+      {/* Disclosure. Reads as a real button so it's obvious there's more here. */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 group"
+        aria-expanded={open}
+        aria-controls="bridal-comparison-panel"
+        className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-[var(--radius-lg)] border border-[#E4E4E9] bg-white text-[#111] hover:border-[#C4849A]/45 hover:bg-[#FCFAFB] active:scale-[0.995] transition-all duration-200"
       >
-        <span className={`w-4 h-4 rounded-full border border-[#D4A0B0]/40 flex items-center justify-center transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-45' : ''}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-2.5 h-2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" className="w-4 h-4 flex-shrink-0">
+          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        <span className="text-[0.88rem] font-medium tracking-[0.01em]">
+          {open ? 'Hide comparison' : 'Compare Luxury and Full Day'}
         </span>
-        <span className="text-[0.82rem] font-semibold text-[#C4889A]">
-          {open ? 'Hide comparison' : 'Compare bridal packages side-by-side'}
-        </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#C4889A" strokeWidth="2" className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>
-          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9A9AA2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className="w-4 h-4 flex-shrink-0 transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
 
-      {/* Comparison table */}
       {open && (
-        <div className="mt-4 rounded-2xl border border-[#ede8e3] overflow-hidden bg-white shadow-[0_4px_24px_rgba(0,0,0,0.05)]"
-          style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
-
+        <div
+          id="bridal-comparison-panel"
+          className="mt-3 rounded-[var(--radius-lg)] border border-[#E7E7EA] overflow-hidden bg-white"
+          style={{ animation: 'fadeSlideDown 0.2s ease-out' }}
+        >
           {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_1fr] bg-[#FAF6F3] border-b border-[#ede8e3]">
-            <div className="w-[90px] sm:w-[140px] p-3 flex items-end">
-              <span className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase text-[#bbb]">Feature</span>
+          <div className={`${GRID} border-b border-[#E7E7EA]`}>
+            <div className="px-4 py-4 flex items-end">
+              <span className="text-[0.62rem] font-medium tracking-[0.14em] uppercase text-[#9A9AA2]">Feature</span>
             </div>
-            {[luxury, fullday].map((svc, i) => (
-              <div key={svc.key} className={`p-3 text-center ${i === 0 ? 'border-l border-[#ede8e3]' : 'border-l border-[#ede8e3] bg-[#FDF0F5]/40'}`}>
-                <span className="text-[0.5rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] block mb-0.5">
-                  {i === 0 ? 'Luxury' : 'Full Day'}
+            {cols.map(({ svc, name }, i) => (
+              <div key={svc.key || name}
+                className={`px-3 py-4 text-center border-l border-[#E7E7EA] ${i === 1 ? 'bg-[#FBFBFC]' : ''}`}>
+                <span className="text-[0.62rem] font-medium tracking-[0.14em] uppercase text-[#C4849A] block mb-1.5">
+                  {name}
                 </span>
-                <span className="font-serif text-[1rem] sm:text-[1.1rem] text-[#111] block leading-tight">{svc.price}</span>
-                <span className="text-[0.6rem] text-[#bbb]">{svc.duration}</span>
+                <span className="text-[1.35rem] text-[#111] block leading-none tracking-[-0.01em]">{svc.price}</span>
+                <span className="text-[0.72rem] text-[#9A9AA2] block mt-1.5">{svc.duration}</span>
               </div>
             ))}
           </div>
 
-          {/* Rows by category */}
-          {ROWS.map((section) => (
+          {sections.map((section) => (
             <div key={section.category}>
-              {/* Section header */}
-              <div className="flex items-center gap-1.5 px-3 py-2 bg-[#FAF6F3] border-t border-[#ede8e3]">
-                <span className="text-[0.8rem]">{section.icon}</span>
-                <span className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#aaa]">{section.category}</span>
+              <div className="px-4 py-2.5 bg-[#F7F7F9] border-b border-[#EDEDF0]">
+                <span className="text-[0.62rem] font-medium tracking-[0.14em] uppercase text-[#6F6F78]">
+                  {section.category}
+                </span>
               </div>
               {section.rows.map((row, ri) => (
                 <div
                   key={row.label}
-                  className={`grid grid-cols-[auto_1fr_1fr] border-t border-[#f5f0eb] ${ri % 2 === 0 ? 'bg-white' : 'bg-[#FDFAF8]'}`}
+                  className={`${GRID} ${ri === section.rows.length - 1 ? '' : 'border-b border-[#F1F1F4]'}`}
                 >
-                  <div className="w-[90px] sm:w-[140px] px-3 py-2.5 flex items-center">
-                    <span className="text-[0.68rem] text-[#888] leading-tight">{row.label}</span>
+                  <div className="px-4 py-3 flex items-center">
+                    <span className="text-[0.78rem] text-[#5F5F68] leading-snug">{row.label}</span>
                   </div>
-                  <div className="px-2 py-2.5 border-l border-[#f0ebe6] flex items-center justify-center">
+                  <div className="px-3 py-3 border-l border-[#F1F1F4] flex items-center justify-center">
                     <Cell value={row.luxury} />
                   </div>
-                  <div className="px-2 py-2.5 border-l border-[#f0ebe6] flex items-center justify-center bg-[#FDF0F5]/20">
+                  <div className="px-3 py-3 border-l border-[#F1F1F4] flex items-center justify-center bg-[#FBFBFC]">
                     <Cell value={row.fullday} />
                   </div>
                 </div>
@@ -135,16 +155,16 @@ export default function BridalComparison({ bridalServices, onSelect }) {
             </div>
           ))}
 
-          {/* CTA row */}
-          <div className="grid grid-cols-[auto_1fr_1fr] border-t border-[#ede8e3] bg-[#FAF6F3]">
-            <div className="w-[90px] sm:w-[140px]" />
-            {[luxury, fullday].map((svc, i) => (
-              <div key={svc.key} className="p-2.5 border-l border-[#ede8e3]">
+          {/* CTAs */}
+          <div className={`${GRID} border-t border-[#E7E7EA]`}>
+            <div />
+            {cols.map(({ svc, name }, i) => (
+              <div key={svc.key || name} className={`p-3 border-l border-[#E7E7EA] ${i === 1 ? 'bg-[#FBFBFC]' : ''}`}>
                 <button
                   onClick={() => { setOpen(false); onSelect(svc); }}
-                  className="w-full h-9 bg-[#111] text-white text-[0.62rem] font-medium tracking-[0.04em] rounded-lg hover:bg-[#2a2a2a] active:scale-[0.97] transition-all flex items-center justify-center gap-1 whitespace-nowrap px-2"
+                  className="w-full h-10 bg-[#111] text-white text-[0.76rem] font-medium tracking-[0.02em] rounded-[var(--radius)] hover:bg-[#2a2a2a] active:scale-[0.97] transition-all flex items-center justify-center gap-1.5 whitespace-nowrap px-2"
                 >
-                  {i === 0 ? 'Luxury' : 'Full Day'} <span className="text-[#D4A0B0]">→</span>
+                  {name} <span className="text-[#D4A0B0]">→</span>
                 </button>
               </div>
             ))}
