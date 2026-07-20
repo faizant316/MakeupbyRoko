@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useModalLenis } from '@/lib/modalLenis';
+import { useModalLenis, scrollModalToEl } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/apiClient';
 import { firstBookableWednesday } from '@/lib/classSchedule';
@@ -38,8 +38,31 @@ function formatChosen(raw) {
   } catch { return ''; }
 }
 
+// Small numbered badge so the three things this screen asks for read as an
+// ordered list, not three panels that happen to sit near each other. `state`
+// drives the colour: done (filled rose), active (outlined ink), waiting (grey).
+function StepBadge({ n, state }) {
+  const style = state === 'done'
+    ? { background: PLUM.rose, color: '#fff', borderColor: PLUM.rose }
+    : state === 'active'
+      ? { background: PLUM.ink, color: '#fff', borderColor: PLUM.ink }
+      : { background: 'transparent', color: PLUM.grayLt, borderColor: PLUM.border };
+  return (
+    <span
+      className="w-[18px] h-[18px] rounded-full border flex items-center justify-center text-[0.58rem] font-bold flex-shrink-0 transition-all"
+      style={style}
+    >
+      {state === 'done'
+        ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        : n}
+    </span>
+  );
+}
+
 export default function ClassContactForm({ form, setForm, selectedClass, format, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, onBack, onClose, onCheckout, isRedirecting }) {
   const scrollRef = useRef(null);
+  const timeRef = useRef(null);
+  const detailsRef = useRef(null);
   useModalLenis(scrollRef);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fieldsValid = form.first_name && form.last_name && form.email && form.phone;
@@ -65,6 +88,35 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
   const blockedSet = new Set(blockedDates.map(b => b.date));
   const bookedSet = new Set(bookedData?.dates || []);
   const firstOpenKey = firstBookableWednesday();
+
+  // Picking a date used to leave the screen dead still, with the start-time grid
+  // parked below the fold on mobile and easy to read past on desktop. Each pick
+  // now walks the client to whatever it unlocked.
+  const goTo = (ref) => {
+    const el = ref.current;
+    if (!el) return;
+    requestAnimationFrame(() => scrollModalToEl(scrollRef.current, el, -12));
+  };
+
+  const pickDate = (key) => {
+    setSelectedDate(key);
+    if (key && !selectedSlot) goTo(timeRef);
+  };
+
+  const pickSlot = (win) => {
+    const next = selectedSlot === win ? null : win;
+    setSelectedSlot(next);
+    // Desktop keeps the details column in view beside the calendar, so only the
+    // stacked mobile layout needs walking down to the form.
+    if (next && !fieldsValid && window.innerWidth < 1024) goTo(detailsRef);
+  };
+
+  // What the footer button does when the form isn't finished yet: instead of
+  // sitting there greyed out, it scrolls to the thing that's still missing.
+  const nextStep = !selectedDate ? null
+    : !selectedSlot ? { label: 'Next: pick your start time', ref: timeRef }
+    : !fieldsValid ? { label: 'Next: fill in your details', ref: detailsRef }
+    : null;
 
   return (
     <>
@@ -105,7 +157,10 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
 
             {/* ── Left: Wednesday + start time ── */}
             <div>
-              <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM.pink }}>Choose your date</p>
+              <div className="flex items-center gap-2 mb-1">
+                <StepBadge n={1} state={selectedDate ? 'done' : 'active'} />
+                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase" style={{ color: PLUM.pink }}>Choose your date</p>
+              </div>
               <h2 className="font-serif text-[1.5rem] text-[#1a1015] mb-1">Pick a Wednesday</h2>
               <p className="text-[0.82rem] leading-[1.7] mb-5" style={{ color: PLUM.gray }}>
                 One client per Wednesday, so the whole day is yours. Any Wednesday at least two weeks out is open, page ahead to any date you like.
@@ -113,20 +168,28 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
 
               <ClassWednesdayPicker
                 selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
+                onSelectDate={pickDate}
                 firstOpenKey={firstOpenKey}
                 bookedSet={bookedSet}
                 blockedSet={blockedSet}
               />
 
-              {/* Start time within the 11 AM – 7 PM class day */}
-              <div className="mt-6">
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM.pink }}>Choose your time</p>
-                <h3 className="font-serif text-[1.2rem] text-[#1a1015] mb-1">Pick a start time</h3>
+              {/* Start time within the 11 AM – 7 PM class day. Held back until a
+                  Wednesday exists so step 2 reads as the thing the date unlocks. */}
+              <div ref={timeRef} className="mt-6 scroll-mt-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <StepBadge n={2} state={selectedSlot ? 'done' : selectedDate ? 'active' : 'waiting'} />
+                  <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase"
+                    style={{ color: selectedDate ? PLUM.pink : PLUM.grayLt }}>Choose your time</p>
+                </div>
+                <h3 className="font-serif text-[1.2rem] mb-1" style={{ color: selectedDate ? '#1a1015' : PLUM.gray }}>Pick a start time</h3>
                 <p className="text-[0.78rem] leading-[1.7] mb-4" style={{ color: PLUM.gray }}>
-                  Class hours are {CLASS_DAY.label}. Your {selectedClass?.duration?.toLowerCase()} can start any time from 11:00 AM{lastStart ? ` to ${lastStart}` : ''}.
+                  {selectedDate
+                    ? <>Class hours are {CLASS_DAY.label}. Your {selectedClass?.duration?.toLowerCase()} can start any time from 11:00 AM{lastStart ? ` to ${lastStart}` : ''}.</>
+                    : 'Pick your Wednesday above and your start times will open up here.'}
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 transition-opacity"
+                  style={{ opacity: selectedDate ? 1 : 0.4 }}>
                   {windows.map(win => {
                     const start = parseRange(win).start;
                     const isSel = selectedSlot === win;
@@ -134,11 +197,12 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                       <button
                         key={win}
                         type="button"
-                        onClick={() => setSelectedSlot(isSel ? null : win)}
+                        disabled={!selectedDate}
+                        onClick={() => pickSlot(win)}
                         className="py-2.5 rounded-xl text-[0.78rem] font-medium tabular-nums transition-all border touch-manipulation"
                         style={isSel
                           ? { background: PLUM.ink, color: '#fff', borderColor: PLUM.ink, boxShadow: '0 4px 16px rgba(42,22,32,0.2)' }
-                          : { background: PLUM.tint, color: PLUM.deep, borderColor: PLUM.border }}
+                          : { background: PLUM.tint, color: PLUM.deep, borderColor: PLUM.border, cursor: selectedDate ? 'pointer' : 'not-allowed' }}
                       >
                         {start}
                       </button>
@@ -160,8 +224,11 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
 
             {/* ── Right: details + order summary ── */}
             <div className="flex flex-col gap-8">
-              <div>
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: PLUM.pink }}>Your details</p>
+              <div ref={detailsRef} className="scroll-mt-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <StepBadge n={3} state={fieldsValid ? 'done' : selectedSlot ? 'active' : 'waiting'} />
+                  <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase" style={{ color: PLUM.pink }}>Your details</p>
+                </div>
                 <h2 className="font-serif text-[1.5rem] text-[#1a1015] mb-4">Your Information</h2>
 
                 <div className="flex flex-col gap-5">
@@ -231,18 +298,29 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
       >
         <div className="w-full sm:max-w-[980px] sm:mx-auto">
           <button
-            onClick={() => isValid && onCheckout()}
-            disabled={!isValid || isRedirecting}
+            onClick={() => {
+              if (isValid) { onCheckout(); return; }
+              if (nextStep) goTo(nextStep.ref);
+            }}
+            disabled={(!isValid && !nextStep) || isRedirecting}
             className="w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] transition-all flex items-center justify-center gap-2"
             style={isValid && !isRedirecting
               ? { background: PLUM.ink, color: '#fff', boxShadow: '0 4px 20px rgba(42,22,32,0.22)' }
-              : { background: PLUM.disabled, color: PLUM.grayLt, cursor: 'not-allowed' }
+              // Something's still missing but we know where it is — keep the
+              // button live so it can carry them there instead of stonewalling.
+              : nextStep
+                ? { background: '#fff', color: PLUM.deep, border: `1px solid ${PLUM.rose}`, boxShadow: '0 2px 12px rgba(42,22,32,0.06)' }
+                : { background: PLUM.disabled, color: PLUM.grayLt, cursor: 'not-allowed' }
             }
           >
-            {!selectedDate ? 'Choose your Wednesday to continue'
-              : !selectedSlot ? 'Choose your start time to continue'
-              : !fieldsValid ? 'Fill in your details to continue'
-              : 'Continue to Review →'}
+            {isValid ? 'Continue to Review →'
+              : nextStep
+                ? <>{nextStep.label}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 animate-bounce">
+                      <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+                    </svg>
+                  </>
+                : 'Choose your Wednesday to continue'}
           </button>
           <p className="text-[0.65rem] text-center mt-2" style={{ color: PLUM.gray }}>
             Next: review &amp; sign, then secure checkout <span style={{ color: PLUM.pink }}>✦</span>
