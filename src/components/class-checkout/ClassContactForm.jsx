@@ -59,21 +59,40 @@ function StepBadge({ n, state }) {
   );
 }
 
-// Mobile-only receipt of what the previous step captured. The auto-scroll moves
+const PICKED_ICONS = {
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+  clock: <><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></>,
+};
+
+// Mobile-only receipt of what the previous steps captured. The auto-scroll moves
 // the calendar off screen the instant you tap a day, so without this you arrive
-// at the next step with no idea what you just picked. Desktop keeps both columns
-// visible and has the order summary, so it doesn't need the repeat.
-function PickedPill({ label, sub }) {
+// at the next step with no idea what you just picked. Reads as a small booking
+// card (label above, answer in serif below) rather than a notification banner —
+// this is your booking taking shape, so it should look like it. Desktop keeps
+// both columns and the order summary in view, so it doesn't need the repeat.
+function PickedCard({ items }) {
   return (
-    <div className="lg:hidden flex items-center gap-2 px-3.5 py-2.5 rounded-xl mb-4"
-      style={{ background: 'rgba(196,132,154,0.1)', border: `1px solid ${PLUM.rose}45` }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="2.5" className="w-3.5 h-3.5 flex-shrink-0">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-      <span className="text-[0.76rem] font-medium leading-tight" style={{ color: PLUM.deep }}>
-        {label}
-        {sub && <span className="font-normal" style={{ color: PLUM.gray }}> · {sub}</span>}
-      </span>
+    <div className="lg:hidden rounded-2xl overflow-hidden mb-5"
+      style={{ background: '#fff', border: `1px solid ${PLUM.border}`, boxShadow: '0 4px 18px rgba(17,17,17,0.05)' }}>
+      {items.map((it, i) => (
+        <div key={it.label} className="flex items-center gap-3 px-4 py-3"
+          style={i > 0 ? { borderTop: `1px solid ${PLUM.borderSoft}` } : undefined}>
+          <span className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(196,132,154,0.12)' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="1.7"
+              strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px]">
+              {PICKED_ICONS[it.icon]}
+            </svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.53rem] font-semibold tracking-[0.14em] uppercase" style={{ color: PLUM.rose }}>{it.label}</p>
+            <p className="font-serif text-[0.98rem] leading-tight mt-0.5 truncate" style={{ color: '#1a1015' }}>{it.value}</p>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="3" className="w-3.5 h-3.5 flex-shrink-0">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      ))}
     </div>
   );
 }
@@ -111,18 +130,18 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
   // Picking a date used to leave the screen dead still, with the start-time grid
   // parked below the fold on mobile and easy to read past on desktop. Each pick
   // now walks the client to whatever it unlocked.
-  // The pause matters: tapping a day and being yanked away in the same frame
-  // reads as "did that even register?". Holding still long enough to see the
-  // day turn black, then moving, keeps the tap and its result connected.
+  // Just enough of a beat to see the day turn black before the view moves —
+  // scrolling in the same frame reads as "did that even register?", but any
+  // longer and the tap feels laggy. The move itself is quick too.
   const goTo = (ref, delay = 0) => {
     const el = ref.current;
     if (!el) return;
-    setTimeout(() => scrollModalToEl(scrollRef.current, el, -12), delay);
+    setTimeout(() => scrollModalToEl(scrollRef.current, el, -12, 0.4), delay);
   };
 
   const pickDate = (key) => {
     setSelectedDate(key);
-    if (key && !selectedSlot) goTo(timeRef, 380);
+    if (key && !selectedSlot) goTo(timeRef, 130);
   };
 
   const pickSlot = (win) => {
@@ -130,7 +149,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
     setSelectedSlot(next);
     // Desktop keeps the details column in view beside the calendar, so only the
     // stacked mobile layout needs walking down to the form.
-    if (next && !fieldsValid && window.innerWidth < 1024) goTo(detailsRef, 380);
+    if (next && !fieldsValid && window.innerWidth < 1024) goTo(detailsRef, 130);
   };
 
   // What the footer button does when the form isn't finished yet: instead of
@@ -210,7 +229,11 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                     ? <>Class hours are {CLASS_DAY.label}. Your {selectedClass?.duration?.toLowerCase()} can start any time from 11:00 AM{lastStart ? ` to ${lastStart}` : ''}.</>
                     : 'Pick your Wednesday above and your start times will open up here.'}
                 </p>
-                {selectedDate && <PickedPill label={formatChosen(selectedDate)} sub="your Wednesday" />}
+                {selectedDate && (
+                  <PickedCard items={[
+                    { icon: 'calendar', label: 'Your Wednesday', value: formatChosen(selectedDate) },
+                  ]} />
+                )}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 transition-opacity"
                   style={{ opacity: selectedDate ? 1 : 0.4 }}>
                   {windows.map(win => {
@@ -256,7 +279,10 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                 </div>
                 <h2 className="font-serif text-[1.5rem] text-[#1a1015] mb-4">Your Information</h2>
                 {selectedDate && selectedSlot && (
-                  <PickedPill label={formatChosen(selectedDate)} sub={selectedSlot} />
+                  <PickedCard items={[
+                    { icon: 'calendar', label: 'Your Wednesday', value: formatChosen(selectedDate) },
+                    { icon: 'clock', label: 'Start time', value: selectedSlot },
+                  ]} />
                 )}
 
                 <div className="flex flex-col gap-5">
