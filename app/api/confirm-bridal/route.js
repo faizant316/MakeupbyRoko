@@ -28,7 +28,7 @@ export async function POST(req) {
     // trust client-passed values (and never build links from window.location).
     const { data: booking } = await supabase
       .from('bookings')
-      .select('upload_token, deposit_received')
+      .select('upload_token, deposit_received, zelle_uploaded_at')
       .eq('id', bookingId)
       .single();
 
@@ -69,7 +69,12 @@ export async function POST(req) {
       html: bridalConfirmedEmail({
         firstName, serviceName, dateFormatted, time,
         ...(confirmOnly ? {} : { consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
-        uploadUrl, depositReceived: booking?.deposit_received, updated, migrated,
+        // Someone who already uploaded proof shouldn't be asked for a deposit
+        // again just because Roko hasn't confirmed it yet. For the email's
+        // purposes, "sent" is as good as "received".
+        uploadUrl,
+        depositReceived: !!(booking?.deposit_received || booking?.zelle_uploaded_at),
+        updated, migrated,
       }),
     });
 

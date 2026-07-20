@@ -15,6 +15,7 @@ import ScheduleView from './ScheduleView';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS, EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
+import { depositState, depositTone, daysSince, shortDateTime } from './depositState';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -748,7 +749,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                           `Their confirmation: ${booking.service || 'appointment'}${dateFormatted ? ` on ${dateFormatted}` : ''}`,
                           'The consultation details above',
                           ...(zoomIncluded ? ['The Zoom link to join'] : []),
-                          booking.deposit_received ? 'Their personal photo upload link' : 'Zelle deposit info + their photo upload link',
+                          // Mirrors confirm-bridal: proof already sent counts,
+                          // so nobody gets asked for a deposit twice.
+                          (booking.deposit_received || booking.zelle_uploaded_at)
+                            ? 'Their personal photo upload link'
+                            : 'Zelle deposit info + their photo upload link',
                         ]
                       : ['The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])];
                     return (
@@ -2276,6 +2281,54 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="mb-6">
           <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
 
+          {/* When it landed, not just whether. A deposit sent days after booking
+              used to leave no trace at all, which is why it had to be hunted for
+              card by card. */}
+          {(() => {
+            const state = depositState(booking);
+            if (state.kind === 'none') return null;
+            const tone = depositTone(state.kind, dm);
+            const gap = booking.zelle_uploaded_at && booking.created_date
+              ? daysSince(booking.created_date) - daysSince(booking.zelle_uploaded_at)
+              : null;
+            return (
+              <div className="mb-3 px-4 py-3 rounded-[10px] flex items-start gap-2.5"
+                style={{ background: tone.bg, border: `1px solid ${tone.line}` }}>
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[7px]" style={{ background: tone.key }} />
+                <p className="text-[0.8rem] leading-relaxed" style={{ color: dm ? '#e4e4e7' : '#2a2a32' }}>
+                  {state.kind === 'arrived' && (
+                    <>
+                      {(booking.name || 'The client').split(' ')[0]} sent a Zelle screenshot
+                      {booking.zelle_uploaded_at && (
+                        <> <strong style={{ color: tone.fg, fontWeight: 600 }}>{shortDateTime(booking.zelle_uploaded_at)}</strong></>
+                      )}
+                      {gap >= 1 ? `, ${gap === 1 ? 'a day' : `${gap} days`} after booking` : ''}
+                      {'. '}
+                      <span style={{ color: dm ? '#a1a1aa' : '#7a7a84' }}>Confirm it below once you've checked the amount.</span>
+                    </>
+                  )}
+                  {state.kind === 'confirmed' && (
+                    <>
+                      Deposit confirmed
+                      {booking.deposit_confirmed_at && (
+                        <> <strong style={{ color: tone.fg, fontWeight: 600 }}>{shortDateTime(booking.deposit_confirmed_at)}</strong></>
+                      )}
+                      {'.'}
+                    </>
+                  )}
+                  {state.kind === 'waiting' && (
+                    <>
+                      Nothing received yet.
+                      {state.days >= 1 && (
+                        <> Booked <strong style={{ color: tone.fg, fontWeight: 600 }}>{state.days === 1 ? '1 day' : `${state.days} days`}</strong> ago.</>
+                      )}
+                    </>
+                  )}
+                </p>
+              </div>
+            );
+          })()}
+
           {/* Screenshot viewer */}
           {booking.zelle_screenshot && (
             <ZelleScreenshotViewer bookingId={booking.id} table="bookings" dm={dm} />
@@ -2283,7 +2336,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           <div className="flex items-stretch gap-3">
             <button
-              onClick={() => onUpdateBooking({ deposit_received: true })}
+              onClick={() => onUpdateBooking({ deposit_received: true, deposit_confirmed_at: new Date().toISOString() })}
               className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
               style={booking.deposit_received
                 ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#fff', border: '1px solid #22c55e', boxShadow: '0 4px 16px rgba(59,130,246,0.25)' }
@@ -2296,7 +2349,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <span className="text-[0.7rem] font-semibold tracking-[0.04em]">Received</span>
             </button>
             <button
-              onClick={() => onUpdateBooking({ deposit_received: false })}
+              onClick={() => onUpdateBooking({ deposit_received: false, deposit_confirmed_at: null })}
               className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
               style={!booking.deposit_received
                 ? { background: dm ? 'rgba(120,20,20,0.55)' : 'linear-gradient(135deg, rgba(244,63,63,0.08), rgba(220,38,38,0.12))', color: dm ? '#fca5a5' : '#b91c1c', border: `1px solid ${dm ? 'rgba(185,28,28,0.4)' : 'rgba(239,68,68,0.25)'}`, boxShadow: 'none' }

@@ -507,7 +507,10 @@ export default function Admin() {
                     darkMode={dm} onAddClient={() => setShowAddClient(true)} onBulkImport={() => setShowBulkImport(true)}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                    onMarkDepositReceived={(id) => updateBookingMutation.mutate({ id, data: { deposit_received: true } })}
+                    onMarkDepositReceived={(id) => updateBookingMutation.mutate({
+                      id,
+                      data: { deposit_received: true, deposit_confirmed_at: new Date().toISOString() },
+                    })}
                     onBulkUpdate={bulkUpdateBookings}
                     onBulkDelete={bulkDeleteBookings}
                   />

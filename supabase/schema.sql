@@ -21,11 +21,13 @@ create table if not exists bookings (
   notes text,
   admin_notes text, -- 0008: Roko's own private notes, never shown to the client
   status text default 'pending' check (status in ('pending','confirmed','completed','cancelled')),
-  deposit_received boolean default false,
+  deposit_received boolean default false, -- Roko confirmed the money, not the client's claim
+  deposit_confirmed_at timestamptz, -- 0009: when she confirmed it
   deposit_reminder_sent boolean default false,
   appointment_reminder_sent boolean default false,
   feedback_request_sent boolean default false,
   zelle_screenshot text,
+  zelle_uploaded_at timestamptz, -- 0009: when the client uploaded proof (may be days after booking)
   upload_token text,
   reference_photos text[],
   source text -- 'booksy' for CSV-imported clients, null for site bookings
@@ -64,8 +66,10 @@ create table if not exists bridal_inquiries (
   preferred_time text,
   status text default 'new' check (status in ('new','contacted','booked','declined')),
   zelle_screenshot text,
+  zelle_uploaded_at timestamptz, -- 0009: when the client uploaded proof
   upload_token text,
-  zelle_received boolean default false
+  zelle_received boolean default false, -- Roko confirmed it
+  zelle_confirmed_at timestamptz -- 0009
 );
 
 create index if not exists bridal_inquiries_upload_token_idx on bridal_inquiries(upload_token);
