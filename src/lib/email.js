@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { buildContract } from './contract';
-import { STUDIO_ADDRESS, STUDIO_DISPLAY, STUDIO_MAPS_URL } from './studio';
+import { STUDIO_ADDRESS, STUDIO_DISPLAY, STUDIO_MAPS_URL, STUDIO_TOWN } from './studio';
 import { formatPhone, phoneHref } from './phone';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
@@ -246,15 +246,30 @@ function cinfo(html) {
   </td></tr>`;
 }
 
-// Studio address block for in-person classes: the address itself plus a
-// directions button. Mirrors cZoom so online/in-person emails feel like twins.
-function cStudio() {
+// Studio address block: the address itself plus a directions button. Mirrors
+// cZoom so online/in-person emails feel like twins. The label is a parameter
+// because the same block serves classes ("Your Class Location") and non-bridal
+// appointments ("Where To Find Me").
+function cStudio(label = 'Your Class Location') {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:16px;text-align:center;">
-    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Your Class Location</p>
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">${label}</p>
     <p style="font-size:15px;font-weight:600;color:#16110F;margin:0 0 12px;line-height:1.5;">${STUDIO_DISPLAY}</p>
     ${STUDIO_ADDRESS ? clientButton(STUDIO_MAPS_URL, 'Get Directions', true) : ''}
     <p style="font-size:11px;color:#A99FA4;margin:12px 0 0;">Roko's studio</p>
   </td></tr></table>`;
+}
+
+// "$500" → 500. Deliberately refuses anything carrying a "+" ("$750+" is an
+// estimate, not a price), so a remaining balance is only ever stated when it
+// can actually be stood behind.
+function moneyToNum(s) {
+  if (!s || /\+/.test(String(s))) return null;
+  const n = Number(String(s).replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function fmtMoney(n) {
+  return `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 }
 
 function cZoom(zoomLink) {
@@ -320,13 +335,15 @@ function corder(items) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>`;
 }
 
-// Bridal variant of cdeposit. Same pink "Reserve Your Date" box, but the white
-// card leads with the full money picture (package total / deposit due now / cash
-// left on the day) above the Zelle handle, so a bride sees what she owes and
-// when without having to open her upload link. Price and remaining are optional:
-// when they're missing (e.g. a service row with no price) the breakdown quietly
-// collapses to just the deposit line and the box looks like it always did.
-function cdepositBridal({ amount, price, remaining, uploadUrl, dateFormatted }) {
+// The "Reserve Your Date" box with the full money picture (package total /
+// deposit due now / cash left on the day) above the Zelle handle, so a client
+// sees what they owe and when without having to open their upload link. Used by
+// bridal and non-bridal alike; `photos` adds the with/without-makeup ask that
+// only bridal consultations need, and `noteLabel` swaps "wedding date" for
+// "appointment date". Price and remaining are optional: when they're missing
+// (a service row with no price, or a travel estimate that can't be divided) the
+// breakdown quietly collapses to just the deposit line.
+function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted, photos = false, noteLabel = 'appointment date' }) {
   const breakdown = [
     price ? `<tr>
       <td style="padding:9px 0;font-size:13px;color:#9A8E94;border-bottom:1px solid #F6EDF2;">Package total</td>
@@ -355,12 +372,12 @@ function cdepositBridal({ amount, price, remaining, uploadUrl, dateFormatted }) 
             <tr><td style="font-size:13px;color:#9A8E94;">Email</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">makeupbyroko22@gmail.com</td></tr>
           </table>
         </td></tr></table>
-        ${clientButton(uploadUrl, 'Upload Screenshot &amp; Photos')}
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
+        ${clientButton(uploadUrl, photos ? 'Upload Screenshot &amp; Photos' : 'Upload Zelle Screenshot')}
+        ${photos ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
           <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:#C4849A;margin:0 0 4px;">Also upload your photos</p>
           <p style="font-size:12px;color:#6B636A;margin:0;line-height:1.55;">Use this same link to add photos of yourself <strong style="color:#16110F;">with makeup</strong> and <strong style="color:#16110F;">without makeup</strong> so Roko can prep for your consultation.</p>
-        </td></tr></table>
-        <p style="font-size:12px;color:#A99FA4;margin:14px 0 0;line-height:1.5;">Include your name + wedding date in the Zelle note.</p>
+        </td></tr></table>` : ''}
+        <p style="font-size:12px;color:#A99FA4;margin:14px 0 0;line-height:1.5;">Include your name + ${noteLabel} in the Zelle note.</p>
       </td></tr>
     </table>
   </td></tr>`;
@@ -400,18 +417,30 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
   ].filter(Boolean).join('');
   const total = estimatedTotal || basePrice;
 
+  // Cash left for the day. Only stated when both figures are firm: a travel
+  // booking quotes "$750+", and subtracting a deposit from an estimate would
+  // put a number in her inbox that nobody has actually agreed to.
+  const totalNum = moneyToNum(total);
+  const depositNum = moneyToNum(serviceDeposit);
+  const remaining = totalNum && depositNum && totalNum > depositNum
+    ? fmtMoney(totalNum - depositNum)
+    : '';
+
+  const steps = [
+    ['1', `Send your ${serviceDeposit || 'Zelle'} deposit`, 'Ruqia Moshref · makeupbyroko22@gmail.com'],
+    ['2', 'Upload your screenshot', 'Use the secure button above'],
+    ['3', 'Roko confirms your appointment', 'Within 24–48 hours'],
+    remaining ? ['4', `Bring ${remaining} in cash on the day`, 'Remaining balance, due at your appointment'] : null,
+  ].filter(Boolean);
+
   return clientShell({
     preheader: `Your ${serviceName} request is in. Send your deposit to lock in ${dateFormatted}.`,
     content: `
       ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up ✦" })}
       ${cintro(`Your request is in! I'll reach out to confirm your time within <strong style="color:#16110F;">24–48 hours</strong>.`)}
+      ${cdepositBreakdown({ amount: serviceDeposit || 'Deposit', price: total, remaining, uploadUrl, dateFormatted })}
+      ${cstepsPanel('What Happens Next', steps)}
       ${cpanel(`${ctitle('Booking Summary')}${crows(summaryRows + ctotalRow('Estimated Total', total))}`)}
-      ${cdeposit({ amount: serviceDeposit || 'Deposit', uploadUrl })}
-      ${cstepsPanel('What Happens Next', [
-        ['1', 'Send your Zelle deposit', 'Ruqia Moshref · makeupbyroko22@gmail.com'],
-        ['2', 'Upload your screenshot', 'Use the secure button above'],
-        ['3', 'Roko confirms your appointment', 'Within 24–48 hours'],
-      ])}
       ${contractSection}
     `,
   });
@@ -466,7 +495,7 @@ export function bridalConfirmationEmail({
     content: `
       ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
       ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
-      ${cdepositBridal({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, uploadUrl, dateFormatted: bridalDateFormatted })}
+      ${cdepositBreakdown({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, uploadUrl, dateFormatted: bridalDateFormatted, photos: true, noteLabel: 'wedding date' })}
       ${cstepsPanel('What Happens Next', steps)}
       ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
@@ -476,21 +505,32 @@ export function bridalConfirmationEmail({
   });
 }
 
-export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time }) {
+// `travels` = the client asked Roko to come to them, so the studio address must
+// not appear (it would send them to the wrong place). Everyone else is coming to
+// Mountain House, and this is the email they'll dig up the morning of, so the
+// address belongs here rather than in a follow-up.
+export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false }) {
+  const locationValue = travels
+    ? "<strong>Roko travels to you</strong>"
+    : `<strong>${STUDIO_TOWN}</strong>`;
+
   return clientShell({
-    preheader: `You're confirmed for ${serviceName} on ${dateFormatted}.`,
+    preheader: `You're confirmed for ${serviceName} on ${dateFormatted}. Keep this email for your appointment details.`,
     content: `
       ${clientHero({ emoji: '✓', eyebrow: 'Appointment Confirmed', title: "You're", titleAccent: 'Confirmed!', subtitle: "Can't wait to see you ✦" })}
+      ${cnotice('Important · Keep This Email', `Your <strong style="color:#16110F;">appointment time</strong>${travels ? '' : ' and <strong style="color:#16110F;">the address</strong>'} live here. It's the one to find again on the day.`)}
       ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your appointment is officially confirmed. I'm so excited, see you then!`)}
       ${cpanel(`${ctitle('Appointment Details')}${crows(
         crow('Service', serviceName) +
-        crow('Date', dateFormatted) +
+        crow('Date', `<strong>${dateFormatted}</strong>`) +
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
+        crow('Location', locationValue) +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
-      )}`)}
+      )}${travels ? '' : cStudio('Where To Find Me')}`)}
+      ${travels ? cinfo(`📍 I'll be coming to you. I'll confirm the exact address with you before the day.`) : ''}
       ${cinfo(`💵 Remaining balance is due in <strong style="color:#16110F;">cash</strong> on the day of your appointment.`)}
       ${cstepsPanel('What to Expect', [
-        ['1', 'Arrive on time', time ? `Roko will be ready for you at ${time}` : 'Roko will be ready at your confirmed time'],
+        ['1', travels ? 'Be ready for me' : 'Arrive on time', time ? `We start at ${time}` : 'At your confirmed time'],
         ['2', 'Bring your inspiration', 'Photos of your desired look are always welcome'],
         ['3', 'Bring cash for the balance', 'Exact amount confirmed with Roko beforehand'],
       ])}

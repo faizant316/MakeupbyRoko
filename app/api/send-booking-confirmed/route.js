@@ -7,11 +7,11 @@ export async function POST(req) {
     const { authError } = await requireAdmin();
     if (authError) return authError;
 
-    const { to, firstName, serviceName, dateFormatted, time } = await req.json();
+    const { to, firstName, serviceName, dateFormatted, time, travels } = await req.json();
     await sendEmail({
       to,
       subject: `Your ${serviceName} appointment is confirmed ✦`,
-      html: bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time }),
+      html: bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels: !!travels }),
     });
     return NextResponse.json({ success: true });
   } catch (err) {

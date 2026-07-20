@@ -72,6 +72,8 @@ export async function POST(req) {
           serviceName: booking.service,
           dateFormatted,
           time: booking.time,
+          // Travel is recorded as a note flag by the booking form.
+          travels: /travel|✈️/i.test(booking.notes || ''),
         }),
       }).catch(err => console.error('resign client confirm:', err));
     }
