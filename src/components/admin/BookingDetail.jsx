@@ -1263,6 +1263,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     showToast('Notes saved', '#888');
   };
 
+  // Travel is recorded as a note flag by the booking form. The confirmation
+  // email uses it to decide whether to print the studio address, which would
+  // send a travel client to entirely the wrong place.
+  const travels = /travel|✈/i.test(booking.notes || '');
+
   const handleStatusChange = (s) => {
     if (booking.status === s) return;
     // Bridal: confirming happens by scheduling the consultation, which sends one
@@ -1293,7 +1298,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, firstName: booking.name?.split(' ')[0] || 'there', serviceName: booking.service, dateFormatted, time: booking.time }),
+          body: JSON.stringify({ to: booking.email, firstName: booking.name?.split(' ')[0] || 'there', serviceName: booking.service, dateFormatted, time: booking.time, travels }),
         }).catch(err => console.error('confirmed email error:', err));
       }
     } else if (s === 'cancelled') {
@@ -1556,7 +1561,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, firstName: (data.name || booking.name)?.split(' ')[0] || 'there', serviceName: data.service || booking.service, dateFormatted: editDate, time: data.time || booking.time }),
+          body: JSON.stringify({ to: booking.email, firstName: (data.name || booking.name)?.split(' ')[0] || 'there', serviceName: data.service || booking.service, dateFormatted: editDate, time: data.time || booking.time, travels }),
         }).catch(err => console.error('confirmed email error:', err));
       } else if (newStatus === 'cancelled') {
         showToast('Appointment cancelled', '#ef4444');
