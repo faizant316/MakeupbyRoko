@@ -7,7 +7,7 @@ import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/l
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { CONSULT_INK } from './statusColors';
-import { isDepositUnseen, isAwaitingDeposit, depositTone, timeAgo as depositTimeAgo, daysSince } from './depositState';
+import { isDepositUnseen, depositTone, timeAgo as depositTimeAgo, daysSince } from './depositState';
 
 // Thumbnail of the client's uploaded Zelle screenshot, so a deposit can be
 // checked and cleared from the list without opening the card. Signed URLs are
@@ -52,14 +52,6 @@ function ZelleThumb({ bookingId, dm, onOpen }) {
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
-
-// How old a deposit-less booking has to be before the amber bar starts nagging.
-// Set to 1 to give someone who booked this morning the day to pay before they
-// show up as owing money. Currently 0 so a fresh test booking appears at once.
-const AWAITING_DEPOSIT_MIN_DAYS = 0;
-
-// "today" / "1 day" / "4 days"
-const dayCount = (d) => (d === 0 ? 'today' : d === 1 ? '1 day' : `${d} days`);
 
 // Month picker for the appointments list — a compact calendar-icon trigger.
 // Native <select> wheel on iOS (via an invisible overlay), styled dropdown on desktop.
@@ -242,10 +234,9 @@ export default function BookingsList({
   // absolutely-positioned dropdowns, which meant an open panel floated on top
   // of the rails beneath it instead of pushing them down. Now they expand
   // inline and opening one closes the others, so the stack never collides.
-  const [openRail, setOpenRail] = useState(null); // 'deposit' | 'waiting' | 'recent'
+  const [openRail, setOpenRail] = useState(null); // 'deposit' | 'recent'
   const toggleRail = (name) => setOpenRail(cur => (cur === name ? null : name));
   const showZellePanel = openRail === 'deposit';
-  const showWaitingPanel = openRail === 'waiting';
   const showRecentPanel = openRail === 'recent';
   const [lightbox, setLightbox] = useState(null);
   const [recentSearch, setRecentSearch] = useState('');
@@ -259,13 +250,6 @@ export default function BookingsList({
   const pendingZelleReviews = (allBookings || [])
     .filter(isDepositUnseen)
     .sort((a, b) => new Date(b.zelle_uploaded_at || 0) - new Date(a.zelle_uploaded_at || 0));
-
-  // The opposite problem, and the more expensive one: booked, still upcoming,
-  // never sent anything. AWAITING_DEPOSIT_MIN_DAYS controls how long someone
-  // gets to pay before they show up here.
-  const awaitingDeposits = (allBookings || [])
-    .filter(b => isAwaitingDeposit(b) && (daysSince(b.created_date) ?? 0) >= AWAITING_DEPOSIT_MIN_DAYS)
-    .sort((a, b) => new Date(a.created_date || 0) - new Date(b.created_date || 0));
 
   // Months that actually have appointments, for the month dropdown
   const monthMap = new Map();
@@ -561,102 +545,6 @@ export default function BookingsList({
                   <span className="text-[0.75rem] font-medium flex-shrink-0" style={{ color: tone.fg }}>Open</span>
                 </button>
               ))}
-            </div>
-          </div>
-        </div>
-        );
-      })()}
-
-      {/* Waiting on deposits — booked, still upcoming, nothing sent. The quieter
-          of the two, because unlike a deposit that landed, this one only needs
-          a nudge, not a decision. */}
-      {awaitingDeposits.length > 0 && (() => {
-        const tone = depositTone('waiting', dm);
-        const lead = awaitingDeposits[0];
-        const leadDays = daysSince(lead.created_date);
-        return (
-        <div className="mb-4 relative">
-          <button
-            onClick={() => toggleRail('waiting')}
-            aria-expanded={showWaitingPanel}
-            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
-            style={{
-              background: dm ? '#232328' : '#FAFAFB',
-              border: `1px solid ${dm ? '#34343d' : '#EDE9E3'}`,
-              borderLeft: `3px solid ${tone.key}`,
-            }}
-          >
-            <span className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[1.05rem] font-medium tabular-nums"
-              style={{ background: tone.bg, color: tone.fg }}>
-              {awaitingDeposits.length}
-            </span>
-
-            <span className="min-w-0 flex-1">
-              <span className="block text-[0.86rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
-                Waiting on {awaitingDeposits.length === 1 ? 'a deposit' : 'deposits'}
-              </span>
-              <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
-                {(lead.name || 'Someone').split(' ')[0]} booked {leadDays === 0 ? 'today' : `${dayCount(leadDays)} ago`}
-                {awaitingDeposits.length > 1 ? `, +${awaitingDeposits.length - 1} more` : ''}
-              </span>
-            </span>
-
-            <span className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#8b8b95' : '#6a6a74' }}>
-                {showWaitingPanel ? 'Hide' : 'View'}
-              </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8b8b95' : '#9c9ca6'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                className="w-3.5 h-3.5"
-                style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showWaitingPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </span>
-          </button>
-
-          <div
-            className="mt-2 rounded-2xl overflow-hidden flex flex-col"
-            style={{
-              background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
-              maxHeight: showWaitingPanel ? 'min(60vh, 420px)' : '0px',
-              opacity: showWaitingPanel ? 1 : 0,
-              marginTop: showWaitingPanel ? undefined : 0,
-              borderWidth: showWaitingPanel ? '1px' : '0px',
-              pointerEvents: showWaitingPanel ? 'auto' : 'none',
-              willChange: 'max-height, opacity',
-              transition: 'max-height 320ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease, margin-top 320ms ease',
-            }}
-          >
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-              {awaitingDeposits.map((b, i) => {
-                const days = daysSince(b.created_date);
-                return (
-                  <button
-                    key={b.id}
-                    onClick={() => onSelect(b)}
-                    className="flex items-center gap-3.5 w-full text-left px-5 py-3.5 transition-colors"
-                    style={{ borderBottom: i < awaitingDeposits.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(113,113,122,0.08)'}` : 'none' }}
-                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: tone.bg }}>
-                      <span className="font-serif text-[0.85rem]" style={{ color: tone.fg }}>
-                        {(b.name || '?').trim().charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
-                        {b.service}
-                        {b.date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                      </p>
-                    </div>
-                    <span className="text-[0.7rem] font-medium tabular-nums flex-shrink-0" style={{ color: tone.fg }}>
-                      {dayCount(days)}
-                    </span>
-                  </button>
-                );
-              })}
             </div>
           </div>
         </div>
