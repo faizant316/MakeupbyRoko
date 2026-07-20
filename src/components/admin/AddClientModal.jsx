@@ -205,11 +205,21 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
   const notifyBooking = async (booking) => {
     const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
     const uploadUrl = `${siteBase}/upload-zelle?id=${booking.id}&token=${booking.upload_token}`;
+    // Package total and the cash balance left after the deposit, so the bride's
+    // email shows the same breakdown whether Roko added her or she booked herself.
+    // Falls back to blank when a service row has no price, and the email collapses.
+    const money = (s) => { const n = parseFloat(String(s || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
+    const _priceN = money(selectedService?.price);
+    const _depositN = money(selectedService?.deposit);
+    const bridalRemaining = (_priceN != null && _depositN != null && _priceN > _depositN)
+      ? `$${(_priceN - _depositN).toLocaleString('en-US')}`
+      : '';
     const payload = isBridal
       ? {
           bookingType: 'bridal', to: form.email.trim(), firstName: form.first_name.trim(), lastName: form.last_name.trim(),
           phone: form.phone, instagram: bridal.instagram_handle, bridalTitle: form.service,
-          bridalDeposit: selectedService?.deposit, bridalDateFormatted: dateFormatted, uploadUrl,
+          bridalDeposit: selectedService?.deposit, bridalPrice: selectedService?.price, bridalRemaining,
+          bridalDateFormatted: dateFormatted, uploadUrl,
           eventLocation: bridal.event_location, eventStartTime: bridal.event_start_time, venueAccessTime: bridal.venue_access_time,
           readyByTime: bridal.ready_by_time, makeupReadyByTime: bridal.makeup_ready_by_time, photographerArrival: bridal.photographer_arrival_time,
           photographer: bridal.photographer, hairstylist: bridal.hairstylist, numPeopleGlam: glamSummary,

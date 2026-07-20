@@ -463,6 +463,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         instagram: form.instagram_handle,
         bridalTitle,
         bridalDeposit,
+        bridalPrice,
+        bridalRemaining,
         bridalDateFormatted,
         uploadUrl,
         eventLocation: form.event_location,

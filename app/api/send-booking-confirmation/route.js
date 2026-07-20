@@ -27,7 +27,7 @@ export async function POST(req) {
     const {
       bookingId, bookingType, to, firstName, lastName, serviceName, servicePrice, serviceDeposit,
       dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, notes,
-      bridalTitle, bridalDeposit, bridalDateFormatted, makeupReadyByTime,
+      bridalTitle, bridalDeposit, bridalPrice, bridalRemaining, bridalDateFormatted, makeupReadyByTime,
       phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
       photographer, hairstylist, numPeopleGlam, outOfState, weddingDate, additionalDetails, howHeard,
       contractSignedName, contractSignedAt, contractPhotoConsent,
@@ -72,7 +72,12 @@ export async function POST(req) {
     }
 
     const clientHtml = isBridal
-      ? bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl, contractSection })
+      ? bridalConfirmationEmail({
+          firstName, bridalTitle, bridalDateFormatted, bridalDeposit, bridalPrice, bridalRemaining, uploadUrl,
+          eventLocation, numPeopleGlam, outOfState, eventStartTime, venueAccessTime,
+          hairstylistArriveBy: readyByTime, makeupReadyByTime, photographerArrival, photographer, hairstylist,
+          additionalDetails, contractSection,
+        })
       : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection });
 
     const clientSubject = isBridal
