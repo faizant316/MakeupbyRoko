@@ -1,6 +1,7 @@
 import StatusBadge from './StatusBadge';
 import { relativeDate } from './timeline';
 import { phoneHref } from '@/lib/phone';
+import { depositState, depositTone } from './depositState';
 
 // Compact one-line list item for the appointments list. The rich detail lives
 // in the modal opened on click, so the row only carries what helps you scan:
@@ -12,6 +13,12 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   const rel = relativeDate(booking.date || booking.consultation_date);
   const rowTime = booking.date ? booking.time : booking.consultation_time;
   const initial = (booking.name || '?').trim().charAt(0).toUpperCase() || '?';
+
+  // Deposit standing, spelled out on the row so scanning the list is enough.
+  // Before this, a late Zelle flipped a hidden flag and the only way to find
+  // out was opening the card.
+  const deposit = depositState(booking);
+  const depositTint = deposit.kind === 'none' ? null : depositTone(deposit.kind, dm);
 
   const dateColor = rel.tone === 'accent'
     ? '#A0607A'
@@ -121,6 +128,15 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
           {booking.service || 'Service not set'}
         </p>
+        {depositTint && (
+          <p
+            className="flex items-center gap-1.5 text-[0.7rem] mt-1"
+            style={{ color: depositTint.fg, fontWeight: deposit.kind === 'arrived' ? 600 : 500 }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: depositTint.key }} />
+            <span className="truncate">{deposit.label}</span>
+          </p>
+        )}
       </div>
 
       {/* Date + time + status. Date and time stack on their own lines so a full

@@ -7,6 +7,45 @@ import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/l
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { CONSULT_INK } from './statusColors';
+import { isDepositArrived, isAwaitingDeposit, depositTone, timeAgo as depositTimeAgo, daysSince } from './depositState';
+
+// Thumbnail of the client's uploaded Zelle screenshot, so a deposit can be
+// checked and cleared from the list without opening the card. Signed URLs are
+// short-lived, so it's fetched per mount rather than cached.
+function ZelleThumb({ bookingId, dm, onOpen }) {
+  const [url, setUrl] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    fetch('/api/screenshot-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: bookingId, table: 'bookings' }),
+    })
+      .then(r => r.json())
+      .then(d => { if (live && d?.url) setUrl(d.url); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [bookingId]);
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); if (url) { onOpen?.(url); } }}
+      aria-label={url ? 'Open the Zelle screenshot full size' : 'Zelle screenshot loading'}
+      className="w-[38px] h-[50px] rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center transition-transform hover:scale-105"
+      style={{ background: dm ? '#1e1e24' : '#F4F6FB', border: `1px solid ${dm ? '#3f3f46' : '#DDE5F4'}` }}
+    >
+      {url ? (
+        <img src={url} alt="Zelle screenshot" className="w-full h-full object-cover" />
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#B9C4DA'} strokeWidth="1.6" className="w-4 h-4">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+        </svg>
+      )}
+    </button>
+  );
+}
 
 // SSR-safe layout effect — measures the active tab to position the underline
 // without a first-paint flash, while staying quiet during server render.
@@ -193,17 +232,27 @@ export default function BookingsList({
   const [bulkBusy, setBulkBusy] = useState(false);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [showZellePanel, setShowZellePanel] = useState(false);
+  const [showWaitingPanel, setShowWaitingPanel] = useState(false);
   const [markingIds, setMarkingIds] = useState(() => new Set());
+  const [lightbox, setLightbox] = useState(null);
   const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   const [collapsedGroups, setCollapsedGroups] = useState({ later: true }); // far-future folded by default
 
-  // Deposits waiting on Roko's eyes: client uploaded a Zelle screenshot but no
-  // one has confirmed it in the admin yet. Purely derived from existing data —
-  // as soon as she marks one received it drops out on its own.
+  // Deposits waiting on Roko's eyes: the client uploaded proof and nobody has
+  // confirmed it yet. Purely derived, so confirming one drops it out on its own
+  // and there's no "seen" state to keep in sync. Newest arrival first.
   const pendingZelleReviews = (allBookings || [])
-    .filter(b => b.zelle_screenshot && !b.deposit_received && b.status !== 'cancelled');
+    .filter(isDepositArrived)
+    .sort((a, b) => new Date(b.zelle_uploaded_at || 0) - new Date(a.zelle_uploaded_at || 0));
+
+  // The opposite problem, and the more expensive one: booked, still upcoming,
+  // never sent anything. Held back a day so someone who booked this morning and
+  // is about to pay doesn't get flagged as a debtor.
+  const awaitingDeposits = (allBookings || [])
+    .filter(b => isAwaitingDeposit(b) && (daysSince(b.created_date) ?? 0) >= 1)
+    .sort((a, b) => new Date(a.created_date || 0) - new Date(b.created_date || 0));
 
   const handleMarkReceived = (id) => {
     setMarkingIds(prev => new Set(prev).add(id));
@@ -399,40 +448,51 @@ export default function BookingsList({
         </div>
       </div>
 
-      {/* Deposits to Confirm — client sent a Zelle screenshot, awaiting review */}
-      {pendingZelleReviews.length > 0 && (
+      {/* Deposit received — a client sent proof and nobody has confirmed it yet.
+          This is the whole point of the deposit alerting: money that arrived
+          days after booking used to flip a hidden flag and announce nothing. */}
+      {pendingZelleReviews.length > 0 && (() => {
+        const tone = depositTone('arrived', dm);
+        const lead = pendingZelleReviews[0];
+        return (
         <div className="mb-4 relative">
           <button
             onClick={() => setShowZellePanel(v => !v)}
             aria-expanded={showZellePanel}
-            className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl transition-colors"
+            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
             style={{
               background: dm ? '#26262e' : '#fff',
-              border: `1px solid ${dm ? '#34343d' : '#d7e2f7'}`,
-              borderLeft: '3px solid #2563EB',
+              border: `1px solid ${tone.line}`,
+              borderLeft: `3px solid ${tone.key}`,
               boxShadow: dm ? 'none' : '0 1px 3px rgba(30,64,175,0.05), 0 4px 14px rgba(30,64,175,0.05)',
             }}
           >
-            <div className="flex items-center gap-2.5">
-              <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.12)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" className="w-3.5 h-3.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[1.05rem] font-medium tabular-nums"
+              style={{ background: tone.bg, color: tone.fg }}>
+              {pendingZelleReviews.length}
+            </span>
+
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.86rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
+                {pendingZelleReviews.length === 1 ? 'Deposit received' : 'Deposits received'}
               </span>
-              <span className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#2563EB' }}>Deposits to Confirm</span>
-              <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.14)', color: '#2563EB' }}>
-                {pendingZelleReviews.length}
+              <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
+                {lead.name || 'Someone'}
+                {lead.service ? ` · ${lead.service}` : ''}
+                {lead.zelle_uploaded_at ? ` · sent ${depositTimeAgo(lead.zelle_uploaded_at)}` : ''}
               </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[0.7rem] italic" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
-                {showZellePanel ? 'collapse' : 'review'}
+            </span>
+
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[0.8rem] font-medium" style={{ color: tone.fg }}>
+                {showZellePanel ? 'Hide' : 'Review'}
               </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2"
+              <svg viewBox="0 0 24 24" fill="none" stroke={tone.fg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 className="w-3.5 h-3.5"
                 style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showZellePanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
-            </div>
+            </span>
           </button>
 
           <div
@@ -453,6 +513,17 @@ export default function BookingsList({
                 : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
             }}
           >
+            <div className="px-5 py-3 flex items-center gap-2 flex-shrink-0"
+              style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(30,64,175,0.08)'}` }}>
+              <span className="text-[0.68rem] font-semibold tracking-[0.06em] uppercase" style={{ color: tone.fg }}>
+                Deposits to confirm
+              </span>
+              <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full tabular-nums"
+                style={{ background: tone.bg, color: tone.fg }}>
+                {pendingZelleReviews.length}
+              </span>
+            </div>
+
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {pendingZelleReviews.map((b, i) => {
                 const isMarking = markingIds.has(b.id);
@@ -462,21 +533,29 @@ export default function BookingsList({
                     className="flex items-center gap-3 w-full text-left px-5 py-3.5"
                     style={{ borderBottom: i < pendingZelleReviews.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(30,64,175,0.08)'}` : 'none' }}
                   >
+                    <ZelleThumb bookingId={b.id} dm={dm} onOpen={setLightbox} />
+
                     <button
                       onClick={() => onSelect(b)}
-                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                      className="flex flex-col items-start gap-0.5 flex-1 min-w-0 text-left"
                     >
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                        <span className="font-serif text-[#2563EB] text-[0.85rem]">{(b.name || '?').trim().charAt(0).toUpperCase()}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                        <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#8791a6' }}>
-                          {b.service}
-                          {b.date && <span style={{ color: dm ? '#52525b' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                      <p className="text-[0.875rem] font-medium truncate max-w-full" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
+                      <p className="text-[0.72rem] truncate max-w-full" style={{ color: dm ? '#71717a' : '#8791a6' }}>
+                        {b.service}
+                        {b.date && <span style={{ color: dm ? '#52525b' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                      </p>
+                      {b.zelle_uploaded_at && (
+                        <p className="text-[0.7rem] font-semibold flex items-center gap-1.5" style={{ color: tone.fg }}>
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tone.key }} />
+                          Sent {depositTimeAgo(b.zelle_uploaded_at)}
+                          {(() => {
+                            const gap = daysSince(b.created_date) - daysSince(b.zelle_uploaded_at);
+                            return gap >= 1 ? `, ${gap === 1 ? '1 day' : `${gap} days`} after booking` : '';
+                          })()}
                         </p>
-                      </div>
+                      )}
                     </button>
+
                     <button
                       type="button"
                       disabled={isMarking}
@@ -489,13 +568,144 @@ export default function BookingsList({
                       ) : (
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
                       )}
-                      {isMarking ? 'Marking…' : 'Received'}
+                      {isMarking ? 'Confirming…' : 'Confirm'}
                     </button>
                   </div>
                 );
               })}
             </div>
           </div>
+        </div>
+        );
+      })()}
+
+      {/* Waiting on deposits — booked, still upcoming, nothing sent. The quieter
+          of the two, because unlike a deposit that landed, this one only needs
+          a nudge, not a decision. */}
+      {awaitingDeposits.length > 0 && (() => {
+        const tone = depositTone('waiting', dm);
+        const lead = awaitingDeposits[0];
+        const leadDays = daysSince(lead.created_date);
+        return (
+        <div className="mb-4 relative">
+          <button
+            onClick={() => setShowWaitingPanel(v => !v)}
+            aria-expanded={showWaitingPanel}
+            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
+            style={{
+              background: dm ? '#232328' : '#FAFAFB',
+              border: `1px solid ${dm ? '#34343d' : '#EDE9E3'}`,
+              borderLeft: `3px solid ${tone.key}`,
+            }}
+          >
+            <span className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[1.05rem] font-medium tabular-nums"
+              style={{ background: tone.bg, color: tone.fg }}>
+              {awaitingDeposits.length}
+            </span>
+
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.86rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
+                Waiting on {awaitingDeposits.length === 1 ? 'a deposit' : 'deposits'}
+              </span>
+              <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
+                {(lead.name || 'Someone').split(' ')[0]} booked {leadDays === 1 ? '1 day' : `${leadDays} days`} ago
+                {awaitingDeposits.length > 1 ? `, +${awaitingDeposits.length - 1} more` : ''}
+              </span>
+            </span>
+
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#8b8b95' : '#6a6a74' }}>
+                {showWaitingPanel ? 'Hide' : 'View'}
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8b8b95' : '#9c9ca6'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+                style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showWaitingPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </span>
+          </button>
+
+          <div
+            className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
+            style={{
+              background: dm ? '#27272a' : '#fff',
+              border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
+              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(113,113,122,0.18)',
+              maxHeight: 'min(70vh, 480px)',
+              transformOrigin: 'top center',
+              opacity: showWaitingPanel ? 1 : 0,
+              transform: showWaitingPanel ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.985)',
+              pointerEvents: showWaitingPanel ? 'auto' : 'none',
+              visibility: showWaitingPanel ? 'visible' : 'hidden',
+              willChange: 'transform, opacity',
+              transition: showWaitingPanel
+                ? 'opacity 200ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1)'
+                : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
+            }}
+          >
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+              {awaitingDeposits.map((b, i) => {
+                const days = daysSince(b.created_date);
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => onSelect(b)}
+                    className="flex items-center gap-3.5 w-full text-left px-5 py-3.5 transition-colors"
+                    style={{ borderBottom: i < awaitingDeposits.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(113,113,122,0.08)'}` : 'none' }}
+                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: tone.bg }}>
+                      <span className="font-serif text-[0.85rem]" style={{ color: tone.fg }}>
+                        {(b.name || '?').trim().charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
+                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
+                        {b.service}
+                        {b.date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                      </p>
+                    </div>
+                    <span className="text-[0.7rem] font-medium tabular-nums flex-shrink-0" style={{ color: tone.fg }}>
+                      {days === 1 ? '1 day' : `${days} days`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* Screenshot lightbox — opened from a thumbnail in the confirm queue */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          style={{ background: 'rgba(12,12,16,0.82)' }}
+          onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-label="Zelle screenshot"
+        >
+          <img
+            src={lightbox}
+            alt="Zelle screenshot"
+            className="max-w-full max-h-full rounded-xl object-contain"
+            style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
+            onClick={e => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            className="absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.12)', color: '#fff' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="w-4 h-4">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
       )}
 

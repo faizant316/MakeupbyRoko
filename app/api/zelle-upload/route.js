@@ -38,12 +38,34 @@ export async function POST(req) {
       .upload(storagePath, arrayBuffer, { contentType: file.type, upsert: true });
     if (uploadError) throw uploadError;
 
-    // Store the path (not URL) so we can generate signed URLs on demand
-    const updateData = { zelle_screenshot: storagePath };
-    if (table === 'bridal_inquiries') updateData.zelle_received = true;
-    else updateData.deposit_received = true;
+    // Store the path (not URL) so we can generate signed URLs on demand.
+    //
+    // Deliberately does NOT mark the deposit received. The client sending proof
+    // and Roko confirming the money are two events, and collapsing them is what
+    // made a late deposit invisible: the flag flipped itself, so nothing in the
+    // admin had anything new to show. Stamping the arrival time instead puts the
+    // booking in the "deposits to confirm" queue, where it's visible on the list
+    // until she clears it.
+    const updateData = {
+      zelle_screenshot: storagePath,
+      zelle_uploaded_at: new Date().toISOString(),
+    };
 
-    await supabase.from(table).update(updateData).eq('id', recordId);
+    const { error: updateError } = await supabase.from(table).update(updateData).eq('id', recordId);
+
+    // Migration 0009 adds zelle_uploaded_at. If this deploy lands before the
+    // migration is run, save the screenshot anyway rather than failing a
+    // client's upload over a missing column. The admin queue falls back to
+    // "screenshot on file, not yet confirmed", so nothing is lost but the
+    // arrival time.
+    if (updateError) {
+      console.error('zelle-upload: full update failed, retrying without timestamp:', updateError.message);
+      const { error: retryError } = await supabase
+        .from(table)
+        .update({ zelle_screenshot: storagePath })
+        .eq('id', recordId);
+      if (retryError) throw retryError;
+    }
 
     const { data: signedData, error: signedErr } = await supabase.storage
       .from('zelle-screenshots')
