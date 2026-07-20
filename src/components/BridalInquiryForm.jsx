@@ -359,6 +359,11 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       goStep('sign');
       return;
     }
+    // Required because Roko builds the whole day's timeline backwards from it.
+    // Checked here, after the trial early-return, since a trial has no ready-by
+    // and never renders the field. Ordered above the location and vendor checks
+    // to match where it sits on the page.
+    if (!form.makeup_ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
     // Full Day travels on-location; the standard Luxury Bridal Look asks "where
     // would you like to get ready?" (studio vs. somewhere else).
     if (isFullDay) {
@@ -929,7 +934,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 out from the vendor times around it. */}
             <div className="relative pl-3.5">
               <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-              <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by?</label>
+              <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
               <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
               <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                 Your preference for when you'd like your makeup finished. Roko sets the final timeline, but she'll plan around getting you ready by then.
