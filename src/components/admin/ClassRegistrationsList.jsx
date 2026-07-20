@@ -43,8 +43,19 @@ function effectiveDate(reg) {
   return null;
 }
 
-// Compact one-line row, mirroring the appointments list.
-function ClassRow({ reg, onSelect, dm }) {
+function timeAgo(iso) {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Compact one-line row, mirroring the appointments list. `recent` is the copy
+// shown inside the Just Signed Up band: it swaps the redundant "New" pill for
+// how long ago they signed up, and warms the avatar to match the home card.
+function ClassRow({ reg, onSelect, dm, recent = false }) {
   const selectedClasses = classesOfReg(reg);
   const totalPrice = regTotal(reg);
   const classLabel = selectedClasses.length > 0 ? selectedClasses.map(c => c.title).join(' · ') : 'No classes selected';
@@ -75,7 +86,9 @@ function ClassRow({ reg, onSelect, dm }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#E4E4EC'; e.currentTarget.style.background = dm ? '#26262d' : '#FBF9F7'; }}
     >
       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
-        style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#A6A6AF' }}>
+        style={recent
+          ? { background: dm ? 'rgba(154,84,116,0.22)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#8A4A63' }
+          : { background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#A6A6AF' }}>
         {initial}
       </div>
 
@@ -93,6 +106,7 @@ function ClassRow({ reg, onSelect, dm }) {
           <span className="truncate">
             {classLabel}
             {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
+            {recent && reg.created_date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{` · ${timeAgo(reg.created_date)}`}</span>}
           </span>
         </p>
       </div>
@@ -103,7 +117,7 @@ function ClassRow({ reg, onSelect, dm }) {
           {reg.appointment_time && <span className="font-normal" style={{ color: mutedColor }}> · {reg.appointment_time}</span>}
         </span>
         <div className="flex items-center gap-1.5">
-          {isNew && (
+          {isNew && !recent && (
             <span className="inline-flex items-center gap-1 text-[0.55rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
               style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.22)', color: dm ? '#e7c9d5' : '#A0607A' }}>
               <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: dm ? '#e7c9d5' : '#A0607A' }} />
@@ -276,19 +290,23 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
       </div>
 
       {/* Just Signed Up — fresh registrations pulled to the top so they're
-          impossible to miss, even when the class date sits in a folded group. */}
+          impossible to miss, even when the class date sits in a folded group.
+          Styled like the home overview's version: a labelled band rather than a
+          pink card sitting inside the page, so it doesn't fight the rows below. */}
       {recent.length > 0 && (
-        <div className="mb-6 rounded-2xl p-3 sm:p-3.5"
-          style={{ background: dm ? 'rgba(160,96,122,0.08)' : '#FBF3F7', border: `1px solid ${dm ? 'rgba(160,96,122,0.28)' : '#F1DCE7'}` }}>
-          <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="mb-7">
+          <div className="flex items-center gap-2.5 mb-3">
             <span className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0" style={{ background: '#A0607A' }} />
-            <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#c78fa3' : '#A0607A' }}>Just Signed Up</span>
+            <h3 className="font-serif text-[1.05rem]" style={{ color: dm ? '#c78fa3' : '#A0607A' }}>Just Signed Up</h3>
             <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{recent.length}</span>
+              style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{recent.length}</span>
+            <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>
+              in the last 24 hours
+            </span>
           </div>
           <div className="flex flex-col gap-2">
             {recent.map(reg => (
-              <ClassRow key={`recent-${reg.id}`} reg={reg} onSelect={onSelect} dm={dm} />
+              <ClassRow key={`recent-${reg.id}`} reg={reg} onSelect={onSelect} dm={dm} recent />
             ))}
           </div>
         </div>

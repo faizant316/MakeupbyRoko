@@ -35,6 +35,7 @@ function formatDate(raw) {
 
 const LESSON_COLOR = '#5BB0CC';
 const LESSON_BG = 'rgba(91,176,204,0.07)';
+const ZOOM_BLUE = '#2D8CFF';
 
 function parseNotes(raw) {
   if (!raw) return { link: '', meetingId: '', notes: '' };
@@ -241,27 +242,32 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
               {isInPerson ? (
                 <a href={STUDIO_MAPS_URL} target="_blank" rel="noopener noreferrer"
                   className="text-[0.65rem] mt-1 block truncate underline underline-offset-2" style={{ color: textMuted }}>{STUDIO_DISPLAY}</a>
-              ) : (meetingId || parsed.meetingId) ? (
-                <button type="button"
-                  onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
-                  className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
-                  style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
-                    <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
-                  </svg>
-                  Join
-                </button>
-              ) : parsed.link ? (
+              ) : (!meetingId && !parsed.meetingId && parsed.link) ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
                   className="text-[0.65rem] mt-1 block truncate underline underline-offset-2" style={{ color: textMuted }}>{parsed.link}</a>
               ) : null}
             </div>
           </div>
-          <button onClick={() => setExpanded(true)}
-            className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase ml-3 flex-shrink-0"
-            style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
-            Edit
-          </button>
+          <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+            {/* Join is the one thing she actually needs on lesson day, so it's a
+                real button here rather than the small text link it used to be. */}
+            {!isInPerson && (meetingId || parsed.meetingId) && (
+              <button type="button"
+                onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.02em] transition-all hover:brightness-110"
+                style={{ background: ZOOM_BLUE, color: '#fff', boxShadow: '0 2px 10px rgba(45,140,255,0.3)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                  <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+                </svg>
+                Join
+              </button>
+            )}
+            <button onClick={() => setExpanded(true)}
+              className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase"
+              style={{ color: dm ? '#cdb8c8' : LESSON_COLOR }}>
+              Edit
+            </button>
+          </div>
         </div>
       )}
 

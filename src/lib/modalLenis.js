@@ -61,3 +61,20 @@ export function scrollModalTop(el) {
   if (el.__modalLenis) el.__modalLenis.scrollTo(0, { immediate: true });
   else el.scrollTop = 0;
 }
+
+// Smooth-scroll a modal scroll container to one of its descendants. Same Lenis
+// caveat as scrollModalTop: scrollIntoView would scroll the element but the RAF
+// loop would immediately snap it back, so go through the instance when there is
+// one. `offset` leaves breathing room above the target (negative = higher up).
+export function scrollModalToEl(container, target, offset = -16) {
+  if (!container || !target) return;
+  if (container.__modalLenis) {
+    container.__modalLenis.scrollTo(target, { offset, duration: 0.7 });
+    return;
+  }
+  const top = target.getBoundingClientRect().top
+    - container.getBoundingClientRect().top
+    + container.scrollTop
+    + offset;
+  container.scrollTo({ top, behavior: 'smooth' });
+}
