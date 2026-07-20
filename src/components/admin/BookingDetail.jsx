@@ -1631,8 +1631,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       </div>
 
       <div className="rounded-[6px] p-6 sm:p-8 mb-6" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6 gap-3">
+        {/* Header. No status chip here: the hero above already states it in
+            colour, at size, a few hundred pixels up the same screen. */}
+        <div className="flex items-start mb-6 gap-3">
           <div className="flex items-center gap-3.5 min-w-0">
             {/* Avatar + name both open the full client profile screen. */}
             <button type="button" onClick={() => setShowClientPanel(true)} aria-label={`View ${booking.name || 'client'} profile`}
@@ -1667,7 +1668,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               )}
             </div>
           </div>
-          <StatusBadge status={booking.status} />
         </div>
 
         {/* Info grid */}
@@ -2411,8 +2411,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </p>
           )}
 
-          {/* Consultation scheduler lives under status only when not in the hub */}
-          {!schedulerInHub && (
+          {/* Consultation scheduler lives under status only when not in the hub.
+              Bridal-only: consultations are part of the bridal pipeline, and the
+              isBridal check was missing here, so every non-bridal card offered
+              to schedule one it would never have. */}
+          {isBridal && !schedulerInHub && (
             <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECECF0'}` }}>
               {consultScheduler}
             </div>
