@@ -238,9 +238,15 @@ export default function BookingsList({
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [showRecentPanel, setShowRecentPanel] = useState(false);
-  const [showZellePanel, setShowZellePanel] = useState(false);
-  const [showWaitingPanel, setShowWaitingPanel] = useState(false);
+  // One rail open at a time. These used to be three independent booleans over
+  // absolutely-positioned dropdowns, which meant an open panel floated on top
+  // of the rails beneath it instead of pushing them down. Now they expand
+  // inline and opening one closes the others, so the stack never collides.
+  const [openRail, setOpenRail] = useState(null); // 'deposit' | 'waiting' | 'recent'
+  const toggleRail = (name) => setOpenRail(cur => (cur === name ? null : name));
+  const showZellePanel = openRail === 'deposit';
+  const showWaitingPanel = openRail === 'waiting';
+  const showRecentPanel = openRail === 'recent';
   const [lightbox, setLightbox] = useState(null);
   const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
@@ -459,7 +465,7 @@ export default function BookingsList({
         return (
         <div className="mb-4 relative">
           <button
-            onClick={() => setShowZellePanel(v => !v)}
+            onClick={() => toggleRail('deposit')}
             aria-expanded={showZellePanel}
             className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
             style={{
@@ -498,21 +504,17 @@ export default function BookingsList({
           </button>
 
           <div
-            className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
+            className="mt-2 rounded-2xl overflow-hidden flex flex-col"
             style={{
               background: dm ? '#27272a' : '#fff',
               border: `1px solid ${dm ? '#3f3f46' : '#d7e2f7'}`,
-              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(30,64,175,0.14)',
-              maxHeight: 'min(70vh, 480px)',
-              transformOrigin: 'top center',
+              maxHeight: showZellePanel ? 'min(60vh, 420px)' : '0px',
               opacity: showZellePanel ? 1 : 0,
-              transform: showZellePanel ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.985)',
+              marginTop: showZellePanel ? undefined : 0,
+              borderWidth: showZellePanel ? '1px' : '0px',
               pointerEvents: showZellePanel ? 'auto' : 'none',
-              visibility: showZellePanel ? 'visible' : 'hidden',
-              willChange: 'transform, opacity',
-              transition: showZellePanel
-                ? 'opacity 200ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1)'
-                : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
+              willChange: 'max-height, opacity',
+              transition: 'max-height 320ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease, margin-top 320ms ease',
             }}
           >
             <div className="px-5 py-3 flex items-center gap-2 flex-shrink-0"
@@ -575,7 +577,7 @@ export default function BookingsList({
         return (
         <div className="mb-4 relative">
           <button
-            onClick={() => setShowWaitingPanel(v => !v)}
+            onClick={() => toggleRail('waiting')}
             aria-expanded={showWaitingPanel}
             className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
             style={{
@@ -612,21 +614,17 @@ export default function BookingsList({
           </button>
 
           <div
-            className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
+            className="mt-2 rounded-2xl overflow-hidden flex flex-col"
             style={{
               background: dm ? '#27272a' : '#fff',
               border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
-              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(113,113,122,0.18)',
-              maxHeight: 'min(70vh, 480px)',
-              transformOrigin: 'top center',
+              maxHeight: showWaitingPanel ? 'min(60vh, 420px)' : '0px',
               opacity: showWaitingPanel ? 1 : 0,
-              transform: showWaitingPanel ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.985)',
+              marginTop: showWaitingPanel ? undefined : 0,
+              borderWidth: showWaitingPanel ? '1px' : '0px',
               pointerEvents: showWaitingPanel ? 'auto' : 'none',
-              visibility: showWaitingPanel ? 'visible' : 'hidden',
-              willChange: 'transform, opacity',
-              transition: showWaitingPanel
-                ? 'opacity 200ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1)'
-                : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
+              willChange: 'max-height, opacity',
+              transition: 'max-height 320ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease, margin-top 320ms ease',
             }}
           >
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
@@ -699,7 +697,7 @@ export default function BookingsList({
       {recentBookings.length > 0 && (
         <div className="mb-7 relative">
           <button
-            onClick={() => setShowRecentPanel(v => !v)}
+            onClick={() => toggleRail('recent')}
             aria-expanded={showRecentPanel}
             className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
             style={{
@@ -741,21 +739,17 @@ export default function BookingsList({
           {/* Floating dropdown — animates transform + opacity only (GPU-composited), so it stays
               buttery on mobile, where animating height / grid-rows forces per-frame layout + repaint. */}
           <div
-            className="absolute left-0 right-0 top-full mt-2 z-40 rounded-2xl overflow-hidden flex flex-col"
+            className="mt-2 rounded-2xl overflow-hidden flex flex-col"
             style={{
               background: dm ? '#27272a' : '#fff',
               border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
-              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(113, 113, 122,0.18)',
-              maxHeight: 'min(70vh, 520px)',
-              transformOrigin: 'top center',
+              maxHeight: showRecentPanel ? 'min(60vh, 420px)' : '0px',
               opacity: showRecentPanel ? 1 : 0,
-              transform: showRecentPanel ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.985)',
+              marginTop: showRecentPanel ? undefined : 0,
+              borderWidth: showRecentPanel ? '1px' : '0px',
               pointerEvents: showRecentPanel ? 'auto' : 'none',
-              visibility: showRecentPanel ? 'visible' : 'hidden',
-              willChange: 'transform, opacity',
-              transition: showRecentPanel
-                ? 'opacity 200ms ease, transform 300ms cubic-bezier(0.22,1,0.36,1)'
-                : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
+              willChange: 'max-height, opacity',
+              transition: 'max-height 320ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease, margin-top 320ms ease',
             }}
           >
             {/* A search box above a handful of rows is just clutter. */}
