@@ -289,6 +289,52 @@ function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
   </td></tr>`;
 }
 
+// Bridal variant of cdeposit. Same pink "Reserve Your Date" box, but the white
+// card leads with the full money picture (package total / deposit due now / cash
+// left on the day) above the Zelle handle, so a bride sees what she owes and
+// when without having to open her upload link. Price and remaining are optional:
+// when they're missing (e.g. a service row with no price) the breakdown quietly
+// collapses to just the deposit line and the box looks like it always did.
+function cdepositBridal({ amount, price, remaining, uploadUrl, dateFormatted }) {
+  const breakdown = [
+    price ? `<tr>
+      <td style="padding:9px 0;font-size:13px;color:#9A8E94;border-bottom:1px solid #F6EDF2;">Package total</td>
+      <td align="right" style="padding:9px 0;font-size:13px;font-weight:700;color:#16110F;border-bottom:1px solid #F6EDF2;">${price}</td>
+    </tr>` : '',
+    `<tr>
+      <td style="padding:9px 0;font-size:13px;color:#9A8E94;${remaining ? 'border-bottom:1px solid #F6EDF2;' : ''}">Deposit due now</td>
+      <td align="right" style="padding:9px 0;font-size:15px;font-weight:700;color:#C4849A;${remaining ? 'border-bottom:1px solid #F6EDF2;' : ''}">${amount}</td>
+    </tr>`,
+    remaining ? `<tr>
+      <td style="padding:9px 0;font-size:13px;color:#9A8E94;">Remaining, cash on the day</td>
+      <td align="right" style="padding:9px 0;font-size:13px;font-weight:700;color:#16110F;">${remaining}</td>
+    </tr>` : '',
+  ].filter(Boolean).join('');
+
+  return `<tr><td style="padding:16px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
+      <tr><td style="padding:26px 22px;text-align:center;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Reserve Your Date</p>
+        <p style="font-family:${EMAIL_FONT};font-size:36px;line-height:1;color:#16110F;margin:0 0 6px;">${amount}</p>
+        <p style="font-size:13px;color:#8A7F85;margin:0 0 18px;">Send via Zelle to lock in ${dateFormatted}</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${breakdown}</table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;padding-top:14px;border-top:1px solid #F0E0E9;">
+            <tr><td style="font-size:13px;color:#9A8E94;padding:0 0 6px;">Zelle to</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;padding:0 0 6px;">Ruqia Moshref</td></tr>
+            <tr><td style="font-size:13px;color:#9A8E94;">Email</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">makeupbyroko22@gmail.com</td></tr>
+          </table>
+        </td></tr></table>
+        ${clientButton(uploadUrl, 'Upload Screenshot &amp; Photos')}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
+          <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:#C4849A;margin:0 0 4px;">Also upload your photos</p>
+          <p style="font-size:12px;color:#6B636A;margin:0;line-height:1.55;">Use this same link to add photos of yourself <strong style="color:#16110F;">with makeup</strong> and <strong style="color:#16110F;">without makeup</strong> so Roko can prep for your consultation.</p>
+        </td></tr></table>
+        <p style="font-size:12px;color:#A99FA4;margin:14px 0 0;line-height:1.5;">Include your name + wedding date in the Zelle note.</p>
+      </td></tr>
+    </table>
+  </td></tr>`;
+}
+
 // ─── Client Templates ──────────────────────────────────────────────────────────
 
 export async function sendEmail({ to, subject, html }) {
@@ -340,22 +386,60 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
   });
 }
 
-export function bridalConfirmationEmail({ firstName, bridalTitle, bridalDateFormatted, bridalDeposit, uploadUrl, contractSection = '' }) {
+// The bride's confirmation. She gets her name first, then the money (what's due
+// now vs. cash on the day), then the steps, then a full read-back of everything
+// she typed into the inquiry form. The read-back mirrors the sections in
+// adminBridalEmail so her copy and Roko's copy never disagree; every field is
+// optional so a sparse admin-entered booking degrades to the short version.
+export function bridalConfirmationEmail({
+  firstName, bridalTitle, bridalDateFormatted, bridalDeposit, bridalPrice, bridalRemaining,
+  uploadUrl, eventLocation, numPeopleGlam, outOfState, eventStartTime, venueAccessTime,
+  hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist,
+  additionalDetails, contractSection = '',
+}) {
+  // A trial is a studio appointment, so its one time field is her preferred
+  // time, not an "event start". Same rule adminBridalEmail uses.
+  const isTrialPkg = /trial/i.test(bridalTitle || '');
+
+  const inquiryRows = [
+    crow('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),
+    crow(isTrialPkg ? 'Preferred Date' : 'Wedding Date', `<strong>${bridalDateFormatted}</strong>`),
+    eventLocation ? crow('Location', eventLocation) : '',
+    numPeopleGlam ? crow('Getting Glam', numPeopleGlam) : '',
+    outOfState !== undefined && outOfState !== null
+      ? crow('Travel', outOfState ? 'Yes, out of state' : 'No, local (CA)')
+      : '',
+  ].filter(Boolean).join('');
+
+  const timingRows = [
+    makeupReadyByTime ? crow('Ready by', `<strong>${makeupReadyByTime}</strong>`) : '',
+    eventStartTime ? crow(isTrialPkg ? 'Preferred time' : 'Event starts', eventStartTime) : '',
+    venueAccessTime ? crow('Venue access', venueAccessTime) : '',
+    hairstylistArriveBy ? crow('Hairstylist arrives', hairstylistArriveBy) : '',
+    photographerArrival ? crow('Photographer arrives', photographerArrival) : '',
+    photographer ? crow('Photographer', photographer) : '',
+    hairstylist ? crow('Hairstylist', hairstylist) : '',
+  ].filter(Boolean).join('');
+
+  const steps = [
+    ['1', `Send your ${bridalDeposit || 'Zelle'} deposit`, 'Ruqia Moshref · makeupbyroko22@gmail.com'],
+    ['2', 'Upload your screenshot & photos', 'Use your private link above'],
+    ['3', 'Roko confirms + schedules your consultation', 'Within 24–48 hours'],
+    bridalRemaining
+      ? ['4', `Bring ${bridalRemaining} in cash on the day`, 'Remaining balance, due at your appointment']
+      : null,
+  ].filter(Boolean);
+
   return clientShell({
-    preheader: `Your bridal inquiry for ${bridalTitle} has been received ✦`,
+    preheader: `Your bridal inquiry for ${bridalTitle} is in. ${bridalDeposit || 'Your deposit'} locks in ${bridalDateFormatted}.`,
     content: `
-      ${clientHero({ eyebrow: 'Bridal Inquiry Received', title: "You're on", titleAccent: 'the list!', subtitle: "I can't wait to be part of your big day ✦" })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>, your bridal inquiry is in! I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm everything and schedule your consultation.`)}
-      ${cpanel(`${ctitle('Inquiry Summary')}${crows(
-        crow('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`) +
-        crow('Preferred Date', bridalDateFormatted)
-      )}`)}
-      ${cdeposit({ amount: bridalDeposit, uploadUrl, photos: true })}
-      ${cstepsPanel('What Happens Next', [
-        ['1', 'Send your Zelle deposit', 'Ruqia Moshref · makeupbyroko22@gmail.com'],
-        ['2', 'Upload your screenshot & photos', 'Use your personal link above'],
-        ['3', 'Roko reaches out for your consultation', 'To go over your vision and bridal look'],
-      ])}
+      ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
+      ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
+      ${cdepositBridal({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, uploadUrl, dateFormatted: bridalDateFormatted })}
+      ${cstepsPanel('What Happens Next', steps)}
+      ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
+      ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
+      ${additionalDetails ? cpanel(`${ctitle('Your Vision')}<p style="font-size:14px;color:#5A5258;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>`) : ''}
       ${contractSection}
     `,
   });
