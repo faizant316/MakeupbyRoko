@@ -72,7 +72,7 @@ export default function ResizableColumns({ left, right, darkMode: dm }) {
     return (
       <div>
         {left}
-        <div className="mt-2 mb-7 h-px" style={{ background: dm ? '#2e2e38' : '#f1ece7' }} />
+        <div className="mt-2 mb-7 h-px" style={{ background: dm ? '#2e2e38' : '#ECECF1' }} />
         {right}
       </div>
     );

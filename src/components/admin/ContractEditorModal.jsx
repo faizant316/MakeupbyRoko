@@ -313,7 +313,7 @@ function IconBtn({ children, onClick, disabled, danger, label, dm }) {
 // Shared by the modal preview and the collapsed card preview.
 export function ContractPreview({ c, dm }) {
   if (!c) return null;
-  const textMain = dm ? '#ECEDF1' : '#16110F';
+  const textMain = dm ? '#ECEDF1' : '#121216';
   const textBody = dm ? '#b6b6c0' : '#666';
   return (
     <div>

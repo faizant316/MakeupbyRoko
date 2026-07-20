@@ -51,7 +51,7 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
   }, [classRegs]);
 
   return (
-    <div className="w-full mb-8 pt-7" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f1ece7'}` }}>
+    <div className="w-full mb-8 pt-7" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
       {/* Header — opens the full Class Sign-Ups tab */}
       <button onClick={onOpenAll} className="group w-full flex items-center gap-3 mb-4 text-left">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(160,96,122,0.1)' }}>
@@ -82,8 +82,8 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
           return (
             <div key={k} className="flex items-baseline gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full self-center flex-shrink-0" style={{ background: m.color }} />
-              <span className="text-[1.2rem] font-serif leading-none" style={{ color: counts[k] > 0 ? (dm ? '#e4e4e7' : '#1a1a1a') : (dm ? '#52525b' : '#c9bfb7') }}>{counts[k]}</span>
-              <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{m.label}</span>
+              <span className="text-[1.2rem] font-serif leading-none" style={{ color: counts[k] > 0 ? (dm ? '#e4e4e7' : '#1a1a1a') : (dm ? '#52525b' : '#C0C0C9') }}>{counts[k]}</span>
+              <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{m.label}</span>
             </div>
           );
         })}
@@ -103,7 +103,7 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
               const rel = relativeDate(classDate(r));
               const dateColor = rel.tone === 'accent' ? '#A0607A'
                 : rel.tone === 'past' ? '#E0795B'
-                : rel.tone === 'muted' ? (dm ? '#71717a' : '#b0a59c')
+                : rel.tone === 'muted' ? (dm ? '#71717a' : '#A6A6AF')
                 : (dm ? '#a1a1aa' : '#83838d');
               return (
                 <button key={r.id} onClick={() => onOpenReg?.(r)}

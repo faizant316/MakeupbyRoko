@@ -31,7 +31,7 @@ export default function ReportsTab({ darkMode: dm }) {
   };
 
   const bd     = dm ? '#3a3a48' : '#E2E4EA';
-  const trackBg = dm ? '#26262e' : '#f5f0ec';
+  const trackBg = dm ? '#26262e' : '#F0F0F5';
   const activeBg = dm ? '#1e1e24' : '#fff';
   const tx     = dm ? '#e4e4e7' : '#111';
   const mu     = dm ? '#71717a' : '#999';
@@ -73,7 +73,7 @@ export default function ReportsTab({ darkMode: dm }) {
         </div>
         <p className="text-[0.66rem] mt-2.5 ml-1" style={{ color: mu }}>
           {active?.sub}
-          <span style={{ color: dm ? '#52525b' : '#c9c2bc' }}> · live data, updated in real time</span>
+          <span style={{ color: dm ? '#52525b' : '#C2C2C9' }}> · live data, updated in real time</span>
         </p>
       </div>
 

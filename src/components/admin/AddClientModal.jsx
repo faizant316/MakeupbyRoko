@@ -57,8 +57,8 @@ function StyledDropdown({ value, onChange, options, placeholder, dm }) {
           {options.map(o => (
             <button key={o} type="button" onClick={() => { onChange(o); setOpen(false); }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-left text-[0.8rem] transition-colors"
-              style={{ color: value === o ? text : muted, background: value === o ? (dm ? '#3f3f46' : '#FAF5F2') : 'transparent', fontWeight: value === o ? 600 : 400 }}
-              onMouseEnter={e => { if (value !== o) e.currentTarget.style.background = dm ? '#3f3f46' : '#f9f6f3'; }}
+              style={{ color: value === o ? text : muted, background: value === o ? (dm ? '#3f3f46' : '#F6F6FA') : 'transparent', fontWeight: value === o ? 600 : 400 }}
+              onMouseEnter={e => { if (value !== o) e.currentTarget.style.background = dm ? '#3f3f46' : '#F6F6F9'; }}
               onMouseLeave={e => { if (value !== o) e.currentTarget.style.background = 'transparent'; }}>
               {o}
               {value === o && <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>}
@@ -342,7 +342,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
 
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
   const inputClass = 'w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]';
-  const labelStyle = { display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#8a7f76' };
+  const labelStyle = { display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#808089' };
 
   const Section = ({ children, accent }) => (
     <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: accent || sectionLabelColor }}>
@@ -368,7 +368,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
         <div className="flex-none flex justify-between items-center px-5 sm:px-6 border-b"
           style={{ borderColor, paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#f8f1ee' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#F2F2F7' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div>
@@ -378,7 +378,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           </div>
           <button onClick={onClose} type="button"
             className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#3f3f46' : '#f4f0ec', color: textMuted }}>
+            style={{ background: dm ? '#3f3f46' : '#F0F0F4', color: textMuted }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>

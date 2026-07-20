@@ -44,7 +44,7 @@ const COUNTRY_FLAG = {
 function Skel({ dm, h = 16, className = '' }) {
   return (
     <div className={`rounded-lg animate-pulse ${className}`}
-      style={{ height: h, background: dm ? '#2e2e38' : '#f0ebe7' }} />
+      style={{ height: h, background: dm ? '#2e2e38' : '#EBEBF0' }} />
   );
 }
 
@@ -68,7 +68,7 @@ function EmptyState({ icon: Icon, text, dm, compact }) {
   const mu = dm ? '#71717a' : '#999';
   return (
     <div className={`flex flex-col items-center text-center gap-1.5 ${compact ? 'py-6' : 'py-8'}`}>
-      <Icon size={compact ? 18 : 22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#e0d8d4' }} />
+      <Icon size={compact ? 18 : 22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#D9D9DF' }} />
       <p className="text-[0.72rem] max-w-[260px] leading-relaxed" style={{ color: mu }}>
         <span style={{ color: tx, fontWeight: 600 }}>Collecting data.</span> {text}
       </p>
@@ -211,7 +211,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
                       <div className="flex-1 min-w-0">
                         <p className="text-[0.75rem] font-semibold" style={{ color: tx }}>{m.label}</p>
                         {m.desc && <p className="text-[0.6rem] mb-1.5 leading-snug" style={{ color: mu }}>{m.desc}</p>}
-                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f0ebe7' }}>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#EBEBF0' }}>
                           <div className="h-full rounded-full" style={{ width: `${bar}%`, background: m.dot }} />
                         </div>
                       </div>
@@ -289,7 +289,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
                         </div>
                         <p className="text-[0.65rem] font-bold tabular-nums" style={{ color: tx }}>{p}%</p>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#f0ebe7' }}>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dm ? '#2e2e38' : '#EBEBF0' }}>
                         <div className="h-full rounded-full" style={{ width: `${p}%`, background: '#D4A0B0' }} />
                       </div>
                     </div>
@@ -337,7 +337,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
             <p className="text-[1.5rem] font-bold tabular-nums leading-none" style={{ color: tx }}>{fmt(ov.pageViews)}</p>
             <p className="text-[0.62rem] mt-0.5" style={{ color: mu }}>last 30 days</p>
           </div>
-          <Zap size={28} strokeWidth={1} color={dm ? '#3a3a48' : '#e8e0db'} />
+          <Zap size={28} strokeWidth={1} color={dm ? '#3a3a48' : '#E1E1E8'} />
         </div>
       )}
 

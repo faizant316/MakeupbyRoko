@@ -95,7 +95,7 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
             <div key={g.key}>
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: g.dot }} />
-                <p className="text-[0.58rem] font-bold tracking-[0.12em] uppercase" style={{ color: dm ? '#a1a1aa' : '#8a7f76' }}>
+                <p className="text-[0.58rem] font-bold tracking-[0.12em] uppercase" style={{ color: dm ? '#a1a1aa' : '#808089' }}>
                   {g.label} <span className="opacity-60">({g.items.length})</span>
                 </p>
               </div>

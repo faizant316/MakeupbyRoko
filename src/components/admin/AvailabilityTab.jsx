@@ -20,8 +20,8 @@ function CapacityRing({ booked, capacity, blocked, dm }) {
   const circ = 2 * Math.PI * r;
   const ratio = blocked ? 1 : capacity > 0 ? Math.min(1, booked / capacity) : 0;
   const full = !blocked && capacity > 0 && booked >= capacity;
-  const track = dm ? '#2e2e38' : '#f1eae4';
-  const color = blocked ? '#EF4444' : full ? '#E0795B' : booked > 0 ? '#D4A0B0' : (dm ? '#52525b' : '#dcd1c9');
+  const track = dm ? '#2e2e38' : '#EAEAF1';
+  const color = blocked ? '#EF4444' : full ? '#E0795B' : booked > 0 ? '#D4A0B0' : (dm ? '#52525b' : '#D2D2DB');
   return (
     <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
@@ -212,9 +212,9 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
       {/* Glance stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
         {stats.map(s => (
-          <div key={s.label} className="rounded-xl px-3.5 py-3" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
+          <div key={s.label} className="rounded-xl px-3.5 py-3" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}` }}>
             <p className="text-[1.5rem] font-serif leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</p>
-            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-2 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
+            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-2 truncate" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -283,7 +283,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                       disabled={editCap === effForSelected || saveOverride.isPending}
                       className="ml-auto px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
                       style={editCap === effForSelected
-                        ? { background: dm ? '#2e2e38' : '#f3f0ec', color: dm ? '#52525b' : '#bcae9e', cursor: 'not-allowed' }
+                        ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#52525b' : '#bcae9e', cursor: 'not-allowed' }
                         : { background: '#D4A0B0', color: '#fff', boxShadow: '0 1px 3px rgba(160,96,122,0.25)' }}>
                       {saveOverride.isPending ? 'Saving…' : daySaved ? '✓ Saved' : 'Set limit'}
                     </button>
@@ -364,7 +364,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
           {/* Days off */}
           {upcomingBlocked.length > 0 && (
             <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#71717a' : '#b0a59c' }}>Days off</p>
+              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>Days off</p>
               <div className="flex flex-col gap-1.5">
                 {upcomingBlocked.map(b => (
                   <div key={b.id}

@@ -16,7 +16,7 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
   };
 
   const mutedTxt = dm ? '#8a8a93' : '#93939b';
-  const hoverTxt = dm ? '#cfcfd6' : '#6b6259';
+  const hoverTxt = dm ? '#cfcfd6' : '#62626B';
   const hoverBg  = dm ? '#26262d' : '#F3F3F7';
   const chipCls  = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
 
@@ -81,7 +81,7 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
   const tx      = dm ? '#e4e4e7' : '#111';
   const di      = dm ? '#52525b' : '#bcbcc4';
   const divider = dm ? '#2e2e38' : '#ECEDF1';
-  const star    = dm ? '#3a3a48' : '#e8e0db';
+  const star    = dm ? '#3a3a48' : '#E1E1E8';
 
   return (
     <div className="rounded-2xl p-5 flex flex-col transition-all hover:shadow-md"

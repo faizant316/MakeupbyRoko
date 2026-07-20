@@ -23,7 +23,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center px-4"
-      style={{ background: 'rgba(20,15,12,0.35)', backdropFilter: 'blur(6px)' }}>
+      style={{ background: 'rgba(15, 15, 20,0.35)', backdropFilter: 'blur(6px)' }}>
       <div
         ref={popupRef}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-[360px] overflow-hidden"
@@ -80,7 +80,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
                 Blocking this date will mark it as unavailable. Clients won't be able to book appointments on this day. Just tap Block — a reason is optional.
               </p>
               <div className="mb-5">
-                <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A0785A] mb-1.5">
+                <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#52525b] mb-1.5">
                   Reason <span className="text-[#ccc] font-normal normal-case tracking-normal">(optional)</span>
                 </label>
                 <input

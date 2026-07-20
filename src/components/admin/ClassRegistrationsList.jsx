@@ -60,7 +60,7 @@ function ClassRow({ reg, onSelect, dm }) {
   const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#83838d');
 
   const iconBtn = 'flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105';
-  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#ece5e0'}` };
+  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
 
   return (
     <button
@@ -68,14 +68,14 @@ function ClassRow({ reg, onSelect, dm }) {
       className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
       style={{
         background: dm ? '#26262d' : '#FBF9F7',
-        border: `1px solid ${dm ? '#34343d' : '#ece4dc'}`,
-        boxShadow: dm ? 'none' : '0 1px 2px rgba(60,45,35,0.05), 0 2px 5px rgba(60,45,35,0.04)',
+        border: `1px solid ${dm ? '#34343d' : '#E4E4EC'}`,
+        boxShadow: dm ? 'none' : '0 1px 2px rgba(30, 30, 40,0.05), 0 2px 5px rgba(30, 30, 40,0.04)',
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = dm ? '#2e2e37' : '#FFFDFB'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#ece4dc'; e.currentTarget.style.background = dm ? '#26262d' : '#FBF9F7'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#E4E4EC'; e.currentTarget.style.background = dm ? '#26262d' : '#FBF9F7'; }}
     >
       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
-        style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#b0a59c' }}>
+        style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#A6A6AF' }}>
         {initial}
       </div>
 
@@ -138,7 +138,7 @@ function ClassRow({ reg, onSelect, dm }) {
             className={iconBtn}
             style={iconBtnStyle}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece5e0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -153,7 +153,7 @@ function ClassRow({ reg, onSelect, dm }) {
             className={iconBtn}
             style={iconBtnStyle}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#ece5e0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -246,16 +246,16 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
           { label: 'Total', value: visible.length },
         ].map(s => (
           <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
-            style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f0e9e4'}` }}>
+            style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}` }}>
             <p className="text-[1.1rem] font-serif leading-none" style={{ color: s.accent ? '#A0607A' : (dm ? '#e4e4e7' : '#1a1a1a') }}>{s.value}</p>
-            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#b0a59c' }}>{s.label}</p>
+            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Online / In Person filter — Booksy-style segmented pills */}
       <div className="inline-flex items-center gap-1 p-1 rounded-xl mb-5"
-        style={{ background: dm ? '#1e1e24' : '#F5F0EC', border: `1px solid ${dm ? '#2e2e38' : '#eee6df'}` }}>
+        style={{ background: dm ? '#1e1e24' : '#F0F0F5', border: `1px solid ${dm ? '#2e2e38' : '#E6E6EE'}` }}>
         {[
           { key: 'all', label: `All · ${registrations.length}` },
           { key: 'online', label: `Online · ${countOf('online')}`, meta: FORMAT_META.online },
@@ -266,7 +266,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
             <button key={f.key} type="button" onClick={() => setFormatFilter(f.key)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.66rem] font-semibold tracking-[0.03em] transition-all"
               style={active
-                ? { background: dm ? '#34343d' : '#fff', color: f.meta?.color || (dm ? '#e4e4e7' : '#1a1a1a'), boxShadow: dm ? 'none' : '0 1px 4px rgba(60,45,35,0.12)' }
+                ? { background: dm ? '#34343d' : '#fff', color: f.meta?.color || (dm ? '#e4e4e7' : '#1a1a1a'), boxShadow: dm ? 'none' : '0 1px 4px rgba(30, 30, 40,0.12)' }
                 : { color: dm ? '#71717a' : '#9c9ca4' }}>
               {f.meta && <span className="w-1.5 h-1.5 rounded-full" style={{ background: f.meta.color }} />}
               {f.label}
@@ -317,7 +317,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
                 {headAccent && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isNeedsScheduling ? 'animate-pulse' : ''}`} style={{ background: headAccent }} />}
                 <h3 className="font-serif text-[1.05rem]" style={{ color: headAccent || (dm ? '#e4e4e7' : '#111') }}>{headLabel}</h3>
                 <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
+                  style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
                   {group.items.length}
                 </span>
                 {isNeedsScheduling && (
