@@ -14,7 +14,7 @@ import TimeWindowPicker from './TimeWindowPicker';
 import ScheduleView from './ScheduleView';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
-import { STATUS_COLORS, EVENT_COLORS, isBridalService } from './statusColors';
+import { STATUS_COLORS, EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
 
 function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
   const [expanded, setExpanded] = useState(false);
@@ -175,10 +175,10 @@ function fmtShort(d) {
 // One label/value pair in the bridal details "spec sheet" grid.
 function BField({ label, value, dm, accent = false, href }) {
   if (value === null || value === undefined || value === '') return null;
-  const valueColor = accent ? PLUM : (dm ? '#e4e4e7' : '#2C1A14');
+  const valueColor = accent ? PLUM : (dm ? '#e4e4e7' : '#1E1E27');
   return (
     <div className="min-w-0">
-      <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>{label}</p>
+      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>{label}</p>
       {href ? (
         <a href={href} target="_blank" rel="noopener noreferrer"
           className="text-[0.86rem] font-medium leading-snug break-words transition-opacity hover:opacity-70"
@@ -190,9 +190,10 @@ function BField({ label, value, dm, accent = false, href }) {
   );
 }
 
-const CONSULT_COLOR = '#A855F7';
-const CONSULT_BG = 'rgba(168,85,247,0.08)';
-const CONSULT_BORDER = 'rgba(168,85,247,0.25)';
+const CONSULT_COLOR = CONSULT_INK.light;
+const CONSULT_DM = CONSULT_INK.dark;
+const CONSULT_BG = 'rgba(107,90,147,0.09)';
+const CONSULT_BORDER = 'rgba(107,90,147,0.24)';
 
 // Numbered step marker for the bridal pipeline (1 = time, 2 = confirm+consult).
 // done = green check, active = filled number, warn = amber, todo = hollow gray.
@@ -201,7 +202,7 @@ function StepDot({ n, state, dm, color = '#C4849A' }) {
     done: { background: '#22c55e', color: '#fff' },
     active: { background: color, color: '#fff' },
     warn: { background: '#D97706', color: '#fff' },
-    todo: { background: 'transparent', color: dm ? '#71717a' : '#b6aeb2', border: `1.5px solid ${dm ? '#3f3f46' : '#ddd3cb'}` },
+    todo: { background: 'transparent', color: dm ? '#71717a' : '#b6aeb2', border: `1.5px solid ${dm ? '#3f3f46' : '#D4D4DD'}` },
   }[state] || {};
   return (
     <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[0.62rem] font-bold" style={styles}>
@@ -266,55 +267,114 @@ function parseConsultNotes(raw) {
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
-// A one-glance strip of what's already on Roko's plate for a given day, shown
-// inline under the consultation date picker (only when the schedule drawer
-// isn't open, so there's never a double schedule on screen).
-function DayPeek({ dateKey, bookings = [], classRegs = [], dm, excludeConsultOf, onOpenFull }) {
+// What's already on Roko's plate for a given day, shown inline under the
+// consultation date picker (only when the schedule drawer isn't open, so
+// there's never a double schedule on screen).
+//
+// This is a rail, not a list. A free day is an empty bar and a booked day is a
+// bar with blocks in it, so "is this day open?" is answered by shape rather than
+// by reading a sentence. The time she's currently picking ghosts onto the same
+// rail, which makes a collision visible the instant it happens.
+const RAIL_START = 8 * 60;  // 8 AM
+const RAIL_END = 20 * 60;   // 8 PM
+const RAIL_TICKS = [9, 12, 15, 18]; // hours labelled under the rail
+
+function DayPeek({ dateKey, bookings = [], classRegs = [], dm, excludeConsultOf, draftTime, onOpenFull }) {
   if (!dateKey) return null;
   const events = [];
+  const add = (id, color, time, name) => {
+    const { start, end } = parseRange(time || '');
+    const s = apptToMin(start);
+    const e = apptToMin(end);
+    events.push({ id, color, name, timed: s != null, start: s, end: e != null && e > s ? e : (s != null ? s + 60 : null) });
+  };
   bookings.forEach(b => {
     if (b.status === 'cancelled') return;
     if (b.date === dateKey) {
-      events.push({ id: `a-${b.id}`, color: isBridalService(b.service) ? EVENT_COLORS.bridal : EVENT_COLORS.appt, time: b.time, name: b.name || 'Client', detail: b.service || 'Appointment' });
+      add(`a-${b.id}`, isBridalService(b.service) ? EVENT_COLORS.bridal : EVENT_COLORS.appt, b.time, b.name || 'Client');
     }
     if (b.consultation_date === dateKey && b.id !== excludeConsultOf) {
-      events.push({ id: `c-${b.id}`, color: EVENT_COLORS.consult, time: b.consultation_time, name: b.name || 'Client', detail: 'Consultation' });
+      add(`c-${b.id}`, EVENT_COLORS.consult, b.consultation_time, b.name || 'Client');
     }
   });
   classRegs.forEach(r => {
     if (r.status === 'cancelled' || r.appointment_date !== dateKey) return;
-    events.push({ id: `l-${r.id}`, color: EVENT_COLORS.class, time: r.appointment_time, name: r.full_name || 'Client', detail: 'Class' });
+    add(`l-${r.id}`, EVENT_COLORS.class, r.appointment_time, r.full_name || 'Client');
   });
-  events.sort((a, b) =>
-    (apptToMin(parseRange(a.time || '').start) ?? 1e9) - (apptToMin(parseRange(b.time || '').start) ?? 1e9));
-  const label = new Date(dateKey + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  const d = new Date(dateKey + 'T00:00:00');
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  const untimed = events.filter(ev => !ev.timed);
+  const timed = events.filter(ev => ev.timed);
+
+  // Where the draft consultation lands on the rail, if she's picked a time.
+  const draft = (() => {
+    const { start, end } = parseRange(draftTime || '');
+    const s = apptToMin(start);
+    if (s == null) return null;
+    const e = apptToMin(end);
+    return { start: s, end: e != null && e > s ? e : s + 30 };
+  })();
+
+  const pct = (min) => Math.max(0, Math.min(100, ((min - RAIL_START) / (RAIL_END - RAIL_START)) * 100));
+  const railBg = dm ? '#23232b' : '#F4F1F3';
+  const muted = dm ? '#8b8b95' : '#9c9ca6';
+
   return (
-    <div className="mt-2 rounded-[10px] px-3.5 py-3" style={{ background: dm ? '#1e1e24' : '#FBF9FB', border: `1px dashed ${dm ? '#3a3a48' : '#e3d7de'}` }}>
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <p className="text-[0.58rem] font-bold tracking-[0.12em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-          Your {label}
-        </p>
+    <div className="mt-2.5">
+      <div className="flex items-baseline gap-2 mb-1.5">
+        <span className="text-[0.8rem] font-medium tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
+          {weekday} {d.getDate()}
+        </span>
+        <span className="text-[0.68rem]" style={{ color: muted }}>
+          {timed.length + untimed.length === 0 ? 'open' : `${timed.length + untimed.length} booked`}
+        </span>
+        <span className="flex-1" />
         {onOpenFull && (
-          <button type="button" onClick={onOpenFull}
-            className="text-[0.62rem] font-semibold underline underline-offset-2 transition-opacity hover:opacity-75"
-            style={{ color: dm ? '#C4B5FD' : '#7C3AED' }}>
-            Open full schedule
+          <button type="button" onClick={onOpenFull} title="Open full schedule"
+            className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors"
+            style={{ color: muted, background: dm ? '#26262e' : '#F4F1F3' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3">
+              <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
           </button>
         )}
       </div>
-      {events.length === 0 ? (
-        <p className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>Nothing scheduled, the day is wide open.</p>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          {events.map(ev => (
-            <div key={ev.id} className="flex items-center gap-2 text-[0.72rem] min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: ev.color }} />
-              <span className="font-semibold tabular-nums flex-shrink-0" style={{ color: dm ? '#d4d4d8' : '#444', minWidth: 58 }}>
-                {ev.time ? parseRange(ev.time).start : 'No time'}
-              </span>
-              <span className="truncate" style={{ color: dm ? '#a1a1aa' : '#666' }}>{ev.name}</span>
-              <span className="truncate ml-auto text-[0.62rem] flex-shrink-0 max-w-[38%]" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>{ev.detail}</span>
-            </div>
+
+      {/* The rail */}
+      <div className="relative rounded-[5px] overflow-hidden" style={{ height: 26, background: railBg }}>
+        {timed.map(ev => (
+          <span key={ev.id} title={ev.name} className="absolute top-0 bottom-0"
+            style={{ left: `${pct(ev.start)}%`, width: `${Math.max(pct(ev.end) - pct(ev.start), 1.5)}%`, background: ev.color }} />
+        ))}
+        {draft && (
+          <span className="absolute top-0 bottom-0 rounded-[3px]"
+            style={{
+              left: `${pct(draft.start)}%`,
+              width: `${Math.max(pct(draft.end) - pct(draft.start), 1.5)}%`,
+              background: `${CONSULT_COLOR}2e`,
+              border: `1.5px dashed ${CONSULT_COLOR}`,
+            }} />
+        )}
+      </div>
+
+      {/* Hour ticks */}
+      <div className="relative h-3 mt-0.5">
+        {RAIL_TICKS.map(h => (
+          <span key={h} className="absolute text-[0.68rem] tabular-nums -translate-x-1/2"
+            style={{ left: `${pct(h * 60)}%`, color: muted }}>
+            {h > 12 ? h - 12 : h}
+          </span>
+        ))}
+      </div>
+
+      {untimed.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+          {untimed.map(ev => (
+            <span key={ev.id} className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: ev.color }} />
+              {ev.name}, no time set
+            </span>
           ))}
         </div>
       )}
@@ -454,19 +514,19 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
   return (
     <div className={bridal ? '' : 'mb-6'}>
       {!bridal && (
-        <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Consultation</p>
+        <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Consultation</p>
       )}
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
         <div className="flex items-center justify-between px-4 py-4 rounded-2xl transition-all"
-          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, borderLeft: `3px solid ${CONSULT_COLOR}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
+          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, borderLeft: `3px solid ${CONSULT_COLOR}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="min-w-0">
-              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
+              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>
                 {booking.consultation_type} · {booking.consultation_time}
               </p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>
@@ -476,7 +536,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 <button type="button"
                   onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
                   className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
-                  style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>
+                  style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
                     <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
                   </svg>
@@ -495,8 +555,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             </div>
           </div>
           <button onClick={() => { setExpanded(true); setSent(false); }}
-            className="ml-3 flex-shrink-0 px-3.5 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.08em] uppercase transition-all active:scale-95"
-            style={{ background: CONSULT_BG, color: dm ? '#C4B5FD' : CONSULT_COLOR, border: `1px solid ${CONSULT_BORDER}` }}>
+            className="ml-3 flex-shrink-0 px-3.5 py-1.5 rounded-full text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all active:scale-95"
+            style={{ background: CONSULT_BG, color: dm ? CONSULT_DM : CONSULT_COLOR, border: `1px solid ${CONSULT_BORDER}` }}>
             Reschedule
           </button>
         </div>
@@ -512,7 +572,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{bridal && !confirmed ? 'Confirm & Schedule Consultation' : 'Schedule Consultation'}</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{bridal && !confirmed ? 'Confirm & Schedule Consultation' : 'Schedule Consultation'}</p>
               <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>
                 {bridal && !confirmed ? 'Sends one email: confirmation + consultation + upload link'
                   : bridal ? 'Sends the consultation details, with a Zoom link if you add one'
@@ -529,10 +589,10 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
       {/* Picker */}
       {expanded && (
         <div className="rounded-2xl overflow-hidden"
-          style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
+          style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3.5"
-            style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f3ede7'}` }}>
+            style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#EDEDF3'}` }}>
             <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                 <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
@@ -540,15 +600,15 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>{hasConsult ? 'Reschedule Consultation' : 'Schedule Consultation'}</p>
-              <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
+              <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#9A9AA3' }}>
                 {hasConsult
-                  ? 'Pick a new time, the client gets an updated email automatically'
-                  : (bridal && !confirmed ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type')}
+                  ? 'Client gets an updated email'
+                  : (bridal && !confirmed ? 'One email: confirmation, details, upload link' : 'Date, time and meeting type')}
               </p>
             </div>
             <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }} aria-label="Close scheduler"
               className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-              style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+              style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
@@ -557,14 +617,14 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             {/* Date + Time window */}
             <div className="flex flex-col gap-4">
               <div>
-                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
                 <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR} />
                 {/* What that day already holds, so picking a time never means
                     leaving the card to go check the schedule. */}
-                {renderDayPeek?.(form.date)}
+                {renderDayPeek?.(form.date, form.time)}
               </div>
               <div>
-                <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
                   Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>— 30 min meeting</span>
                 </label>
                 <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIME_SLOTS} dm={dm} accent={CONSULT_COLOR} />
@@ -573,11 +633,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 
             {/* Type */}
             <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
+              <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
               <div className="flex gap-2">
                 {['Zoom', 'Phone'].map(key => (
                   <button key={key} type="button" onClick={() => set('type', key)}
-                    className="flex-1 py-3 rounded-[6px] text-[0.72rem] font-semibold tracking-[0.04em] uppercase transition-all touch-manipulation"
+                    className="flex-1 py-3 rounded-[6px] text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all touch-manipulation"
                     style={form.type === key
                       ? { background: '#111', color: '#fff', border: '1px solid #111' }
                       : { background: inputBg, color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }
@@ -592,7 +652,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             {form.type === 'Zoom' && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase" style={{ color: textMuted }}>Zoom Link</label>
+                  <label className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: textMuted }}>Zoom Link</label>
                   {meetLink && (
                     <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                       className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
@@ -606,7 +666,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 {!meetLink ? (
                   <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                     className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
-                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#f3ede7') : CONSULT_COLOR, color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: 'none', boxShadow: generatingLink ? 'none' : '0 2px 10px rgba(124,58,237,0.3)' }}>
+                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#EDEDF3') : CONSULT_COLOR, color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: 'none', boxShadow: 'none' }}>
                     {generatingLink ? (
                       <><div className="w-4 h-4 rounded-full animate-spin border-2" style={{ borderColor: `${CONSULT_COLOR}30`, borderTopColor: CONSULT_COLOR }} /> Generating…</>
                     ) : (
@@ -622,7 +682,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                   <button type="button" onClick={copyMeetLink}
                     className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
                     style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : CONSULT_COLOR}` }}>
-                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : (dm ? '#C4B5FD' : CONSULT_COLOR) }}>
+                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : (dm ? CONSULT_DM : CONSULT_COLOR) }}>
                       {meetLink}
                     </span>
                     <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
@@ -636,12 +696,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 
             {/* Notes */}
             <div>
-              <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                Notes <span style={{ color: dm ? '#52525b' : '#d4c8c0', textTransform: 'none', letterSpacing: 0 }}>— optional</span>
+              <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
+                Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>— optional</span>
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
-                className="w-full px-4 py-3 rounded-[10px] outline-none resize-none transition-shadow focus:ring-2 focus:ring-[#A855F7]/25"
+                className="w-full px-4 py-3 rounded-[10px] outline-none resize-none transition-shadow focus:ring-2 focus:ring-[#6B5A93]/25"
                 style={{ ...inputStyle, minHeight: '80px' }} />
             </div>
 
@@ -652,15 +712,15 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 style={{
                   minHeight: '50px', fontSize: '14px',
                   ...(!form.date
-                    ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                    ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                     : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                 }}>
                 {migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : consultOnly ? 'Schedule & Notify Client' : 'Confirm & Notify Client'}
               </button>
             ) : (
-              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
                 <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#FBF9F7' }}>
-                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{migrated ? 'Send Welcome Email?' : hasConsult ? 'Send Updated Time?' : consultOnly ? 'Send Consultation Details?' : 'Confirm & Send Email?'}</p>
+                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{migrated ? 'Send Welcome Email?' : hasConsult ? 'Send Updated Time?' : consultOnly ? 'Send Consultation Details?' : 'Confirm & Send Email?'}</p>
                   <div className="flex flex-col gap-1.5 mb-4">
                     <div className="flex items-center justify-between">
                       <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Date</span>
@@ -693,8 +753,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                       : ['The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])];
                     return (
                       <div className="mb-4">
-                        <p className="text-[0.62rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#a39a91' }}>
-                          One email to <span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR, textTransform: 'none', letterSpacing: 0 }}>{booking.email}</span> with:
+                        <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
+                          One email to <span style={{ color: dm ? CONSULT_DM : CONSULT_COLOR, textTransform: 'none', letterSpacing: 0 }}>{booking.email}</span> with:
                         </p>
                         <div className="flex flex-col gap-1.5">
                           {items.map((it, i) => (
@@ -742,13 +802,13 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 function ApptRow({ b, isCurrent, last, dm }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3.5"
-      style={{ borderBottom: last ? 'none' : `1px solid ${dm ? '#2a2a32' : '#f2ece7'}` }}>
+      style={{ borderBottom: last ? 'none' : `1px solid ${dm ? '#2a2a32' : '#ECECF2'}` }}>
       <div className="flex items-center gap-3 min-w-0">
         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
         <div className="min-w-0">
           <p className="text-[0.85rem] font-medium flex items-center gap-2 min-w-0" style={{ color: dm ? '#ECEDF1' : '#111' }}>
             <span className="truncate">{b.service || 'Appointment'}</span>
-            {isCurrent && <span className="flex-shrink-0 text-[0.5rem] font-bold tracking-[0.1em] uppercase px-1.5 py-0.5 rounded" style={{ background: 'rgba(196,132,154,0.15)', color: '#C4849A' }}>This one</span>}
+            {isCurrent && <span className="flex-shrink-0 text-[0.68rem] font-medium tracking-[0.06em] uppercase px-1.5 py-0.5 rounded" style={{ background: 'rgba(196,132,154,0.15)', color: '#C4849A' }}>This one</span>}
           </p>
           <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
             {b.date ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'No date set'}
@@ -1291,13 +1351,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       expanded={consultExpanded}
       setExpanded={setConsultExpanded}
       onDraftChange={handleConsultDraft}
-      renderDayPeek={(d) => (!showSchedule && d ? (
+      renderDayPeek={(d, t) => (!showSchedule && d ? (
         <DayPeek
           dateKey={d}
           bookings={allBookings}
           classRegs={classRegs}
           dm={dm}
           excludeConsultOf={booking.id}
+          draftTime={t}
           onOpenFull={() => { setScheduleDay(d); setShowSchedule(true); }}
         />
       ) : null)}
@@ -1454,19 +1515,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           style={{
             background: dm ? '#27272a' : '#fff',
             border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
-            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(50,35,30,0.12)',
+            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
           }}>
           <div className="px-4 min-w-0">
-            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Start</p>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Start</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroStart || 'Set time'}
             </p>
             {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroEnd}</p>}
           </div>
-          <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#f0eae4' }} />
+          <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#EAEAF0' }} />
           <div className="px-4 min-w-0 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#a9a29a' }}>Date</p>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Date</p>
               <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
             </div>
             <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1517,20 +1578,20 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Info grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div>
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Date & Time</p>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-1">Date & Time</p>
             <p className="text-[0.9rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>{dateFormatted}</p>
             {booking.time && <p className="text-[0.85rem]" style={{ color: dm ? '#D4A0B0' : '#888' }}>{booking.time}</p>}
           </div>
           <div>
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-1">Contact</p>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-1">Contact</p>
             {booking.email && <a href={`mailto:${booking.email}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block" style={{ color: dm ? '#e4e4e7' : '#111' }}>{booking.email}</a>}
             {booking.phone && <a href={`sms:${phoneHref(booking.phone)}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5 tabular-nums" style={{ color: dm ? '#71717a' : '#999' }}>{formatPhone(booking.phone)}</a>}
             {booking.email && !showCompose && (
               <button
                 type="button"
                 onClick={openCompose}
-                className="mt-2.5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-[0.66rem] font-bold tracking-[0.06em] uppercase transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.35)' }}
+                className="mt-2.5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: '#C4849A', color: '#fff' }}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
                 Message client
@@ -1542,8 +1603,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Contact composer — Roko's personal email, sent as roko@makeupbyroko.org */}
         {showCompose && (
           <div ref={composeRef} className="mb-6 rounded-2xl overflow-hidden"
-            style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(60,45,35,0.05)' }}>
-            <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#f3ede7'}` }}>
+            style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
+            <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#EDEDF3'}` }}>
               <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -1552,13 +1613,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Message Client</p>
-                <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
+                <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#9A9AA3' }}>
                   To <span style={{ color: dm ? '#e7c9d5' : '#8A4A63', fontWeight: 600 }}>{booking.email}</span> · sends from roko@makeupbyroko.org
                 </p>
               </div>
               <button type="button" onClick={() => setShowCompose(false)} aria-label="Close composer"
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-                style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+                style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -1573,18 +1634,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </button>
 
               <div>
-                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Subject</label>
                 <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                  style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                  style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
               </div>
 
               <div>
-                <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Message</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Message</label>
                 <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
                   placeholder="Write your message…"
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                  style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                  style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                 <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
               </div>
 
@@ -1608,7 +1669,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div className="flex items-center gap-2 pt-1">
                 <button type="button" onClick={() => setShowCompose(false)}
                   className="px-5 py-3 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.98]"
-                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
                   Cancel
                 </button>
                 <button type="button" onClick={sendCompose} disabled={sending}
@@ -1650,25 +1711,26 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             so there's no separate time section further down the card. */}
         <div ref={timeSectionRef} className="mb-6 flex flex-col gap-3">
           {/* Appointment / ready-by card */}
-          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, background: dm ? '#1e1e24' : '#fff' }}>
-            <div className="flex items-center justify-between gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
-              <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
+          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, background: dm ? '#1e1e24' : '#fff' }}>
+            <div className="flex items-center justify-between gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
               <div className="flex items-center gap-1.5">
+                {/* Secondary. Only one button in this row gets to be filled, so
+                    "Change time" reads as the action and this reads as a peek. */}
                 <button type="button" onClick={openSchedule} title="See your day side by side"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-85 active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.8rem] font-medium transition-colors"
                   style={{
-                    background: dm ? 'rgba(196,132,154,0.16)' : '#FBF5F7',
-                    color: dm ? '#e7c9d5' : '#8A4A63',
-                    border: `1.5px solid ${dm ? '#5a4750' : '#DFB8C8'}`,
-                    boxShadow: dm ? 'none' : '0 1px 6px rgba(196,132,154,0.18)',
+                    background: 'transparent',
+                    color: dm ? '#b9b9c2' : '#6a6a74',
+                    border: `1px solid ${dm ? '#3a3a48' : '#e4dee1'}`,
                   }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   My Schedule
                 </button>
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
                   <button type="button" onClick={() => openTimePicker()}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.04em] transition-all hover:opacity-90"
-                    style={{ background: '#C4849A', color: '#fff', boxShadow: '0 2px 8px rgba(196,132,154,0.3)' }}>
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.8rem] font-medium transition-opacity hover:opacity-90"
+                    style={{ background: '#C4849A', color: '#fff' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     {booking.time ? 'Change time' : 'Set time'}
                   </button>
@@ -1676,7 +1738,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {showTimePicker && (
                   <button type="button" onClick={() => setShowTimePicker(false)} aria-label="Close"
                     className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90"
-                    style={{ background: dm ? '#3f3f46' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+                    style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 )}
@@ -1692,7 +1754,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {isBridal && (
                     <div className="flex items-center gap-2 mb-3">
                       <StepDot n={1} state="active" dm={dm} />
-                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#C4849A' }}>Set the time</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Set the time</p>
                     </div>
                   )}
                   <div className="flex items-center gap-3">
@@ -1700,11 +1762,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-5 h-5"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[1.08rem] font-semibold leading-snug" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>
+                      <p className="text-[1.08rem] font-semibold leading-snug" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>
                         {firstName} wants to be ready by <span style={{ color: '#C4849A', fontSize: '1.18rem' }} className="tabular-nums">{notes.readyBy}</span>
                       </p>
                       {booking.date && (
-                        <p className="text-[0.7rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>{fmtLong(booking.date)}</p>
+                        <p className="text-[0.7rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>{fmtLong(booking.date)}</p>
                       )}
                       <p className="text-[0.95rem] font-semibold leading-snug mt-1.5" style={{ color: dm ? '#c9c9d1' : '#4a3c42' }}>Does that work for you?</p>
                     </div>
@@ -1722,7 +1784,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     </button>
                   </div>
                   {isBridal && (
-                    <div className="flex items-center gap-2 mt-3.5 pt-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
+                    <div className="flex items-center gap-2 mt-3.5 pt-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
                       <StepDot n={2} state="todo" dm={dm} />
                       <span className="text-[0.68rem]" style={{ color: dm ? '#71717a' : '#b6aeb2' }}>Then: confirm &amp; schedule the consultation</span>
                     </div>
@@ -1737,15 +1799,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <div className="px-4 py-4">
                     <div className="flex items-center gap-2 mb-3">
                       {isBridal && <StepDot n={1} state="done" dm={dm} />}
-                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
                     </div>
                     {/* Compact start→done rail tucked left; the client's ask gets
                         its own clear spot on the right instead of a tiny caption. */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="min-w-0">
-                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).start}</p>
-                          <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
+                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>{parseRange(booking.time).start}</p>
+                          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
                         </div>
                         <div className="flex items-center flex-shrink-0" aria-hidden="true">
                           <span className="w-2 h-2 rounded-full" style={{ background: '#C4849A' }} />
@@ -1753,13 +1815,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                           <span className="w-2 h-2 rounded-full" style={{ background: '#C4849A' }} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).end}</p>
-                          <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
+                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>{parseRange(booking.time).end}</p>
+                          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
                         </div>
                       </div>
-                      <div className="sm:text-right pt-3 sm:pt-0 border-t sm:border-t-0" style={{ borderColor: dm ? '#2e2e38' : '#f3ede7' }}>
+                      <div className="sm:text-right pt-3 sm:pt-0 border-t sm:border-t-0" style={{ borderColor: dm ? '#2e2e38' : '#EDEDF3' }}>
                         <p className="text-[1.05rem] font-semibold leading-tight tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>Ready by {notes.readyBy}</p>
-                        <p className="text-[0.62rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>what {firstName} asked for</p>
+                        <p className="text-[0.62rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>what {firstName} asked for</p>
                       </div>
                     </div>
                     {runsPastReady && (
@@ -1776,8 +1838,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment</p>
-                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#2C1A14') : (dm ? '#71717a' : '#b6aeb2') }}>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment</p>
+                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#1E1E27') : (dm ? '#71717a' : '#b6aeb2') }}>
                         {booking.time || 'Not set yet'}
                       </p>
                     </div>
@@ -1786,14 +1848,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {/* Ready-by — beside the appointment so the two read together */}
                   {notes.readyBy ? (
                     <>
-                      <div className="hidden sm:block w-px self-stretch" style={{ background: dm ? '#2e2e38' : '#f0eae4' }} />
+                      <div className="hidden sm:block w-px self-stretch" style={{ background: dm ? '#2e2e38' : '#EAEAF0' }} />
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                         </span>
                         <div className="min-w-0">
-                          <p className="text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Wants to be ready by</p>
-                          <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{notes.readyBy}</p>
+                          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Wants to be ready by</p>
+                          <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>{notes.readyBy}</p>
                         </div>
                       </div>
                     </>
@@ -1824,11 +1886,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[0.92rem] font-semibold leading-tight" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>
+                      <p className="text-[0.92rem] font-semibold leading-tight" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>
                         {firstName} wants to be ready by <span className="tabular-nums" style={{ color: '#C4849A' }}>{notes.readyBy}</span>
                       </p>
                       {booking.date && (
-                        <p className="text-[0.68rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>{fmtLong(booking.date)}</p>
+                        <p className="text-[0.68rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>{fmtLong(booking.date)}</p>
                       )}
                     </div>
                   </div>
@@ -1836,25 +1898,25 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
                 {/* Date — quiet by default; most reschedules are time-only */}
                 <div className="mb-4">
-                  <label className="block text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>
+                  <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
                     Date {pendingDate && pendingDate !== booking.date && <span className="tabular-nums" style={{ textTransform: 'none', letterSpacing: 0, color: '#C4849A' }}>— moving to {fmtShort(pendingDate)}</span>}
                   </label>
                   <AdminDatePicker value={pendingDate} onChange={onPickDate} dm={dm} accent="#C4849A" />
                 </div>
 
-                <label className="block text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Time</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Time</label>
                 <TimeWindowPicker value={pendingWindow} onChange={onPickWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
 
                 {/* Notify the client — hidden on the "yes, that works" path (nothing
                     to tell them); pre-flipped for everything else. */}
                 {allowNotify && (
-                <div className="mt-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${notifyClient ? '#D4A0B0' : (dm ? '#3a3a48' : '#e8e0d8')}` }}>
+                <div className="mt-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${notifyClient ? '#D4A0B0' : (dm ? '#3a3a48' : '#E0E0E8')}` }}>
                   <button type="button" onClick={() => booking.email && setNotifyClient(v => !v)}
                     className="w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left transition-all"
                     style={{ background: notifyClient ? (dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), cursor: booking.email ? 'pointer' : 'default' }}>
                     <span className="min-w-0">
                       <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Email {firstName} about this change</span>
-                      <span className="block text-[0.64rem] mt-0.5" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
+                      <span className="block text-[0.64rem] mt-0.5" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>
                         {!booking.email ? 'No email on file — it just updates quietly.'
                           : notifyClient ? 'They get your note below with the new date & time.'
                           : 'Off — it updates quietly, no email.'}
@@ -1869,18 +1931,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {notifyClient && booking.email && (
                     <div className="px-3.5 py-3.5 flex flex-col gap-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0e8ec'}`, background: dm ? '#1e1e24' : '#fff' }}>
                       <div>
-                        <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>Subject</label>
+                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Subject</label>
                         <input value={panelSubject} onChange={e => { setPanelSubject(e.target.value); setPanelEdited(true); }}
                           className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                          style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                          style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                       </div>
                       <div>
-                        <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>
+                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
                           Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>— written for you, edit freely</span>
                         </label>
                         <textarea value={panelBody} onChange={e => { setPanelBody(e.target.value); setPanelEdited(true); }} rows={6}
                           className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                          style={{ fontSize: '15px', minHeight: '130px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                          style={{ fontSize: '15px', minHeight: '130px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                       </div>
                       <button type="button" onClick={togglePanelAttach}
                         className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
@@ -1929,12 +1991,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 live HERE, so finishing the time leads straight into the next
                 thing instead of a scroll hunt to the bottom of the card. ── */}
             {schedulerInHub && !showTimePicker && (
-              <div ref={consultRef} className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
+              <div ref={consultRef} className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
                 {booking.status === 'pending' ? (
                   <>
                     <div className="flex items-center gap-2 mb-1">
                       <StepDot n={2} state="active" dm={dm} color={CONSULT_COLOR} />
-                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirm &amp; consultation</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>Confirm &amp; consultation</p>
                     </div>
                     <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
                       Time's set. Confirm with {firstName} and set up the consultation.
@@ -1943,12 +2005,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     {!consultExpanded && booking.email && !confirmLaterOpen && (
                       <button type="button" onClick={() => setConfirmLaterOpen(true)}
                         className="mt-2.5 text-[0.72rem] font-medium underline underline-offset-4 transition-opacity hover:opacity-75"
-                        style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
+                        style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>
                         or confirm now and schedule the consultation later
                       </button>
                     )}
                     {!consultExpanded && confirmLaterOpen && (
-                      <div className="mt-3 rounded-xl px-4 py-4" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}`, background: dm ? '#1c1c28' : '#FBF9F7' }}>
+                      <div className="mt-3 rounded-xl px-4 py-4" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}`, background: dm ? '#1c1c28' : '#FBF9F7' }}>
                         <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#ECEDF1' : '#111' }}>Confirm without a consultation time?</p>
                         <p className="text-[0.7rem] leading-relaxed mb-3.5" style={{ color: dm ? '#71717a' : '#888' }}>
                           One email goes to <span style={{ color: '#C4849A' }}>{booking.email}</span> right now with the confirmation and photo upload link. This card will keep reminding you to schedule the consultation.
@@ -1972,7 +2034,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <>
                     <div className="flex items-center gap-2 mb-1">
                       <StepDot n={2} state="warn" dm={dm} />
-                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>Consultation not scheduled yet</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>Consultation not scheduled yet</p>
                     </div>
                     <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
                       {firstName} is confirmed. Schedule the consultation once you two settle on a time.
@@ -1983,7 +2045,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <>
                     <div className="flex items-center gap-2 mb-2">
                       <StepDot n={2} state="done" dm={dm} />
-                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirmed &amp; consultation set</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>Confirmed &amp; consultation set</p>
                     </div>
                     {consultScheduler}
                   </>
@@ -2027,15 +2089,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           )}
 
           {/* Notes card — the client's own comment, plus Roko's private notes */}
-          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}`, background: dm ? '#1e1e24' : '#fff' }}>
-            <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
-              <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
+          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, background: dm ? '#1e1e24' : '#fff' }}>
+            <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
             </div>
             <div className="px-4 py-4 flex flex-col gap-4">
               {/* Client's additional comments */}
               {notes.comment && (
                 <div>
-                  <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM }}>From the client</p>
+                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: PLUM }}>From the client</p>
                   <div className="px-4 py-3" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
                     <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{notes.comment}</p>
                   </div>
@@ -2045,7 +2107,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {/* Roko's private notes */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
                     My Notes <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400, color: dm ? '#52525b' : '#c4b8bf' }}>· private, only you</span>
                   </p>
                   {!notesEditing && (
@@ -2062,11 +2124,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} autoFocus
                       placeholder="Jot anything just for you — allergies, skin notes, reminders…"
                       className="w-full px-3.5 py-3 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                      style={{ fontSize: '15px', minHeight: '84px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#eae3dc'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                      style={{ fontSize: '15px', minHeight: '84px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                     <div className="flex gap-2 mt-2">
                       <button type="button" onClick={() => { setAdminNotes(booking.admin_notes || ''); setNotesEditing(false); }}
                         className="px-4 py-2.5 rounded-[8px] text-[0.72rem] font-semibold transition-all"
-                        style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+                        style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
                         Cancel
                       </button>
                       <button type="button" onClick={saveAdminNotes}
@@ -2085,7 +2147,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 ) : (
                   <button type="button" onClick={() => setNotesEditing(true)}
                     className="w-full flex items-center gap-2 px-4 py-3 rounded-[10px] transition-all hover:opacity-90"
-                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px dashed ${dm ? '#3a3a48' : '#d9d1cb'}`, color: dm ? '#71717a' : '#a99f9a' }}>
+                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px dashed ${dm ? '#3a3a48' : '#D2D2D9'}`, color: dm ? '#71717a' : '#A1A1A9' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-3.5 h-3.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     <span className="text-[0.78rem] font-medium">Add a private note…</span>
                   </button>
@@ -2097,10 +2159,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Bridal Inquiry Details */}
         {isBridal && bridalInquiry && (
-          <div className="mb-6 overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${dm ? '#3a3a48' : '#E8E2DC'}` }}>
+          <div className="mb-6 overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${dm ? '#3a3a48' : '#E2E2E8'}` }}>
             {/* Section header */}
             <div className="px-5 py-3.5" style={{ background: dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7', borderBottom: `1px solid ${dm ? '#3a3a48' : '#F0E0E9'}` }}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.18em] uppercase" style={{ color: PLUM }}>Bridal Inquiry Details</p>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: PLUM }}>Bridal Inquiry Details</p>
             </div>
 
             <div className="px-5 py-5" style={{ background: dm ? '#1e1e24' : '#fff' }}>
@@ -2128,12 +2190,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                     </svg>
                     <div className="min-w-0">
-                      <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Event Location</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Event Location</p>
                       <CopyableAddress address={bridalInquiry.event_location} dm={dm} />
                     </div>
                   </div>
                   <a href={mapsUrl(bridalInquiry.event_location)} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] transition-opacity hover:opacity-80 flex-shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-opacity hover:opacity-80 flex-shrink-0"
                     style={{ borderRadius: 2, border: `1px solid ${dm ? '#5a4750' : '#E2C4D2'}`, color: PLUM, background: dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     Maps
@@ -2164,7 +2226,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {/* Makeup vision note */}
               {bridalInquiry.additional_details && (
                 <div className="mt-5 px-4 py-3.5" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
-                  <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM }}>Makeup Vision &amp; Additional Details</p>
+                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: PLUM }}>Makeup Vision &amp; Additional Details</p>
                   <p className="text-[0.84rem] leading-[1.7]" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{bridalInquiry.additional_details}</p>
                 </div>
               )}
@@ -2175,7 +2237,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Signed Service Agreement (contract) */}
         {(
           <div className="mb-6">
-            <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Service Agreement</p>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Service Agreement</p>
             {booking.contract_signed ? (
               <div className="rounded-[6px] p-4" style={{ background: dm ? 'rgba(59,130,246,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.25)'}` }}>
                 <div className="flex items-center gap-2 mb-3">
@@ -2212,7 +2274,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
         {/* Zelle Deposit Received */}
         <div className="mb-6">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
+          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
 
           {/* Screenshot viewer */}
           {booking.zelle_screenshot && (
@@ -2228,7 +2290,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
               }
             >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: booking.deposit_received ? 'rgba(255,255,255,0.2)' : dm ? '#2e2e38' : '#f0ece8' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: booking.deposit_received ? 'rgba(255,255,255,0.2)' : dm ? '#2e2e38' : '#ECECF0' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
               <span className="text-[0.7rem] font-semibold tracking-[0.04em]">Received</span>
@@ -2241,7 +2303,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
               }
             >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: !booking.deposit_received ? 'rgba(255,255,255,0.15)' : dm ? '#2e2e38' : '#f0ece8' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: !booking.deposit_received ? 'rgba(255,255,255,0.15)' : dm ? '#2e2e38' : '#ECECF0' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </div>
               <span className="text-[0.7rem] font-semibold tracking-[0.04em]">Not Yet</span>
@@ -2255,7 +2317,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Status — the consultation scheduler renders here only when it isn't
             already living in the Appointment hub above (bridal with a set time). */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">
+          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">
             {isBridal && !schedulerInHub ? 'Status & Consultation' : 'Update Status'}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -2263,7 +2325,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               const isActive = booking.status === s;
               return (
                 <button key={s} onClick={() => handleStatusChange(s)}
-                  className="py-2.5 px-3 text-[0.65rem] font-semibold tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90 truncate"
+                  className="py-2.5 px-3 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90 truncate"
                   style={isActive
                     ? { background: STATUS_COLORS[s], color: '#fff' }
                     : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
@@ -2286,7 +2348,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Consultation scheduler lives under status only when not in the hub */}
           {!schedulerInHub && (
-            <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ece8'}` }}>
+            <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECECF0'}` }}>
               {consultScheduler}
             </div>
           )}
@@ -2296,7 +2358,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div className="pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[0.65rem] font-medium tracking-[0.08em] uppercase rounded-lg transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all"
               style={{ color: dm ? '#f87171' : '#dc2626', border: `1px solid ${dm ? 'rgba(185,28,28,0.3)' : 'rgba(239,68,68,0.25)'}` }}
               onMouseEnter={e => { e.currentTarget.style.background = dm ? 'rgba(120,20,20,0.2)' : 'rgba(244,63,63,0.08)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
@@ -2306,8 +2368,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           ) : (
             <div className="flex items-center gap-3">
               <span className="text-[0.75rem] text-red-400">Are you sure?</span>
-              <button onClick={onDelete} className="px-4 py-2 text-[0.65rem] font-medium uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Yes, Delete</button>
-              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-[0.65rem] font-medium uppercase rounded-lg transition-all"
+              <button onClick={onDelete} className="px-4 py-2 text-[0.68rem] font-medium uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Yes, Delete</button>
+              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-[0.68rem] font-medium uppercase rounded-lg transition-all"
                 style={{ color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>Cancel</button>
             </div>
           )}
@@ -2317,11 +2379,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       {/* Client history */}
       {clientBookings.length > 0 && (
         <div className="rounded-[6px] p-6 sm:p-8" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-4">Appointment History</p>
+          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-4">Appointment History</p>
           <div className="flex flex-col">
             {clientBookings.map((b, idx) => (
               <div key={b.id} className="flex items-center justify-between py-3"
-                style={{ borderBottom: idx < clientBookings.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#f5f0ed'}` : 'none' }}>
+                style={{ borderBottom: idx < clientBookings.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#F1F1F5'}` : 'none' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
                   <div>
@@ -2346,16 +2408,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           mobile it reads as a proper client screen ↔ booking-card navigation. */}
       {showClientPanel && (
         <div className="fixed inset-0 z-[9997] overflow-y-auto overscroll-contain"
-          style={{ background: dm ? '#141418' : '#F6F2F0', animation: 'fadeSlideDown 0.2s ease-out' }}>
+          style={{ background: dm ? '#141418' : '#F3F3F6', animation: 'fadeSlideDown 0.2s ease-out' }}>
           {/* Sticky header with back */}
           <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3"
-            style={{ background: dm ? 'rgba(20,20,24,0.92)' : 'rgba(246,242,240,0.92)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}` }}>
+            style={{ background: dm ? 'rgba(20,20,24,0.92)' : 'rgba(243, 243, 246,0.92)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}` }}>
             <button type="button" onClick={() => setShowClientPanel(false)} aria-label="Back to appointment"
               className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
               style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#111'} strokeWidth="2.2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <p className="text-[0.62rem] font-bold tracking-[0.18em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Client Profile</p>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Client Profile</p>
           </div>
 
           <div className="max-w-[640px] mx-auto px-5 py-7 flex flex-col gap-6">
@@ -2382,10 +2444,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 const inner = (
                   <>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">{icon}</svg>
-                    <span className="text-[0.64rem] font-bold tracking-[0.08em] uppercase" style={{ color: dm ? '#d4d4d8' : '#6B4055' }}>{label}</span>
+                    <span className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#d4d4d8' : '#6B4055' }}>{label}</span>
                   </>
                 );
-                const cardStyle = { background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#ece5df'}` };
+                const cardStyle = { background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}` };
                 return href ? (
                   <a key={label} href={href} className="flex flex-col items-center gap-1.5 py-3.5 rounded-2xl transition-all active:scale-95" style={cardStyle}>{inner}</a>
                 ) : (
@@ -2395,11 +2457,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#ece5df'}` }}>
+            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#E5E5EC'}` }}>
               {[['Total', totalVisits], ['Completed', completedVisits], ['Upcoming', upcomingBookings.length]].map(([label, n]) => (
                 <div key={label} className="text-center">
                   <div className="font-serif text-[1.6rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{n}</div>
-                  <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#A89098] mt-0.5">{label}</div>
+                  <div className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mt-0.5">{label}</div>
                 </div>
               ))}
             </div>
@@ -2407,8 +2469,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             {/* Upcoming */}
             {upcomingBookings.length > 0 && (
               <div>
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-2.5">Upcoming</p>
-                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#ece5df'}` }}>
+                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-2.5">Upcoming</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#E5E5EC'}` }}>
                   {upcomingBookings.map((b, idx) => (
                     <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} last={idx === upcomingBookings.length - 1} dm={dm} />
                   ))}
@@ -2419,8 +2481,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             {/* Past & Completed */}
             {pastBookings.length > 0 && (
               <div>
-                <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-2.5">Past &amp; Completed</p>
-                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#ece5df'}` }}>
+                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-2.5">Past &amp; Completed</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#E5E5EC'}` }}>
                   {pastBookings.map((b, idx) => (
                     <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} last={idx === pastBookings.length - 1} dm={dm} />
                   ))}
@@ -2430,7 +2492,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
             <button type="button" onClick={() => setShowClientPanel(false)}
               className="mt-1 w-full py-3.5 rounded-xl text-[0.78rem] font-semibold transition-all active:scale-[0.99]"
-              style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
+              style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
               Back to appointment
             </button>
           </div>
@@ -2476,12 +2538,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[0.8rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>My Schedule</p>
-            <p className="text-[0.64rem] mt-0.5 truncate" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>See your day while you pick a time</p>
+            <p className="text-[0.8rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>My Schedule</p>
           </div>
           <button type="button" onClick={() => setShowSchedule(false)} aria-label="Close schedule"
             className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-            style={{ background: dm ? '#27272a' : '#f3ede7', color: dm ? '#a1a1aa' : '#83838d' }}>
+            style={{ background: dm ? '#27272a' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
