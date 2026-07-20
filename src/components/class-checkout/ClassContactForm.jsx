@@ -97,10 +97,15 @@ function PickedCard({ items }) {
   );
 }
 
+// Matches Tailwind's lg breakpoint, where the layout splits into two columns
+// and the details column becomes pinned.
+const isDesktop = () => typeof window !== 'undefined' && window.innerWidth >= 1024;
+
 export default function ClassContactForm({ form, setForm, selectedClass, format, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, onBack, onClose, onCheckout, isRedirecting }) {
   const scrollRef = useRef(null);
   const timeRef = useRef(null);
   const detailsRef = useRef(null);
+  const firstNameRef = useRef(null);
   useModalLenis(scrollRef);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fieldsValid = form.first_name && form.last_name && form.email && form.phone;
@@ -144,19 +149,28 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
     if (key && !selectedSlot) goTo(timeRef, 130);
   };
 
+  // Step 3 lives in the pinned column on desktop, so it's already on screen —
+  // scrolling to it would drag the whole page back to the top. Put the cursor
+  // in the first field instead. Mobile still has to travel down to reach it.
+  const goToDetails = (delay = 0) => {
+    if (isDesktop()) {
+      setTimeout(() => firstNameRef.current?.focus({ preventScroll: true }), delay);
+    } else {
+      goTo(detailsRef, delay);
+    }
+  };
+
   const pickSlot = (win) => {
     const next = selectedSlot === win ? null : win;
     setSelectedSlot(next);
-    // Desktop keeps the details column in view beside the calendar, so only the
-    // stacked mobile layout needs walking down to the form.
-    if (next && !fieldsValid && window.innerWidth < 1024) goTo(detailsRef, 130);
+    if (next && !fieldsValid) goToDetails(130);
   };
 
   // What the footer button does when the form isn't finished yet: instead of
-  // sitting there greyed out, it scrolls to the thing that's still missing.
+  // sitting there greyed out, it sends you to the thing that's still missing.
   const nextStep = !selectedDate ? null
-    : !selectedSlot ? { label: 'Next: pick your start time', ref: timeRef }
-    : !fieldsValid ? { label: 'Next: fill in your details', ref: detailsRef }
+    : !selectedSlot ? { label: 'Next: pick your start time', go: () => goTo(timeRef) }
+    : !fieldsValid ? { label: 'Next: fill in your details', go: () => goToDetails() }
     : null;
 
   return (
@@ -190,11 +204,11 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
 
       {/* Scrollable content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
-        <div className="w-full sm:max-w-[980px] sm:mx-auto px-5 sm:px-10 pt-6 pb-8">
+        <div className="w-full sm:max-w-[980px] sm:mx-auto px-5 sm:px-10 pt-6 pb-10">
 
           <ClassStepper current={3} className="mb-7" />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-start gap-8 lg:gap-12">
 
             {/* ── Left: Wednesday + start time ── */}
             <div>
@@ -257,21 +271,18 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                 </div>
               </div>
 
-              {/* Desktop-only: on mobile the step 3 pill already reads this
-                  back, and it sits where the scroll actually lands. */}
-              {selectedDate && selectedSlot && (
-                <div className="mt-5 hidden lg:flex items-center gap-2 px-4 py-3 rounded-xl"
-                  style={{ background: 'rgba(196,132,154,0.1)', border: `1px solid ${PLUM.rose}59` }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="2" className="w-4 h-4 flex-shrink-0">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                  <span className="text-[0.8rem] font-medium" style={{ color: PLUM.deep }}>{formatChosen(selectedDate)} · {selectedSlot}</span>
-                </div>
-              )}
+              {/* No recap chip here any more: it sat below the time grid, which
+                  is exactly where the scroll port cuts off, so it read as
+                  clipped. Mobile gets the PickedCard on step 3; desktop reads it
+                  off the pinned order summary, which is always in view. */}
             </div>
 
-            {/* ── Right: details + order summary ── */}
-            <div className="flex flex-col gap-8">
+            {/* ── Right: details + order summary ──
+                Pinned on desktop. Unpinned, the form sat at the top of its
+                column, so working down the calendar scrolled it away and
+                "fill in your details" had to throw you back to the top. Pinned,
+                it just stays beside you and the up-down-up never happens. */}
+            <div className="flex flex-col gap-8 lg:sticky lg:top-1 lg:self-start">
               <div ref={detailsRef} className="scroll-mt-4">
                 <div className="flex items-center gap-2 mb-1">
                   <StepBadge n={3} state={fieldsValid ? 'done' : selectedSlot ? 'active' : 'waiting'} />
@@ -289,7 +300,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.label }}>First Name *</label>
-                      <input required value={form.first_name} onChange={e => set('first_name', e.target.value)}
+                      <input ref={firstNameRef} required value={form.first_name} onChange={e => set('first_name', e.target.value)}
                         onFocus={inputFocusHandler} onBlur={inputBlurHandler} placeholder="Jane" style={inputStyle} />
                     </div>
                     <div>
@@ -354,7 +365,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
           <button
             onClick={() => {
               if (isValid) { onCheckout(); return; }
-              if (nextStep) goTo(nextStep.ref);
+              nextStep?.go();
             }}
             disabled={(!isValid && !nextStep) || isRedirecting}
             className="w-full py-3.5 rounded-xl text-[0.8rem] font-medium tracking-[0.04em] transition-all flex items-center justify-center gap-2"
