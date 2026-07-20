@@ -59,6 +59,25 @@ function StepBadge({ n, state }) {
   );
 }
 
+// Mobile-only receipt of what the previous step captured. The auto-scroll moves
+// the calendar off screen the instant you tap a day, so without this you arrive
+// at the next step with no idea what you just picked. Desktop keeps both columns
+// visible and has the order summary, so it doesn't need the repeat.
+function PickedPill({ label, sub }) {
+  return (
+    <div className="lg:hidden flex items-center gap-2 px-3.5 py-2.5 rounded-xl mb-4"
+      style={{ background: 'rgba(196,132,154,0.1)', border: `1px solid ${PLUM.rose}45` }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="2.5" className="w-3.5 h-3.5 flex-shrink-0">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span className="text-[0.76rem] font-medium leading-tight" style={{ color: PLUM.deep }}>
+        {label}
+        {sub && <span className="font-normal" style={{ color: PLUM.gray }}> · {sub}</span>}
+      </span>
+    </div>
+  );
+}
+
 export default function ClassContactForm({ form, setForm, selectedClass, format, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, onBack, onClose, onCheckout, isRedirecting }) {
   const scrollRef = useRef(null);
   const timeRef = useRef(null);
@@ -92,15 +111,18 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
   // Picking a date used to leave the screen dead still, with the start-time grid
   // parked below the fold on mobile and easy to read past on desktop. Each pick
   // now walks the client to whatever it unlocked.
-  const goTo = (ref) => {
+  // The pause matters: tapping a day and being yanked away in the same frame
+  // reads as "did that even register?". Holding still long enough to see the
+  // day turn black, then moving, keeps the tap and its result connected.
+  const goTo = (ref, delay = 0) => {
     const el = ref.current;
     if (!el) return;
-    requestAnimationFrame(() => scrollModalToEl(scrollRef.current, el, -12));
+    setTimeout(() => scrollModalToEl(scrollRef.current, el, -12), delay);
   };
 
   const pickDate = (key) => {
     setSelectedDate(key);
-    if (key && !selectedSlot) goTo(timeRef);
+    if (key && !selectedSlot) goTo(timeRef, 380);
   };
 
   const pickSlot = (win) => {
@@ -108,7 +130,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
     setSelectedSlot(next);
     // Desktop keeps the details column in view beside the calendar, so only the
     // stacked mobile layout needs walking down to the form.
-    if (next && !fieldsValid && window.innerWidth < 1024) goTo(detailsRef);
+    if (next && !fieldsValid && window.innerWidth < 1024) goTo(detailsRef, 380);
   };
 
   // What the footer button does when the form isn't finished yet: instead of
@@ -188,6 +210,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                     ? <>Class hours are {CLASS_DAY.label}. Your {selectedClass?.duration?.toLowerCase()} can start any time from 11:00 AM{lastStart ? ` to ${lastStart}` : ''}.</>
                     : 'Pick your Wednesday above and your start times will open up here.'}
                 </p>
+                {selectedDate && <PickedPill label={formatChosen(selectedDate)} sub="your Wednesday" />}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 transition-opacity"
                   style={{ opacity: selectedDate ? 1 : 0.4 }}>
                   {windows.map(win => {
@@ -211,8 +234,10 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                 </div>
               </div>
 
+              {/* Desktop-only: on mobile the step 3 pill already reads this
+                  back, and it sits where the scroll actually lands. */}
               {selectedDate && selectedSlot && (
-                <div className="mt-5 flex items-center gap-2 px-4 py-3 rounded-xl"
+                <div className="mt-5 hidden lg:flex items-center gap-2 px-4 py-3 rounded-xl"
                   style={{ background: 'rgba(196,132,154,0.1)', border: `1px solid ${PLUM.rose}59` }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke={PLUM.rose} strokeWidth="2" className="w-4 h-4 flex-shrink-0">
                     <polyline points="20 6 9 17 4 12"/>
@@ -230,6 +255,9 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                   <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase" style={{ color: PLUM.pink }}>Your details</p>
                 </div>
                 <h2 className="font-serif text-[1.5rem] text-[#1a1015] mb-4">Your Information</h2>
+                {selectedDate && selectedSlot && (
+                  <PickedPill label={formatChosen(selectedDate)} sub={selectedSlot} />
+                )}
 
                 <div className="flex flex-col gap-5">
                   <div className="grid grid-cols-2 gap-4">
