@@ -53,6 +53,14 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
 
+// How old a deposit-less booking has to be before the amber bar starts nagging.
+// Set to 1 to give someone who booked this morning the day to pay before they
+// show up as owing money. Currently 0 so a fresh test booking appears at once.
+const AWAITING_DEPOSIT_MIN_DAYS = 0;
+
+// "today" / "1 day" / "4 days"
+const dayCount = (d) => (d === 0 ? 'today' : d === 1 ? '1 day' : `${d} days`);
+
 // Month picker for the appointments list — a compact calendar-icon trigger.
 // Native <select> wheel on iOS (via an invisible overlay), styled dropdown on desktop.
 function CalendarIcon() {
@@ -248,10 +256,10 @@ export default function BookingsList({
     .sort((a, b) => new Date(b.zelle_uploaded_at || 0) - new Date(a.zelle_uploaded_at || 0));
 
   // The opposite problem, and the more expensive one: booked, still upcoming,
-  // never sent anything. Held back a day so someone who booked this morning and
-  // is about to pay doesn't get flagged as a debtor.
+  // never sent anything. AWAITING_DEPOSIT_MIN_DAYS controls how long someone
+  // gets to pay before they show up here.
   const awaitingDeposits = (allBookings || [])
-    .filter(b => isAwaitingDeposit(b) && (daysSince(b.created_date) ?? 0) >= 1)
+    .filter(b => isAwaitingDeposit(b) && (daysSince(b.created_date) ?? 0) >= AWAITING_DEPOSIT_MIN_DAYS)
     .sort((a, b) => new Date(a.created_date || 0) - new Date(b.created_date || 0));
 
   const handleMarkReceived = (id) => {
@@ -608,7 +616,7 @@ export default function BookingsList({
                 Waiting on {awaitingDeposits.length === 1 ? 'a deposit' : 'deposits'}
               </span>
               <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
-                {(lead.name || 'Someone').split(' ')[0]} booked {leadDays === 1 ? '1 day' : `${leadDays} days`} ago
+                {(lead.name || 'Someone').split(' ')[0]} booked {leadDays === 0 ? 'today' : `${dayCount(leadDays)} ago`}
                 {awaitingDeposits.length > 1 ? `, +${awaitingDeposits.length - 1} more` : ''}
               </span>
             </span>
@@ -668,7 +676,7 @@ export default function BookingsList({
                       </p>
                     </div>
                     <span className="text-[0.7rem] font-medium tabular-nums flex-shrink-0" style={{ color: tone.fg }}>
-                      {days === 1 ? '1 day' : `${days} days`}
+                      {dayCount(days)}
                     </span>
                   </button>
                 );
