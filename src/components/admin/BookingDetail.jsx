@@ -12,7 +12,7 @@ import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 import ScheduleView from './ScheduleView';
-import { parseRange, formatRange } from '@/lib/timeWindow';
+import { parseRange } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS } from './statusColors';
 
@@ -164,30 +164,6 @@ function clockToMin(val) {
   return h * 60 + min;
 }
 
-// minutes since midnight → "2:00 PM"
-function minToClock(min) {
-  if (min == null) return '';
-  const h = Math.floor(min / 60), m = min % 60;
-  const ap = h < 12 ? 'AM' : 'PM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
-}
-
-// Service duration text ("2 hours", "1.5 hours", "1 hr 45 min", "Up to 4 hours")
-// → minutes, rounded UP to the 30-minute grid the pickers use (1h45 → 2h, no
-// 12:15-style starts). null when unparseable; callers fall back to 2 hours.
-function durationToMin(text) {
-  if (!text) return null;
-  const s = String(text).toLowerCase();
-  let min = 0;
-  const h = s.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/);
-  if (h) min += Math.round(parseFloat(h[1]) * 60);
-  const m = s.match(/(\d+)\s*min/);
-  if (m) min += parseInt(m[1], 10);
-  if (!min) return null;
-  return Math.min(Math.max(Math.ceil(min / 30) * 30, 60), 360);
-}
-
 // "2026-09-23" → "Wednesday, September 23, 2026" / "Wed, Sep 23"
 function fmtLong(d) {
   return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
@@ -272,8 +248,12 @@ function parseConsultNotes(raw) {
   return { link, meetingId, notes: rest.join('\n').trim() };
 }
 
-function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, dateFormatted, expanded, setExpanded }) {
+function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, confirmed, dateFormatted, expanded, setExpanded }) {
   const hasConsult = !!booking.consultation_date;
+  // Bridal booking already confirmed (via "confirm now, schedule later") but
+  // with no consultation yet: send just the consultation email, don't re-send
+  // the confirmation or touch status.
+  const consultOnly = bridal && confirmed && !hasConsult;
   const parsed = parseConsultNotes(booking.consultation_notes);
   // First-ever email to a Booksy-imported client (no link stored yet) is a
   // "welcome to the new site" message, not a "your time changed" one.
@@ -336,8 +316,9 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
       const consultDateFormatted = new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
       const activeLink = form.type === 'Zoom' ? meetLink : '';
       // Bridal merges confirm + consultation into one email (and flips status to
-      // confirmed); everyone else uses the standalone consultation email.
-      const endpoint = bridal ? '/api/confirm-bridal' : '/api/send-consultation';
+      // confirmed); everyone else — and a bridal booking that was already
+      // confirmed without a consultation — uses the standalone consultation email.
+      const endpoint = bridal && !consultOnly ? '/api/confirm-bridal' : '/api/send-consultation';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -365,7 +346,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
       onUpdateBooking({
         consultation_date: form.date, consultation_time: form.time,
         consultation_type: form.type, consultation_notes: storedNotes,
-        ...(bridal ? { status: 'confirmed' } : {}),
+        ...(bridal && !consultOnly ? { status: 'confirmed' } : {}),
       });
       setSent(true);
       setExpanded(false);
@@ -444,8 +425,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{bridal ? 'Confirm & Schedule Consultation' : 'Schedule Consultation'}</p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>{bridal ? 'Sends one email: confirmation + consultation + upload link' : 'Set date, time & meeting type'}</p>
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{bridal && !confirmed ? 'Confirm & Schedule Consultation' : 'Schedule Consultation'}</p>
+              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>
+                {bridal && !confirmed ? 'Sends one email: confirmation + consultation + upload link'
+                  : bridal ? 'Sends the consultation details, with a Zoom link if you add one'
+                  : 'Set date, time & meeting type'}
+              </p>
             </div>
           </div>
           <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className="w-3.5 h-3.5 opacity-40">
@@ -470,8 +455,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
               <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>{hasConsult ? 'Reschedule Consultation' : 'Schedule Consultation'}</p>
               <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#a39a91' }}>
                 {hasConsult
-                  ? 'Pick a new time — the client gets an updated email automatically'
-                  : (bridal ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type')}
+                  ? 'Pick a new time, the client gets an updated email automatically'
+                  : (bridal && !confirmed ? 'One email: confirmation, consultation details, upload link' : 'Set the date, time and meeting type')}
               </p>
             </div>
             <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }} aria-label="Close scheduler"
@@ -580,12 +565,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, d
                     ? { background: dm ? '#2e2e38' : '#f0ece8', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
                     : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                 }}>
-                {migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : 'Confirm & Notify Client'}
+                {migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : consultOnly ? 'Schedule & Notify Client' : 'Confirm & Notify Client'}
               </button>
             ) : (
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}` }}>
                 <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#FBF9F7' }}>
-                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{migrated ? 'Send Welcome Email?' : hasConsult ? 'Send Updated Time?' : 'Confirm & Send Email?'}</p>
+                  <p className="text-[0.72rem] font-semibold tracking-[0.08em] uppercase mb-3" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{migrated ? 'Send Welcome Email?' : hasConsult ? 'Send Updated Time?' : consultOnly ? 'Send Consultation Details?' : 'Confirm & Send Email?'}</p>
                   <div className="flex flex-col gap-1.5 mb-4">
                     <div className="flex items-center justify-between">
                       <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Date</span>
@@ -1014,25 +999,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
   const notes = parseBookingNotes(booking.notes);
 
-  // ── Ready-by decision helpers ─────────────────────────────────────────────
-  // The pre-filled window for "yes, that ready-by works" ends exactly at the
-  // client's ready-by and starts one service-length earlier (durations read
-  // live from the services table, so editing a service updates this too).
-  const { data: allServices } = useQuery({
-    queryKey: ['services-for-durations'],
-    queryFn: () => api.entities.Service.list(),
-    staleTime: 5 * 60 * 1000,
-  });
-  const serviceDurMin = durationToMin(
-    (allServices || []).find(s => s.title === booking.service)?.duration
-  ) || 120;
+  // ── Ready-by helpers ──────────────────────────────────────────────────────
+  // "Yes, that works" opens an EMPTY picker on purpose: Roko decides her own
+  // working window (she usually finishes before the ready-by to leave dress
+  // time), so the system never pre-fills or assumes a slot for her.
   const readyByMin = clockToMin(notes.readyBy);
+  const apptStartMin = clockToMin(parseRange(booking.time || '').start);
   const apptEndMin = clockToMin(parseRange(booking.time || '').end);
-  const readyPrefill = readyByMin != null
-    ? formatRange(minToClock(Math.max(readyByMin - serviceDurMin, 6 * 60)), minToClock(readyByMin))
-    : '';
-  // Green/amber alignment between the set window and the client's ready-by.
-  const endsOnTime = readyByMin != null && apptEndMin != null ? apptEndMin <= readyByMin : null;
+  // Amber signal on the timeline rail when the window runs past their ready-by.
+  const runsPastReady = readyByMin != null && apptEndMin != null && apptEndMin > readyByMin;
+  const railReady = readyByMin != null && apptStartMin != null && apptEndMin != null;
 
   // Same-client matcher: email when present, else phone. Booksy imports can be
   // phone-only (email null), and matching on a shared null email would lump
@@ -1106,6 +1082,61 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const biOosLabel = bridalInquiry && [true, false, 'true', 'false'].includes(bridalInquiry.out_of_state)
     ? (biOos ? 'Yes, out of state' : 'No, local')
     : null;
+
+  // ── Bridal pipeline: where the consultation scheduler lives ───────────────
+  // Once a bridal booking has a working window, confirming + the consultation
+  // render INSIDE the Appointment hub (right where "what do I do next?" is
+  // asked) instead of at the bottom of the card. Completed/cancelled bookings
+  // keep the scheduler at the bottom like everything else.
+  const schedulerInHub = isBridal && !!booking.time && (booking.status === 'pending' || booking.status === 'confirmed');
+
+  // "Confirm now, schedule the consultation later": sends the confirmation
+  // email (minus the consultation panel) so Roko can lock the date before a
+  // consult time is agreed. The hub keeps a standing reminder until it's set.
+  const [confirmLaterOpen, setConfirmLaterOpen] = useState(false);
+  const [confirmLaterSending, setConfirmLaterSending] = useState(false);
+  const confirmNowScheduleLater = async () => {
+    if (confirmLaterSending) return;
+    setConfirmLaterSending(true);
+    try {
+      const res = await fetch('/api/confirm-bridal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id, clientEmail: booking.email, clientName: booking.name,
+          serviceName: booking.service, dateFormatted, time: booking.time, confirmOnly: true,
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
+      onUpdateBooking({ status: 'confirmed' });
+      setConfirmLaterOpen(false);
+      showToast('Confirmed, client notified', '#2563EB');
+    } catch (err) {
+      alert(`Couldn't send the confirmation (${err?.message || 'unknown error'}). Please try again.`);
+    } finally {
+      setConfirmLaterSending(false);
+    }
+  };
+
+  // One scheduler instance, rendered either in the hub or at the bottom —
+  // never both — so its open/closed state survives the move.
+  const consultScheduler = (
+    <ConsultationScheduler
+      booking={booking}
+      onUpdateBooking={onUpdateBooking}
+      dm={dm}
+      bridal={isBridal}
+      confirmed={booking.status === 'confirmed'}
+      dateFormatted={dateFormatted}
+      expanded={consultExpanded}
+      setExpanded={setConsultExpanded}
+      onSent={() => showToast(
+        booking.consultation_date ? 'Rescheduled, client notified'
+          : isBridal && booking.status !== 'confirmed' ? 'Confirmed, client notified'
+          : 'Consultation scheduled, client notified',
+        '#22c55e')}
+    />
+  );
 
   // Signed service agreement (contract) shown on the booking.
   const contractOverrides = useContractOverrides();
@@ -1486,30 +1517,64 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-5 h-5"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[1.02rem] font-semibold leading-snug" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>
-                        {firstName} wants to be ready by <span style={{ color: '#C4849A' }} className="tabular-nums">{notes.readyBy}</span>
+                      <p className="text-[0.8rem] leading-snug" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
+                        {firstName} wants to be ready by <span style={{ color: '#C4849A' }} className="font-semibold tabular-nums">{notes.readyBy}</span>
                       </p>
                       {booking.date && (
-                        <p className="text-[0.72rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>{fmtLong(booking.date)}</p>
+                        <p className="text-[0.7rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>{fmtLong(booking.date)}</p>
                       )}
-                      <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>Does that work for you?</p>
+                      <p className="text-[1.05rem] font-semibold leading-snug mt-1" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>Does that work for you?</p>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 mt-3.5">
-                    <button type="button" onClick={() => openTimePicker(readyPrefill, { allowNotify: false })}
-                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.75rem] font-semibold tracking-[0.02em] transition-all touch-manipulation active:scale-[0.99]"
+                    <button type="button" onClick={() => openTimePicker('', { allowNotify: false })}
+                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation active:scale-[0.99]"
                       style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
-                      Yes — set <span className="tabular-nums">{readyPrefill}</span>
+                      Yes
                     </button>
                     <button type="button" onClick={() => openTimePicker('', { notify: true })}
-                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.75rem] font-semibold transition-all touch-manipulation active:scale-[0.99]"
+                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.78rem] font-semibold transition-all touch-manipulation active:scale-[0.99]"
                       style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#e4e4e7' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#e2cdd6'}` }}>
-                      No — pick another time
+                      No, pick another time
                     </button>
                   </div>
                 </div>
               ) : (
               <>
+                {railReady ? (
+                  /* ── Timeline rail: Roko's working window and the client's
+                     ready-by in one picture — the gap after "done" reads as the
+                     dress-time buffer. Stops are evenly spaced (not to scale)
+                     so the labels never collide. ── */
+                  <div className="px-4 py-4">
+                    <div className="flex items-center" aria-hidden="true">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#C4849A' }} />
+                      <span className="flex-1 h-[3px] mx-1 rounded-full" style={{ background: '#C4849A' }} />
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#C4849A' }} />
+                      <span className="flex-1 mx-1 border-t-2 border-dotted" style={{ borderColor: runsPastReady ? '#D97706' : (dm ? '#4a4a58' : '#dccfd6') }} />
+                      <svg viewBox="0 0 24 24" fill="none" stroke={runsPastReady ? '#D97706' : '#D4A0B0'} strokeWidth="1.8" className="w-4 h-4 flex-shrink-0"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      <div className="min-w-0">
+                        <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).start}</p>
+                        <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
+                      </div>
+                      <div className="min-w-0 text-center">
+                        <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).end}</p>
+                        <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
+                      </div>
+                      <div className="min-w-0 text-right">
+                        <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>{notes.readyBy}</p>
+                        <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Ready by</p>
+                      </div>
+                    </div>
+                    {runsPastReady && (
+                      <p className="mt-2 text-[0.68rem] font-medium" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>
+                        Heads up: this runs past the {notes.readyBy} ready-by.
+                      </p>
+                    )}
+                  </div>
+                ) : (
                 <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
                   {/* Appointment window */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -1540,21 +1605,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     </>
                   ) : <span className="hidden sm:block" />}
                 </div>
-
-                {/* Alignment between the window and their ready-by, at a glance */}
-                {endsOnTime != null && (
-                  <div className="px-4 pb-3.5 -mt-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.66rem] font-semibold"
-                      style={endsOnTime
-                        ? { background: dm ? 'rgba(34,197,94,0.12)' : '#F0FAF3', color: dm ? '#6EE7A0' : '#15803d', border: `1px solid ${dm ? 'rgba(34,197,94,0.3)' : '#CBEBD6'}` }
-                        : { background: dm ? 'rgba(245,158,11,0.12)' : '#FDF6EA', color: dm ? '#F5B83C' : '#B26A04', border: `1px solid ${dm ? 'rgba(245,158,11,0.3)' : '#F2DFB8'}` }}>
-                      {endsOnTime ? (
-                        <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg> Ends by their {notes.readyBy} ready-by</>
-                      ) : (
-                        <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Runs past their {notes.readyBy} ready-by</>
-                      )}
-                    </span>
-                  </div>
                 )}
 
                 {/* Travel / early-arrival flags */}
@@ -1677,6 +1727,64 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                           return <>Set to <span className="tabular-nums">{dateMoved ? `${fmtShort(pendingDate)} · ` : ''}{pendingWindow}</span>{willEmail ? <>&nbsp;&amp; email {firstName}</> : ''}</>;
                         })()}
                 </button>
+              </div>
+            )}
+
+            {/* ── Next step, right in the flow ──────────────────────────────
+                Bridal with a working window set: confirming + the consultation
+                live HERE, so finishing the time leads straight into the next
+                thing instead of a scroll hunt to the bottom of the card. ── */}
+            {schedulerInHub && !showTimePicker && (
+              <div ref={consultRef} className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
+                {booking.status === 'pending' ? (
+                  <>
+                    <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Next step</p>
+                    <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
+                      Time's set. Confirm with {firstName} and set up the consultation.
+                    </p>
+                    {consultScheduler}
+                    {!consultExpanded && booking.email && !confirmLaterOpen && (
+                      <button type="button" onClick={() => setConfirmLaterOpen(true)}
+                        className="mt-2.5 text-[0.72rem] font-medium underline underline-offset-4 transition-opacity hover:opacity-75"
+                        style={{ color: dm ? '#8f8a93' : '#a39a91' }}>
+                        or confirm now and schedule the consultation later
+                      </button>
+                    )}
+                    {!consultExpanded && confirmLaterOpen && (
+                      <div className="mt-3 rounded-xl px-4 py-4" style={{ border: `1px solid ${dm ? '#3a3a48' : '#e8e0d8'}`, background: dm ? '#1c1c28' : '#FBF9F7' }}>
+                        <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#ECEDF1' : '#111' }}>Confirm without a consultation time?</p>
+                        <p className="text-[0.7rem] leading-relaxed mb-3.5" style={{ color: dm ? '#71717a' : '#888' }}>
+                          One email goes to <span style={{ color: '#C4849A' }}>{booking.email}</span> right now with the confirmation and photo upload link. This card will keep reminding you to schedule the consultation.
+                        </p>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setConfirmLaterOpen(false)}
+                            className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
+                            style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                            Cancel
+                          </button>
+                          <button type="button" onClick={confirmNowScheduleLater} disabled={confirmLaterSending}
+                            className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation flex items-center justify-center gap-2"
+                            style={{ background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', opacity: confirmLaterSending ? 0.7 : 1 }}>
+                            {confirmLaterSending ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Yes, Confirm & Send'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : !booking.consultation_date ? (
+                  <>
+                    <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>Consultation not scheduled yet</p>
+                    <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
+                      {firstName} is confirmed. Schedule the consultation once you two settle on a time.
+                    </p>
+                    {consultScheduler}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mb-2" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Consultation</p>
+                    {consultScheduler}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1939,11 +2047,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {/* Reference Photos */}
         <BookingReferencePhotos booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
 
-        {/* Status & Consultation — for bridal these act as one unit: confirming a
-            bridal booking happens by scheduling the consultation (one combined email). */}
+        {/* Status — the consultation scheduler renders here only when it isn't
+            already living in the Appointment hub above (bridal with a set time). */}
         <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
           <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#A89098] mb-3">
-            {isBridal ? 'Status & Consultation' : 'Update Status'}
+            {isBridal && !schedulerInHub ? 'Status & Consultation' : 'Update Status'}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {STATUSES.map(s => {
@@ -1960,25 +2068,23 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             })}
           </div>
 
-          {isBridal && booking.status !== 'confirmed' && !booking.consultation_date && (
+          {isBridal && !schedulerInHub && booking.status !== 'confirmed' && !booking.consultation_date && (
             <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
-              Tap <span className="font-semibold" style={{ color: '#2563EB' }}>Confirmed</span> or schedule below — one email goes out with their confirmation, consultation details &amp; upload link.
+              Tap <span className="font-semibold" style={{ color: '#2563EB' }}>Confirmed</span> or schedule below. One email goes out with their confirmation, consultation details &amp; upload link.
+            </p>
+          )}
+          {isBridal && schedulerInHub && booking.status === 'pending' && (
+            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+              Confirming lives in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. One email goes out with the confirmation, consultation details &amp; upload link.
             </p>
           )}
 
-          {/* Consultation scheduler lives right under status */}
-          <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ece8'}` }}>
-            <ConsultationScheduler
-              booking={booking}
-              onUpdateBooking={onUpdateBooking}
-              dm={dm}
-              bridal={isBridal}
-              dateFormatted={dateFormatted}
-              expanded={consultExpanded}
-              setExpanded={setConsultExpanded}
-              onSent={() => showToast(booking.consultation_date ? 'Rescheduled, client notified' : (isBridal ? 'Confirmed, client notified' : 'Consultation sent'), '#22c55e')}
-            />
-          </div>
+          {/* Consultation scheduler lives under status only when not in the hub */}
+          {!schedulerInHub && (
+            <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f0ece8'}` }}>
+              {consultScheduler}
+            </div>
+          )}
         </div>
 
         {/* Delete */}
