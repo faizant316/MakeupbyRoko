@@ -66,10 +66,10 @@ export function scrollModalTop(el) {
 // caveat as scrollModalTop: scrollIntoView would scroll the element but the RAF
 // loop would immediately snap it back, so go through the instance when there is
 // one. `offset` leaves breathing room above the target (negative = higher up).
-export function scrollModalToEl(container, target, offset = -16) {
+export function scrollModalToEl(container, target, offset = -16, duration = 0.45) {
   if (!container || !target) return;
   if (container.__modalLenis) {
-    container.__modalLenis.scrollTo(target, { offset, duration: 0.7 });
+    container.__modalLenis.scrollTo(target, { offset, duration });
     return;
   }
   const top = target.getBoundingClientRect().top
