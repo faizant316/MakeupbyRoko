@@ -6,6 +6,7 @@ import { groupByTime, timeToMinutes } from './timeline';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
+import { CONSULT_INK } from './statusColors';
 
 // SSR-safe layout effect — measures the active tab to position the underline
 // without a first-paint flash, while staying quiet during server render.
@@ -170,7 +171,7 @@ function isBridalBooking(booking) {
   return BRIDAL_KEYWORDS.some(kw => service.includes(kw));
 }
 
-const CONSULT_COLOR = '#A855F7';
+const CONSULT_COLOR = CONSULT_INK.light;
 const LESSON_COLOR = '#C76BA6';
 
 // Class titles/prices come from the shared catalog so admin surfaces never
@@ -383,19 +384,6 @@ export default function BookingsList({
               )}
             </button>
           )}
-          {onBulkImport && !selectMode && (
-            <button
-              onClick={onBulkImport}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
-              style={{ background: dm ? '#26262e' : '#F3F3F7', color: dm ? '#d4d4d8' : '#4b4b53' }}
-              title="Import clients from a Booksy CSV export"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Import
-            </button>
-          )}
           {onAddClient && !selectMode && (
             <button
               onClick={onAddClient}
@@ -429,7 +417,7 @@ export default function BookingsList({
               <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.12)' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" className="w-3.5 h-3.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               </span>
-              <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#2563EB' }}>Deposits to Confirm</span>
+              <span className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#2563EB' }}>Deposits to Confirm</span>
               <span className="text-[0.65rem] font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.14)', color: '#2563EB' }}>
                 {pendingZelleReviews.length}
@@ -493,7 +481,7 @@ export default function BookingsList({
                       type="button"
                       disabled={isMarking}
                       onClick={(e) => { e.stopPropagation(); handleMarkReceived(b.id); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-bold tracking-[0.04em] uppercase transition-all hover:opacity-85 active:scale-95 flex-shrink-0"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all hover:opacity-85 active:scale-95 flex-shrink-0"
                       style={{ background: isMarking ? (dm ? '#3f3f46' : '#e5e5e5') : '#2563EB', color: '#fff', opacity: isMarking ? 0.7 : 1 }}
                     >
                       {isMarking ? (
@@ -517,64 +505,36 @@ export default function BookingsList({
           <button
             onClick={() => setShowRecentPanel(v => !v)}
             aria-expanded={showRecentPanel}
-            className="w-full flex items-center gap-3 pl-4 pr-4 py-3.5 rounded-2xl text-left transition-all active:scale-[0.995]"
+            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
             style={{
-              background: dm
-                ? 'linear-gradient(120deg, rgba(212,160,176,0.16) 0%, #26262e 58%)'
-                : 'linear-gradient(120deg, #FDF1F5 0%, #FFFFFF 62%)',
-              border: `1px solid ${dm ? '#453640' : '#F2DAE4'}`,
-              boxShadow: dm ? 'none' : '0 1px 3px rgba(160,96,122,0.06), 0 6px 20px rgba(160,96,122,0.09)',
+              background: dm ? '#1e1e24' : '#fff',
+              border: `1px solid ${dm ? '#3a3a48' : '#ece5e9'}`,
             }}
           >
-            {/* Icon badge with a live ping — the thing that catches the eye */}
-            <span className="relative w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #E2A4BA, #B9758F)', boxShadow: '0 2px 8px rgba(196,132,154,0.35)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/>
-              </svg>
-              <span className="absolute -top-1 -right-1 flex w-3 h-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: '#E05B7F' }} />
-                <span className="relative inline-flex rounded-full w-3 h-3" style={{ background: '#E05B7F', border: `2px solid ${dm ? '#26262e' : '#fff'}` }} />
-              </span>
+            {/* The count is the whole signal. The old version stacked a gradient
+                card, a gradient icon tile, a sparkle glyph and an infinite ping
+                for what is usually one booking. */}
+            <span className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[1.05rem] font-medium tabular-nums"
+              style={{ background: dm ? 'rgba(224,91,127,0.16)' : '#FBEEF3', color: '#C4849A' }}>
+              {recentBookings.length}
             </span>
 
             <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2">
-                <span className="text-[0.84rem] font-bold" style={{ color: dm ? '#ECD5DE' : '#7E4059' }}>Just Booked</span>
-                <span className="text-[0.6rem] font-bold px-1.5 py-[1.5px] rounded-full tabular-nums"
-                  style={{ background: dm ? 'rgba(224,91,127,0.2)' : 'rgba(224,91,127,0.12)', color: '#E05B7F' }}>
-                  {recentBookings.length} new
-                </span>
+              <span className="block text-[0.86rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
+                {recentBookings.length === 1 ? 'New booking' : 'New bookings'}
               </span>
-              <span className="block text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#a18994' : '#B08A99' }}>
-                {(recentBookings[0].name || 'Someone').split(' ')[0]} booked {timeAgo(recentBookings[0].created_date)}
-                {recentBookings.length > 1 ? ` · ${recentBookings.length - 1} more in the last 24 hrs` : ''}
+              <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
+                {(recentBookings[0].name || 'Someone').split(' ')[0]}
+                {recentBookings[0].service ? ` · ${recentBookings[0].service}` : ''}
+                {` · ${timeAgo(recentBookings[0].created_date)}`}
               </span>
             </span>
 
-            {/* Stacked initials of the newest clients */}
-            <span className="hidden sm:flex items-center flex-shrink-0" style={{ paddingLeft: 8 }}>
-              {recentBookings.slice(0, 3).map((b, i) => (
-                <span key={b.id} className="w-7 h-7 rounded-full flex items-center justify-center font-serif text-[0.72rem]"
-                  style={{ background: dm ? '#3a2e35' : '#F6E3EA', color: dm ? '#e7c9d5' : '#A0607A',
-                    border: `2px solid ${dm ? '#26262e' : '#fff'}`, marginLeft: i === 0 ? 0 : -8 }}>
-                  {(b.name || '?').trim().charAt(0).toUpperCase()}
-                </span>
-              ))}
-              {recentBookings.length > 3 && (
-                <span className="w-7 h-7 rounded-full flex items-center justify-center text-[0.6rem] font-bold tabular-nums"
-                  style={{ background: dm ? '#2e2e36' : '#FBF5F7', color: dm ? '#a18994' : '#A0607A',
-                    border: `2px solid ${dm ? '#26262e' : '#fff'}`, marginLeft: -8 }}>
-                  +{recentBookings.length - 3}
-                </span>
-              )}
-            </span>
-
-            <span className="flex items-center gap-1.5 flex-shrink-0 pl-1">
-              <span className="text-[0.68rem] font-semibold" style={{ color: dm ? '#c47a92' : '#A0607A' }}>
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#8b8b95' : '#6a6a74' }}>
                 {showRecentPanel ? 'Hide' : 'View'}
               </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#c47a92' : '#A0607A'} strokeWidth="2"
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8b8b95' : '#9c9ca6'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 className="w-3.5 h-3.5"
                 style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showRecentPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                 <polyline points="6 9 12 15 18 9"/>
@@ -589,7 +549,7 @@ export default function BookingsList({
             style={{
               background: dm ? '#27272a' : '#fff',
               border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
-              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(160,120,90,0.18)',
+              boxShadow: dm ? '0 18px 48px rgba(0,0,0,0.45)' : '0 18px 48px rgba(113, 113, 122,0.18)',
               maxHeight: 'min(70vh, 520px)',
               transformOrigin: 'top center',
               opacity: showRecentPanel ? 1 : 0,
@@ -602,7 +562,9 @@ export default function BookingsList({
                 : 'opacity 150ms ease, transform 200ms ease, visibility 0s linear 200ms',
             }}
           >
-            <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(160,120,90,0.1)'}` }}>
+            {/* A search box above a handful of rows is just clutter. */}
+            {recentBookings.length > 6 && (
+            <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(113, 113, 122,0.1)'}` }}>
                 <div className="relative">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -624,6 +586,7 @@ export default function BookingsList({
                   )}
                 </div>
               </div>
+            )}
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {recentBookings
                 .filter(b => !recentSearch || [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase())))
@@ -632,7 +595,7 @@ export default function BookingsList({
                     key={b.id}
                     onClick={() => onSelect(b)}
                     className="flex items-center gap-3.5 w-full text-left px-5 py-4 transition-colors"
-                    style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(160,120,90,0.08)'}` }}
+                    style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(113, 113, 122,0.08)'}` }}
                     onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
@@ -712,7 +675,7 @@ export default function BookingsList({
         };
         const inAppointments = viewType === 'appointments';
         const mutedTxt = dm ? '#8a8a93' : '#93939b';
-        const hoverTxt = dm ? '#cfcfd6' : '#6b6259';
+        const hoverTxt = dm ? '#cfcfd6' : '#62626B';
         const hoverBg  = dm ? '#26262d' : '#F3F3F7';
         const chipCls = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
         const inactiveStyle = { background: 'transparent', color: mutedTxt };
@@ -791,7 +754,7 @@ export default function BookingsList({
               </svg>
             </span>
             <div className="min-w-0">
-              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase" style={{ color: dm ? '#71717a' : '#b6b6bf' }}>Showing</p>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#71717a' : '#b6b6bf' }}>Showing</p>
               <p className="text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
@@ -828,10 +791,10 @@ export default function BookingsList({
                   <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
-              <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: CONSULT_COLOR }}>
+              <span className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: CONSULT_COLOR }}>
                 Zoom Consultations
               </span>
-              <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.12)', color: CONSULT_COLOR }}>
+              <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(107,90,147,0.12)', color: CONSULT_COLOR }}>
                 {uniqueConsults.length}
               </span>
             </div>
@@ -903,7 +866,7 @@ export default function BookingsList({
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
             </div>
-            <span className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: LESSON_COLOR }}>
+            <span className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: LESSON_COLOR }}>
               Makeup Lessons
             </span>
             <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(199,107,166,0.15)', color: LESSON_COLOR }}>
@@ -1118,7 +1081,7 @@ export default function BookingsList({
       {/* Appointments content */}
       {viewType === 'appointments' && (loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-[#E5E7EB] border-t-[#A0785A] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#E5E7EB] border-t-[#71717a] rounded-full animate-spin" />
         </div>
       ) : visibleActiveCount === 0 && visibleCompleted.length === 0 ? (
         <div className="text-center py-20">
@@ -1160,7 +1123,7 @@ export default function BookingsList({
                       {group.accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.accent }} />}
                       <h3 className="font-serif text-[1.05rem]" style={{ color: group.accent || (dm ? '#e4e4e7' : '#111') }}>{group.label}</h3>
                       <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: dm ? '#2e2e38' : '#F5F0EC', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
+                        style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
                         {group.items.length}
                       </span>
                       <span className="flex-1" />

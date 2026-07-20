@@ -3,7 +3,7 @@ import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DateBlockPopup from './DateBlockPopup';
 import ScheduleView from './ScheduleView';
-import { STATUS_COLORS, STATUS_COLORS_DM } from './statusColors';
+import { STATUS_COLORS, STATUS_COLORS_DM, EVENT_COLORS } from './statusColors';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -63,8 +63,8 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
           : isFillingUp
           ? dm ? '' : 'bg-amber-50 border border-amber-200 text-[#111] hover:border-amber-300 hover:bg-amber-100'
           : hasBookings
-          ? dm ? '' : 'bg-[#F4F3F1] border border-[#E9E6E2] text-[#8a8a8a] hover:bg-[#EFEDEA]'
-          : dm ? 'text-[#71717a]' : 'text-[#555] hover:bg-[#f5f0ec] hover:text-[#111]'
+          ? dm ? '' : 'bg-[#F3F3F6] border border-[#E6E6EA] text-[#8a8a8a] hover:bg-[#EDEDF0]'
+          : dm ? 'text-[#71717a]' : 'text-[#555] hover:bg-[#F0F0F5] hover:text-[#111]'
       }`}
       style={dm ? cellStyle : {}}
     >
@@ -91,7 +91,7 @@ function MonthDayCell({ day, year, month, todayKey, selectedDate, dateMap, confi
               ))}
               {hasConsultation && (
                 <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#A855F7' }} />
+                  style={{ background: isSel ? 'rgba(255,255,255,0.8)' : EVENT_COLORS.consult }} />
               )}
               {hasClassReg && (
                 <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
@@ -154,8 +154,8 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
           : isFillingUp
           ? dm ? '' : 'bg-amber-50 border border-amber-200 text-[#111] hover:bg-amber-100'
           : hasBookings
-          ? dm ? '' : 'bg-[#F4F3F1] border border-[#E9E6E2] text-[#8a8a8a] hover:bg-[#EFEDEA]'
-          : dm ? 'text-[#71717a]' : 'text-[#777] hover:bg-[#f5f0ec] hover:text-[#111]'
+          ? dm ? '' : 'bg-[#F3F3F6] border border-[#E6E6EA] text-[#8a8a8a] hover:bg-[#EDEDF0]'
+          : dm ? 'text-[#71717a]' : 'text-[#777] hover:bg-[#F0F0F5] hover:text-[#111]'
       }`}
       style={dm ? cellStyle : {}}
     >
@@ -178,7 +178,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
           ))}
           {hasConsultation && (
             <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#7C3AED' }} />
+              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : EVENT_COLORS.consult }} />
           )}
           {hasClassReg && (
             <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
@@ -301,15 +301,15 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <button onClick={() => setCurrentMonth(new Date(year, month - 1))}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0"
-              style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
+              style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
             <span className="text-[0.875rem] sm:text-[0.95rem] font-semibold tracking-tight text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{monthName}</span>
             <button onClick={() => setCurrentMonth(new Date(year, month + 1))}
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0"
-              style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>›</button>
+              style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
           <button onClick={goToToday}
-            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all flex-shrink-0"
-            style={{ background: dm ? 'rgba(160,120,90,0.14)' : '#F6EFE8' }}>
+            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0"
+            style={{ background: dm ? 'rgba(113, 113, 122,0.14)' : '#EFEFF6' }}>
             Today
           </button>
         </div>
@@ -344,11 +344,11 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
       <>
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
+            <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
             <span className="text-[0.8rem] font-semibold text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
-            <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#a1a1aa' : '#999' }}>›</button>
+            <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
+          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
         </div>
         <div className="grid grid-cols-7 gap-1.5">
           {days.map(d => (
@@ -379,7 +379,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             }`}>
             {isBlocked ? '✕ Unblock' : '+ Block Day'}
           </button>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#A0785A] hover:text-[#7a5e44] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#e8d5c4'}` }}>Today</button>
+          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
         </div>
 
         {isBlocked && (
@@ -407,7 +407,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
   return (
     <>
-      <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#f1ece7'}` }}>
+      <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
         {/* View switcher + hint — minimal text tabs, soft tint when active */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1">
@@ -417,7 +417,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
                 <button key={v} onClick={() => changeView(v.toLowerCase())}
                   className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
                   style={active
-                    ? { background: dm ? '#34343d' : '#F1EBE6', color: dm ? '#ECEDF1' : '#1a1a1a' }
+                    ? { background: dm ? '#34343d' : '#EBEBF1', color: dm ? '#ECEDF1' : '#1a1a1a' }
                     : { background: 'transparent', color: dm ? '#6f6f78' : '#a8a8b1' }}
                   onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#83838d'; }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#a8a8b1'; }}>
@@ -451,7 +451,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             </span>
           ))}
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
-            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#A855F7' }} /> Consultation
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: EVENT_COLORS.consult }} /> Consultation
           </span>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#D4A0B0' }} /> Makeup Class
