@@ -15,23 +15,57 @@ import ScheduleView from './ScheduleView';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS, EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
-import { depositState, depositTone, daysSince, shortDateTime } from './depositState';
+import { isDepositUnseen, daysSince, shortDateTime } from './depositState';
 
-function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
+// The whole Zelle deposit section, deliberately one line.
+//
+// It used to be three stacked elements (a status sentence, a screenshot strip,
+// and a pair of Received / Not Yet buttons) all restating the same fact. Since
+// the upload marks the deposit received on its own, none of that needs to be a
+// decision on the page: it's one collapsed line that opens to the screenshot,
+// with the manual override tucked underneath for the rare cases the automatic
+// path can't cover (cash, Venmo, a screenshot that's clearly wrong).
+function DepositStrip({ booking, onUpdateBooking, dm }) {
   const [expanded, setExpanded] = useState(false);
   const [signedUrl, setSignedUrl] = useState(null);
   const [loadingUrl, setLoadingUrl] = useState(false);
 
+  const hasProof = !!booking.zelle_screenshot;
+  const isIn = !!booking.deposit_received;
+  const landedAt = booking.zelle_uploaded_at || booking.deposit_confirmed_at;
+  const waitingDays = daysSince(booking.created_date || booking.created_at);
+
+  // How many days after booking the money actually turned up. The point of the
+  // whole feature is that this is often not zero.
+  const gap = booking.zelle_uploaded_at && booking.created_date
+    ? daysSince(booking.created_date) - daysSince(booking.zelle_uploaded_at)
+    : null;
+
+  const tone = isIn
+    ? { fg: dm ? '#86efac' : '#16a34a', bg: dm ? 'rgba(34,197,94,0.10)' : '#F4FBF6', line: dm ? 'rgba(34,197,94,0.24)' : '#DCEFE3', key: '#22c55e' }
+    : { fg: dm ? '#F5B83C' : '#A9660B', bg: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', line: dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9', key: '#F59E0B' };
+
+  const headline = isIn
+    ? (hasProof ? 'Zelle screenshot received' : 'Deposit received')
+    : (hasProof ? 'Screenshot on file, marked not received' : 'Waiting on deposit');
+
+  const detail = isIn
+    ? [landedAt ? shortDateTime(landedAt) : null, gap >= 1 ? `${gap === 1 ? 'a day' : `${gap} days`} after booking` : null]
+        .filter(Boolean).join(' · ')
+    : (!hasProof && waitingDays !== null
+        ? (waitingDays === 0 ? 'booked today' : waitingDays === 1 ? 'booked 1 day ago' : `booked ${waitingDays} days ago`)
+        : '');
+
   const handleExpand = async () => {
     const next = !expanded;
     setExpanded(next);
-    if (next && !signedUrl) {
+    if (next && hasProof && !signedUrl) {
       setLoadingUrl(true);
       try {
         const res = await fetch('/api/screenshot-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: bookingId, table }),
+          body: JSON.stringify({ id: booking.id, table: 'bookings' }),
         });
         const data = await res.json();
         setSignedUrl(data.url);
@@ -41,30 +75,46 @@ function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
     }
   };
 
+  const overrideCls = 'text-[0.72rem] font-medium px-3 py-1.5 rounded-lg transition-colors';
+
   return (
-    <div className="mb-3 rounded-[6px] overflow-hidden border" style={{ borderColor: dm ? '#3a3a48' : '#e5e5e5' }}>
+    <div className="rounded-[10px] overflow-hidden" style={{ border: `1px solid ${tone.line}` }}>
       <button
         onClick={handleExpand}
-        className="w-full flex items-center justify-between px-4 py-3 transition-colors"
-        style={{ background: dm ? '#2e2e38' : '#f7f7f7' }}
+        aria-expanded={expanded}
+        className="w-full flex items-center gap-2.5 px-4 py-3 text-left transition-colors"
+        style={{ background: tone.bg }}
       >
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <span className="text-[0.72rem] font-semibold" style={{ color: dm ? '#86efac' : '#16a34a' }}>Zelle Screenshot Received</span>
-        </div>
+        <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: dm ? 'rgba(255,255,255,0.08)' : '#fff' }}>
+          {isIn ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke={tone.key} strokeWidth="2.8" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.key }} />
+          )}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="text-[0.78rem] font-semibold" style={{ color: tone.fg }}>{headline}</span>
+          {detail && (
+            <span className="text-[0.72rem] ml-1.5" style={{ color: dm ? '#8b8b95' : '#8a8a93' }}>· {detail}</span>
+          )}
+        </span>
+
         <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#71717a' : '#aaa'} strokeWidth="2"
-          className="w-3.5 h-3.5 transition-transform"
+          className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
           style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </button>
+
       {expanded && (
-        <div className="p-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-          {loadingUrl && <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#71717a' : '#aaa' }}>Loading…</p>}
-          {signedUrl && (
-            <>
+        <div className="p-3 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+          {hasProof && loadingUrl && (
+            <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#71717a' : '#aaa' }}>Loading…</p>
+          )}
+          {hasProof && signedUrl && (
+            <div>
               <img
                 src={signedUrl}
                 alt="Zelle screenshot"
@@ -73,8 +123,35 @@ function ZelleScreenshotViewer({ bookingId, table = 'bookings', dm }) {
                 title="Click to open full size"
               />
               <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#52525b' : '#bbb' }}>Click image to open full size</p>
-            </>
+            </div>
           )}
+
+          {/* The escape hatches. Out of the way because the automatic path
+              covers almost every deposit. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {isIn ? (
+              <button
+                type="button"
+                onClick={() => onUpdateBooking({ deposit_received: false, deposit_confirmed_at: null })}
+                className={overrideCls}
+                style={{ color: dm ? '#fca5a5' : '#b91c1c', border: `1px solid ${dm ? 'rgba(185,28,28,0.4)' : 'rgba(239,68,68,0.25)'}` }}
+              >
+                Mark as not received
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onUpdateBooking({ deposit_received: true, deposit_confirmed_at: new Date().toISOString() })}
+                className={overrideCls}
+                style={{ color: dm ? '#86efac' : '#16a34a', border: `1px solid ${dm ? 'rgba(34,197,94,0.35)' : 'rgba(22,163,74,0.25)'}` }}
+              >
+                {hasProof ? 'Mark received after all' : 'Paid another way? Mark received'}
+              </button>
+            )}
+            <span className="text-[0.68rem]" style={{ color: dm ? '#52525b' : '#b0b0b8' }}>
+              {isIn ? 'Only if the screenshot turned out to be wrong.' : 'For cash, Venmo, or anything paid outside the site.'}
+            </span>
+          </div>
         </div>
       )}
     </div>
@@ -830,6 +907,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showClientPanel, setShowClientPanel] = useState(false);
+
+  // Opening the card is the acknowledgment. There's no Confirm button anywhere
+  // because her bank already told her the money landed, so the only thing the
+  // alert needs is to know she's looked, which this is.
+  //
+  // Stamped with the arrival time rather than "now" so the comparison in
+  // isDepositUnseen stays exact: a deposit that lands while she has the card
+  // open still surfaces on her next visit instead of being marked seen early.
+  useEffect(() => {
+    if (!isDepositUnseen(booking)) return;
+    onUpdateBooking?.({ deposit_seen_at: booking.zelle_uploaded_at });
+    // Runs once per unseen arrival: the update clears the condition itself.
+  }, [booking.id, booking.zelle_uploaded_at, booking.deposit_seen_at]);
   // Side-by-side day schedule drawer (so Roko can eyeball her real day while
   // proposing a new time). Defaults to this booking's date, falls back to today.
   const [showSchedule, setShowSchedule] = useState(false);
@@ -2277,91 +2367,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </div>
         )}
 
-        {/* Zelle Deposit Received */}
+        {/* Zelle Deposit — one line that opens to the screenshot. */}
         <div className="mb-6">
           <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
-
-          {/* When it landed, not just whether. A deposit sent days after booking
-              used to leave no trace at all, which is why it had to be hunted for
-              card by card. */}
-          {(() => {
-            const state = depositState(booking);
-            if (state.kind === 'none') return null;
-            const tone = depositTone(state.kind, dm);
-            const gap = booking.zelle_uploaded_at && booking.created_date
-              ? daysSince(booking.created_date) - daysSince(booking.zelle_uploaded_at)
-              : null;
-            return (
-              <div className="mb-3 px-4 py-3 rounded-[10px] flex items-start gap-2.5"
-                style={{ background: tone.bg, border: `1px solid ${tone.line}` }}>
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[7px]" style={{ background: tone.key }} />
-                <p className="text-[0.8rem] leading-relaxed" style={{ color: dm ? '#e4e4e7' : '#2a2a32' }}>
-                  {state.kind === 'arrived' && (
-                    <>
-                      {(booking.name || 'The client').split(' ')[0]} sent a Zelle screenshot
-                      {booking.zelle_uploaded_at && (
-                        <> <strong style={{ color: tone.fg, fontWeight: 600 }}>{shortDateTime(booking.zelle_uploaded_at)}</strong></>
-                      )}
-                      {gap >= 1 ? `, ${gap === 1 ? 'a day' : `${gap} days`} after booking` : ''}
-                      {'. '}
-                      <span style={{ color: dm ? '#a1a1aa' : '#7a7a84' }}>Confirm it below once you've checked the amount.</span>
-                    </>
-                  )}
-                  {state.kind === 'confirmed' && (
-                    <>
-                      Deposit confirmed
-                      {booking.deposit_confirmed_at && (
-                        <> <strong style={{ color: tone.fg, fontWeight: 600 }}>{shortDateTime(booking.deposit_confirmed_at)}</strong></>
-                      )}
-                      {'.'}
-                    </>
-                  )}
-                  {state.kind === 'waiting' && (
-                    <>
-                      Nothing received yet.
-                      {state.days >= 1 && (
-                        <> Booked <strong style={{ color: tone.fg, fontWeight: 600 }}>{state.days === 1 ? '1 day' : `${state.days} days`}</strong> ago.</>
-                      )}
-                    </>
-                  )}
-                </p>
-              </div>
-            );
-          })()}
-
-          {/* Screenshot viewer */}
-          {booking.zelle_screenshot && (
-            <ZelleScreenshotViewer bookingId={booking.id} table="bookings" dm={dm} />
-          )}
-
-          <div className="flex items-stretch gap-3">
-            <button
-              onClick={() => onUpdateBooking({ deposit_received: true, deposit_confirmed_at: new Date().toISOString() })}
-              className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
-              style={booking.deposit_received
-                ? { background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: '#fff', border: '1px solid #22c55e', boxShadow: '0 4px 16px rgba(59,130,246,0.25)' }
-                : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
-              }
-            >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: booking.deposit_received ? 'rgba(255,255,255,0.2)' : dm ? '#2e2e38' : '#ECECF0' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <span className="text-[0.7rem] font-semibold tracking-[0.04em]">Received</span>
-            </button>
-            <button
-              onClick={() => onUpdateBooking({ deposit_received: false, deposit_confirmed_at: null })}
-              className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[6px] transition-all"
-              style={!booking.deposit_received
-                ? { background: dm ? 'rgba(120,20,20,0.55)' : 'linear-gradient(135deg, rgba(244,63,63,0.08), rgba(220,38,38,0.12))', color: dm ? '#fca5a5' : '#b91c1c', border: `1px solid ${dm ? 'rgba(185,28,28,0.4)' : 'rgba(239,68,68,0.25)'}`, boxShadow: 'none' }
-                : { background: dm ? '#27272a' : '#fafafa', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }
-              }
-            >
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: !booking.deposit_received ? 'rgba(255,255,255,0.15)' : dm ? '#2e2e38' : '#ECECF0' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </div>
-              <span className="text-[0.7rem] font-semibold tracking-[0.04em]">Not Yet</span>
-            </button>
-          </div>
+          <DepositStrip booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
         </div>
 
         {/* Reference Photos */}

@@ -7,7 +7,7 @@ import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/l
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { CONSULT_INK } from './statusColors';
-import { isDepositArrived, isAwaitingDeposit, depositTone, timeAgo as depositTimeAgo, daysSince } from './depositState';
+import { isDepositUnseen, isAwaitingDeposit, depositTone, timeAgo as depositTimeAgo, daysSince } from './depositState';
 
 // Thumbnail of the client's uploaded Zelle screenshot, so a deposit can be
 // checked and cleared from the list without opening the card. Signed URLs are
@@ -229,7 +229,7 @@ export default function BookingsList({
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient, onBulkImport,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
-  onMarkDepositReceived, onBulkUpdate, onBulkDelete,
+  onBulkUpdate, onBulkDelete,
 }) {
   const [showArchive, setShowArchive] = useState(false);
   // iOS-style multi-select for the appointments list. `selectMode` flips rows
@@ -241,18 +241,17 @@ export default function BookingsList({
   const [showRecentPanel, setShowRecentPanel] = useState(false);
   const [showZellePanel, setShowZellePanel] = useState(false);
   const [showWaitingPanel, setShowWaitingPanel] = useState(false);
-  const [markingIds, setMarkingIds] = useState(() => new Set());
   const [lightbox, setLightbox] = useState(null);
   const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   const [collapsedGroups, setCollapsedGroups] = useState({ later: true }); // far-future folded by default
 
-  // Deposits waiting on Roko's eyes: the client uploaded proof and nobody has
-  // confirmed it yet. Purely derived, so confirming one drops it out on its own
-  // and there's no "seen" state to keep in sync. Newest arrival first.
+  // Deposits that landed and haven't been looked at. Opening the client card
+  // is what clears one, so this empties itself as she works and never needs a
+  // button of its own. Newest arrival first.
   const pendingZelleReviews = (allBookings || [])
-    .filter(isDepositArrived)
+    .filter(isDepositUnseen)
     .sort((a, b) => new Date(b.zelle_uploaded_at || 0) - new Date(a.zelle_uploaded_at || 0));
 
   // The opposite problem, and the more expensive one: booked, still upcoming,
@@ -261,11 +260,6 @@ export default function BookingsList({
   const awaitingDeposits = (allBookings || [])
     .filter(b => isAwaitingDeposit(b) && (daysSince(b.created_date) ?? 0) >= AWAITING_DEPOSIT_MIN_DAYS)
     .sort((a, b) => new Date(a.created_date || 0) - new Date(b.created_date || 0));
-
-  const handleMarkReceived = (id) => {
-    setMarkingIds(prev => new Set(prev).add(id));
-    onMarkDepositReceived?.(id);
-  };
 
   // Months that actually have appointments, for the month dropdown
   const monthMap = new Map();
@@ -493,7 +487,7 @@ export default function BookingsList({
 
             <span className="flex items-center gap-1.5 flex-shrink-0">
               <span className="text-[0.8rem] font-medium" style={{ color: tone.fg }}>
-                {showZellePanel ? 'Hide' : 'Review'}
+                {showZellePanel ? 'Hide' : 'View'}
               </span>
               <svg viewBox="0 0 24 24" fill="none" stroke={tone.fg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 className="w-3.5 h-3.5"
@@ -524,7 +518,7 @@ export default function BookingsList({
             <div className="px-5 py-3 flex items-center gap-2 flex-shrink-0"
               style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(30,64,175,0.08)'}` }}>
               <span className="text-[0.68rem] font-semibold tracking-[0.06em] uppercase" style={{ color: tone.fg }}>
-                Deposits to confirm
+                New since you last looked
               </span>
               <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full tabular-nums"
                 style={{ background: tone.bg, color: tone.fg }}>
@@ -533,54 +527,38 @@ export default function BookingsList({
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-              {pendingZelleReviews.map((b, i) => {
-                const isMarking = markingIds.has(b.id);
-                return (
-                  <div
-                    key={b.id}
-                    className="flex items-center gap-3 w-full text-left px-5 py-3.5"
-                    style={{ borderBottom: i < pendingZelleReviews.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(30,64,175,0.08)'}` : 'none' }}
-                  >
-                    <ZelleThumb bookingId={b.id} dm={dm} onOpen={setLightbox} />
+              {pendingZelleReviews.map((b, i) => (
+                <button
+                  key={b.id}
+                  onClick={() => onSelect(b)}
+                  className="flex items-center gap-3 w-full text-left px-5 py-3.5 transition-colors"
+                  style={{ borderBottom: i < pendingZelleReviews.length - 1 ? `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(30,64,175,0.08)'}` : 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#F7F9FE'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <ZelleThumb bookingId={b.id} dm={dm} onOpen={setLightbox} />
 
-                    <button
-                      onClick={() => onSelect(b)}
-                      className="flex flex-col items-start gap-0.5 flex-1 min-w-0 text-left"
-                    >
-                      <p className="text-[0.875rem] font-medium truncate max-w-full" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                      <p className="text-[0.72rem] truncate max-w-full" style={{ color: dm ? '#71717a' : '#8791a6' }}>
-                        {b.service}
-                        {b.date && <span style={{ color: dm ? '#52525b' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                      </p>
-                      {b.zelle_uploaded_at && (
-                        <p className="text-[0.7rem] font-semibold flex items-center gap-1.5" style={{ color: tone.fg }}>
-                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tone.key }} />
-                          Sent {depositTimeAgo(b.zelle_uploaded_at)}
-                          {(() => {
-                            const gap = daysSince(b.created_date) - daysSince(b.zelle_uploaded_at);
-                            return gap >= 1 ? `, ${gap === 1 ? '1 day' : `${gap} days`} after booking` : '';
-                          })()}
-                        </p>
-                      )}
-                    </button>
+                  <span className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
+                    <span className="text-[0.875rem] font-medium truncate max-w-full" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</span>
+                    <span className="text-[0.72rem] truncate max-w-full" style={{ color: dm ? '#71717a' : '#8791a6' }}>
+                      {b.service}
+                      {b.date && <span style={{ color: dm ? '#52525b' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                    </span>
+                    {b.zelle_uploaded_at && (
+                      <span className="text-[0.7rem] font-semibold flex items-center gap-1.5" style={{ color: tone.fg }}>
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tone.key }} />
+                        Sent {depositTimeAgo(b.zelle_uploaded_at)}
+                        {(() => {
+                          const gap = daysSince(b.created_date) - daysSince(b.zelle_uploaded_at);
+                          return gap >= 1 ? `, ${gap === 1 ? '1 day' : `${gap} days`} after booking` : '';
+                        })()}
+                      </span>
+                    )}
+                  </span>
 
-                    <button
-                      type="button"
-                      disabled={isMarking}
-                      onClick={(e) => { e.stopPropagation(); handleMarkReceived(b.id); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all hover:opacity-85 active:scale-95 flex-shrink-0"
-                      style={{ background: isMarking ? (dm ? '#3f3f46' : '#e5e5e5') : '#2563EB', color: '#fff', opacity: isMarking ? 0.7 : 1 }}
-                    >
-                      {isMarking ? (
-                        <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-                      )}
-                      {isMarking ? 'Confirming…' : 'Confirm'}
-                    </button>
-                  </div>
-                );
-              })}
+                  <span className="text-[0.75rem] font-medium flex-shrink-0" style={{ color: tone.fg }}>Open</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

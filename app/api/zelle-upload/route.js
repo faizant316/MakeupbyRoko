@@ -40,30 +40,35 @@ export async function POST(req) {
 
     // Store the path (not URL) so we can generate signed URLs on demand.
     //
-    // Deliberately does NOT mark the deposit received. The client sending proof
-    // and Roko confirming the money are two events, and collapsing them is what
-    // made a late deposit invisible: the flag flipped itself, so nothing in the
-    // admin had anything new to show. Stamping the arrival time instead puts the
-    // booking in the "deposits to confirm" queue, where it's visible on the list
-    // until she clears it.
+    // The deposit marks itself received: asking Roko to confirm was busywork,
+    // since her bank already told her the money landed. What makes it visible
+    // is zelle_uploaded_at, not an unconfirmed state. Leaving deposit_seen_at
+    // null is what puts it in the alert bar until she opens the card.
+    const now = new Date().toISOString();
     const updateData = {
       zelle_screenshot: storagePath,
-      zelle_uploaded_at: new Date().toISOString(),
+      zelle_uploaded_at: now,
     };
+    if (table === 'bridal_inquiries') {
+      updateData.zelle_received = true;
+      updateData.zelle_confirmed_at = now;
+    } else {
+      updateData.deposit_received = true;
+      updateData.deposit_confirmed_at = now;
+    }
 
     const { error: updateError } = await supabase.from(table).update(updateData).eq('id', recordId);
 
-    // Migration 0009 adds zelle_uploaded_at. If this deploy lands before the
-    // migration is run, save the screenshot anyway rather than failing a
-    // client's upload over a missing column. The admin queue falls back to
-    // "screenshot on file, not yet confirmed", so nothing is lost but the
-    // arrival time.
+    // Migrations 0009/0010 add the timestamp columns. If this deploy lands
+    // before they're run, save the screenshot and the received flag anyway
+    // rather than failing a client's upload over a missing column. The admin
+    // still shows the deposit, just without the arrival time.
     if (updateError) {
-      console.error('zelle-upload: full update failed, retrying without timestamp:', updateError.message);
-      const { error: retryError } = await supabase
-        .from(table)
-        .update({ zelle_screenshot: storagePath })
-        .eq('id', recordId);
+      console.error('zelle-upload: full update failed, retrying without timestamps:', updateError.message);
+      const fallback = { zelle_screenshot: storagePath };
+      if (table === 'bridal_inquiries') fallback.zelle_received = true;
+      else fallback.deposit_received = true;
+      const { error: retryError } = await supabase.from(table).update(fallback).eq('id', recordId);
       if (retryError) throw retryError;
     }
 
