@@ -194,6 +194,24 @@ const CONSULT_COLOR = '#A855F7';
 const CONSULT_BG = 'rgba(168,85,247,0.08)';
 const CONSULT_BORDER = 'rgba(168,85,247,0.25)';
 
+// Numbered step marker for the bridal pipeline (1 = time, 2 = confirm+consult).
+// done = green check, active = filled number, warn = amber, todo = hollow gray.
+function StepDot({ n, state, dm, color = '#C4849A' }) {
+  const styles = {
+    done: { background: '#22c55e', color: '#fff' },
+    active: { background: color, color: '#fff' },
+    warn: { background: '#D97706', color: '#fff' },
+    todo: { background: 'transparent', color: dm ? '#71717a' : '#b6aeb2', border: `1.5px solid ${dm ? '#3f3f46' : '#ddd3cb'}` },
+  }[state] || {};
+  return (
+    <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[0.62rem] font-bold" style={styles}>
+      {state === 'done'
+        ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+        : n}
+    </span>
+  );
+}
+
 // The notes field mashes several things into one string, in two formats:
 //   bridal:      "Ready by: 11 AM. <free-text comment>"
 //   non-bridal:  "<comment> | ⏰ surcharge | Ready by: 9 AM | ✈️ travel"
@@ -585,7 +603,38 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                       <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.type}</span>
                     </div>
                   </div>
-                  <p className="text-[0.7rem] mb-4" style={{ color: dm ? '#71717a' : '#888' }}>{migrated ? 'A welcome email with their appointment and consultation will be sent to ' : hasConsult ? 'An updated email with the new time will be sent to ' : 'An email will be sent to '}<span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>{booking.email}</span>.</p>
+                  {/* Exactly what the one email contains, so there's never a
+                      "wait, what am I sending?" moment before the tap. */}
+                  {(() => {
+                    const zoomIncluded = form.type === 'Zoom' && !!meetLink;
+                    const items = migrated
+                      ? ['A warm welcome to the new booking site', `Their ${booking.service || 'appointment'} details`, 'The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])]
+                      : hasConsult
+                      ? ['The updated consultation time', ...(zoomIncluded ? ['The Zoom link to join'] : [])]
+                      : bridal && !consultOnly
+                      ? [
+                          `Their confirmation: ${booking.service || 'appointment'}${dateFormatted ? ` on ${dateFormatted}` : ''}`,
+                          'The consultation details above',
+                          ...(zoomIncluded ? ['The Zoom link to join'] : []),
+                          booking.deposit_received ? 'Their personal photo upload link' : 'Zelle deposit info + their photo upload link',
+                        ]
+                      : ['The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])];
+                    return (
+                      <div className="mb-4">
+                        <p className="text-[0.62rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#a39a91' }}>
+                          One email to <span style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR, textTransform: 'none', letterSpacing: 0 }}>{booking.email}</span> with:
+                        </p>
+                        <div className="flex flex-col gap-1.5">
+                          {items.map((it, i) => (
+                            <p key={i} className="flex items-start gap-2 text-[0.72rem] leading-snug" style={{ color: dm ? '#a1a1aa' : '#666' }}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" className="w-3 h-3 mt-[2px] flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                              <span className="min-w-0">{it}</span>
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="flex gap-2">
                     <button onClick={() => setShowConfirmSend(false)}
                       className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
@@ -1512,18 +1561,24 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                    want to be ready. Lead with the question, not two neutral
                    facts — "does that work?" is the actual decision. ── */
                 <div className="px-4 py-4">
+                  {isBridal && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <StepDot n={1} state="active" dm={dm} />
+                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: '#C4849A' }}>Set the time</p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-5 h-5"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[0.8rem] leading-snug" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
-                        {firstName} wants to be ready by <span style={{ color: '#C4849A' }} className="font-semibold tabular-nums">{notes.readyBy}</span>
+                      <p className="text-[1.08rem] font-semibold leading-snug" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>
+                        {firstName} wants to be ready by <span style={{ color: '#C4849A', fontSize: '1.18rem' }} className="tabular-nums">{notes.readyBy}</span>
                       </p>
                       {booking.date && (
                         <p className="text-[0.7rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#a39a91' }}>{fmtLong(booking.date)}</p>
                       )}
-                      <p className="text-[1.05rem] font-semibold leading-snug mt-1" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>Does that work for you?</p>
+                      <p className="text-[0.95rem] font-semibold leading-snug mt-1.5" style={{ color: dm ? '#c9c9d1' : '#4a3c42' }}>Does that work for you?</p>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 mt-3.5">
@@ -1538,39 +1593,46 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       No, pick another time
                     </button>
                   </div>
+                  {isBridal && (
+                    <div className="flex items-center gap-2 mt-3.5 pt-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
+                      <StepDot n={2} state="todo" dm={dm} />
+                      <span className="text-[0.68rem]" style={{ color: dm ? '#71717a' : '#b6aeb2' }}>Then: confirm &amp; schedule the consultation</span>
+                    </div>
+                  )}
                 </div>
               ) : (
               <>
                 {railReady ? (
-                  /* ── Timeline rail: Roko's working window and the client's
-                     ready-by in one picture — the gap after "done" reads as the
-                     dress-time buffer. Stops are evenly spaced (not to scale)
-                     so the labels never collide. ── */
+                  /* ── Step 1 done: her working window as a simple start→done
+                     rail. The ready-by sits beside the header as the client's
+                     ask — context, not part of Roko's working time. ── */
                   <div className="px-4 py-4">
+                    <div className="flex items-start gap-2 mb-3">
+                      {isBridal && <StepDot n={1} state="done" dm={dm} />}
+                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mt-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
+                      <span className="ml-auto text-right min-w-0">
+                        <span className="block text-[0.8rem] font-semibold tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>Ready by {notes.readyBy}</span>
+                        <span className="block text-[0.58rem] mt-0.5" style={{ color: dm ? '#71717a' : '#a39a91' }}>what {firstName} asked for</span>
+                      </span>
+                    </div>
                     <div className="flex items-center" aria-hidden="true">
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#C4849A' }} />
                       <span className="flex-1 h-[3px] mx-1 rounded-full" style={{ background: '#C4849A' }} />
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#C4849A' }} />
-                      <span className="flex-1 mx-1 border-t-2 border-dotted" style={{ borderColor: runsPastReady ? '#D97706' : (dm ? '#4a4a58' : '#dccfd6') }} />
-                      <svg viewBox="0 0 24 24" fill="none" stroke={runsPastReady ? '#D97706' : '#D4A0B0'} strokeWidth="1.8" className="w-4 h-4 flex-shrink-0"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="flex justify-between gap-2 mt-2">
                       <div className="min-w-0">
                         <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).start}</p>
                         <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
                       </div>
-                      <div className="min-w-0 text-center">
+                      <div className="min-w-0 text-right">
                         <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#2C1A14' }}>{parseRange(booking.time).end}</p>
                         <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
-                      </div>
-                      <div className="min-w-0 text-right">
-                        <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>{notes.readyBy}</p>
-                        <p className="text-[0.52rem] font-bold tracking-[0.14em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Ready by</p>
                       </div>
                     </div>
                     {runsPastReady && (
                       <p className="mt-2 text-[0.68rem] font-medium" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>
-                        Heads up: this runs past the {notes.readyBy} ready-by.
+                        Heads up: this ends after the {notes.readyBy} ready-by.
                       </p>
                     )}
                   </div>
@@ -1738,7 +1800,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div ref={consultRef} className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#f3ede7'}` }}>
                 {booking.status === 'pending' ? (
                   <>
-                    <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Next step</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <StepDot n={2} state="active" dm={dm} color={CONSULT_COLOR} />
+                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirm &amp; consultation</p>
+                    </div>
                     <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
                       Time's set. Confirm with {firstName} and set up the consultation.
                     </p>
@@ -1773,7 +1838,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   </>
                 ) : !booking.consultation_date ? (
                   <>
-                    <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>Consultation not scheduled yet</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <StepDot n={2} state="warn" dm={dm} />
+                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>Consultation not scheduled yet</p>
+                    </div>
                     <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
                       {firstName} is confirmed. Schedule the consultation once you two settle on a time.
                     </p>
@@ -1781,7 +1849,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   </>
                 ) : (
                   <>
-                    <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase mb-2" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Consultation</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <StepDot n={2} state="done" dm={dm} />
+                      <p className="text-[0.6rem] font-bold tracking-[0.14em] uppercase" style={{ color: dm ? '#C4B5FD' : CONSULT_COLOR }}>Confirmed &amp; consultation set</p>
+                    </div>
                     {consultScheduler}
                   </>
                 )}

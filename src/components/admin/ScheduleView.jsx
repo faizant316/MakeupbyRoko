@@ -167,8 +167,31 @@ export default function ScheduleView({
   const softLine = dm ? '#26262e' : '#f7f2ee';
   const muted = dm ? '#71717a' : '#a8a8b1';
 
+  // Month (and year) the strip is showing — spans two months when the week
+  // crosses one, so "what month am I in?" always has an answer on screen.
+  const stripFirst = weekDays[0], stripLast = weekDays[6];
+  const monthLabel = stripFirst.getMonth() === stripLast.getMonth()
+    ? stripFirst.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : `${stripFirst.toLocaleDateString('en-US', { month: 'short' })} – ${stripLast.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+  const selectedLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
   return (
     <div>
+      {/* ── Month header ── */}
+      <div className="flex items-end justify-between gap-2 mb-2 px-1">
+        <div className="min-w-0">
+          <p className="font-serif text-[1.15rem] leading-tight" style={{ color: dm ? '#ECEDF1' : '#111' }}>{monthLabel}</p>
+          <p className="text-[0.68rem] mt-0.5" style={{ color: isToday ? '#E05B7F' : muted }}>{isToday ? `Today · ${selectedLabel}` : selectedLabel}</p>
+        </div>
+        {!isToday && (
+          <button onClick={() => onChangeDate(todayKey)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-[0.62rem] font-bold tracking-[0.06em] uppercase transition-all active:scale-95"
+            style={{ background: dm ? '#2a2a31' : '#F7F2EE', color: dm ? '#d4d4d8' : '#6B4055', border: `1px solid ${line}` }}>
+            Today
+          </button>
+        )}
+      </div>
+
       {/* ── Week strip ── */}
       <div className="flex items-center gap-1 mb-1">
         <button onClick={() => moveWeek(-1)} aria-label="Previous week"
