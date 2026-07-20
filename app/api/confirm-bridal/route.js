@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
 import { createClient } from '../../../src/lib/supabase/server';
-import { sendEmail, bridalConfirmedEmail, adminConsultationEmail } from '../../../src/lib/email';
+import { sendEmail, bridalConfirmedEmail, adminConsultationEmail, adminBridalConfirmedEmail } from '../../../src/lib/email';
 
 // Bridal-only: confirms the booking AND schedules the consultation in one shot,
 // then sends a single combined email (confirmation + consultation + Zelle/photo
 // upload link) instead of the separate confirmed + consultation emails.
+// `confirmOnly: true` is the "confirm now, schedule the consultation later"
+// path: flips status + sends the same confirmation email minus the consultation.
 export async function POST(req) {
   try {
     const { authError } = await requireAdmin();
@@ -15,9 +17,10 @@ export async function POST(req) {
     const {
       bookingId, clientEmail, clientName, serviceName, dateFormatted, time,
       consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated, migrated,
+      confirmOnly,
     } = await req.json();
 
-    if (!bookingId || !clientEmail || !consultationDate || !consultationTime) {
+    if (!bookingId || !clientEmail || (!confirmOnly && (!consultationDate || !consultationTime))) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -42,7 +45,7 @@ export async function POST(req) {
 
     const { error: dbErr } = await supabase
       .from('bookings')
-      .update({
+      .update(confirmOnly ? { status: 'confirmed' } : {
         status: 'confirmed',
         consultation_date: consultationDate,
         consultation_time: consultationTime,
@@ -55,7 +58,7 @@ export async function POST(req) {
 
     const firstName = (clientName || '').split(' ')[0] || 'there';
 
-    // Single client email: confirmation + consultation + upload link
+    // Single client email: confirmation (+ consultation when scheduled) + upload link
     await sendEmail({
       to: clientEmail,
       subject: migrated
@@ -65,7 +68,7 @@ export async function POST(req) {
         : `You're confirmed for ${serviceName}${dateFormatted ? ` ✦ ${dateFormatted}` : ''}`,
       html: bridalConfirmedEmail({
         firstName, serviceName, dateFormatted, time,
-        consultationDate, consultationTime, consultationType, zoomLink, consultationNotes,
+        ...(confirmOnly ? {} : { consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
         uploadUrl, depositReceived: booking?.deposit_received, updated, migrated,
       }),
     });
@@ -74,8 +77,12 @@ export async function POST(req) {
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
       to: adminEmail,
-      subject: `✅ Bridal Confirmed + Consultation — ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
-      html: adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
+      subject: confirmOnly
+        ? `✅ Bridal Confirmed — ${clientName || clientEmail} · consultation still to schedule`
+        : `✅ Bridal Confirmed + Consultation — ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
+      html: confirmOnly
+        ? adminBridalConfirmedEmail({ clientName, clientEmail, serviceName, dateFormatted, time })
+        : adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
     }).catch(err => console.error('admin confirm-bridal email error:', err));
 
     return NextResponse.json({ success: true });

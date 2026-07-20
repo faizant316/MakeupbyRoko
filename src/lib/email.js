@@ -561,6 +561,9 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
 export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived, updated, migrated }) {
   const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   const showDeposit = !depositReceived && uploadUrl;
+  // No consultation yet = the "confirm now, schedule the consultation later"
+  // path: same confirmation email, minus the consultation panel.
+  const hasConsult = !!(consultationDate && consultationTime);
   // `migrated` = a bride carried over from the old booking system. Her first
   // email from the new site: welcome her, don't announce a "changed time"
   // (nothing changed for her). Takes precedence over `updated`.
@@ -570,14 +573,16 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
       ? `Makeup by Roko has a new home ✦ your ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} and consultation are all here.`
       : isUpdate
       ? `Your consultation time has been updated. Your ${serviceName} is still confirmed${dateFormatted ? ` for ${dateFormatted}` : ''}.`
-      : `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment and consultation details.`,
+      : `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment${hasConsult ? ' and consultation' : ''} details.`,
     content: `
       ${migrated
         ? clientHero({ emoji: '', eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your appointment and consultation are all set' })
         : clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day" })}
       ${migrated ? cinfo(`<strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your booking right along with me. Nothing has changed on your end, your appointment and consultation are exactly as we planned. Everything now lives in this one email.`) : ''}
       ${isUpdate ? cinfo(`<strong style="color:#16110F;">Heads up, your consultation time has changed.</strong> Your appointment${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''} is still confirmed, only the consultation call has a new time. The updated details are below.`) : ''}
-      ${cintro(`${migrated ? '' : `Hey <strong style="color:#16110F;">${firstName}</strong>! `}You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`)}
+      ${cintro(`${migrated ? '' : `Hey <strong style="color:#16110F;">${firstName}</strong>! `}You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. ${hasConsult
+        ? `I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`
+        : `I'll reach out soon to set up a quick consultation call so we can plan your look together. Your appointment details are below.`}`)}
       ${cpanel(`${ctitle('Your Appointment')}
         <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">The day I do your makeup. This is your main booking.</p>
         ${crows(
@@ -586,14 +591,14 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
       )}`)}
-      ${cpanel(`${ctitle(isUpdate ? 'Your Consultation Call · Updated Time' : 'Your Consultation Call')}
+      ${hasConsult ? cpanel(`${ctitle(isUpdate ? 'Your Consultation Call · Updated Time' : 'Your Consultation Call')}
         <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">A quick chat <em>before</em> your big day so we can go over your vision. This is separate from the appointment above, no extra booking needed.</p>
         ${crows(
         crow('Date', `<strong>${consultationDate}</strong>`) +
         crow('Time', `<strong>${consultationTime}</strong>`) +
         crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
         (consultationNotes ? crow('Notes', consultationNotes) : '')
-      )}${zoomLink ? cZoom(zoomLink) : ''}`)}
+      )}${zoomLink ? cZoom(zoomLink) : ''}`) : ''}
       ${!migrated && showDeposit ? cdeposit({ amount: 'Deposit', uploadUrl, photos: true }) : ''}
       ${!migrated && !showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
       ${cstepsPanel('To Prepare', [
@@ -879,6 +884,34 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
         ${row('Type', `${typeLabel ? typeLabel + ' ' : ''}${consultationType}`)}
         ${zoomLink ? row('Zoom Link', `<a href="${zoomLink}" style="color:#C4849A;word-break:break-all;">${zoomLink}</a>`) : ''}
         ${consultationNotes ? row('Notes', consultationNotes) : ''}
+      </table>
+    </div>
+    ${card(`
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#111;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
+    `)}
+  `);
+}
+
+// Bridal confirmed WITHOUT a consultation yet (the "confirm now, schedule the
+// consultation later" path) — reminds Roko the consultation is still open.
+export function adminBridalConfirmedEmail({ clientName, clientEmail, serviceName, dateFormatted, time }) {
+  return base(`
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Bridal Confirmed</p>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">✅ Booking Confirmed</h2>
+      <p style="font-size:13px;color:#444444;margin:0;">You confirmed <strong>${clientName || clientEmail}</strong> for <strong>${serviceName}</strong>. The consultation still needs to be scheduled from the admin card.</p>
+    `)}
+    <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Booking</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Name', clientName || 'N/A')}
+        ${row('Email', clientEmail || 'N/A')}
+        ${row('Service', serviceName || 'N/A')}
+        ${dateFormatted ? row('Date', `<strong>${dateFormatted}</strong>`) : ''}
+        ${time ? row('Time', `<strong>${time}</strong>`) : ''}
+        ${row('Consultation', 'Not scheduled yet')}
       </table>
     </div>
     ${card(`
