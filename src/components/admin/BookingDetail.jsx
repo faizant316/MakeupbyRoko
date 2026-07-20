@@ -1405,6 +1405,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // keep the scheduler at the bottom like everything else.
   const schedulerInHub = isBridal && !!booking.time && (booking.status === 'pending' || booking.status === 'confirmed');
 
+  // Non-bridal runs the same guided flow, minus the consultation: step 1 set
+  // the time, step 2 confirm. Confirming lived only in the status pills at the
+  // bottom of the card, so setting a time left you with "now what?" and a
+  // scroll. Putting step 2 in the Appointment panel means finishing one step
+  // leads straight into the next, the way bridal already works.
+  const confirmInHub = !isBridal && !!booking.time && booking.status === 'pending';
+
+  // Step markers only while a pipeline is actually running. Bridal's continues
+  // past confirmation (the consultation still has to be booked); non-bridal's
+  // ends there, so numbering a confirmed one would imply unfinished work.
+  const showSteps = isBridal || booking.status === 'pending';
+
   // "Confirm now, schedule the consultation later": sends the confirmation
   // email (minus the consultation panel) so Roko can lock the date before a
   // consult time is agreed. The hub keeps a standing reminder until it's set.
@@ -1849,7 +1861,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                    want to be ready. Lead with the question, not two neutral
                    facts — "does that work?" is the actual decision. ── */
                 <div className="px-4 py-4">
-                  {isBridal && (
+                  {showSteps && (
                     <div className="flex items-center gap-2 mb-3">
                       <StepDot n={1} state="active" dm={dm} />
                       <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Set the time</p>
@@ -1881,10 +1893,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       No, pick another time
                     </button>
                   </div>
-                  {isBridal && (
+                  {showSteps && (
                     <div className="flex items-center gap-2 mt-3.5 pt-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
                       <StepDot n={2} state="todo" dm={dm} />
-                      <span className="text-[0.68rem]" style={{ color: dm ? '#71717a' : '#b6aeb2' }}>Then: confirm &amp; schedule the consultation</span>
+                      <span className="text-[0.68rem]" style={{ color: dm ? '#71717a' : '#b6aeb2' }}>
+                        {isBridal ? <>Then: confirm &amp; schedule the consultation</> : <>Then: confirm &amp; notify {firstName}</>}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1896,7 +1910,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                      ask — context, not part of Roko's working time. ── */
                   <div className="px-4 py-4">
                     <div className="flex items-center gap-2 mb-3">
-                      {isBridal && <StepDot n={1} state="done" dm={dm} />}
+                      {showSteps && <StepDot n={1} state="done" dm={dm} />}
                       <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
                     </div>
                     {/* Compact start→done rail tucked left; the client's ask gets
@@ -2080,6 +2094,33 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                           const willEmail = allowNotify && notifyClient && booking.email && (dateMoved || pendingWindow !== booking.time);
                           return <>Set to <span className="tabular-nums">{dateMoved ? `${fmtShort(pendingDate)} · ` : ''}{pendingWindow}</span>{willEmail ? <>&nbsp;&amp; email {firstName}</> : ''}</>;
                         })()}
+                </button>
+              </div>
+            )}
+
+            {/* ── Step 2, non-bridal ────────────────────────────────────────
+                Same shape as bridal's next-step block, one stop shorter: no
+                consultation to book, so the time leads straight to confirming.
+                One tap here does what the status pills at the bottom did, via
+                the same code path, so the email and toast stay identical. ── */}
+            {confirmInHub && !showTimePicker && (
+              <div className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <StepDot n={2} state="active" dm={dm} />
+                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Confirm</p>
+                </div>
+                <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
+                  {booking.email
+                    ? <>Time's set. Confirming emails {firstName} the details and locks it in.</>
+                    : <>Time's set. No email on file, so confirming just locks it in here.</>}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPendingStatus('confirmed')}
+                  className="w-full py-3 px-4 rounded-[10px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation active:scale-[0.99]"
+                  style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}
+                >
+                  {booking.email ? <>Confirm &amp; Notify {firstName}</> : 'Confirm Appointment'}
                 </button>
               </div>
             )}
@@ -2408,6 +2449,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           {isBridal && schedulerInHub && booking.status === 'pending' && (
             <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
               Confirming lives in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. One email goes out with the confirmation, consultation details &amp; upload link.
+            </p>
+          )}
+          {confirmInHub && (
+            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+              Step 2 is waiting in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. These pills do the same thing, for when you need to jump straight to completed or cancelled.
             </p>
           )}
 
