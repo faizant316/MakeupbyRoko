@@ -1,4 +1,5 @@
-import { apptToMin, parseRange, formatRange, to24h, from24h } from '@/lib/timeWindow';
+import { useState } from 'react';
+import { apptToMin, parseRange, formatRange, to24h, applyStartInput, applyEndInput } from '@/lib/timeWindow';
 
 // Modern two-tap time WINDOW picker (start → end). Controlled: `value` is a
 // window string ("1:00 PM – 2:30 PM"), `onChange` gets the new window string.
@@ -10,21 +11,30 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
   const { start, end } = parseRange(value);
   const sMin = apptToMin(start), eMin = apptToMin(end);
 
+  // Set when the End wheel lands on a time that isn't after the start, so the
+  // hint can say why nothing happened instead of leaving Roko guessing.
+  const [endError, setEndError] = useState('');
+
+  // Desktop grid. Here "tap a time at or before the start" genuinely means
+  // "start over from this time" — the tap is always deliberate, so reassigning
+  // the start is the right read.
   const pick = (t) => {
     if (!start || end) { onChange(formatRange(t, '')); return; }
     const n = apptToMin(t);
     if (n != null && sMin != null && n > sMin) onChange(formatRange(start, t));
     else onChange(formatRange(t, ''));
   };
+
+  // Both native inputs run through the reducers in lib/timeWindow.
   const onStartInput = (v) => {
-    const s = from24h(v);
-    const keepEnd = end && apptToMin(end) > apptToMin(s);
-    onChange(formatRange(s, keepEnd ? end : ''));
+    const { value: next, error } = applyStartInput(value, v);
+    setEndError(error);
+    onChange(next);
   };
   const onEndInput = (v) => {
-    const e = from24h(v);
-    if (start && apptToMin(e) > apptToMin(start)) onChange(formatRange(start, e));
-    else onChange(formatRange(e, ''));
+    const { value: next, error } = applyEndInput(value, v);
+    setEndError(error);
+    onChange(next);
   };
 
   const p = dm
@@ -78,7 +88,7 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
             {durLabel && <span className="text-[0.52rem] font-bold mt-0.5 whitespace-nowrap" style={{ color: accent }}>{durLabel}</span>}
           </div>
         ) : (
-          <label key={cell[0]} className="block min-w-0 rounded-xl px-3 py-2 cursor-pointer"
+          <label key={cell[0]} className="block min-w-0 rounded-xl px-3 py-2.5 cursor-pointer"
             style={{ background: p.chip, border: `1.5px solid ${cell[3] ? accent : p.border}`, boxShadow: cell[3] ? `0 0 0 3px ${accent}22` : 'none' }}>
             <span className="block text-[0.5rem] font-bold tracking-[0.16em] uppercase" style={{ color: cell[3] ? accent : p.muted }}>{cell[0]}</span>
             <input type="time" value={cell[1]} onChange={e => cell[2](e.target.value)}
@@ -87,8 +97,8 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-2.5 mb-1.5 px-0.5">
-        <span className="text-[0.62rem] font-medium" style={{ color: p.muted }}>{hint}</span>
+      <div className="flex items-center justify-between gap-2 mt-2.5 mb-1.5 px-0.5">
+        <span className="text-[0.62rem] font-medium" style={{ color: endError ? accent : p.muted }}>{endError || hint}</span>
         {(start || end) && (
           <button type="button" onClick={() => onChange('')} className="text-[0.62rem] font-medium underline underline-offset-2 transition-opacity hover:opacity-60" style={{ color: p.muted }}>Clear</button>
         )}

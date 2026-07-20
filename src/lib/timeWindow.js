@@ -56,3 +56,33 @@ export function from24h(val) {
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${h12}:${mStr} ${ampm}`;
 }
+
+// ── Native <input type="time"> reducers (the mobile pickers) ─────────────────
+// Both take the current window string plus the raw 24h value the input emitted,
+// and return the next window string (+ an error to show, if the edit was
+// rejected). Pure on purpose: a native time wheel is the one input we cannot
+// test by hand on every device, so the rules live here where they can be.
+
+// Editing the start keeps the end only while the end is still after it.
+export function applyStartInput(current, raw24) {
+  const { end } = parseRange(current);
+  const s = from24h(raw24);
+  if (!s) return { value: '', error: '' };
+  const keepEnd = end && apptToMin(end) > apptToMin(s);
+  return { value: formatRange(s, keepEnd ? end : ''), error: '' };
+}
+
+// Editing the end must NEVER reassign the start. iOS seeds an empty time wheel
+// with the current clock time and fires a change as soon as the field opens, so
+// treating an out-of-order end as "restart from here" (which is correct for a
+// deliberate tap on the desktop grid) silently replaced a start Roko had already
+// set with whatever time it happened to be. An end that is not after the start
+// is rejected instead, leaving the start untouched.
+export function applyEndInput(current, raw24) {
+  const { start } = parseRange(current);
+  const e = from24h(raw24);
+  if (!e) return { value: formatRange(start, ''), error: '' };
+  if (!start) return { value: formatRange(e, ''), error: '' };
+  if (apptToMin(e) > apptToMin(start)) return { value: formatRange(start, e), error: '' };
+  return { value: formatRange(start, ''), error: `End needs to be after ${start}` };
+}
