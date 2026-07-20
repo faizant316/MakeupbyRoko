@@ -289,6 +289,37 @@ function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
   </td></tr>`;
 }
 
+// A "hold onto this" banner, in warm gold rather than the usual pink so it
+// reads as a notice instead of another brand panel. Used on the emails a client
+// needs to find again later (a confirmed booking with times in it).
+function cnotice(title, body) {
+  return `<tr><td style="padding:18px 24px 4px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FDF8EE;border:1px solid #EFE1C4;border-left:3px solid #D9B36A;border-radius:12px;">
+      <tr><td style="padding:15px 18px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#AD8535;margin:0 0 6px;">${title}</p>
+        <p style="font-size:13px;color:#6B636A;margin:0;line-height:1.6;">${body}</p>
+      </td></tr>
+    </table>
+  </td></tr>`;
+}
+
+// A numbered "what happens, in order" rail: label on the left, when it happens
+// on the right. For a bride with a consultation booked, this is the one glance
+// that tells her the call comes first and the makeup comes after.
+function corder(items) {
+  const rows = items.map(([n, label, when], i) => {
+    const edge = i === items.length - 1 ? '' : 'border-bottom:1px solid #F4ECF1;';
+    return `<tr>
+      <td width="34" valign="top" style="padding:11px 0;${edge}">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="24" height="24" align="center" valign="middle" bgcolor="#FBF1F6" style="border-radius:50%;font-size:11px;font-weight:700;color:#C4849A;">${n}</td></tr></table>
+      </td>
+      <td valign="top" style="padding:13px 0 11px;font-size:14px;font-weight:600;color:#16110F;${edge}">${label}</td>
+      <td align="right" valign="top" style="padding:13px 0 11px;font-size:13px;color:#6B636A;${edge}">${when}</td>
+    </tr>`;
+  }).join('');
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>`;
+}
+
 // Bridal variant of cdeposit. Same pink "Reserve Your Date" box, but the white
 // card leads with the full money picture (package total / deposit due now / cash
 // left on the day) above the Zelle handle, so a bride sees what she owes and
@@ -662,12 +693,27 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
       ${migrated
         ? clientHero({ emoji: '', eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your appointment and consultation are all set' })
         : clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day" })}
+      ${cnotice('Important · Keep This Email', hasConsult
+        ? `Everything for your big day lives here: your <strong style="color:#16110F;">consultation call</strong> first, then your <strong style="color:#16110F;">appointment</strong>.`
+        : `This is your confirmed <strong style="color:#16110F;">appointment time</strong>. I'll send your consultation details in a separate email once we set a time.`)}
       ${migrated ? cinfo(`<strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your booking right along with me. Nothing has changed on your end, your appointment and consultation are exactly as we planned. Everything now lives in this one email.`) : ''}
       ${isUpdate ? cinfo(`<strong style="color:#16110F;">Heads up, your consultation time has changed.</strong> Your appointment${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''} is still confirmed, only the consultation call has a new time. The updated details are below.`) : ''}
       ${cintro(`${migrated ? '' : `Hey <strong style="color:#16110F;">${firstName}</strong>! `}You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. ${hasConsult
-        ? `I've also set up a quick consultation call beforehand so we can plan your look together. Both are laid out below.`
+        ? `I've also set up a quick consultation call beforehand so we can plan your look together. Here's how it goes.`
         : `I'll reach out soon to set up a quick consultation call so we can plan your look together. Your appointment details are below.`}`)}
-      ${cpanel(`${ctitle('Your Appointment')}
+      ${hasConsult ? cpanel(`${ctitle('How It Goes')}${corder([
+        ['1', 'Consultation call', `${consultationDate} · ${consultationTime}`],
+        ['2', 'Your appointment', `${dateFormatted || 'Date confirmed'}${time ? ` · ${time}` : ''}`],
+      ])}`) : ''}
+      ${hasConsult ? cpanel(`${ctitle(isUpdate ? 'First · Your Consultation Call (Updated Time)' : 'First · Your Consultation Call')}
+        <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">A quick chat <em>before</em> your big day so we can go over your vision. This is separate from the appointment below, no extra booking needed.</p>
+        ${crows(
+        crow('Date', `<strong>${consultationDate}</strong>`) +
+        crow('Time', `<strong>${consultationTime}</strong>`) +
+        crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
+        (consultationNotes ? crow('Notes', consultationNotes) : '')
+      )}${zoomLink ? cZoom(zoomLink) : ''}`) : ''}
+      ${cpanel(`${ctitle(hasConsult ? 'Then · Your Appointment' : 'Your Appointment')}
         <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">The day I do your makeup. This is your main booking.</p>
         ${crows(
         crow('Service', serviceName) +
@@ -675,14 +721,6 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
       )}`)}
-      ${hasConsult ? cpanel(`${ctitle(isUpdate ? 'Your Consultation Call · Updated Time' : 'Your Consultation Call')}
-        <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">A quick chat <em>before</em> your big day so we can go over your vision. This is separate from the appointment above, no extra booking needed.</p>
-        ${crows(
-        crow('Date', `<strong>${consultationDate}</strong>`) +
-        crow('Time', `<strong>${consultationTime}</strong>`) +
-        crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
-        (consultationNotes ? crow('Notes', consultationNotes) : '')
-      )}${zoomLink ? cZoom(zoomLink) : ''}`) : ''}
       ${!migrated && showDeposit ? cdeposit({ amount: 'Deposit', uploadUrl, photos: true }) : ''}
       ${!migrated && !showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
       ${cstepsPanel('To Prepare', [
