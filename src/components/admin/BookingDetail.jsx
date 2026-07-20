@@ -1807,13 +1807,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         <div ref={timeSectionRef} className="mb-6 flex flex-col gap-3">
           {/* Appointment / ready-by card */}
           <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, background: dm ? '#1e1e24' : '#fff' }}>
-            <div className="flex items-center justify-between gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+            {/* Narrow screens stack the label above the buttons: side by side,
+                the label plus two pills overflow and the pill text wraps mid
+                word. Stacked, each pill gets a full-width tap target. */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
               <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2 sm:gap-1.5">
                 {/* Secondary. Only one button in this row gets to be filled, so
                     "Change time" reads as the action and this reads as a peek. */}
                 <button type="button" onClick={openSchedule} title="See your day side by side"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.8rem] font-medium transition-colors"
+                  className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-[0.8rem] font-medium whitespace-nowrap transition-colors"
                   style={{
                     background: 'transparent',
                     color: dm ? '#b9b9c2' : '#6a6a74',
@@ -1824,7 +1827,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </button>
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
                   <button type="button" onClick={() => openTimePicker()}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.8rem] font-medium transition-opacity hover:opacity-90"
+                    className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-[0.8rem] font-medium whitespace-nowrap transition-opacity hover:opacity-90"
                     style={{ background: '#C4849A', color: '#fff' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     {booking.time ? 'Change time' : 'Set time'}
@@ -1832,7 +1835,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 )}
                 {showTimePicker && (
                   <button type="button" onClick={() => setShowTimePicker(false)} aria-label="Close"
-                    className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90"
+                    className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full transition-all active:scale-90"
                     style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
