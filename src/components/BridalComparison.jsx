@@ -28,7 +28,9 @@ function buildSections(luxury, fullday) {
         { label: 'Lash application', luxury: true, fullday: true },
         { label: 'Touch-up kit', luxury: true, fullday: true },
         { label: 'Second look / bridal switch', luxury: null, fullday: true },
-        { label: 'Zoom consultation (30 min)', luxury: true, fullday: null },
+        // Every bridal booking gets one, Full Day included. The Full Day service
+        // record just doesn't list it, which is a gap in that record, not policy.
+        { label: 'Zoom consultation (30 min)', luxury: true, fullday: true },
       ],
     },
     {
