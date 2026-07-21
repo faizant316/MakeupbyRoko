@@ -434,8 +434,14 @@ export default function BookingModal({ service: initialService, onClose }) {
 
         {/* Price strip — non-bridal, on date + form steps (the "header + package price") */}
         {!isBridal && step !== 'done' && (
-          <div className="flex-shrink-0 border-b px-6 sm:px-10 py-3" style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
-            <div className="flex items-center justify-between flex-wrap gap-3 max-w-[620px] mx-auto">
+          <div className="flex-shrink-0 border-b px-6 sm:px-10 py-3.5" style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
+            {/* Service name leads — without a hero image this strip is the only
+                place the client sees what she's actually booking. */}
+            <div className="text-center mb-2.5">
+              <p className="text-[0.5rem] sm:text-[0.55rem] font-semibold tracking-[0.22em] uppercase text-[#c2b4a6]">You're booking</p>
+              <h2 className="font-serif text-[1.25rem] sm:text-[1.5rem] leading-tight text-[#2C1A14] mt-0.5">{service.title}</h2>
+            </div>
+            <div className="flex flex-col items-center gap-2 max-w-[620px] mx-auto">
               <div className="flex items-center gap-4">
                 <div className="text-center">
                   <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Service Price</p>
@@ -460,7 +466,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                   </>
                 )}
               </div>
-              <p className="hidden sm:block text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Roko will reach out to confirm your time</p>
+              <p className="hidden sm:block text-[0.68rem] text-gray-400 text-center">Confirmed within 24–48 hrs · Roko will reach out to confirm your time</p>
             </div>
           </div>
         )}
