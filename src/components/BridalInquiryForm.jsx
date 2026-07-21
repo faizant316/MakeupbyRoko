@@ -279,7 +279,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     bride_name: '', soon_to_be_last_name: '', email: '', phone: '',
     instagram_handle: '', wedding_date: '', event_location: '', ready_location_type: undefined,
     event_start_time: '', photographer: '', hairstylist: '',
-    venue_access_time: '', bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
+    bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
     ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
   });
 
@@ -368,7 +368,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     // would you like to get ready?" (studio vs. somewhere else).
     if (isFullDay) {
       if (!form.event_location) { alert('Please enter the event location.'); return; }
-      if (!form.venue_access_time) { alert('Please select the venue access time.'); return; }
     } else {
       if (!form.ready_location_type) { alert('Please choose where you\'d like to get ready.'); return; }
       if (form.ready_location_type === 'elsewhere' && !form.event_location) { alert('Please add the address or venue where you\'ll be getting ready.'); return; }
@@ -474,7 +473,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         uploadUrl,
         eventLocation: form.event_location,
         eventStartTime: form.event_start_time,
-        venueAccessTime: form.venue_access_time,
         readyByTime: form.ready_by_time,
         makeupReadyByTime: form.makeup_ready_by_time,
         photographerArrival: form.photographer_arrival_time,
@@ -511,7 +509,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
-      { label: 'Venue access time', value: form.venue_access_time },
       { label: 'Who needs glam', value: glamSummary },
       { label: 'Photographer', value: form.photographer },
       { label: 'Hairstylist', value: form.hairstylist },
@@ -1034,13 +1031,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <label className={labelClass}>Hairstylist (Instagram)</label>
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
-
-            {isFullDay && (
-              <div>
-                <label className={labelClass}>Venue Access Time *</label>
-                <TimePicker value={form.venue_access_time} onChange={v => set('venue_access_time', v)} placeholder="Select time" />
-              </div>
-            )}
 
             <div>
               <label className={labelClass}>Does your bridal party need glam too?</label>
