@@ -1013,14 +1013,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const persistScheduleW = () => {
     try { localStorage.setItem('admin-schedule-width', String(scheduleWRef.current)); } catch { /* private mode */ }
   };
-  // The card only slides aside for the drawer on very wide screens (2xl).
-  const [wide2xl, setWide2xl] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1536px)').matches);
+  // The card slides aside for the drawer whenever there's genuinely room for
+  // both; only narrow screens fall back to the dimmed sheet. This used to be a
+  // hard 1536px cutoff, which put every 1440-class laptop on the sheet even
+  // though the two panes fit side by side fine.
+  const [viewportW, setViewportW] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1600));
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1536px)');
-    const fn = (ev) => setWide2xl(ev.matches);
-    mq.addEventListener('change', fn);
-    return () => mq.removeEventListener('change', fn);
+    const fn = () => setViewportW(window.innerWidth);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
   }, []);
+  // 760 = room for the admin sidebar plus a card that's still readable.
+  const docked = viewportW - scheduleW >= 760;
   // Roko's own private notes on this booking (never shown to the client). Seeded
   // from the row; re-synced whenever a different booking is opened.
   const [adminNotes, setAdminNotes] = useState(booking.admin_notes || '');
@@ -1674,7 +1678,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
   return (
     <div className="max-w-[1100px] mx-auto transition-[margin] duration-300"
-      style={{ marginRight: showSchedule && wide2xl ? scheduleW + 20 : undefined }}>
+      style={{ marginRight: showSchedule && docked ? scheduleW + 20 : undefined }}>
       {/* ── Booksy-style status hero ── */}
       <div ref={heroRef} className="relative mb-6">
         <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
@@ -2775,8 +2779,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           proposing a new time. On wide screens it sits beside the card (no
           backdrop); on smaller screens it's a dimmed sheet. The proposed window
           shows as a pending (dashed) block so she can see exactly where it lands. */}
-      {showSchedule && (
-        <div className="fixed inset-0 z-[9995] 2xl:hidden" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
+      {showSchedule && !docked && (
+        // Dim only, never a backdrop blur: the filter forces the whole page
+        // behind it through a re-raster and text goes soft on ordinary laptop
+        // displays. The dim alone reads as "the sheet is on top" just as well.
+        <div className="fixed inset-0 z-[9995]" style={{ background: 'rgba(0,0,0,0.4)' }}
           onClick={() => setShowSchedule(false)} aria-hidden="true" />
       )}
       <aside
