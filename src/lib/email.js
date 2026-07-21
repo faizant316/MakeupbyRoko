@@ -247,14 +247,23 @@ function cinfo(html) {
 }
 
 // Studio address block: the address itself plus a directions button. Mirrors
-// cZoom so online/in-person emails feel like twins. The label is a parameter
-// because the same block serves classes ("Your Class Location") and non-bridal
-// appointments ("Where To Find Me").
-function cStudio(label = 'Your Class Location') {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:16px;text-align:center;">
-    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">${label}</p>
-    <p style="font-size:15px;font-weight:600;color:#16110F;margin:0 0 12px;line-height:1.5;">${STUDIO_DISPLAY}</p>
-    ${STUDIO_ADDRESS ? clientButton(STUDIO_MAPS_URL, 'Get Directions', true) : ''}
+// cZoom so online/in-person emails feel like twins. One plain label ("Address")
+// serves every flow that lands here (class, consultation, non-bridal); the
+// surrounding email has already said what the appointment is.
+function cStudio() {
+  // Street on one line, city/state/ZIP under it. An address reads faster
+  // stacked the way it's written on an envelope than run together on one line.
+  const comma = STUDIO_ADDRESS.indexOf(',');
+  const street = comma > 0 ? STUDIO_ADDRESS.slice(0, comma) : '';
+  const region = comma > 0 ? STUDIO_ADDRESS.slice(comma + 1).trim() : '';
+  const lines = street
+    ? `<p style="font-size:17px;font-weight:600;color:#16110F;margin:0;line-height:1.45;">${street}</p>
+       <p style="font-size:14px;color:#8A7F85;margin:4px 0 0;line-height:1.45;">${region}</p>`
+    : `<p style="font-size:15px;font-weight:600;color:#16110F;margin:0;line-height:1.5;">${STUDIO_DISPLAY}</p>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:20px 16px;text-align:center;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">📍 Address</p>
+    ${lines}
+    ${STUDIO_ADDRESS ? `<div style="height:16px;line-height:16px;">&nbsp;</div>${clientButton(STUDIO_MAPS_URL, 'Get Directions', true)}` : ''}
     <p style="font-size:11px;color:#A99FA4;margin:12px 0 0;">Roko's studio</p>
   </td></tr></table>`;
 }
@@ -526,7 +535,7 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
         crow('Location', locationValue) +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
-      )}${travels ? '' : cStudio('Where To Find Me')}`)}
+      )}${travels ? '' : cStudio()}`)}
       ${travels ? cinfo(`📍 I'll be coming to you. I'll confirm the exact address with you before the day.`) : ''}
       ${cinfo(`💵 Remaining balance is due in <strong style="color:#16110F;">cash</strong> on the day of your appointment.`)}
       ${cstepsPanel('What to Expect', [
