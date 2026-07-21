@@ -894,12 +894,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
                 <div className="w-full h-px bg-gray-100" />
 
-                {/* Makeup vision — the whole point of a trial, so it leads the details. */}
-                <div>
-                  <label className={labelClass}>The Look You're Going For</label>
-                  <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Tell Roko the vibe you want to try, skin concerns, or anything specific. Inspo pics welcome.</p>
-                  <textarea value={form.additional_details} onChange={e => set('additional_details', e.target.value)} placeholder="Soft glam, a bold eye, dewy skin... whatever you're dreaming of. Anything I should know before your trial." className={`${inputClass} resize-none h-[90px] border-b`} />
-                </div>
+                {/* No "look you're going for" question here on purpose. The whole
+                    point of a trial is to work the look out together in person, so
+                    asking her to describe it up front is busywork. */}
 
                 {/* Photos note — same personal upload-link flow, framed for the trial. */}
                 <div>
