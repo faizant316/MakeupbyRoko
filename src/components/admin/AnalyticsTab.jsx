@@ -49,14 +49,14 @@ function Skel({ dm, h = 16, className = '' }) {
 }
 
 function SectionHead({ label, desc, dm }) {
+  const tx = dm ? '#e4e4e7' : '#1a1a1a';
   const mu = dm ? '#71717a' : '#999';
   return (
-    <div className="mb-3">
-      <p className="text-[0.57rem] font-semibold tracking-[0.18em] uppercase"
-        style={{ color: dm ? '#52525b' : '#bbb' }}>
+    <div className="mb-3.5">
+      <p className="text-[0.98rem] font-bold tracking-[-0.01em] leading-tight" style={{ color: tx }}>
         {label}
       </p>
-      {desc && <p className="text-[0.65rem] mt-0.5 leading-snug" style={{ color: mu }}>{desc}</p>}
+      {desc && <p className="text-[0.7rem] mt-1 leading-snug" style={{ color: mu }}>{desc}</p>}
     </div>
   );
 }
@@ -82,19 +82,19 @@ function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm }) {
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl p-4"
+    <div className="flex flex-col gap-3 rounded-2xl p-5"
       style={{ background: bg, border: `1px solid ${bd}` }}>
-      <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+      <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
         style={{ background: `${accent}18` }}>
-        <Icon size={14} color={accent} strokeWidth={1.5} />
+        <Icon size={18} color={accent} strokeWidth={1.6} />
       </div>
       {loading
-        ? <Skel dm={dm} h={28} className="w-2/3" />
-        : <p className="text-[1.6rem] font-bold leading-none tabular-nums" style={{ color: tx }}>{value}</p>
+        ? <Skel dm={dm} h={32} className="w-2/3" />
+        : <p className="text-[1.9rem] font-bold leading-none tabular-nums" style={{ color: tx }}>{value}</p>
       }
       <div>
-        <p className="text-[0.72rem] font-semibold" style={{ color: tx }}>{label}</p>
-        <p className="text-[0.6rem] mt-0.5 leading-snug" style={{ color: mu }}>{sub}</p>
+        <p className="text-[0.78rem] font-semibold" style={{ color: tx }}>{label}</p>
+        <p className="text-[0.64rem] mt-0.5 leading-snug" style={{ color: mu }}>{sub}</p>
       </div>
     </div>
   );
@@ -171,7 +171,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
       {/* Audience Overview */}
       <div>
-        <SectionHead label="Audience Overview — Last 30 Days" desc="How many people visited the site and how they engaged with it" dm={dm} />
+        <SectionHead label="Your visitors" desc="How many people came to the site in the last 30 days, and how they spent their time" dm={dm} />
         <div className="grid grid-cols-2 gap-3">
           <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Unique people who visited"     loading={loading} dm={dm} />
           <MetricCard icon={Activity}  accent="#3B82F6" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total visits (1 person can visit multiple times)" loading={loading} dm={dm} />
@@ -182,7 +182,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
       {/* Traffic sources */}
       <div>
-        <SectionHead label="Where Traffic Comes From" desc="How people are finding the site — useful for knowing what's working" dm={dm} />
+        <SectionHead label="Where your visitors come from" desc="How people are finding the site, so you know what's actually working" dm={dm} />
         <div className="rounded-2xl overflow-hidden" style={{ background: bg, border: `1px solid ${bd}` }}>
           {loading
             ? [1, 2, 3, 4].map(i => (
@@ -227,7 +227,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
       {/* Top pages */}
       <div>
-        <SectionHead label="Top Pages" desc="Which pages people visit most — the booking page ranking high is a good sign" dm={dm} />
+        <SectionHead label="Where they go on your site" desc="The pages people visit most. Your booking page ranking high is a good sign" dm={dm} />
         <div className="rounded-2xl overflow-hidden" style={{ background: bg, border: `1px solid ${bd}` }}>
           {loading
             ? [1, 2, 3, 4, 5].map(i => (
@@ -266,7 +266,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
         {/* Devices */}
         <div>
-          <SectionHead label="Devices" desc="What people use to browse the site" dm={dm} />
+          <SectionHead label="What they use" desc="Phone vs. computer" dm={dm} />
           <div className="rounded-2xl p-4 h-full flex flex-col gap-3.5" style={{ background: bg, border: `1px solid ${bd}` }}>
             {loading
               ? [1, 2, 3].map(i => (
@@ -301,7 +301,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
 
         {/* Locations */}
         <div>
-          <SectionHead label="Top Locations" desc="Where visitors are based" dm={dm} />
+          <SectionHead label="Where they're based" desc="Cities & countries" dm={dm} />
           <div className="rounded-2xl p-4 flex flex-col gap-2.5" style={{ background: bg, border: `1px solid ${bd}` }}>
             {loading
               ? [1, 2, 3, 4, 5].map(i => (
