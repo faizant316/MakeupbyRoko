@@ -204,6 +204,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   const handleGoToSign = () => {
     if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
+    if (!formData.ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
     goStep('sign');
   };
 
@@ -721,7 +722,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
                     <div className="relative pl-3.5">
                       <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-                      <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by?</label>
+                      <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
                       <TimePicker
                         value={formData.ready_by_time || ''}
                         onChange={v => setFormData({ ...formData, ready_by_time: v })}
