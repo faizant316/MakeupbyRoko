@@ -110,7 +110,7 @@ function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
   );
 }
 
-function ChartTooltip({ active, payload, label, dm }) {
+function ChartTooltip({ active, payload, label, dm, money }) {
   if (!active || !payload?.length) return null;
   const bg = dm ? '#26262e' : '#fff', bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111', mu = dm ? '#71717a' : '#999';
@@ -122,13 +122,22 @@ function ChartTooltip({ active, payload, label, dm }) {
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
           <span className="text-[0.66rem]" style={{ color: mu }}>{p.name}:</span>
           <span className="text-[0.66rem] font-semibold" style={{ color: tx }}>
-            {p.name === 'Revenue' ? `$${(p.value || 0).toLocaleString()}` : p.value}
+            {money ? `$${(p.value || 0).toLocaleString()}` : p.value}
           </span>
         </div>
       ))}
     </div>
   );
 }
+
+// The four headline tiles each map to one story the trend chart can tell.
+// Tapping a tile swaps the chart to that metric — the Stan-style drill-in.
+const REV_METRICS = {
+  revenue:        { title: 'Class revenue over time',  key: 'revenue',    kind: 'line', money: true,  color: '#D4A0B0' },
+  bookings:       { title: 'Appointments over time',   key: 'bookings',   kind: 'bar',  money: false, color: '#3B82F6' },
+  allTimeRevenue: { title: 'Revenue, running total',   key: 'cumRevenue', kind: 'line', money: true,  color: '#D4A0B0' },
+  signups:        { title: 'Class signups over time',  key: 'signups',    kind: 'bar',  money: false, color: '#F59E0B' },
+};
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
@@ -151,7 +160,6 @@ export default function RevenueTab({ darkMode: dm }) {
   const tx      = dm ? '#e4e4e7' : '#111';
   const mu      = dm ? '#71717a' : '#999';
   const grid    = dm ? '#2e2e38' : '#EEEEF3';
-  const barFill = dm ? '#3a3a48' : '#e6dfe0';
 
   if (initialLoad) {
     return (
@@ -238,11 +246,13 @@ export default function RevenueTab({ darkMode: dm }) {
               trend chart below (revenue line vs bookings bars). ──────────── */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard icon={DollarSign} label="Class Revenue"    sub="this month"     value={`$${(summary.thisMonthRevenue  || 0).toLocaleString()}`} accent="#3B82F6" delta={revDelta}  dm={dm}
-          selectable active={metric === 'revenue'}  onClick={() => setMetric('revenue')} />
+          selectable active={metric === 'revenue'}        onClick={() => setMetric('revenue')} />
         <StatCard icon={Users}      label="Appointments"     sub="this month"     value={summary.thisMonthBookings ?? 0}                           accent="#3B82F6" delta={bookDelta} dm={dm}
-          selectable active={metric === 'bookings'} onClick={() => setMetric('bookings')} />
-        <StatCard icon={TrendingUp} label="All-Time Revenue" sub="from classes"   value={fmtRevenue(summary.totalRevenue || 0)}                    accent="#D4A0B0"                   dm={dm} />
-        <StatCard icon={BookOpen}   label="Class Signups"    sub="paid, all time" value={summary.paidClassSignups ?? 0}                            accent="#F59E0B"                   dm={dm} />
+          selectable active={metric === 'bookings'}       onClick={() => setMetric('bookings')} />
+        <StatCard icon={TrendingUp} label="All-Time Revenue" sub="from classes"   value={fmtRevenue(summary.totalRevenue || 0)}                    accent="#D4A0B0"                   dm={dm}
+          selectable active={metric === 'allTimeRevenue'} onClick={() => setMetric('allTimeRevenue')} />
+        <StatCard icon={BookOpen}   label="Class Signups"    sub="paid, all time" value={summary.paidClassSignups ?? 0}                            accent="#F59E0B"                   dm={dm}
+          selectable active={metric === 'signups'}        onClick={() => setMetric('signups')} />
       </div>
 
       {/* ── Insight Strip ───────────────────────────────────── */}
@@ -252,44 +262,39 @@ export default function RevenueTab({ darkMode: dm }) {
         <InsightCard icon={Calendar}    label="Peak Day"         value={summary.peakDay || '—'} sub="most bookings" accent="#D4A0B0" dm={dm} />
       </div>
 
-      {/* ── Trend Chart — reflects the headline tile she tapped. Whichever
-              metric is selected is drawn full-strength; the other fades back
-              so the story reads at a glance. ────────────────────────────── */}
+      {/* ── Trend Chart — shows whichever headline tile she tapped, one story
+              at a time (revenue, appointments, running total, or signups). ── */}
       {(() => {
-        const revActive  = metric === 'revenue';
-        const pink       = '#D4A0B0';
-        const barActive  = revActive ? barFill : pink;
-        const lineColor  = revActive ? pink : (dm ? '#3a3a48' : '#d8d2d3');
-        const barOpacity = revActive ? 0.55 : 1;
+        const m = REV_METRICS[metric] || REV_METRICS.revenue;
+        // Running total for the "All-Time Revenue" view, computed from the same
+        // period buckets so the line only ever climbs.
+        let run = 0;
+        const chartData = monthlyTrend.map(d => { run += d.revenue || 0; return { ...d, cumRevenue: run }; });
+        const yFmt = m.money ? (v => v === 0 ? '' : `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`) : undefined;
         return (
           <div className="rounded-2xl p-5 sm:p-6" style={{ background: bg, border: `1px solid ${bd}` }}>
-            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-1" style={{ color: mu }}>
-              {RANGE_TITLE[range]}
-            </p>
-            <p className="text-[1.05rem] font-bold mb-4 leading-tight" style={{ color: tx }}>
-              {revActive ? 'Class Revenue over time' : 'Appointments over time'}
-            </p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full" style={{ background: m.color }} />
+              <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase" style={{ color: mu }}>
+                {RANGE_TITLE[range]}
+              </p>
+            </div>
+            <p className="text-[1.05rem] font-bold mb-4 leading-tight" style={{ color: tx }}>{m.title}</p>
             <ResponsiveContainer width="100%" height={240}>
-              <ComposedChart data={monthlyTrend} margin={{ top: 6, right: 10, left: -18, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 6, right: 8, left: m.money ? -8 : -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={grid} vertical={false} />
                 <XAxis dataKey="shortLabel" tick={{ fontSize: 10, fill: mu, fontWeight: 500 }} axisLine={false} tickLine={false} interval={xInterval} />
-                <YAxis yAxisId="b" orientation="left"  allowDecimals={false} tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="r" orientation="right" tickFormatter={v => v === 0 ? '' : `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip dm={dm} />} cursor={{ fill: dm ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)' }} />
-                <Bar  yAxisId="b" dataKey="bookings" name="Bookings" fill={barActive} fillOpacity={barOpacity} radius={[4,4,0,0]} maxBarSize={34} />
-                <Line yAxisId="r" type="monotone" dataKey="revenue" name="Revenue" stroke={lineColor} strokeWidth={revActive ? 2.5 : 1.5} dot={revActive ? { fill: pink, r: 3, strokeWidth: 0 } : false} activeDot={{ r: 5, fill: pink, strokeWidth: 0 }} />
+                <YAxis allowDecimals={false} tickFormatter={yFmt} tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip dm={dm} money={m.money} />} cursor={{ fill: dm ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)' }} />
+                {m.kind === 'bar'
+                  ? <Bar dataKey={m.key} name={m.title} fill={m.color} radius={[4,4,0,0]} maxBarSize={34} />
+                  : <Line type="monotone" dataKey={m.key} name={m.title} stroke={m.color} strokeWidth={2.5}
+                      dot={{ fill: m.color, r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: m.color, strokeWidth: 0 }} />}
               </ComposedChart>
             </ResponsiveContainer>
-            <div className="flex items-center gap-5 mt-3 pt-3" style={{ borderTop: `1px solid ${bd}` }}>
-              <div className="flex items-center gap-1.5" style={{ opacity: revActive ? 0.5 : 1 }}>
-                <span className="w-3 h-2.5 rounded-sm" style={{ background: barActive }} />
-                <span className="text-[0.66rem]" style={{ color: mu }}>Appointments</span>
-              </div>
-              <div className="flex items-center gap-1.5" style={{ opacity: revActive ? 1 : 0.5 }}>
-                <span className="w-5 h-0.5 rounded-full" style={{ background: pink }} />
-                <span className="text-[0.66rem]" style={{ color: mu }}>Class Revenue</span>
-              </div>
-            </div>
+            <p className="text-[0.62rem] mt-3 pt-3" style={{ color: mu, borderTop: `1px solid ${bd}` }}>
+              Tap any card above to switch what this chart shows.
+            </p>
           </div>
         );
       })()}

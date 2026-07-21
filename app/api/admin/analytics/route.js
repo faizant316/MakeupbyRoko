@@ -31,6 +31,7 @@ export async function GET() {
   try {
     const [
       [overviewRes],
+      [dailyRes],
       [trafficRes],
       [pagesRes],
       [devicesRes],
@@ -47,6 +48,19 @@ export async function GET() {
           { name: 'newUsers' },
           { name: 'screenPageViews' },
         ],
+      }),
+      // Day-by-day series so each headline tile can draw its own 30-day trend.
+      ga.runReport({
+        property: PROPERTY,
+        dateRanges: range,
+        dimensions: [{ name: 'date' }],
+        metrics: [
+          { name: 'activeUsers' },
+          { name: 'sessions' },
+          { name: 'averageSessionDuration' },
+          { name: 'newUsers' },
+        ],
+        orderBys: [{ dimension: { dimensionName: 'date' } }],
       }),
       ga.runReport({
         property: PROPERTY,
@@ -94,6 +108,21 @@ export async function GET() {
       pageViews:          +row0.metricValues[4].value,
     } : null;
 
+    // GA returns YYYYMMDD; turn it into a short "Jul 3" label for the x-axis.
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const daily = (dailyRes.rows || []).map(r => {
+      const d = r.dimensionValues[0].value; // '20260703'
+      const label = `${MONTHS[+d.substring(4, 6) - 1]} ${+d.substring(6, 8)}`;
+      return {
+        date:     d,
+        label,
+        visitors: +r.metricValues[0].value,
+        sessions: +r.metricValues[1].value,
+        avgTime:  Math.round(+r.metricValues[2].value),
+        newUsers: +r.metricValues[3].value,
+      };
+    });
+
     const traffic = (trafficRes.rows || []).map(r => ({
       channel:  r.dimensionValues[0].value,
       sessions: +r.metricValues[0].value,
@@ -116,7 +145,7 @@ export async function GET() {
 
     const realtimeUsers = +(realtimeRes.rows?.[0]?.metricValues?.[0]?.value || 0);
 
-    return NextResponse.json({ overview, traffic, topPages, devices, locations, realtimeUsers });
+    return NextResponse.json({ overview, daily, traffic, topPages, devices, locations, realtimeUsers });
   } catch (err) {
     console.error('GA4 API error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
