@@ -44,13 +44,13 @@ export const CLASS_CATALOG = {
     ],
     formats: {
       online: {
-        price: 310,
+        price: 1, // TEMP $1 LAUNCH TEST — real price 310. REVERT THIS COMMIT.
         duration: '3 hours',
         durationMinutes: 180,
         dayNote: 'One 3-hour session, live on Zoom',
       },
       in_person: {
-        price: 520,
+        price: 1, // TEMP $1 LAUNCH TEST — real price 520. REVERT THIS COMMIT.
         duration: '3 hours',
         durationMinutes: 180,
         dayNote: 'One 3-hour session at the studio',
@@ -72,13 +72,13 @@ export const CLASS_CATALOG = {
     ],
     formats: {
       online: {
-        price: 1240,
+        price: 1, // TEMP $1 LAUNCH TEST — real price 1240. REVERT THIS COMMIT.
         duration: '6.5-hour day',
         durationMinutes: 390,
         dayNote: '6 hours of training with a 30-minute break',
       },
       in_person: {
-        price: 1445,
+        price: 1, // TEMP $1 LAUNCH TEST — real price 1445. REVERT THIS COMMIT.
         duration: '7-hour day',
         durationMinutes: 420,
         dayNote: '6 hours of training with a 1-hour lunch break',
