@@ -2416,7 +2416,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <BField dm={dm} label="Photographer Arrives" value={bridalInquiry.photographer_arrival_time} />
               </div>
 
-              {/* Event Location */}
+              {/* Get Ready Location */}
               {bridalInquiry.event_location && (
                 <div className="mt-5 pt-5 flex items-start justify-between gap-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
                   <div className="flex items-start gap-2.5 min-w-0">
@@ -2424,7 +2424,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                     </svg>
                     <div className="min-w-0">
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Event Location</p>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Get Ready Location</p>
                       <CopyableAddress address={bridalInquiry.event_location} dm={dm} />
                     </div>
                   </div>
