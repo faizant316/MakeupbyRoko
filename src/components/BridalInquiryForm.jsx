@@ -542,15 +542,21 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1">
 
-      {/* Hero Banner */}
-      <div className="relative h-[140px] sm:h-[150px] overflow-hidden flex-shrink-0">
+      {/* Hero Banner — the package name is the headline here, so a bride can
+          never mistake which of the three bridal forms she's filling out. */}
+      <div className="relative h-[150px] sm:h-[160px] overflow-hidden flex-shrink-0">
         <img src="/IMG_9891.jpeg" alt="Bridal" className="w-full h-full object-cover object-[center_30%]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <p className="text-[0.6rem] font-medium tracking-[0.14em] uppercase mb-1 text-white/60">{bridalTitle} · {bridalPrice}</p>
-          <h2 className="font-serif text-[1.3rem] leading-tight font-normal">
-            {isFullDay ? 'Your full day, flawlessly covered.' : 'Your big day deserves perfection.'}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/55 to-black/35" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white">
+          <p className="text-[0.55rem] sm:text-[0.6rem] font-semibold tracking-[0.22em] uppercase text-[#F2CFD8]">You're booking</p>
+          <h2 className="font-serif text-[1.5rem] sm:text-[2rem] leading-[1.1] font-normal mt-1.5 drop-shadow-sm">
+            {bridalTitle}
           </h2>
+          <p className="text-[0.7rem] sm:text-[0.78rem] text-white/75 mt-1.5">
+            {isFullDay ? 'Your full day, flawlessly covered.'
+              : isTrial ? 'Your preview before the big day.'
+              : 'Your big day deserves perfection.'}
+          </p>
         </div>
       </div>
 
