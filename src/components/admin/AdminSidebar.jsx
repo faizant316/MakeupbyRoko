@@ -188,7 +188,7 @@ export default function AdminSidebar({
           DESKTOP sidebar — sticky, 220px, left of content
           ════════════════════════════════════════════════════ */}
       <aside
-        className="hidden sm:flex flex-col w-[220px] shrink-0 sticky top-14 self-start overflow-y-auto"
+        className="hidden sm:flex flex-col w-[248px] shrink-0 sticky top-14 self-start overflow-y-auto"
         style={{
           height: 'calc(100vh - 56px)',
           borderRight: `1px solid ${dm ? '#2e2e38' : '#E5E7EB'}`,
@@ -203,7 +203,7 @@ export default function AdminSidebar({
               <nav
                 ref={dropProvided.innerRef}
                 {...dropProvided.droppableProps}
-                className="flex-1 flex flex-col gap-0.5 px-3 pt-6"
+                className="flex-1 flex flex-col gap-1 px-3.5 pt-6"
               >
                 {orderedTabs.map((tab, index) => {
                   const isActive = activeTab === tab.key;
@@ -238,22 +238,22 @@ export default function AdminSidebar({
                           </span>
                           <button
                             onClick={() => setActiveTab(tab.key)}
-                            className="flex-1 min-w-0 flex items-center gap-3 text-left pr-3 py-2.5"
+                            className="flex-1 min-w-0 flex items-center gap-3 text-left pr-3 py-3"
                           >
                             <NavIcon
                               name={tab.icon}
-                              className="w-[18px] h-[18px] flex-shrink-0 transition-colors"
+                              className="w-[21px] h-[21px] flex-shrink-0 transition-colors"
                               style={{ color: isActive ? activeColor : mutedColor }}
                             />
                             <span className="flex flex-col min-w-0">
                               <span
-                                className="text-[0.82rem] font-medium leading-tight truncate transition-colors"
+                                className="text-[0.94rem] font-medium leading-tight truncate transition-colors"
                                 style={{ color: isActive ? activeColor : (dm ? '#d4d4d8' : '#3f3f46') }}
                               >
                                 {tab.label}
                               </span>
                               {isActive && (
-                                <span className="text-[0.62rem] mt-0.5 leading-tight truncate" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
+                                <span className="text-[0.68rem] mt-0.5 leading-tight truncate" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
                                   {tab.sub}
                                 </span>
                               )}
@@ -273,28 +273,28 @@ export default function AdminSidebar({
         {/* Utility actions at bottom of sidebar — icon chips with a sun/moon
             toggle, matching the mobile menu's cleaner look */}
         <div
-          className="px-3 pb-5 pt-3 flex flex-col gap-0.5"
+          className="px-3.5 pb-5 pt-3 flex flex-col gap-1"
           style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#E5E7EB'}` }}
         >
           {/* Dark / light mode */}
           <button
             onClick={onDarkModeToggle}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
           >
-            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+            <span className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F0F0F5' }}>
               {dm ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
                   <circle cx="12" cy="12" r="4"/>
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
                 </svg>
               ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                 </svg>
               )}
             </span>
-            <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#555' }}>
+            <span className="text-[0.84rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#555' }}>
               {dm ? 'Light Mode' : 'Dark Mode'}
             </span>
           </button>
@@ -302,27 +302,27 @@ export default function AdminSidebar({
           {/* Back to site */}
           <button
             onClick={onBackToSite}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
           >
-            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]">
+            <span className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
               </svg>
             </span>
-            <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#555' }}>Back to Site</span>
+            <span className="text-[0.84rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#555' }}>Back to Site</span>
           </button>
 
           {/* Log out */}
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+            className="w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
           >
-            <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]">
+            <span className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
               </svg>
             </span>
-            <span className="text-[0.72rem] font-medium text-red-400">Log Out</span>
+            <span className="text-[0.84rem] font-medium text-red-400">Log Out</span>
           </button>
         </div>
       </aside>

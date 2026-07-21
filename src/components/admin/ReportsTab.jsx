@@ -43,7 +43,7 @@ export default function ReportsTab({ darkMode: dm }) {
       {/* ── Segmented control — the toggle between Revenue and Traffic ────── */}
       <div>
         <div
-          className="grid grid-cols-2 gap-1 p-1 rounded-2xl w-full sm:max-w-[420px]"
+          className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl w-full sm:max-w-[460px]"
           style={{ background: trackBg, border: `1px solid ${bd}` }}
         >
           {VIEWS.map(v => {
@@ -53,16 +53,18 @@ export default function ReportsTab({ darkMode: dm }) {
               <button
                 key={v.key}
                 onClick={() => pick(v.key)}
-                className="flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all duration-200"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-200"
                 style={{
                   background: isActive ? activeBg : 'transparent',
-                  boxShadow:  isActive ? (dm ? '0 1px 8px rgba(0,0,0,0.35)' : '0 1px 6px rgba(0,0,0,0.06)') : 'none',
+                  boxShadow:  isActive ? (dm ? '0 2px 10px rgba(0,0,0,0.35)' : '0 2px 8px rgba(0,0,0,0.07)') : 'none',
                   border:     `1px solid ${isActive ? bd : 'transparent'}`,
                 }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.querySelector('span').style.color = dm ? '#d4d4d8' : '#333'; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.querySelector('span').style.color = mu; }}
               >
-                <Icon size={14} strokeWidth={1.7} color={isActive ? '#D4A0B0' : mu} />
+                <Icon size={16} strokeWidth={1.8} color={isActive ? '#D4A0B0' : mu} />
                 <span
-                  className="text-[0.76rem] font-semibold tracking-[0.02em]"
+                  className="text-[0.86rem] font-bold tracking-[0.01em] transition-colors"
                   style={{ color: isActive ? tx : mu }}
                 >
                   {v.label}
@@ -71,7 +73,7 @@ export default function ReportsTab({ darkMode: dm }) {
             );
           })}
         </div>
-        <p className="text-[0.66rem] mt-2.5 ml-1" style={{ color: mu }}>
+        <p className="text-[0.72rem] mt-3 ml-1" style={{ color: mu }}>
           {active?.sub}
           <span style={{ color: dm ? '#52525b' : '#C2C2C9' }}> · live data, updated in real time</span>
         </p>

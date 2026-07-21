@@ -37,30 +37,55 @@ function fmtRevenue(n) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, sub, value, accent, delta, dm }) {
+function StatCard({ icon: Icon, label, sub, value, accent, delta, dm, selectable, active, onClick }) {
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
+  const pink = '#D4A0B0';
+
+  // Selected headline cards get a pink ring + soft glow so the chart below
+  // visibly "belongs" to whichever tile she tapped — the Stan-style drill-in.
+  const border = active ? pink : bd;
+  const ring   = active ? (dm ? '0 0 0 1px #D4A0B0, 0 8px 26px rgba(212,160,176,0.18)'
+                              : '0 0 0 1px #D4A0B0, 0 8px 26px rgba(212,160,176,0.20)') : 'none';
+
   return (
-    <div className="rounded-2xl px-4 py-4 flex flex-col gap-2.5" style={{ background: bg, border: `1px solid ${bd}` }}>
+    <div
+      role={selectable ? 'button' : undefined}
+      onClick={onClick}
+      className={`rounded-2xl px-5 py-5 flex flex-col gap-3 transition-all duration-200 ${selectable ? 'cursor-pointer' : ''}`}
+      style={{
+        background: active ? (dm ? 'rgba(212,160,176,0.07)' : '#fffafc') : bg,
+        border: `1px solid ${border}`,
+        boxShadow: ring,
+      }}
+      onMouseEnter={selectable ? e => { if (!active) e.currentTarget.style.borderColor = dm ? '#5a5a68' : '#D6C0C9'; } : undefined}
+      onMouseLeave={selectable ? e => { if (!active) e.currentTarget.style.borderColor = bd; } : undefined}
+    >
       <div className="flex items-center justify-between">
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${accent}18` }}>
-          <Icon size={14} color={accent} strokeWidth={1.5} />
+        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${accent}18` }}>
+          <Icon size={18} color={accent} strokeWidth={1.6} />
         </div>
         {delta !== null && delta !== undefined && (
-          <span className="text-[0.55rem] font-semibold px-2 py-0.5 rounded-full"
+          <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: delta >= 0 ? 'rgba(59,130,246,0.1)' : 'rgba(239,68,68,0.1)', color: delta >= 0 ? '#3B82F6' : '#EF4444' }}>
             {delta >= 0 ? '+' : ''}{delta}% vs last mo
           </span>
         )}
       </div>
       <div>
-        <p className="text-[1.18rem] font-semibold leading-tight" style={{ color: tx }}>{value}</p>
-        <p className="text-[0.62rem] mt-0.5 leading-tight" style={{ color: mu }}>
+        <p className="text-[1.7rem] font-bold leading-none tabular-nums" style={{ color: tx }}>{value}</p>
+        <p className="text-[0.68rem] mt-1.5 leading-tight" style={{ color: mu }}>
           {label} <span style={{ fontWeight: 400 }}>· {sub}</span>
         </p>
       </div>
+      {selectable && (
+        <span className="text-[0.58rem] font-semibold tracking-[0.06em] uppercase mt-0.5 transition-colors"
+          style={{ color: active ? pink : (dm ? '#52525b' : '#c7c7cf') }}>
+          {active ? '● Showing on chart' : 'Tap to chart'}
+        </span>
+      )}
     </div>
   );
 }
@@ -109,6 +134,7 @@ function ChartTooltip({ active, payload, label, dm }) {
 
 export default function RevenueTab({ darkMode: dm }) {
   const [range, setRange]         = useState('6m');
+  const [metric, setMetric]       = useState('revenue'); // which headline tile drives the chart
   const [data, setData]           = useState(null);
   const [initialLoad, setInitial] = useState(true);
   const [error, setError]         = useState(null);
@@ -178,20 +204,29 @@ export default function RevenueTab({ darkMode: dm }) {
         </div>
       )}
 
-      {/* ── Range Selector ──────────────────────────────────── */}
-      <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+      {/* ── Range Selector — pill row like Stan's date ranges. Hover lifts the
+              text toward the foreground; the selected pill is solid pink and
+              bolder so it clearly reads as "you are here". ───────────────── */}
+      <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
         {RANGE_OPTS.map(({ key, label }) => {
           const isActive = range === key;
+          const idleBg   = dm ? '#2a2a32' : '#F3F3F7';
+          const idleTx   = dm ? '#8a8a94' : '#8f8f98';
+          const hoverTx  = dm ? '#f4f4f5' : '#111';
           return (
             <button
               key={key}
               onClick={() => setRange(key)}
-              className="px-3.5 py-1.5 rounded-full text-[0.62rem] font-semibold tracking-[0.04em] flex-shrink-0 transition-all"
+              className="px-4 py-2 rounded-full text-[0.72rem] flex-shrink-0 transition-all duration-200"
               style={{
-                background: isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#2e2e38' : '#F0F0F5',
-                color:      isActive ? (dm ? '#1e1e24' : '#fff') : mu,
-                border:     `1px solid ${isActive ? (dm ? '#D4A0B0' : '#111') : dm ? '#3a3a48' : '#E2E4EA'}`,
+                background:  isActive ? '#D4A0B0' : idleBg,
+                color:       isActive ? '#fff' : idleTx,
+                fontWeight:  isActive ? 700 : 500,
+                border:      `1px solid ${isActive ? '#D4A0B0' : (dm ? '#3a3a48' : '#E6E6EC')}`,
+                boxShadow:   isActive ? '0 4px 14px rgba(212,160,176,0.30)' : 'none',
               }}
+              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = hoverTx; e.currentTarget.style.background = dm ? '#34343e' : '#EAEAEF'; } }}
+              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = idleTx; e.currentTarget.style.background = idleBg; } }}
             >
               {label}
             </button>
@@ -199,10 +234,13 @@ export default function RevenueTab({ darkMode: dm }) {
         })}
       </div>
 
-      {/* ── Stats Grid ──────────────────────────────────────── */}
+      {/* ── Stats Grid — the two headline tiles are tappable and drive the
+              trend chart below (revenue line vs bookings bars). ──────────── */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={DollarSign} label="Class Revenue"    sub="this month"     value={`$${(summary.thisMonthRevenue  || 0).toLocaleString()}`} accent="#3B82F6" delta={revDelta}  dm={dm} />
-        <StatCard icon={Users}      label="Appointments"     sub="this month"     value={summary.thisMonthBookings ?? 0}                           accent="#3B82F6" delta={bookDelta} dm={dm} />
+        <StatCard icon={DollarSign} label="Class Revenue"    sub="this month"     value={`$${(summary.thisMonthRevenue  || 0).toLocaleString()}`} accent="#3B82F6" delta={revDelta}  dm={dm}
+          selectable active={metric === 'revenue'}  onClick={() => setMetric('revenue')} />
+        <StatCard icon={Users}      label="Appointments"     sub="this month"     value={summary.thisMonthBookings ?? 0}                           accent="#3B82F6" delta={bookDelta} dm={dm}
+          selectable active={metric === 'bookings'} onClick={() => setMetric('bookings')} />
         <StatCard icon={TrendingUp} label="All-Time Revenue" sub="from classes"   value={fmtRevenue(summary.totalRevenue || 0)}                    accent="#D4A0B0"                   dm={dm} />
         <StatCard icon={BookOpen}   label="Class Signups"    sub="paid, all time" value={summary.paidClassSignups ?? 0}                            accent="#F59E0B"                   dm={dm} />
       </div>
@@ -214,34 +252,47 @@ export default function RevenueTab({ darkMode: dm }) {
         <InsightCard icon={Calendar}    label="Peak Day"         value={summary.peakDay || '—'} sub="most bookings" accent="#D4A0B0" dm={dm} />
       </div>
 
-      {/* ── Trend Chart ─────────────────────────────────────── */}
-      <div className="rounded-2xl p-5" style={{ background: bg, border: `1px solid ${bd}` }}>
-        <p className="text-[0.57rem] font-semibold tracking-[0.16em] uppercase mb-0.5" style={{ color: mu }}>
-          {RANGE_TITLE[range]}
-        </p>
-        <p className="text-[0.78rem] font-semibold mb-4" style={{ color: tx }}>Bookings &amp; Class Revenue</p>
-        <ResponsiveContainer width="100%" height={176}>
-          <ComposedChart data={monthlyTrend} margin={{ top: 4, right: 10, left: -22, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke={grid} vertical={false} />
-            <XAxis dataKey="shortLabel" tick={{ fontSize: 9, fill: mu, fontWeight: 500 }} axisLine={false} tickLine={false} interval={xInterval} />
-            <YAxis yAxisId="b" orientation="left"  allowDecimals={false} tick={{ fontSize: 9, fill: mu }} axisLine={false} tickLine={false} />
-            <YAxis yAxisId="r" orientation="right" tickFormatter={v => v === 0 ? '' : `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} tick={{ fontSize: 9, fill: mu }} axisLine={false} tickLine={false} />
-            <Tooltip content={<ChartTooltip dm={dm} />} cursor={{ fill: dm ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)' }} />
-            <Bar  yAxisId="b" dataKey="bookings" name="Bookings" fill={barFill} radius={[3,3,0,0]} maxBarSize={28} />
-            <Line yAxisId="r" type="monotone" dataKey="revenue" name="Revenue" stroke="#D4A0B0" strokeWidth={2} dot={{ fill: '#D4A0B0', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#D4A0B0', strokeWidth: 0 }} />
-          </ComposedChart>
-        </ResponsiveContainer>
-        <div className="flex items-center gap-5 mt-3 pt-3" style={{ borderTop: `1px solid ${bd}` }}>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-2.5 rounded-sm" style={{ background: barFill }} />
-            <span className="text-[0.62rem]" style={{ color: mu }}>Bookings</span>
+      {/* ── Trend Chart — reflects the headline tile she tapped. Whichever
+              metric is selected is drawn full-strength; the other fades back
+              so the story reads at a glance. ────────────────────────────── */}
+      {(() => {
+        const revActive  = metric === 'revenue';
+        const pink       = '#D4A0B0';
+        const barActive  = revActive ? barFill : pink;
+        const lineColor  = revActive ? pink : (dm ? '#3a3a48' : '#d8d2d3');
+        const barOpacity = revActive ? 0.55 : 1;
+        return (
+          <div className="rounded-2xl p-5 sm:p-6" style={{ background: bg, border: `1px solid ${bd}` }}>
+            <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-1" style={{ color: mu }}>
+              {RANGE_TITLE[range]}
+            </p>
+            <p className="text-[1.05rem] font-bold mb-4 leading-tight" style={{ color: tx }}>
+              {revActive ? 'Class Revenue over time' : 'Appointments over time'}
+            </p>
+            <ResponsiveContainer width="100%" height={240}>
+              <ComposedChart data={monthlyTrend} margin={{ top: 6, right: 10, left: -18, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke={grid} vertical={false} />
+                <XAxis dataKey="shortLabel" tick={{ fontSize: 10, fill: mu, fontWeight: 500 }} axisLine={false} tickLine={false} interval={xInterval} />
+                <YAxis yAxisId="b" orientation="left"  allowDecimals={false} tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="r" orientation="right" tickFormatter={v => v === 0 ? '' : `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip dm={dm} />} cursor={{ fill: dm ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)' }} />
+                <Bar  yAxisId="b" dataKey="bookings" name="Bookings" fill={barActive} fillOpacity={barOpacity} radius={[4,4,0,0]} maxBarSize={34} />
+                <Line yAxisId="r" type="monotone" dataKey="revenue" name="Revenue" stroke={lineColor} strokeWidth={revActive ? 2.5 : 1.5} dot={revActive ? { fill: pink, r: 3, strokeWidth: 0 } : false} activeDot={{ r: 5, fill: pink, strokeWidth: 0 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-5 mt-3 pt-3" style={{ borderTop: `1px solid ${bd}` }}>
+              <div className="flex items-center gap-1.5" style={{ opacity: revActive ? 0.5 : 1 }}>
+                <span className="w-3 h-2.5 rounded-sm" style={{ background: barActive }} />
+                <span className="text-[0.66rem]" style={{ color: mu }}>Appointments</span>
+              </div>
+              <div className="flex items-center gap-1.5" style={{ opacity: revActive ? 1 : 0.5 }}>
+                <span className="w-5 h-0.5 rounded-full" style={{ background: pink }} />
+                <span className="text-[0.66rem]" style={{ color: mu }}>Class Revenue</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-5 h-0.5 rounded-full" style={{ background: '#D4A0B0' }} />
-            <span className="text-[0.62rem]" style={{ color: mu }}>Class Revenue</span>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ── Class Revenue Breakdown ──────────────────────────── */}
       {classByType.length > 0 && (
