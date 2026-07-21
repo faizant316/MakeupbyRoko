@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '../../../src/lib/email';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
 
 const footer = `
   <div style="text-align:center;padding:20px 0 8px;">
@@ -67,7 +68,13 @@ function paidInFullEmail({ name, amount }) {
   `);
 }
 
+// Admin-only, for the same reason as on-booking-cancelled: the recipient comes
+// from the request body, so an open version of this is a free email relay on
+// Roko's sending domain. Nothing in the app currently calls it, which makes an
+// auth gate strictly safer than leaving it reachable.
 export async function POST(req) {
+  const { authError } = await requireAdmin();
+  if (authError) return authError;
   try {
     const { type, to, name, amount } = await req.json();
     if (!to) return NextResponse.json({ error: 'Missing email' }, { status: 400 });
