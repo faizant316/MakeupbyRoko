@@ -1446,12 +1446,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     ? new Date(bridalInquiry.wedding_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
     : null;
   // A trial's `wedding_date` is really the TRIAL date (it's whatever she picked
-  // on the calendar), so the card labels it honestly and shows her actual
-  // wedding date — the trial form's own optional question — next to it.
+  // on the calendar), so the card labels it honestly rather than calling it the
+  // wedding date.
   const isTrialBooking = /trial/i.test(booking.service || '');
-  const biTrialWedding = bridalInquiry?.trial_wedding_date
-    ? new Date(bridalInquiry.trial_wedding_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
-    : null;
   const biPreferred = bridalInquiry?.preferred_date
     ? new Date(bridalInquiry.preferred_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })
     : null;
@@ -2402,9 +2399,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {/* Wedding timeline */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5">
                 <BField dm={dm} label={isTrialBooking ? 'Trial Date' : 'Wedding Date'} value={biWedding} />
-                {isTrialBooking && biTrialWedding && (
-                  <BField dm={dm} label="Wedding Date" value={biTrialWedding} accent />
-                )}
                 {/* Preferred Appt only when it actually differs from the wedding
                     date — otherwise it just repeats the same day (redundant). */}
                 {bridalInquiry.preferred_date && bridalInquiry.preferred_date !== bridalInquiry.wedding_date && (

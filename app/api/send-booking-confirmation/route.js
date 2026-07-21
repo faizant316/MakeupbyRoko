@@ -29,7 +29,7 @@ export async function POST(req) {
       dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, notes,
       bridalTitle, bridalDeposit, bridalPrice, bridalRemaining, bridalDateFormatted, makeupReadyByTime,
       phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
-      photographer, hairstylist, numPeopleGlam, outOfState, weddingDate, trialWeddingDate, additionalDetails, howHeard,
+      photographer, hairstylist, numPeopleGlam, outOfState, weddingDate, additionalDetails, howHeard,
       contractSignedName, contractSignedAt, contractPhotoConsent,
     } = body;
 
@@ -90,7 +90,7 @@ export async function POST(req) {
 
     const adminHtml = isBridal
       ? adminBridalEmail({
-          firstName, lastName, bridalTitle, weddingDate, trialWeddingDate, bridalDateFormatted, email: recipient, phone, instagram,
+          firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email: recipient, phone, instagram,
           eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy: readyByTime, makeupReadyByTime, photographerArrival,
           photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard,
           contractSignedName, contractSignedAt, contractPhotoConsent,

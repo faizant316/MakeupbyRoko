@@ -33,7 +33,7 @@ export async function POST(req) {
     const { bride_name, soon_to_be_last_name, email, phone, instagram_handle, wedding_date,
       event_location, event_start_time, photographer, hairstylist, venue_access_time,
       num_people_glam, additional_details, how_heard, ready_by_time, makeup_ready_by_time,
-      photographer_arrival_time, trial_wedding_date,
+      photographer_arrival_time,
       out_of_state, preferred_date, preferred_time, status, service } = body;
 
     if (!bride_name || !email) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -44,21 +44,17 @@ export async function POST(req) {
       bride_name, soon_to_be_last_name, email, phone, instagram_handle, wedding_date,
       event_location, event_start_time, photographer, hairstylist, venue_access_time,
       num_people_glam, additional_details, how_heard, ready_by_time, makeup_ready_by_time,
-      photographer_arrival_time, trial_wedding_date,
+      photographer_arrival_time,
       out_of_state, preferred_date, preferred_time, status, service, upload_token,
     };
 
     let { data, error } = await supabase.from('bridal_inquiries').insert(insert).select().single();
-    // If a column hasn't been migrated yet, Postgres errors 42703 and kills the
-    // whole insert. Retry once without the offending column so inquiries still
-    // save — Roko just loses that one field until the migration runs.
-    //   makeup_ready_by_time → 0006
-    //   trial_wedding_date   → 0012
-    for (const col of ['makeup_ready_by_time', 'trial_wedding_date']) {
-      if (error && new RegExp(col).test(error.message || '')) {
-        delete insert[col];
-        ({ data, error } = await supabase.from('bridal_inquiries').insert(insert).select().single());
-      }
+    // If the makeup_ready_by_time column hasn't been migrated yet (0006), Postgres
+    // errors 42703 and kills the whole insert. Retry once without it so inquiries
+    // still save — Roko just won't see that one field until the migration runs.
+    if (error && /makeup_ready_by_time/.test(error.message || '')) {
+      const { makeup_ready_by_time: _drop, ...safe } = insert;
+      ({ data, error } = await supabase.from('bridal_inquiries').insert(safe).select().single());
     }
     if (error) throw error;
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });
