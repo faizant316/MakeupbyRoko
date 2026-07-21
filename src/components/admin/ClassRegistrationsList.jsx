@@ -32,6 +32,15 @@ function normalizePaymentStatus(raw) {
   return 'unpaid';
 }
 
+// A registration is "closed" once it's been cancelled/declined or the payment
+// was refunded. These are kept for the record (money trail, reporting, client
+// history) but pulled out of the active timeline so the day-to-day list stays
+// clean. They live in a collapsed section at the bottom instead.
+function isClosedReg(reg) {
+  return reg.status === 'cancelled' || reg.status === 'declined'
+    || normalizePaymentStatus(reg.payment_status) === 'refunded';
+}
+
 // The date a class effectively sits on: the confirmed appointment date, else
 // (in person only) the client's chosen Wednesday. One Wednesday per client, so
 // an in-person sign-up's day is already fixed — there's nothing to schedule, so
@@ -186,6 +195,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   });
   const [collapsedGroups, setCollapsedGroups] = useState({ later: true });
   const [formatFilter, setFormatFilter] = useState('all'); // all | online | in_person
+  const [closedOpen, setClosedOpen] = useState(false); // cancelled/refunded fold, closed by default
 
   const registrations = [...rawRegistrations].sort((a, b) => {
     const aDate = a.appointment_date ? new Date(a.appointment_date) : null;
@@ -231,22 +241,29 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     ? registrations
     : registrations.filter(r => r.class_format === formatFilter);
 
+  // Split off cancelled/refunded rows: they keep their record but sit in a
+  // collapsed section at the bottom rather than cluttering the live timeline.
+  const active = visible.filter(r => !isClosedReg(r));
+  const closed = visible
+    .filter(isClosedReg)
+    .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+
   // Surface the just-signed-up / not-yet-scheduled sign-ups: pull the
   // "Unscheduled" bucket to the very top and dress it as an action callout,
   // then the timeline (This Week → This Month → Later) follows beneath it.
-  const timeGroups = groupByTime(visible, effectiveDate);
+  const timeGroups = groupByTime(active, effectiveDate);
   const orderedGroups = [
     ...timeGroups.filter(g => g.key === 'unscheduled'),
     ...timeGroups.filter(g => g.key !== 'unscheduled'),
   ];
-  const unscheduledCount = visible.filter(r => !effectiveDate(r)).length;
-  const weekCount = visible.filter(r => { const d = daysUntil(effectiveDate(r)); return d >= 0 && d <= 7; }).length;
+  const unscheduledCount = active.filter(r => !effectiveDate(r)).length;
+  const weekCount = active.filter(r => { const d = daysUntil(effectiveDate(r)); return d >= 0 && d <= 7; }).length;
   const countOf = (f) => registrations.filter(r => r.class_format === f).length;
 
   // Just signed up: registrations created in the last 24 hrs, newest first. Shown
   // as a callout at the very top so a fresh sign-up is impossible to miss — even
   // when its class date lands deep in a collapsed group like "Later".
-  const recent = visible
+  const recent = active
     .filter(r => r.created_date && (Date.now() - new Date(r.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
@@ -257,7 +274,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
         {[
           { label: 'Needs Scheduling', value: unscheduledCount, accent: unscheduledCount > 0 },
           { label: 'This Week', value: weekCount },
-          { label: 'Total', value: visible.length },
+          { label: 'Total', value: active.length },
         ].map(s => (
           <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
             style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}` }}>
@@ -312,7 +329,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
         </div>
       )}
 
-      {visible.length === 0 && (
+      {active.length === 0 && closed.length === 0 && (
         <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
           No {formatFilter === 'online' ? 'online' : 'in-person'} sign-ups yet
         </p>
@@ -358,6 +375,39 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
           );
         })}
       </div>
+
+      {/* Cancelled & refunded — kept for the record (money trail, reporting,
+          client history) but tucked into a muted, collapsed-by-default fold so
+          they never crowd the live list. Cancelling or refunding already frees
+          the Wednesday, so nothing here is holding a date. */}
+      {closed.length > 0 && (
+        <div className="mt-8 pt-6" style={{ borderTop: `1px solid ${dm ? '#2a2a32' : '#EDEDF2'}` }}>
+          <button
+            type="button"
+            onClick={() => setClosedOpen(o => !o)}
+            className="flex items-center gap-2.5 mb-3 w-full"
+          >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dm ? '#52525b' : '#c4c4cc' }} />
+            <h3 className="font-serif text-[1.05rem]" style={{ color: dm ? '#8a8a93' : '#9a9aa3' }}>Cancelled &amp; refunded</h3>
+            <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dm ? '#2a2a32' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
+              {closed.length}
+            </span>
+            <span className="flex-1" />
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
+              className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${closedOpen ? '' : '-rotate-90'}`}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <Collapse open={closedOpen}>
+            <div className="flex flex-col gap-2 pb-1" style={{ opacity: 0.72 }}>
+              {closed.map(reg => (
+                <ClassRow key={reg.id} reg={reg} onSelect={onSelect} dm={dm} />
+              ))}
+            </div>
+          </Collapse>
+        </div>
+      )}
     </div>
   );
 }
