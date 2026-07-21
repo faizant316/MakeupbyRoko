@@ -1,8 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import {
   Users, Activity, Clock, RefreshCw,
-  Smartphone, FileText, BarChart2, ExternalLink, Zap, Monitor, Globe,
+  Smartphone, FileText, BarChart2, ExternalLink, Zap, Monitor, Globe, LineChart,
 } from 'lucide-react';
 
 const GA = 'https://analytics.google.com/analytics/web/#/p536969013';
@@ -10,6 +13,15 @@ const GA = 'https://analytics.google.com/analytics/web/#/p536969013';
 const fmt    = n  => n == null ? '--' : n >= 10000 ? `${(n / 1000).toFixed(0)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 const fmtDur = s  => !s ? '--' : s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`;
 const pct    = (a, b) => b ? `${Math.round(a / b * 100)}%` : '0%';
+
+// Each headline tile maps to one line the 30-day chart can draw. Tapping a tile
+// swaps the chart, mirroring the click-to-chart interaction on the Revenue tab.
+const TRAFFIC_METRICS = {
+  visitors: { title: 'Visitors per day',      key: 'visitors', color: '#3B82F6' },
+  sessions: { title: 'Sessions per day',      key: 'sessions', color: '#3B82F6' },
+  avgTime:  { title: 'Avg time on site / day', key: 'avgTime',  color: '#F59E0B', dur: true },
+  newUsers: { title: 'New visitors per day',  key: 'newUsers', color: '#D4A0B0' },
+};
 
 const CHANNEL_MAP = {
   'Organic Search':   { label: 'Google Search',    dot: '#4285F4', letter: 'G', desc: 'People who Googled "makeup artist" or your name and found you' },
@@ -76,14 +88,29 @@ function EmptyState({ icon: Icon, text, dm, compact }) {
   );
 }
 
-function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm }) {
+function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm, selectable, active, onClick }) {
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
   const mu = dm ? '#71717a' : '#999';
+  const pink = '#D4A0B0';
+
+  const border = active ? pink : bd;
+  const ring   = active ? '0 0 0 1px #D4A0B0, 0 8px 26px rgba(212,160,176,0.18)' : 'none';
+
   return (
-    <div className="flex flex-col gap-3 rounded-2xl p-5"
-      style={{ background: bg, border: `1px solid ${bd}` }}>
+    <div
+      role={selectable ? 'button' : undefined}
+      onClick={onClick}
+      className={`flex flex-col gap-3 rounded-2xl p-5 transition-all duration-200 ${selectable ? 'cursor-pointer' : ''}`}
+      style={{
+        background: active ? (dm ? 'rgba(212,160,176,0.07)' : '#fffafc') : bg,
+        border: `1px solid ${border}`,
+        boxShadow: ring,
+      }}
+      onMouseEnter={selectable ? e => { if (!active) e.currentTarget.style.borderColor = dm ? '#5a5a68' : '#D6C0C9'; } : undefined}
+      onMouseLeave={selectable ? e => { if (!active) e.currentTarget.style.borderColor = bd; } : undefined}
+    >
       <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
         style={{ background: `${accent}18` }}>
         <Icon size={18} color={accent} strokeWidth={1.6} />
@@ -96,6 +123,74 @@ function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm }) {
         <p className="text-[0.78rem] font-semibold" style={{ color: tx }}>{label}</p>
         <p className="text-[0.64rem] mt-0.5 leading-snug" style={{ color: mu }}>{sub}</p>
       </div>
+      {selectable && (
+        <span className="text-[0.56rem] font-semibold tracking-[0.06em] uppercase transition-colors"
+          style={{ color: active ? pink : (dm ? '#52525b' : '#c7c7cf') }}>
+          {active ? '● Showing on chart' : 'Tap to chart'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// The 30-day trend for whichever traffic tile is selected. Falls back to a calm
+// "collecting data" panel when GA has nothing to plot yet (freshly-launched site).
+function TrafficTrend({ metric, daily, loading, dm }) {
+  const bg = dm ? '#26262e' : '#fff';
+  const bd = dm ? '#3a3a48' : '#E2E4EA';
+  const tx = dm ? '#e4e4e7' : '#111';
+  const mu = dm ? '#71717a' : '#999';
+  const grid = dm ? '#2e2e38' : '#EEEEF3';
+  const m = TRAFFIC_METRICS[metric] || TRAFFIC_METRICS.visitors;
+
+  const rows    = daily || [];
+  const hasData = rows.length >= 2 && rows.some(r => (r[m.key] || 0) > 0);
+  const yFmt    = m.dur ? (v => v === 0 ? '' : fmtDur(v)) : undefined;
+
+  return (
+    <div className="rounded-2xl p-5 sm:p-6 mt-3" style={{ background: bg, border: `1px solid ${bd}` }}>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="w-2 h-2 rounded-full" style={{ background: m.color }} />
+        <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase" style={{ color: mu }}>Last 30 days</p>
+      </div>
+      <p className="text-[1.05rem] font-bold mb-4 leading-tight" style={{ color: tx }}>{m.title}</p>
+
+      {loading ? (
+        <Skel dm={dm} h={220} className="w-full" />
+      ) : !hasData ? (
+        <div className="flex flex-col items-center text-center gap-1.5 py-12">
+          <LineChart size={22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#D9D9DF' }} />
+          <p className="text-[0.72rem] max-w-[280px] leading-relaxed" style={{ color: mu }}>
+            <span style={{ color: tx, fontWeight: 600 }}>No trend yet.</span> Once a few days of visits come in,
+            this chart fills in day by day.
+          </p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart data={rows} margin={{ top: 6, right: 8, left: m.dur ? 4 : -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`grad-${metric}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={m.color} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={m.color} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="2 4" stroke={grid} vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(rows.length / 6))} minTickGap={16} />
+            <YAxis allowDecimals={false} tickFormatter={yFmt} tick={{ fontSize: 10, fill: mu }} axisLine={false} tickLine={false} width={m.dur ? 44 : undefined} />
+            <Tooltip
+              cursor={{ stroke: m.color, strokeWidth: 1, strokeOpacity: 0.3 }}
+              contentStyle={{ background: bg, border: `1px solid ${bd}`, borderRadius: 12, fontSize: 12 }}
+              labelStyle={{ color: tx, fontWeight: 600, marginBottom: 2 }}
+              formatter={v => [m.dur ? fmtDur(v) : v, m.title.replace(' per day', '').replace(' / day', '')]}
+            />
+            <Area type="monotone" dataKey={m.key} stroke={m.color} strokeWidth={2.5}
+              fill={`url(#grad-${metric})`} dot={false} activeDot={{ r: 4, fill: m.color, strokeWidth: 0 }} />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
+      <p className="text-[0.62rem] mt-3 pt-3" style={{ color: mu, borderTop: `1px solid ${bd}` }}>
+        Tap any card above to switch what this chart shows.
+      </p>
     </div>
   );
 }
@@ -104,6 +199,7 @@ export default function AnalyticsTab({ darkMode: dm }) {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [err,     setErr]     = useState(null);
+  const [metric,  setMetric]  = useState('visitors'); // which tile drives the 30-day chart
 
   useEffect(() => {
     fetch('/api/admin/analytics')
@@ -169,15 +265,20 @@ export default function AnalyticsTab({ darkMode: dm }) {
         <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-red-500 flex-shrink-0">Live</span>
       </div>
 
-      {/* Audience Overview */}
+      {/* Audience Overview — tiles are tappable and drive the 30-day trend chart below */}
       <div>
-        <SectionHead label="Your visitors" desc="How many people came to the site in the last 30 days, and how they spent their time" dm={dm} />
+        <SectionHead label="Your visitors" desc="How many people came to the site in the last 30 days, and how they spent their time. Tap a card to chart it." dm={dm} />
         <div className="grid grid-cols-2 gap-3">
-          <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Unique people who visited"     loading={loading} dm={dm} />
-          <MetricCard icon={Activity}  accent="#3B82F6" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total visits (1 person can visit multiple times)" loading={loading} dm={dm} />
-          <MetricCard icon={Clock}     accent="#F59E0B" label="Avg Time"  value={fmtDur(ov?.avgSessionDuration)}                    sub="How long people stay per visit" loading={loading} dm={dm} />
-          <MetricCard icon={RefreshCw} accent="#D4A0B0" label="New Users" value={ov ? pct(ov.newUsers, ov.activeUsers) : '--'}      sub="First-time visitors this month" loading={loading} dm={dm} />
+          <MetricCard icon={Users}     accent="#3B82F6" label="Visitors"  value={fmt(ov?.activeUsers)}                              sub="Unique people who visited"     loading={loading} dm={dm}
+            selectable active={metric === 'visitors'} onClick={() => setMetric('visitors')} />
+          <MetricCard icon={Activity}  accent="#3B82F6" label="Sessions"  value={fmt(ov?.sessions)}                                 sub="Total visits (1 person can visit multiple times)" loading={loading} dm={dm}
+            selectable active={metric === 'sessions'} onClick={() => setMetric('sessions')} />
+          <MetricCard icon={Clock}     accent="#F59E0B" label="Avg Time"  value={fmtDur(ov?.avgSessionDuration)}                    sub="How long people stay per visit" loading={loading} dm={dm}
+            selectable active={metric === 'avgTime'} onClick={() => setMetric('avgTime')} />
+          <MetricCard icon={RefreshCw} accent="#D4A0B0" label="New Users" value={ov ? pct(ov.newUsers, ov.activeUsers) : '--'}      sub="First-time visitors this month" loading={loading} dm={dm}
+            selectable active={metric === 'newUsers'} onClick={() => setMetric('newUsers')} />
         </div>
+        <TrafficTrend metric={metric} daily={data?.daily} loading={loading} dm={dm} />
       </div>
 
       {/* Traffic sources */}

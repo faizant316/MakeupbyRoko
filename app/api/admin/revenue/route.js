@@ -20,21 +20,21 @@ function buildBuckets(range, now) {
     return Array.from({ length: 12 }, (_, i) => {
       const hour  = i * 2;
       const label = hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`;
-      return { key: `${todayStr}:${String(hour).padStart(2, '0')}`, shortLabel: label, revenue: 0, bookings: 0 };
+      return { key: `${todayStr}:${String(hour).padStart(2, '0')}`, shortLabel: label, revenue: 0, bookings: 0, signups: 0 };
     });
   }
   if (range === '7d') {
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (6 - i));
-      return { key: d.toISOString().split('T')[0], shortLabel: d.toLocaleString('default', { weekday: 'short' }), revenue: 0, bookings: 0 };
+      return { key: d.toISOString().split('T')[0], shortLabel: d.toLocaleString('default', { weekday: 'short' }), revenue: 0, bookings: 0, signups: 0 };
     });
   }
   if (range === '30d') {
     return Array.from({ length: 30 }, (_, i) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (29 - i));
-      return { key: d.toISOString().split('T')[0], shortLabel: String(d.getDate()), revenue: 0, bookings: 0 };
+      return { key: d.toISOString().split('T')[0], shortLabel: String(d.getDate()), revenue: 0, bookings: 0, signups: 0 };
     });
   }
   const count = range === '12m' ? 12 : 6;
@@ -43,7 +43,7 @@ function buildBuckets(range, now) {
     return {
       key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '00')}`,
       shortLabel: d.toLocaleString('default', { month: 'short' }),
-      revenue: 0, bookings: 0,
+      revenue: 0, bookings: 0, signups: 0,
     };
   });
 }
@@ -98,7 +98,7 @@ export async function GET(req) {
       if (mk === thisMonthKey) thisMonthRevenue += amount;
       if (mk === lastMonthKey) lastMonthRevenue += amount;
       const b = buckets.find(x => x.key === bk);
-      if (b) b.revenue += amount;
+      if (b) { b.revenue += amount; b.signups += 1; }
       const regClasses = classesOfReg(reg).filter(c => CLASS_CATALOG[c.key]);
       regClasses.forEach(c => {
         const ct = classByType.find(x => x.key === c.key);
