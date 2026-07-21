@@ -43,6 +43,12 @@ function getMinBookingDate() {
   return d;
 }
 
+// "2027-05-14" → "May 14, 2027". Parsed at local midnight so the date never
+// slips a day the way a bare `new Date('2027-05-14')` (UTC) does.
+const longDateStr = (ymd) => ymd
+  ? new Date(ymd + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  : '';
+
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
 
@@ -280,7 +286,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     instagram_handle: '', wedding_date: '', event_location: '', ready_location_type: undefined,
     event_start_time: '', photographer: '', hairstylist: '',
     bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
-    ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
+    ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined,
+    // Trial only. `wedding_date` above stores whatever she picked on the calendar,
+    // which for a trial is the trial date — so her real wedding date lives here.
+    trial_wedding_date: ''
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -418,6 +427,11 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
           isTrial
             ? `Preferred time: ${form.event_start_time || 'Flexible'}`
             : `Ready by: ${form.makeup_ready_by_time || 'Not specified'}`,
+          // Trials carry the bride's real wedding date in the notes too, so it
+          // shows on the admin card even if the inquiry row failed to save.
+          isTrial && form.trial_wedding_date
+            ? `Wedding: ${longDateStr(form.trial_wedding_date)}`
+            : null,
           form.additional_details?.trim() || null,
           `✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`,
         ].filter(Boolean).join(' | '),
@@ -481,6 +495,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         numPeopleGlam: glamSummary,
         outOfState: form.out_of_state,
         weddingDate: selectedDate,
+        trialWeddingDate: form.trial_wedding_date,
         additionalDetails: form.additional_details,
         howHeard: form.how_heard,
         contractSignedName: sig.name,
@@ -506,6 +521,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Instagram / TikTok', value: form.instagram_handle },
       { label: isTrial ? 'Location' : 'Getting ready', value: form.event_location },
       { label: 'Preferred time', value: isTrial ? form.event_start_time : '' },
+      { label: 'Wedding date', value: isTrial ? longDateStr(form.trial_wedding_date) : '' },
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
@@ -890,6 +906,22 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                     Your preferred start time for the trial. Roko confirms the final time and can move it with you if needed.
                   </p>
+                </div>
+
+                {/* Her actual wedding date. Optional, because plenty of brides
+                    trial before the date is locked — but when she does know it,
+                    it tells Roko how much runway there is (she recommends the
+                    trial 1 to 3 months out) and whether this bride still needs
+                    to book her wedding day. */}
+                <div>
+                  <label className={labelClass}>When Is Your Wedding?</label>
+                  <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Optional. Helps Roko plan how far ahead your trial sits. Skip it if your date isn't set yet.</p>
+                  <input
+                    type="date"
+                    value={form.trial_wedding_date}
+                    onChange={e => set('trial_wedding_date', e.target.value)}
+                    className={`${inputClass} ${form.trial_wedding_date ? 'text-[#111]' : 'text-gray-300'}`}
+                  />
                 </div>
 
                 <div className="w-full h-px bg-gray-100" />
