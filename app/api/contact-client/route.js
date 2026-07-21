@@ -20,8 +20,9 @@ export async function POST(req) {
     }
 
     let resignUrl = '';
+    let supabase = null;
     if (includeContract && bookingId) {
-      const supabase = createClient();
+      supabase = createClient();
       const { data: booking } = await supabase
         .from('bookings')
         .select('upload_token')
@@ -41,6 +42,19 @@ export async function POST(req) {
       subject,
       html: contactClientEmail({ firstName, message, serviceName, dateFormatted, time, resignUrl }),
     });
+
+    // Only stamp the request once the email is actually out the door — the card
+    // reads this to show "waiting on their signature", and a phantom pending
+    // state on an email that never sent would be worse than no state at all.
+    if (resignUrl && supabase) {
+      await supabase
+        .from('bookings')
+        .update({
+          contract_resign_requested_at: new Date().toISOString(),
+          contract_resign_requested_for: [dateFormatted, time].filter(Boolean).join(' · ') || null,
+        })
+        .eq('id', bookingId);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

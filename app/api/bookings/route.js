@@ -65,6 +65,12 @@ export async function POST(req) {
             contract_signed_at: body.contract_signed_at,
             contract_version: body.contract_version,
             contract_photo_consent: body.contract_photo_consent,
+            // The window this first signature covers. Often blank on bridal,
+            // where Roko sets the time later — that is accurate, not a gap.
+            contract_signed_for: [
+              data.date ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '',
+              data.time || '',
+            ].filter(Boolean).join(' · ') || null,
           })
           .eq('id', data.id)
           .select()
