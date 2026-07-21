@@ -949,7 +949,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
   `);
 }
 
-export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
+export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, trialWeddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
   // A trial is a studio appointment, so its one time field is the bride's
   // preferred time, not an "event start" — label it accordingly for Roko.
@@ -965,7 +965,11 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
 
   const eventRows = [
     row('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),
-    weddingDate ? row('Wedding Date', `<strong>${longDate(weddingDate)}</strong>`) : '',
+    // `weddingDate` is whatever the client picked on the calendar, which for a
+    // trial is the TRIAL date. Label it honestly, and show her real wedding date
+    // (the trial form's own optional question) on its own row underneath.
+    weddingDate ? row(isTrialPkg ? 'Trial Date' : 'Wedding Date', `<strong>${longDate(weddingDate)}</strong>`) : '',
+    isTrialPkg && trialWeddingDate ? row('Wedding Date', `<strong>${longDate(trialWeddingDate)}</strong>`) : '',
     eventLocation ? row('Location', eventLocation) : '',
     outOfState !== undefined ? row('Out of State', outOfState ? 'Yes — out of state' : 'No, local (CA)', outOfState ? '#C4849A' : '#111111') : '',
     numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : '',
