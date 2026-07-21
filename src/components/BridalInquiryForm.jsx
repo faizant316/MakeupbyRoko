@@ -373,6 +373,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       if (form.ready_location_type === 'elsewhere' && !form.event_location) { alert('Please add the address or venue where you\'ll be getting ready.'); return; }
     }
     if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
+    // Both are Yes/No booleans that start undefined, so "unanswered" is == null
+    // rather than falsy — a deliberate "No" is false and must pass.
+    if (form.bridal_party_glam == null) { alert('Please let Roko know if your bridal party needs glam too.'); return; }
+    if (form.out_of_state == null) { alert('Please let Roko know if this is an out-of-state event.'); return; }
     goStep('sign');
   };
 
@@ -1030,7 +1034,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             </div>
 
             <div>
-              <label className={labelClass}>Does your bridal party need glam too?</label>
+              <label className={labelClass}>Does your bridal party need glam too? *</label>
               <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
               <div className="flex gap-3 mt-1">
                 {['No', 'Yes'].map(opt => {
@@ -1101,7 +1105,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             <div className="w-full h-px bg-gray-100" />
 
             <div>
-              <label className={labelClass}>Is this an out-of-state event?</label>
+              <label className={labelClass}>Is this an out-of-state event? *</label>
               <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
               <div className="flex gap-3 mt-1">
                 {['No', 'Yes'].map(opt => (
