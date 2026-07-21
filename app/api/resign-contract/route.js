@@ -29,15 +29,38 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Invalid link' }, { status: 404 });
     }
 
-    // Record the new signature only — the booking's status is deliberately left
+    // Push the signature being replaced into the history before overwriting it,
+    // so the card can show the whole chain ("original signed 8:00, re-signed
+    // 8:04") instead of silently losing what the client agreed to first.
+    // contract_signed_for was captured when THAT signature was taken, so the
+    // archived entry keeps the window it actually covered, not today's.
+    const history = Array.isArray(booking.contract_signature_history) ? booking.contract_signature_history : [];
+    const nextHistory = booking.contract_signed_at
+      ? [...history, {
+          name: booking.contract_signed_name || null,
+          signed_at: booking.contract_signed_at,
+          photo_consent: booking.contract_photo_consent ?? null,
+          version: booking.contract_version || null,
+          signed_for: booking.contract_signed_for || null,
+        }]
+      : history;
+
+    // Record the new signature — the booking's status is deliberately left
     // untouched so a confirmed booking stays confirmed through the re-sign.
     const { error: updErr } = await supabase
       .from('bookings')
       .update({
+        contract_signed: true,
         contract_signed_name: name,
         contract_signed_at: signedAt || new Date().toISOString(),
         contract_photo_consent: photoConsent === true,
         contract_version: version || CONTRACT_VERSION,
+        // What this signature covers, so the next re-sign can archive it accurately.
+        contract_signed_for: [
+          booking.date ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '',
+          booking.time || '',
+        ].filter(Boolean).join(' · ') || null,
+        contract_signature_history: nextHistory,
       })
       .eq('id', booking.id);
     if (updErr) throw updErr;

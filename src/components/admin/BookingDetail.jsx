@@ -268,6 +268,46 @@ function BField({ label, value, dm, accent = false, href }) {
   );
 }
 
+// Every signature the client has given on this booking, oldest first, on a
+// numbered rail. Roko's question when a time changes is "did they actually
+// re-sign, and when?" — so each row leads with the timestamp and says what
+// window that signature covered. `superseded` marks the last row as the one
+// currently on file but already replaced by an unsigned request.
+function SignatureChain({ chain, dm, fmt, superseded = false }) {
+  if (!chain?.length) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {chain.map((sig, i) => {
+        const isLast = i === chain.length - 1;
+        const current = isLast && !superseded;
+        const label = current ? 'Current' : i === 0 ? 'Original' : `Revision ${i}`;
+        return (
+          <div key={`${sig.signed_at}-${i}`} className="flex items-start gap-2.5">
+            <span className="mt-[1px] w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[0.55rem] font-bold"
+              style={current
+                ? { background: '#22c55e', color: '#fff' }
+                : { background: dm ? '#3a3a48' : '#E8E2DC', color: dm ? '#a1a1aa' : '#8A7A80' }}>
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.72rem] font-medium leading-snug" style={{ color: dm ? '#e4e4e7' : '#1E1E27' }}>
+                {fmt(sig.signed_at)}
+                <span className="ml-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.06em]"
+                  style={{ color: current ? (dm ? '#86efac' : '#16a34a') : (dm ? '#71717a' : '#A89098') }}>
+                  {label}
+                </span>
+              </p>
+              <p className="text-[0.66rem] leading-snug mt-0.5" style={{ color: dm ? '#8f8a93' : '#8A7A80' }}>
+                Signed by {sig.name || 'client'}{sig.signed_for ? ` · covers ${sig.signed_for}` : ''}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const CONSULT_COLOR = CONSULT_INK.light;
 const CONSULT_DM = CONSULT_INK.dark;
 const CONSULT_BG = 'rgba(107,90,147,0.09)';
@@ -1484,9 +1524,34 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
   // Signed service agreement (contract) shown on the booking.
   const contractOverrides = useContractOverrides();
-  const contractSignedAt = booking.contract_signed_at
-    ? new Date(booking.contract_signed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-    : null;
+  const fmtSignedAt = (iso) => (iso
+    ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : null);
+  const contractSignedAt = fmtSignedAt(booking.contract_signed_at);
+  const resignRequestedAt = fmtSignedAt(booking.contract_resign_requested_at);
+
+  // A re-sign is outstanding when the request is newer than the signature on
+  // file. Derived rather than a stored flag, so a second request re-opens the
+  // waiting state on its own and nothing can get stuck showing "signed".
+  // updateNoticeSent flips it the instant she hits send, before the row is
+  // refetched, so the panel reacts immediately instead of a beat later.
+  const awaitingResign = updateNoticeSent || (!!booking.contract_resign_requested_at
+    && (!booking.contract_signed_at
+      || new Date(booking.contract_resign_requested_at) > new Date(booking.contract_signed_at)));
+
+  // Every signature oldest-first, with the one on file last, so the panel can
+  // lay out the whole chain (original → re-signed) with real timestamps.
+  const signatureChain = [
+    ...(Array.isArray(booking.contract_signature_history) ? booking.contract_signature_history : []),
+    ...(booking.contract_signed_at ? [{
+      name: booking.contract_signed_name,
+      signed_at: booking.contract_signed_at,
+      photo_consent: booking.contract_photo_consent,
+      version: booking.contract_version,
+      signed_for: booking.contract_signed_for,
+    }] : []),
+  ];
+  const hasResignHistory = signatureChain.length > 1;
 
   // Re-render the signed agreement in a print window (Save as PDF). Rebuilds the
   // contract from the booking so it always matches the signed version + terms.
@@ -1802,9 +1867,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         )}
 
         {/* Update-sent indicator — the booking stays confirmed the whole time.
-            The fresh signature appears in the Service Agreement panel once the
-            client re-signs; no bounce back to pending. */}
-        {updateNoticeSent && !showCompose && (
+            Driven by awaitingResign so it survives a refresh: before, this was
+            local-only state and the waiting phase vanished on reload. The fresh
+            signature appears in the Service Agreement panel once the client
+            re-signs; no bounce back to pending. */}
+        {awaitingResign && !showCompose && (
           <div className="mb-6 flex items-start gap-2.5 px-4 py-3 rounded-[8px]"
             style={{ background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.28)' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0 mt-0.5">
@@ -2382,28 +2449,77 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         {(
           <div className="mb-6">
             <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Service Agreement</p>
-            {booking.contract_signed ? (
-              <div className="rounded-[6px] p-4" style={{ background: dm ? 'rgba(59,130,246,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.25)'}` }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#22c55e' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+            {awaitingResign ? (
+              /* A new agreement went out and the client hasn't signed it yet.
+                 Amber, not green: what's on file no longer matches the booking,
+                 and that gap is the whole thing Roko needs to see. */
+              <div className="rounded-[6px] overflow-hidden" style={{ background: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', border: `1px solid ${dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9'}` }}>
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#F59E0B' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                    </div>
+                    <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#F5B83C' : '#A9660B' }}>New agreement sent, waiting on signature</span>
                   </div>
-                  <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#60A5FA' : '#15803d' }}>Signed</span>
-                  <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#71717a' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
+                  <p className="text-[0.72rem] leading-[1.6] mb-3" style={{ color: dm ? '#d4b483' : '#8A6520' }}>
+                    {firstName} was emailed a Review &amp; Sign link{booking.contract_resign_requested_for ? <> for <strong>{booking.contract_resign_requested_for}</strong></> : ''}. The booking stays as it is until they sign, and this turns green the moment they do.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <BField dm={dm} label="Sent" value={resignRequestedAt} />
+                    <BField dm={dm} label="Signed So Far" value={signatureChain.length ? `${signatureChain.length} ${signatureChain.length === 1 ? 'signature' : 'signatures'}` : 'None yet'} />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <BField dm={dm} label="Signed By" value={booking.contract_signed_name} />
-                  <BField dm={dm} label="Signed On" value={contractSignedAt} />
-                  <BField dm={dm} label="Photo Permission"
-                    value={booking.contract_photo_consent === true ? 'Yes — may post' : booking.contract_photo_consent === false ? 'No — keep private' : null}
-                    accent={booking.contract_photo_consent === false} />
+                {/* What's still legally on file while we wait. */}
+                {signatureChain.length > 0 && (
+                  <div className="px-4 py-3" style={{ borderTop: `1px solid ${dm ? 'rgba(245,158,11,0.2)' : '#F0E3C9'}`, background: dm ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.6)' }}>
+                    <p className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>On file until they sign</p>
+                    <SignatureChain chain={signatureChain} dm={dm} fmt={fmtSignedAt} superseded />
+                    <button onClick={printAgreement}
+                      className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
+                      style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      View / Print Agreement (Save as PDF)
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : booking.contract_signed ? (
+              <div className="rounded-[6px] overflow-hidden" style={{ background: dm ? 'rgba(59,130,246,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.25)'}` }}>
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#22c55e' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#60A5FA' : '#15803d' }}>{hasResignHistory ? 'Re-signed' : 'Signed'}</span>
+                    <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#71717a' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
+                  </div>
+                  {hasResignHistory && (
+                    <p className="text-[0.72rem] leading-[1.6] mb-3" style={{ color: dm ? '#93b4f5' : '#2563EB' }}>
+                      The agreement below is the current one. {firstName} signed {signatureChain.length} times as the details changed, all of them are kept.
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <BField dm={dm} label="Signed By" value={booking.contract_signed_name} />
+                    <BField dm={dm} label={hasResignHistory ? 'Re-signed On' : 'Signed On'} value={contractSignedAt} />
+                    <BField dm={dm} label="Covers" value={booking.contract_signed_for} />
+                    <BField dm={dm} label="Photo Permission"
+                      value={booking.contract_photo_consent === true ? 'Yes — may post' : booking.contract_photo_consent === false ? 'No — keep private' : null}
+                      accent={booking.contract_photo_consent === false} />
+                  </div>
+                  <button onClick={printAgreement}
+                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
+                    style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    View / Print Agreement (Save as PDF)
+                  </button>
                 </div>
-                <button onClick={printAgreement}
-                  className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
-                  style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  View / Print Agreement (Save as PDF)
-                </button>
+                {/* The paper trail, only worth the space once there's more than one. */}
+                {hasResignHistory && (
+                  <div className="px-4 py-3" style={{ borderTop: `1px solid ${dm ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.18)'}`, background: dm ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.6)' }}>
+                    <p className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Signature history</p>
+                    <SignatureChain chain={signatureChain} dm={dm} fmt={fmtSignedAt} />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="rounded-[6px] p-4 flex items-center gap-2.5" style={{ background: dm ? '#27272a' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
