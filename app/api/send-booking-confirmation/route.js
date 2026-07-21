@@ -80,13 +80,18 @@ export async function POST(req) {
         })
       : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection });
 
+    // Every subject carries the date. Gmail threads messages that share a
+    // subject line and then hides the repeated part of the body behind a "..."
+    // expander — which was swallowing the deposit box, since two inquiries for
+    // the same package used to arrive under a byte-identical subject. The date
+    // keeps each booking in its own conversation.
     const clientSubject = isBridal
-      ? `Bridal Inquiry Received — ${bridalTitle} ✦`
-      : `Booking Request Received — ${serviceName}`;
+      ? `Bridal Inquiry Received · ${bridalTitle} · ${bridalDateFormatted} ✦`
+      : `Booking Request Received · ${serviceName} · ${dateFormatted}`;
 
     const adminSubject = isBridal
-      ? `New Bridal Inquiry — ${firstName} (${bridalTitle})`
-      : `New Booking — ${firstName} · ${serviceName} · ${dateFormatted}`;
+      ? `New Bridal Inquiry · ${firstName} (${bridalTitle}) · ${bridalDateFormatted}`
+      : `New Booking · ${firstName} · ${serviceName} · ${dateFormatted}`;
 
     const adminHtml = isBridal
       ? adminBridalEmail({

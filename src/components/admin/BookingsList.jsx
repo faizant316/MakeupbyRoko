@@ -451,15 +451,12 @@ export default function BookingsList({
           <button
             onClick={() => toggleRail('deposit')}
             aria-expanded={showZellePanel}
-            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
-            style={{
-              background: dm ? '#26262e' : '#fff',
-              border: `1px solid ${tone.line}`,
-              borderLeft: `3px solid ${tone.key}`,
-              boxShadow: dm ? 'none' : '0 1px 3px rgba(30,64,175,0.05), 0 4px 14px rgba(30,64,175,0.05)',
-            }}
+            className="w-full flex items-center gap-2.5 px-2 py-2 -mx-2 rounded-[12px] text-left transition-colors"
+            style={{ background: 'transparent' }}
+            onMouseEnter={e => e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.045)' : 'rgba(30,64,175,0.045)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            <span className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[1.05rem] font-medium tabular-nums"
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[0.8rem] font-semibold tabular-nums"
               style={{ background: tone.bg, color: tone.fg }}>
               {pendingZelleReviews.length}
             </span>
@@ -583,20 +580,19 @@ export default function BookingsList({
 
       {/* Just Booked — appointments only, last 24 hrs */}
       {recentBookings.length > 0 && (
-        <div className="mb-7 relative">
+        <div className="mb-5 relative">
           <button
             onClick={() => toggleRail('recent')}
             aria-expanded={showRecentPanel}
-            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-[14px] text-left transition-colors"
-            style={{
-              background: dm ? '#1e1e24' : '#fff',
-              border: `1px solid ${dm ? '#3a3a48' : '#ece5e9'}`,
-            }}
+            className="w-full flex items-center gap-2.5 px-2 py-2 -mx-2 rounded-[12px] text-left transition-colors"
+            style={{ background: 'transparent' }}
+            onMouseEnter={e => e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.045)' : 'rgba(196,132,154,0.06)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             {/* The count is the whole signal. The old version stacked a gradient
                 card, a gradient icon tile, a sparkle glyph and an infinite ping
                 for what is usually one booking. */}
-            <span className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 text-[1.05rem] font-medium tabular-nums"
+            <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[0.8rem] font-semibold tabular-nums"
               style={{ background: dm ? 'rgba(224,91,127,0.16)' : '#FBEEF3', color: '#C4849A' }}>
               {recentBookings.length}
             </span>
