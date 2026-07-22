@@ -11,11 +11,11 @@ export async function POST(req) {
   const { authError } = await requireAdmin();
   if (authError) return authError;
   try {
-    const { to, name, service, date } = await req.json();
+    const { to, name, service, date, reason } = await req.json();
     await sendEmail({
       to,
       subject: `Your ${service} booking has been cancelled`,
-      html: bookingCancelledEmail({ name, service, date }),
+      html: bookingCancelledEmail({ name, service, date, reason }),
     });
     return NextResponse.json({ success: true });
   } catch (err) {

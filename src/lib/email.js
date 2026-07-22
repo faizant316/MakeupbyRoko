@@ -592,13 +592,20 @@ export function adminContractResignedEmail({ name, service, date, time, signedNa
   `);
 }
 
-export function bookingCancelledEmail({ name, service, date }) {
+export function bookingCancelledEmail({ name, service, date, reason }) {
+  // Roko types this in the admin cancel dialog. Escape it so a stray < & > can't
+  // break the email markup, and keep any line breaks she added.
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const reasonText = (reason && reason.trim())
+    ? esc(reason.trim()).replace(/\n/g, '<br>')
+    : "Unfortunately, this didn't work out with Roko's schedule.";
   return clientShell({
-    preheader: `Your ${service} appointment has been cancelled.`,
+    preheader: `An update about your ${service} appointment.`,
     content: `
       ${clientHero({ eyebrow: 'Booking Update', title: 'Booking', titleAccent: 'Cancelled' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${name}</strong>, your <strong style="color:#16110F;">${service}</strong> appointment on <strong style="color:#16110F;">${date}</strong> has been cancelled.`)}
-      ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">If you'd like to rebook, visit <a href="${SITE_URL}" style="color:#C4849A;text-decoration:none;font-weight:600;">makeupbyroko.org</a> or reach out anytime.</p>`)}
+      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I'm so sorry, but your <strong style="color:#16110F;">${service}</strong> appointment on <strong style="color:#16110F;">${date}</strong> has to be cancelled.`)}
+      ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${reasonText}</p>`)}
+      ${cintro(`I'd genuinely love to still make it work another time. You can rebook anytime below, or just reply to this email.`)}
       <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
     `,
   });
