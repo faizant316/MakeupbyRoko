@@ -3,6 +3,7 @@ import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, timeToMinutes } from './timeline';
+import AllAppointmentsModal from './AllAppointmentsModal';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -242,7 +243,10 @@ export default function BookingsList({
   const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
-  const [collapsedGroups, setCollapsedGroups] = useState({ later: true }); // far-future folded by default
+  // On load only "This Week" (and urgent Past Due) is open — "This Month" and
+  // "Later" start folded so the list lands clean; Roko can open them herself.
+  const [collapsedGroups, setCollapsedGroups] = useState({ month: true, later: true });
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
 
   // Deposits that landed and haven't been looked at. Opening the client card
   // is what clears one, so this empties itself as she works and never needs a
@@ -271,7 +275,7 @@ export default function BookingsList({
   // every group so those bookings show right away (no hunting under "Later");
   // clearing it restores the default of folding "Later" away.
   useEffect(() => {
-    setCollapsedGroups(effectiveMonth ? {} : { later: true });
+    setCollapsedGroups(effectiveMonth ? {} : { month: true, later: true });
   }, [effectiveMonth]);
 
   // Recent bookings: created within the last 24 hours (uses allBookings, unfiltered).
@@ -406,6 +410,23 @@ export default function BookingsList({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* View all — opens the full-screen month calendar with every
+              appointment laid out in its day. Subtle ghost button so it sits
+              quietly next to the primary actions. */}
+          {!selectMode && (
+            <button
+              onClick={() => setShowAllAppointments(true)}
+              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap"
+              style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}
+              onMouseEnter={e => { e.currentTarget.style.background = dm ? '#26262e' : '#F7F7FA'; e.currentTarget.style.color = dm ? '#d4d4d8' : '#4b4b53'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#6b6b73'; }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" />
+              </svg>
+              View all
+            </button>
+          )}
           {/* Select toggle — appointments only, when there's something to pick */}
           {viewType === 'appointments' && (activeBookings.length > 0 || completedBookings.length > 0) && (
             <button
@@ -1358,6 +1379,18 @@ export default function BookingsList({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full-screen "all appointments" calendar */}
+      {showAllAppointments && (
+        <AllAppointmentsModal
+          allBookings={allBookings}
+          classRegs={classRegs}
+          darkMode={dm}
+          onSelect={onSelect}
+          onSelectClassReg={onSelectClassReg}
+          onClose={() => setShowAllAppointments(false)}
+        />
       )}
     </div>
   );
