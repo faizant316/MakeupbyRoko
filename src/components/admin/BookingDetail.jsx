@@ -1054,6 +1054,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [pendingStatus, setPendingStatus] = useState(null);
   const [cancelReason, setCancelReason] = useState(DEFAULT_CANCEL_REASON);
   const [reasonFocus, setReasonFocus] = useState(false);
+  const [includeReason, setIncludeReason] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pendingWindow, setPendingWindow] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
@@ -1371,8 +1372,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setTimeout(() => { if (consultRef.current) lenisScrollTo(consultRef.current, { offset: -80 }); }, 60);
       return;
     }
-    // Reset the reason to the friendly default each time the cancel dialog opens.
-    if (s === 'cancelled') setCancelReason(DEFAULT_CANCEL_REASON);
+    // Reset the reason (default text, toggle on) each time the cancel dialog opens.
+    if (s === 'cancelled') { setCancelReason(DEFAULT_CANCEL_REASON); setIncludeReason(true); }
     setPendingStatus(s);
   };
 
@@ -1399,7 +1400,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     } else if (s === 'cancelled') {
       showToast('Appointment cancelled', '#ef4444');
       if (booking.email) {
-        const reason = (cancelReason || '').trim() || DEFAULT_CANCEL_REASON;
+        // Reason is optional: toggle off sends none (email stays warm, no reason
+        // line); toggle on falls back to the friendly default if she cleared it.
+        const reason = includeReason ? ((cancelReason || '').trim() || DEFAULT_CANCEL_REASON) : '';
         fetch('/api/on-booking-cancelled', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2940,12 +2943,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
       {/* Status change confirmation */}
       {pendingStatus && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: dm ? 'rgba(10,8,10,0.6)' : 'rgba(30,18,22,0.42)', backdropFilter: 'blur(7px)' }}>
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: dm ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)', backdropFilter: 'blur(7px)' }}>
           <div className="rounded-[26px] p-8 max-w-[380px] w-full text-center"
             style={{
               background: dm ? '#26262b' : '#fff',
-              border: `1px solid ${dm ? '#3a3a42' : '#F1E8EB'}`,
-              boxShadow: dm ? '0 26px 64px rgba(0,0,0,0.55)' : '0 26px 64px rgba(70,34,46,0.16)',
+              border: `1px solid ${dm ? '#3a3a42' : '#ededf0'}`,
+              boxShadow: dm ? '0 26px 64px rgba(0,0,0,0.55)' : '0 26px 64px rgba(0,0,0,0.14)',
               animation: 'fadeSlideDown 0.25s ease-out',
             }}>
             {(() => {
@@ -2966,35 +2969,57 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <p className="text-[0.82rem] leading-relaxed mb-6 mx-auto max-w-[300px]" style={{ color: dm ? '#8f8f99' : '#9a8d92' }}>
                     {isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
                      : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
-                     : statusKey === 'cancelled' ? "A cancellation email will be sent to the client, including the note below so it doesn't feel abrupt."
+                     : statusKey === 'cancelled' ? 'A cancellation email will be sent to the client. Add an optional reason below.'
                      : statusKey === 'completed' ? 'This will archive the appointment as complete.'
                      : 'This will update the appointment status.'}
                   </p>
                   {statusKey === 'cancelled' && (
                     <div className="text-left mb-6">
-                      <label className="block text-[0.7rem] font-semibold mb-2"
-                        style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
-                        REASON FOR THE CLIENT
-                      </label>
-                      <textarea
-                        value={cancelReason}
-                        onChange={(e) => setCancelReason(e.target.value)}
-                        onFocus={() => setReasonFocus(true)}
-                        onBlur={() => setReasonFocus(false)}
-                        rows={3}
-                        placeholder={DEFAULT_CANCEL_REASON}
-                        className="w-full text-[0.85rem] leading-relaxed rounded-[16px] px-3.5 py-3 resize-none outline-none"
-                        style={{
-                          background: dm ? '#1f1f24' : '#FBF7F8',
-                          color: dm ? '#e8e8ec' : '#3a3238',
-                          border: `1px solid ${reasonFocus ? (dm ? '#C4849A' : '#D4A0B0') : (dm ? '#3a3a42' : '#ECE0E4')}`,
-                          boxShadow: reasonFocus ? `0 0 0 3px ${dm ? 'rgba(196,132,154,0.16)' : 'rgba(212,160,176,0.16)'}` : 'none',
-                          transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
-                        }}
-                      />
-                      <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#71717a' : '#b3a6ab' }}>
-                        This appears in their email. Edit it, or leave it as is.
-                      </p>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div>
+                          <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
+                            REASON FOR THE CLIENT
+                          </p>
+                          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#b3a6ab' }}>
+                            {includeReason ? 'Optional. On, added to their email.' : 'Optional. Off, no reason sent.'}
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => setIncludeReason(v => !v)}
+                          aria-pressed={includeReason}
+                          className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
+                          style={{ background: includeReason ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
+                          <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
+                            style={{ background: '#fff', transform: includeReason ? 'translateX(20px)' : 'translateX(0px)' }} />
+                        </button>
+                      </div>
+                      {includeReason ? (
+                        <>
+                          <textarea
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            onFocus={() => setReasonFocus(true)}
+                            onBlur={() => setReasonFocus(false)}
+                            rows={3}
+                            placeholder={DEFAULT_CANCEL_REASON}
+                            className="w-full text-[0.85rem] leading-relaxed rounded-[16px] px-3.5 py-3 resize-none outline-none"
+                            style={{
+                              background: dm ? '#1f1f24' : '#FBF7F8',
+                              color: dm ? '#e8e8ec' : '#3a3238',
+                              border: `1px solid ${reasonFocus ? (dm ? '#C4849A' : '#D4A0B0') : (dm ? '#3a3a42' : '#ECE0E4')}`,
+                              boxShadow: reasonFocus ? `0 0 0 3px ${dm ? 'rgba(196,132,154,0.16)' : 'rgba(212,160,176,0.16)'}` : 'none',
+                              transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
+                            }}
+                          />
+                          <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#71717a' : '#b3a6ab' }}>
+                            This appears in their email. Edit it, or leave it as is.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[0.75rem] leading-snug rounded-[16px] px-3.5 py-3"
+                          style={{ background: dm ? '#1f1f24' : '#FBF7F8', border: `1px dashed ${dm ? '#3a3a42' : '#ECE0E4'}`, color: dm ? '#8f8f99' : '#a99ca1' }}>
+                          No reason will be included. The email still reads warmly, just without a specific reason.
+                        </p>
+                      )}
                     </div>
                   )}
                   <div className="flex gap-3 justify-center">
