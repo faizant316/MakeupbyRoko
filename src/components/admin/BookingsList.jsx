@@ -416,15 +416,17 @@ export default function BookingsList({
           {!selectMode && (
             <button
               onClick={() => setShowAllAppointments(true)}
-              className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap"
+              aria-label="View all appointments"
+              title="View all appointments"
+              className="flex flex-shrink-0 items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap active:scale-95"
               style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}
               onMouseEnter={e => { e.currentTarget.style.background = dm ? '#26262e' : '#F7F7FA'; e.currentTarget.style.color = dm ? '#d4d4d8' : '#4b4b53'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#6b6b73'; }}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 sm:w-3.5 sm:h-3.5 flex-shrink-0">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" />
               </svg>
-              View all
+              <span className="hidden sm:inline">View all</span>
             </button>
           )}
           {/* Select toggle — appointments only, when there's something to pick */}

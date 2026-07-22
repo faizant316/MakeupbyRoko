@@ -251,6 +251,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Admin polish: every navigable surface (a client card, a switched tab) settles
+   in with one quiet fade-and-rise — the same motion the full-screen calendar
+   uses. No fill mode on purpose, so no transform lingers to trap position:fixed
+   children (the schedule drawer, floating buttons) once it's done. */
+.admin-enter { animation: fadeRiseIn 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+
 /* Category tab switch — content refresh cue. The results block is re-keyed on
    the active category, so each switch replays this rise-in plus a thin accent
    bar that sweeps across, confirming the tap even when the list looks the same. */
