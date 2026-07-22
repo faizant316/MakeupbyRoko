@@ -42,9 +42,16 @@ function TypewriterWord({ started }) {
           animation: tw-blink 0.9s step-end infinite;
         }
       `}</style>
-      <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>{text}</em>
-      <span className="tw-cursor" />
-      <span style={{ color: '#D4A0B0' }}>.</span>
+      <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+        {/* Ghost reserves the full width of the word so the phrase wraps as one
+            unit and never leaks the first couple letters onto the line above */}
+        <em aria-hidden="true" style={{ fontStyle: 'italic', visibility: 'hidden' }}>{WORDS[idx]}</em>
+        <span style={{ position: 'absolute', left: 0, top: 0, whiteSpace: 'nowrap' }}>
+          <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>{text}</em>
+          <span className="tw-cursor" />
+          <span style={{ color: '#D4A0B0' }}>.</span>
+        </span>
+      </span>
     </>
   );
 }
