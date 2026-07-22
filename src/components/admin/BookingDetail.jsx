@@ -160,6 +160,10 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
 
 const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 
+// Pre-fills the cancel dialog so even a one-click cancel reads warmly instead of
+// abruptly. Roko can edit or replace it; whatever's in the box goes to the email.
+const DEFAULT_CANCEL_REASON = "Unfortunately, this didn't work out with Roko's schedule.";
+
 function CopyableAddress({ address, dm }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
@@ -1034,6 +1038,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
+  const [cancelReason, setCancelReason] = useState(DEFAULT_CANCEL_REASON);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pendingWindow, setPendingWindow] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
@@ -1335,6 +1340,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setTimeout(() => { if (consultRef.current) lenisScrollTo(consultRef.current, { offset: -80 }); }, 60);
       return;
     }
+    // Reset the reason to the friendly default each time the cancel dialog opens.
+    if (s === 'cancelled') setCancelReason(DEFAULT_CANCEL_REASON);
     setPendingStatus(s);
   };
 
@@ -1361,10 +1368,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     } else if (s === 'cancelled') {
       showToast('Appointment cancelled', '#ef4444');
       if (booking.email) {
+        const reason = (cancelReason || '').trim() || DEFAULT_CANCEL_REASON;
         fetch('/api/on-booking-cancelled', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, name: booking.name?.split(' ')[0] || booking.name || 'there', service: booking.service, date: dateFormatted }),
+          body: JSON.stringify({ to: booking.email, name: booking.name?.split(' ')[0] || booking.name || 'there', service: booking.service, date: dateFormatted, reason }),
         }).catch(err => console.error('cancelled email error:', err));
       }
     }
@@ -2917,10 +2925,33 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>
                     {isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
                      : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
-                     : statusKey === 'cancelled' ? 'A cancellation email will be sent to the client.'
+                     : statusKey === 'cancelled' ? "A cancellation email will be sent to the client, including the note below so it doesn't feel abrupt."
                      : statusKey === 'completed' ? 'This will archive the appointment as complete.'
                      : 'This will update the appointment status.'}
                   </p>
+                  {statusKey === 'cancelled' && (
+                    <div className="text-left mb-6">
+                      <label className="block text-[0.68rem] font-semibold uppercase tracking-wide mb-1.5"
+                        style={{ color: dm ? '#a1a1aa' : '#888' }}>
+                        Reason for the client
+                      </label>
+                      <textarea
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        rows={3}
+                        placeholder={DEFAULT_CANCEL_REASON}
+                        className="w-full text-[0.82rem] leading-snug rounded-lg px-3 py-2.5 resize-none outline-none transition-all"
+                        style={{
+                          background: dm ? '#1f1f23' : '#faf7f8',
+                          color: dm ? '#e4e4e7' : '#333',
+                          border: `1px solid ${dm ? '#3f3f46' : '#e7dde0'}`,
+                        }}
+                      />
+                      <p className="text-[0.68rem] mt-1.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
+                        This appears in their email. Edit it, or leave it as is.
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-3 justify-center">
                     <button onClick={() => setPendingStatus(null)}
                       className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
