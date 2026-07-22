@@ -54,6 +54,27 @@ function PhotoCarousel({ photos, idx }) {
   );
 }
 
+// Subtle photographer watermark, shown only over the Full Day Service photo.
+// Loverzdo Weddings requires a visible credit + tag wherever their photo is used;
+// this keeps it low-key per Roko (small corner mark, matching text credit below).
+function PhotoWatermark({ style }) {
+  return (
+    <div className="absolute z-[12] pointer-events-none select-none" style={style}>
+      <span
+        style={{
+          fontSize: '0.6rem',
+          letterSpacing: '0.05em',
+          fontWeight: 500,
+          color: 'rgba(255,255,255,0.82)',
+          textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+        }}
+      >
+        @loverzdo
+      </span>
+    </div>
+  );
+}
+
 function MobileDots({ count, idx, onSet }) {
   if (count <= 1) return null;
   return (
@@ -315,6 +336,19 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           </ul>
         </div>
       )}
+      {svc.title === 'Full Day Service' && (
+        <p className="mt-4 text-[0.72rem] text-[#b9a7ae] leading-relaxed">
+          Photography by{' '}
+          <a
+            href="https://www.loverzdo.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-[#e4d3d9] underline-offset-2 hover:text-[#8a6c78] transition-colors"
+          >
+            Loverzdo Weddings
+          </a>
+        </p>
+      )}
     </>
   );
 
@@ -358,6 +392,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           {/* ── LEFT: full-height photo panel ── */}
           <div className="relative flex-none" style={{ width: '50%' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
+            {svc.title === 'Full Day Service' && <PhotoWatermark style={{ right: 12, bottom: 12 }} />}
 
             {/* Carousel arrows */}
             {photos.length > 1 && (
@@ -447,6 +482,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           {/* Photo strip */}
           <div className="absolute inset-x-0 top-0 z-0" style={{ height: '72vh' }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
+            {svc.title === 'Full Day Service' && <PhotoWatermark style={{ right: 14, bottom: 20 }} />}
           </div>
 
           {/* Dots — absolute at z-15, fade out as soon as user scrolls */}
