@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
-import { lenisScrollTo } from '@/lib/lenis';
+import { lenisScrollTo, lenisStop, lenisStart } from '@/lib/lenis';
 import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 import { buildContract } from '@/lib/contract';
@@ -1039,6 +1039,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [toastVisible, setToastVisible] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [cancelReason, setCancelReason] = useState(DEFAULT_CANCEL_REASON);
+  const [reasonFocus, setReasonFocus] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [pendingWindow, setPendingWindow] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
@@ -1329,6 +1330,22 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // email uses it to decide whether to print the studio address, which would
   // send a travel client to entirely the wrong place.
   const travels = /travel|✈/i.test(booking.notes || '');
+
+  // Lock the page behind the "are you sure?" dialog so the background can't
+  // scroll while it's open. overflow:hidden alone doesn't stop the wheel on the
+  // Lenis-driven site, so pause Lenis too — same pattern as the full modals.
+  useEffect(() => {
+    if (!pendingStatus) return;
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
+    document.body.style.overflow = 'hidden';
+    lenisStop();
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      lenisStart();
+    };
+  }, [pendingStatus]);
 
   const handleStatusChange = (s) => {
     if (booking.status === s) return;
@@ -2905,24 +2922,30 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
       {/* Status change confirmation */}
       {pendingStatus && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
-          <div className="rounded-[6px] shadow-2xl p-7 max-w-[340px] w-full text-center"
-            style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}`, animation: 'fadeSlideDown 0.25s ease-out' }}>
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: dm ? 'rgba(10,8,10,0.6)' : 'rgba(30,18,22,0.42)', backdropFilter: 'blur(7px)' }}>
+          <div className="rounded-[26px] p-8 max-w-[380px] w-full text-center"
+            style={{
+              background: dm ? '#26262b' : '#fff',
+              border: `1px solid ${dm ? '#3a3a42' : '#F1E8EB'}`,
+              boxShadow: dm ? '0 26px 64px rgba(0,0,0,0.55)' : '0 26px 64px rgba(70,34,46,0.16)',
+              animation: 'fadeSlideDown 0.25s ease-out',
+            }}>
             {(() => {
               const isReconfirm = pendingStatus === 'reconfirm';
               const statusKey = isReconfirm ? 'confirmed' : pendingStatus;
+              const accent = STATUS_COLORS[statusKey];
               return (
                 <>
-                  <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
-                    style={{ background: STATUS_COLORS[statusKey] + '22', border: `1.5px solid ${STATUS_COLORS[statusKey]}44` }}>
-                    <span style={{ color: STATUS_COLORS[statusKey], fontSize: '16px', fontWeight: 700 }}>
-                      {statusKey === 'cancelled' ? '✕' : statusKey === 'completed' ? '✓' : '✓'}
+                  <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
+                    style={{ background: accent + '1f', border: `1.5px solid ${accent}3d` }}>
+                    <span style={{ color: accent, fontSize: '18px', fontWeight: 700, lineHeight: 1 }}>
+                      {statusKey === 'cancelled' ? '✕' : '✓'}
                     </span>
                   </div>
-                  <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+                  <p className="text-[1.18rem] font-serif mb-2" style={{ color: dm ? '#ececf0' : '#1b1519' }}>
                     {isReconfirm ? 'Reconfirm appointment?' : statusKey === 'cancelled' ? 'Cancel this appointment?' : `Mark as ${statusKey}?`}
                   </p>
-                  <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>
+                  <p className="text-[0.82rem] leading-relaxed mb-6 mx-auto max-w-[300px]" style={{ color: dm ? '#8f8f99' : '#9a8d92' }}>
                     {isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
                      : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
                      : statusKey === 'cancelled' ? "A cancellation email will be sent to the client, including the note below so it doesn't feel abrupt."
@@ -2931,36 +2954,40 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   </p>
                   {statusKey === 'cancelled' && (
                     <div className="text-left mb-6">
-                      <label className="block text-[0.68rem] font-semibold uppercase tracking-wide mb-1.5"
-                        style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                        Reason for the client
+                      <label className="block text-[0.7rem] font-semibold mb-2"
+                        style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
+                        REASON FOR THE CLIENT
                       </label>
                       <textarea
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
+                        onFocus={() => setReasonFocus(true)}
+                        onBlur={() => setReasonFocus(false)}
                         rows={3}
                         placeholder={DEFAULT_CANCEL_REASON}
-                        className="w-full text-[0.82rem] leading-snug rounded-lg px-3 py-2.5 resize-none outline-none transition-all"
+                        className="w-full text-[0.85rem] leading-relaxed rounded-[16px] px-3.5 py-3 resize-none outline-none"
                         style={{
-                          background: dm ? '#1f1f23' : '#faf7f8',
-                          color: dm ? '#e4e4e7' : '#333',
-                          border: `1px solid ${dm ? '#3f3f46' : '#e7dde0'}`,
+                          background: dm ? '#1f1f24' : '#FBF7F8',
+                          color: dm ? '#e8e8ec' : '#3a3238',
+                          border: `1px solid ${reasonFocus ? (dm ? '#C4849A' : '#D4A0B0') : (dm ? '#3a3a42' : '#ECE0E4')}`,
+                          boxShadow: reasonFocus ? `0 0 0 3px ${dm ? 'rgba(196,132,154,0.16)' : 'rgba(212,160,176,0.16)'}` : 'none',
+                          transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
                         }}
                       />
-                      <p className="text-[0.68rem] mt-1.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
+                      <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#71717a' : '#b3a6ab' }}>
                         This appears in their email. Edit it, or leave it as is.
                       </p>
                     </div>
                   )}
                   <div className="flex gap-3 justify-center">
                     <button onClick={() => setPendingStatus(null)}
-                      className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
-                      style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
+                      className="px-6 py-2.5 text-[0.8rem] font-medium rounded-full transition-all"
+                      style={{ color: dm ? '#a1a1aa' : '#8a8188', border: `1px solid ${dm ? '#3f3f46' : '#EAE2E5'}`, background: dm ? 'transparent' : '#fff' }}>
                       Never Mind
                     </button>
                     <button onClick={executeStatusChange}
-                      className="px-5 py-2 text-[0.75rem] font-semibold text-white rounded-lg transition-all"
-                      style={{ background: STATUS_COLORS[statusKey] }}>
+                      className="px-6 py-2.5 text-[0.8rem] font-semibold text-white rounded-full transition-all"
+                      style={{ background: accent, boxShadow: `0 8px 20px ${accent}40` }}>
                       {isReconfirm ? 'Yes, Reconfirm' : statusKey === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update'}
                     </button>
                   </div>
