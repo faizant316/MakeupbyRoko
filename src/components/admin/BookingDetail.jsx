@@ -948,7 +948,7 @@ function ApptRow({ b, isCurrent, last, dm }) {
   );
 }
 
-export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdateBooking, onDelete, allBookings, classRegs = [], darkMode: dm }) {
+export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdateBooking, onDelete, allBookings, classRegs = [], onSelectBooking, onSelectClassReg, darkMode: dm }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showClientPanel, setShowClientPanel] = useState(false);
@@ -999,6 +999,20 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         : (booking.date || scheduleDay)
     );
     setShowSchedule(true);
+  };
+  // Tapping an appointment inside the My Schedule drawer opens that client's
+  // card. We resolve the id back to the real stored booking so a ghosted draft
+  // block (dashed "new time" / "consultation" preview) never navigates to a
+  // half-real object — those aren't in allBookings, so they're simply ignored.
+  const openFromSchedule = (b) => {
+    const real = (allBookings || []).find(x => x.id === b?.id);
+    if (!real) return;
+    setShowSchedule(false);
+    onSelectBooking?.(real);
+  };
+  const openClassFromSchedule = (r) => {
+    setShowSchedule(false);
+    onSelectClassReg?.(r);
   };
   // Drag-to-resize drawer width, remembered across sessions.
   const [scheduleW, setScheduleW] = useState(() => {
@@ -1644,7 +1658,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     const raf = requestAnimationFrame(toTop);
     const t = setTimeout(toTop, 60); // after the new (shorter) content lays out
     return () => { cancelAnimationFrame(raf); clearTimeout(t); };
-  }, []);
+    // Re-run when switching straight to another client's card (e.g. from the My
+    // Schedule drawer) so the new card opens at the top, not mid-scroll.
+  }, [booking.id]);
 
   const handleSaveEdit = (data) => {
     // Capture material changes before the booking is overwritten, so the
@@ -2880,6 +2896,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             classRegs={classRegs}
             dateKey={scheduleDay}
             onChangeDate={setScheduleDay}
+            onSelectBooking={openFromSchedule}
+            onSelectClassReg={openClassFromSchedule}
             dm={dm}
             withViews
           />

@@ -553,6 +553,8 @@ export default function Admin() {
             onDelete={() => deleteBookingMutation.mutate(selectedBooking.id)}
             allBookings={bookings}
             classRegs={classRegs}
+            onSelectBooking={setSelectedBooking}
+            onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
             darkMode={dm}
           />
         )}
