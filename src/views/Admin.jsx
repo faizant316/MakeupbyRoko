@@ -460,6 +460,9 @@ export default function Admin() {
             </div>
           </div>
 
+        {/* Keyed so every navigation (open/close a card, switch tabs) replays
+            the same quiet fade-rise. The title above stays put for stability. */}
+        <div key={`${activeTab}:${selectedBooking?.id || ''}:${selectedClassReg?.id || ''}`} className="admin-enter">
         {activeTab === 'bookings' && !selectedBooking && (
           <>
             {/* Two columns on desktop: calendar + today + classes on the left,
@@ -606,6 +609,7 @@ export default function Admin() {
         {activeTab === 'reports' && (
           <ReportsTab darkMode={dm} />
         )}
+        </div> {/* /animated tab content */}
         </div> {/* /main content */}
       </div> {/* /flex row */}
     </div>
