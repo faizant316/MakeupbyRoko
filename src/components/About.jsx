@@ -129,7 +129,7 @@ export default function About() {
                 marginBottom: '1.5rem',
               }}
             >
-              Making every woman feel genuinely{' '}
+              Making every woman feel truly{' '}
               <TypewriterWord started={visible} />
             </h2>
 
