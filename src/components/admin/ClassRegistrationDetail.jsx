@@ -897,6 +897,21 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             Manually-added clients (no Stripe session) start out genuinely unpaid. */}
         <div className="mb-8">
           <SectionLabel>Payment</SectionLabel>
+          {/* The client cancelled this class themselves from their email link. */}
+          {reg.cancelled_by === 'client' && (
+            <div className="mb-3 rounded-xl p-3.5" style={{ background: dm ? 'rgba(220,38,38,0.10)' : '#FDECEC', border: `1px solid ${dm ? 'rgba(220,38,38,0.30)' : '#F6D2D2'}` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[0.8rem] font-bold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>✕</span>
+                <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
+                  Cancelled by client{reg.cancelled_at ? ` · ${new Date(reg.cancelled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                </span>
+              </div>
+              {reg.cancel_reason
+                ? <p className="text-[0.76rem] italic leading-snug mb-1" style={{ color: dm ? '#e0a5a1' : '#a13b3b' }}>&ldquo;{reg.cancel_reason}&rdquo;</p>
+                : <p className="text-[0.72rem] leading-snug mb-1" style={{ color: dm ? '#c98f8b' : '#c07a7a' }}>No reason given.</p>}
+              <p className="text-[0.7rem] leading-snug" style={{ color: dm ? '#c98f8b' : '#b06a6a' }}>The Wednesday is freed. Refund below only if you choose.</p>
+            </div>
+          )}
           {isUnpaid ? (
             <div className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl"
               style={{ background: dm ? 'rgba(212,160,176,0.08)' : '#FBF5F7', border: `1px solid ${dm ? '#5a4750' : '#EAD7E0'}` }}>
