@@ -148,18 +148,22 @@ export default function CancelBooking() {
     return (
       <Shell>
         <div style={{ padding: '48px 26px 40px', textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: bridalReq ? '#FEF3E2' : '#F1EAED', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
-            <span style={{ fontSize: 26 }}>{bridalReq ? '⏳' : '✓'}</span>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: bridalReq ? '#FBEAD6' : '#EFE6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            {bridalReq ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D08A2C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="26" height="26"><circle cx="12" cy="12" r="9" /><polyline points="12 7.5 12 12 15 13.5" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" width="26" height="26"><polyline points="20 6 9 17 4 12" /></svg>
+            )}
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 400, color: INK, margin: '0 0 12px' }}>
-            {bridalReq ? 'Request received' : "You're all set"}
+            {bridalReq ? 'Request received' : isClass ? 'Class cancelled' : 'Appointment cancelled'}
           </h1>
           <p style={{ fontSize: 14.5, color: BODY, lineHeight: 1.65, margin: '0 auto', maxWidth: 340 }}>
             {bridalReq
-              ? 'Because this is a wedding booking, Roko handles every cancellation personally. Your date is still held for now, and she will reach out within 24 hours. A confirmation is on its way to your email.'
+              ? "Because this is a wedding booking, Roko handles every cancellation personally. Your date is still held for now, and she'll reach out within 24 hours. A confirmation is on its way to your email."
               : isClass
-              ? 'Your class has been cancelled and a confirmation is on its way to your email. If you are due a refund, Roko will take care of it and let you know.'
-              : 'Your appointment has been cancelled and a confirmation is on its way to your email.'}
+              ? "We've emailed you a confirmation. If you're due a refund, Roko will take care of it and let you know."
+              : "We've emailed you a confirmation. There's nothing else you need to do."}
           </p>
           <a href={SITE_URL} style={{ display: 'inline-block', marginTop: 26, fontSize: 13, fontWeight: 600, color: PLUM, textDecoration: 'none' }}>Back to makeupbyroko.org →</a>
         </div>
@@ -172,8 +176,12 @@ export default function CancelBooking() {
     return (
       <Shell>
         <div style={{ padding: '48px 26px 40px', textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: SOFT, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
-            <span style={{ fontSize: 24 }}>{alreadyRequested ? '⏳' : '✓'}</span>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: alreadyRequested ? '#FBEAD6' : '#EFE6F0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            {alreadyRequested ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D08A2C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="26" height="26"><circle cx="12" cy="12" r="9" /><polyline points="12 7.5 12 12 15 13.5" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" width="26" height="26"><polyline points="20 6 9 17 4 12" /></svg>
+            )}
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 400, color: INK, margin: '0 0 12px' }}>
             {alreadyRequested ? 'Your request is already in' : 'Already cancelled'}

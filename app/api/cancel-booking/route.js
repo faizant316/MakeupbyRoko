@@ -93,7 +93,7 @@ export async function POST(req) {
       if (booking.email) {
         await sendEmail({
           to: booking.email,
-          subject: `Your ${booking.service} cancellation is confirmed`,
+          subject: `Your ${booking.service} appointment has been cancelled`,
           html: clientCancelledEmail({ name: firstName, service: booking.service, date: dateFmt, kind: 'appointment' }),
         });
       }
@@ -130,7 +130,7 @@ export async function POST(req) {
       if (reg.email) {
         await sendEmail({
           to: reg.email,
-          subject: `Your class cancellation is confirmed`,
+          subject: `Your class has been cancelled`,
           html: clientCancelledEmail({ name: firstName, service: serviceLabel, date: dateFmt, kind: 'class' }),
         });
       }
