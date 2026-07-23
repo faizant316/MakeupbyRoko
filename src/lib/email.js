@@ -635,10 +635,10 @@ export function clientCancelledEmail({ name, service, date, kind = 'appointment'
     ? `If you're due a refund, Roko will take care of it and email you the details. Nothing else is needed from you.`
     : `As a reminder, your deposit is non-refundable, but there's nothing else you need to do.`;
   return clientShell({
-    preheader: `Your ${service} cancellation is confirmed.`,
+    preheader: `Your ${service} ${isClass ? 'class' : 'appointment'} has been cancelled.`,
     content: `
-      ${clientHero({ emoji: '✓', eyebrow: 'Cancellation Confirmed', title: "You're all", titleAccent: 'set' })}
-      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, this confirms your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''} has been cancelled.`)}
+      ${clientHero({ emoji: '✓', eyebrow: isClass ? 'Class Cancelled' : 'Appointment Cancelled', title: 'All', titleAccent: 'done' })}
+      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''} has been cancelled.`)}
       ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${moneyLine}</p>`)}
       ${cintro(`I'd genuinely love to work with you another time. You can rebook whenever you're ready, or just reply to this email.`)}
       <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
