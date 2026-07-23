@@ -224,6 +224,15 @@ function clientButton(href, label, dark) {
   </tr></table>`;
 }
 
+// Quiet "need to cancel?" line for the bottom of a confirmation email. Small and
+// grey so it never competes with the happy content, but easy to find on scroll.
+function ccancel(cancelUrl, lead) {
+  if (!cancelUrl) return '';
+  return `<tr><td style="padding:2px 30px 22px;text-align:center;">
+    <p style="font-size:12.5px;color:#A99FA4;line-height:1.55;margin:0;">${lead} <a href="${cancelUrl}" style="color:#C4849A;text-decoration:underline;font-weight:600;">click here</a>.</p>
+  </td></tr>`;
+}
+
 function cstep(n, title, sub) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
     <td width="38" valign="top" style="padding:8px 0;">
@@ -518,7 +527,7 @@ export function bridalConfirmationEmail({
 // not appear (it would send them to the wrong place). Everyone else is coming to
 // Mountain House, and this is the email they'll dig up the morning of, so the
 // address belongs here rather than in a follow-up.
-export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false }) {
+export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false, cancelUrl = '' }) {
   const locationValue = travels
     ? "<strong>Roko travels to you</strong>"
     : `<strong>${STUDIO_TOWN}</strong>`;
@@ -543,6 +552,7 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
         ['2', 'Bring your inspiration', 'Photos of your desired look are always welcome'],
         ['3', 'Bring cash for the balance', 'Exact amount confirmed with Roko beforehand'],
       ])}
+      ${ccancel(cancelUrl, 'Need to cancel? You can do that here,')}
     `,
   });
 }
@@ -614,6 +624,101 @@ export function bookingCancelledEmail({ name, service, date, reason }) {
   });
 }
 
+// Client's own confirmation after THEY cancel (non-bridal or class) from the
+// /cancel-booking page. Different from bookingCancelledEmail (Roko's apology when
+// she cancels) — here the client did it, so we confirm the action and say what
+// happens with money. `kind`: 'class' mentions a possible refund; 'appointment'
+// notes the deposit is non-refundable per the agreement.
+export function clientCancelledEmail({ name, service, date, kind = 'appointment' }) {
+  const isClass = kind === 'class';
+  const moneyLine = isClass
+    ? `If you're due a refund, Roko will take care of it and email you the details. Nothing else is needed from you.`
+    : `As a reminder, your deposit is non-refundable, but there's nothing else you need to do.`;
+  return clientShell({
+    preheader: `Your ${service} cancellation is confirmed.`,
+    content: `
+      ${clientHero({ emoji: '✓', eyebrow: 'Cancellation Confirmed', title: "You're all", titleAccent: 'set' })}
+      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, this confirms your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''} has been cancelled.`)}
+      ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${moneyLine}</p>`)}
+      ${cintro(`I'd genuinely love to work with you another time. You can rebook whenever you're ready, or just reply to this email.`)}
+      <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
+    `,
+  });
+}
+
+// Bride's confirmation after she submits a cancel REQUEST (nothing is cancelled
+// yet, her date is still held). Sets the expectation of a personal call.
+export function bridalCancelRequestEmail({ name, service, date }) {
+  return clientShell({
+    preheader: `We've received your request. Roko will reach out personally.`,
+    content: `
+      ${clientHero({ eyebrow: 'Request Received', title: 'We got your', titleAccent: 'request' })}
+      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I've received your request to cancel your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''}.`)}
+      ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">Because this is a wedding booking, I handle every cancellation personally. <strong style="color:#16110F;">Your date is still held for now.</strong> I'll reach out within 24 hours so we can talk it through together.</p>`)}
+      ${cintro(`If anything is urgent, just reply to this email and it comes straight to me.`)}
+    `,
+  });
+}
+
+// Admin: a client cancelled (non-bridal or class). Simple, shows every field.
+export function adminClientCancelledEmail({ name, service, date, reason, kind = 'appointment', email, phone }) {
+  const isClass = kind === 'class';
+  return base(`
+    ${card(`
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#DC2626;margin:0 0 6px;">Client Cancelled</h2>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.6;"><strong>${name || 'A client'}</strong> cancelled their ${isClass ? 'class' : 'appointment'} from the cancellation page.</p>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Client', name || '—')}
+        ${email ? row('Email', `<a href="mailto:${email}" style="color:#C4849A;text-decoration:none;">${email}</a>`) : ''}
+        ${phone ? row('Phone', `<a href="tel:${phoneHref(phone)}" style="color:#C4849A;text-decoration:none;">${formatPhone(phone)}</a>`) : ''}
+        ${row(isClass ? 'Class' : 'Service', `<strong style="color:#C4849A;">${service || '—'}</strong>`)}
+        ${date ? row('Date', date) : ''}
+        ${row('Cancelled by', '<strong>Client</strong>')}
+        ${row('Reason', reason ? reason : '<em style="color:#999;">None given</em>')}
+      </table>
+    `)}
+    ${card(`
+      <p style="font-size:13px;color:#444444;margin:0 0 14px;line-height:1.6;">${isClass
+        ? 'The Wednesday is freed automatically. Refund only if you choose, from the class card.'
+        : 'The date is freed automatically. No money moves on its own.'}</p>
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#C4849A;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">View in Admin Dashboard →</a>
+      </td></tr></table>
+    `)}
+  `);
+}
+
+// Admin: HIGH priority — a bride submitted a cancel REQUEST. Nothing cancelled,
+// date still held. Roko needs to call.
+export function adminBridalCancelRequestEmail({ name, service, date, reason, email, phone }) {
+  return base(`
+    ${card(`
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#D97706;margin:0 0 6px;">⚠️ Bridal Cancellation Requested</h2>
+      <p style="font-size:13px;color:#444444;margin:0;line-height:1.6;"><strong>${name || 'A bride'}</strong> has requested to cancel. Nothing has changed and her date is still held. Please call her.</p>
+    `)}
+    ${card(`
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Details</p>
+      <table style="width:100%;border-collapse:collapse;">
+        ${row('Bride', name || '—')}
+        ${email ? row('Email', `<a href="mailto:${email}" style="color:#C4849A;text-decoration:none;">${email}</a>`) : ''}
+        ${phone ? row('Phone', `<a href="tel:${phoneHref(phone)}" style="color:#C4849A;text-decoration:none;">${formatPhone(phone)}</a>`) : ''}
+        ${row('Service', `<strong style="color:#C4849A;">${service || '—'}</strong>`)}
+        ${date ? row('Date', date) : ''}
+        ${row('Reason', reason ? reason : '<em style="color:#999;">None given</em>')}
+      </table>
+    `)}
+    ${card(`
+      <p style="font-size:13px;color:#444444;margin:0 0 14px;line-height:1.6;">Call the bride, then cancel from her card if it goes ahead. The deposit is your call, nothing moves automatically.</p>
+      <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="${ADMIN_URL}" style="display:inline-block;background:#D97706;color:#fff;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">Open Her Card →</a>
+      </td></tr></table>
+    `)}
+  `);
+}
+
 export function depositReminderEmail({ name, service, date, uploadUrl }) {
   return clientShell({
     preheader: `Friendly reminder: send your deposit to secure ${service}.`,
@@ -640,7 +745,7 @@ export function feedbackRequestEmail({ name, service }) {
 // and time window at checkout, this is the full booking confirmation:
 // online classes get their Zoom link right here, in-person classes get the
 // Mountain House studio address.
-export function classPaymentEmail({ firstName, classes = [], totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink }) {
+export function classPaymentEmail({ firstName, classes = [], totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink, cancelUrl = '' }) {
   const isOnline = format === 'online';
   const isInPerson = format === 'in_person';
 
@@ -688,6 +793,7 @@ export function classPaymentEmail({ firstName, classes = [], totalPaid, format, 
       ${cpanel(`${ctitle('Your Class')}${crows(classRows + scheduleRows)}${connect}`)}
       ${cpanel(`${ctitle('Payment Receipt')}${crows(receiptRows)}`)}
       ${cstepsPanel('To Prepare', steps)}
+      ${ccancel(cancelUrl, 'If you need to cancel your class, you can do that here,')}
     `,
   });
 }
@@ -732,7 +838,7 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
 // Bridal: one concise email that merges the appointment confirmation, the
 // scheduled consultation, and (when the deposit isn't in yet) the Zelle + photo
 // upload link — so a bride gets a single email instead of three.
-export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived, updated, migrated }) {
+export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived, updated, migrated, cancelUrl = '' }) {
   const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   const showDeposit = !depositReceived && uploadUrl;
   // No consultation yet = the "confirm now, schedule the consultation later"
@@ -787,6 +893,7 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         ['2', 'Think about your vibe', 'Soft glam, bold, natural, anything goes!'],
         ['3', 'Write down any questions', "I'm here to answer everything on our call"],
       ])}
+      ${ccancel(cancelUrl, 'Need to cancel for any reason? I handle bridal cancellations personally,')}
     `,
   });
 }

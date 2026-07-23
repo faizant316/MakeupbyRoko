@@ -164,6 +164,15 @@ const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 // abruptly. Roko can edit or replace it; whatever's in the box goes to the email.
 const DEFAULT_CANCEL_REASON = "Unfortunately, this didn't work out with Roko's schedule.";
 
+// " · Jul 22, 4:54 PM" for the client-cancel banners. Empty string when unset.
+function fmtCancelStamp(iso) {
+  if (!iso) return '';
+  try {
+    return ' · ' + new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      + ', ' + new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  } catch { return ''; }
+}
+
 function CopyableAddress({ address, dm }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
@@ -1394,7 +1403,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, firstName: booking.name?.split(' ')[0] || 'there', serviceName: booking.service, dateFormatted, time: booking.time, travels }),
+          body: JSON.stringify({ to: booking.email, firstName: booking.name?.split(' ')[0] || 'there', serviceName: booking.service, dateFormatted, time: booking.time, travels, bookingId: booking.id }),
         }).catch(err => console.error('confirmed email error:', err));
       }
     } else if (s === 'cancelled') {
@@ -1691,7 +1700,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, firstName: (data.name || booking.name)?.split(' ')[0] || 'there', serviceName: data.service || booking.service, dateFormatted: editDate, time: data.time || booking.time, travels }),
+          body: JSON.stringify({ to: booking.email, firstName: (data.name || booking.name)?.split(' ')[0] || 'there', serviceName: data.service || booking.service, dateFormatted: editDate, time: data.time || booking.time, travels, bookingId: booking.id }),
         }).catch(err => console.error('confirmed email error:', err));
       } else if (newStatus === 'cancelled') {
         showToast('Appointment cancelled', '#ef4444');
@@ -2614,6 +2623,28 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">
             {isBridal && !schedulerInHub ? 'Status & Consultation' : 'Update Status'}
           </p>
+
+          {/* Bridal cancel REQUEST: the bride asked to cancel from her email. Nothing
+              was changed and her date is still held — this is a call-her prompt. */}
+          {booking.cancel_requested_at && booking.status !== 'cancelled' && (
+            <div className="mb-4 rounded-[12px] p-3.5" style={{ background: dm ? 'rgba(217,119,6,0.12)' : '#FEF6EC', border: `1px solid ${dm ? 'rgba(217,119,6,0.35)' : '#F3DFC0'}` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span style={{ fontSize: 13 }}>⏳</span>
+                <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f0b666' : '#B45309' }}>
+                  Cancellation requested{fmtCancelStamp(booking.cancel_requested_at)}
+                </span>
+              </div>
+              {booking.cancel_request_message && (
+                <p className="text-[0.76rem] italic leading-snug mb-1.5" style={{ color: dm ? '#e0c197' : '#8a5a12' }}>
+                  &ldquo;{booking.cancel_request_message}&rdquo;
+                </p>
+              )}
+              <p className="text-[0.7rem] leading-snug" style={{ color: dm ? '#c9a877' : '#a97a2e' }}>
+                Call the bride before doing anything. Her date is still held.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {STATUSES.map(s => {
               const isActive = booking.status === s;
@@ -2628,6 +2659,22 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               );
             })}
           </div>
+
+          {/* The client cancelled this themselves, from their email link. Shows
+              who + when + their reason, so a cancelled booking is never a mystery. */}
+          {booking.status === 'cancelled' && booking.cancelled_by === 'client' && (
+            <div className="mt-3 rounded-[12px] p-3.5" style={{ background: dm ? 'rgba(220,38,38,0.10)' : '#FDECEC', border: `1px solid ${dm ? 'rgba(220,38,38,0.30)' : '#F6D2D2'}` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[0.8rem] font-bold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>✕</span>
+                <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
+                  Cancelled by client{fmtCancelStamp(booking.cancelled_at)}
+                </span>
+              </div>
+              {booking.cancel_reason
+                ? <p className="text-[0.76rem] italic leading-snug" style={{ color: dm ? '#e0a5a1' : '#a13b3b' }}>&ldquo;{booking.cancel_reason}&rdquo;</p>
+                : <p className="text-[0.72rem] leading-snug" style={{ color: dm ? '#c98f8b' : '#c07a7a' }}>No reason given.</p>}
+            </div>
+          )}
 
           {isBridal && !schedulerInHub && booking.status !== 'confirmed' && !booking.consultation_date && (
             <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>

@@ -36,6 +36,9 @@ export async function POST(req) {
     const uploadUrl = booking?.upload_token
       ? `${siteBase}/upload-zelle?id=${bookingId}&token=${booking.upload_token}&bridal=1`
       : '';
+    const cancelUrl = booking?.upload_token
+      ? `${siteBase}/cancel-booking?token=${booking.upload_token}`
+      : '';
 
     // Store notes — prefix with link so it's parseable in the UI (matches send-consultation)
     const storedNotes = [
@@ -73,6 +76,7 @@ export async function POST(req) {
         // again just because Roko hasn't confirmed it yet. For the email's
         // purposes, "sent" is as good as "received".
         uploadUrl,
+        cancelUrl,
         depositReceived: !!(booking?.deposit_received || booking?.zelle_uploaded_at),
         updated, migrated,
       }),

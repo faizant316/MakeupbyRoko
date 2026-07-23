@@ -1,8 +1,10 @@
+import { randomUUID } from 'crypto';
 import { sendEmailPair, classPaymentEmail, adminClassPaymentEmail } from './email';
 import { CLASS_KEYS, CLASS_FORMATS, classMeta, DEFAULT_FORMAT } from './classCatalog';
 import { createZoomMeeting } from './zoomMeeting';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
+const SITE_BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
 
 // "2026-07-15" → "Wednesday, July 15, 2026"
 function formatClassDate(raw) {
@@ -106,13 +108,27 @@ export async function finalizeClassRegistration(supabase, { registrationId, sess
 
   const formatLabel = format ? CLASS_FORMATS[format].label : '';
 
+  // Ensure the row has a cancel token so the confirmation email can carry a
+  // "need to cancel?" link (mirrors bookings' upload_token). Best-effort: if the
+  // column isn't there yet (migration 0012), the link is simply omitted.
+  let cancelToken = reg.upload_token;
+  if (!cancelToken) {
+    cancelToken = randomUUID().replace(/-/g, '');
+    const { error: tokErr } = await supabase
+      .from('class_registrations')
+      .update({ upload_token: cancelToken })
+      .eq('id', registrationId);
+    if (tokErr) { console.error('class cancel token write skipped:', tokErr.message); cancelToken = ''; }
+  }
+  const cancelUrl = cancelToken ? `${SITE_BASE}/cancel-booking?token=${cancelToken}` : '';
+
   await sendEmailPair([
     {
       to: reg.email,
       subject: dateFormatted
         ? `You're booked! ${classes[0]?.title || 'Your class'} on ${dateFormatted}`
         : "You're officially booked! Your class is confirmed.",
-      html: classPaymentEmail({ firstName, classes, totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink }),
+      html: classPaymentEmail({ firstName, classes, totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink, cancelUrl }),
     },
     {
       to: ADMIN_EMAIL,
