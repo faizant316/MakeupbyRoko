@@ -30,8 +30,9 @@ update class_registrations
   set upload_token = replace(gen_random_uuid()::text, '-', '')
   where upload_token is null;
 
--- Widen the class status check to allow 'cancelled' (was new/contacted/enrolled/
--- declined). regHoldsDate already frees the Wednesday for a cancelled row.
+-- Re-assert the FULL class status set (from 0004: pending/confirmed are used by
+-- checkout + paid confirmation, cancelled by the cancel flow). Kept identical to
+-- 0004 so it neither drops a value nor breaks class purchases.
 alter table class_registrations drop constraint if exists class_registrations_status_check;
 alter table class_registrations add constraint class_registrations_status_check
-  check (status in ('new','contacted','enrolled','declined','cancelled'));
+  check (status in ('new','contacted','enrolled','declined','pending','confirmed','cancelled'));
