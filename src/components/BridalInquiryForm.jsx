@@ -25,14 +25,10 @@ import ServiceFAQ from './ServiceFAQ';
 import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
 import LocationAutocomplete from './LocationAutocomplete';
-import { STUDIO_TOWN } from '@/lib/studio';
+import { STUDIO_READY_VALUE } from '@/lib/studio';
 
 const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
 
-// When a bride chooses to get ready at the studio, we store this readable label
-// as her location so it flows into the admin card + email exactly like a typed
-// address would (no separate "is it the studio?" flag needed downstream).
-const STUDIO_READY_VALUE = `Roko's Studio (${STUDIO_TOWN})`;
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 

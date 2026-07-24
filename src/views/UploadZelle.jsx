@@ -90,12 +90,10 @@ function SummaryRow({ label, value, caption, highlight }) {
   );
 }
 
-// A tap-to-copy value row. Same visual language as SummaryRow, but the whole
-// row is a button that copies the value (with a plain-JS fallback for browsers
-// that block navigator.clipboard) and flips to "Copied" for a beat. Used for the
-// Zelle email so a client copies it into their Zelle app instead of expecting a
-// tap to launch Zelle.
-function CopyField({ label, value }) {
+// Compact tap-to-copy pill (with a plain-JS fallback for browsers that block
+// navigator.clipboard). Flips to "Copied" for a beat. Sits next to the Zelle
+// email so a client grabs it in one tap instead of retyping it.
+function CopyButton({ value }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -120,21 +118,15 @@ function CopyField({ label, value }) {
     <button
       type="button"
       onClick={copy}
-      className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left touch-manipulation transition-colors active:opacity-80"
-      style={{ background: copied ? HEAD_BG : 'transparent', WebkitTapHighlightColor: 'transparent' }}
-      aria-label={`Copy ${label}`}
+      className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.62rem] font-bold uppercase tracking-wide touch-manipulation transition-all active:scale-95"
+      style={{ background: copied ? '#EAF6EE' : HEAD_BG, color: copied ? '#3F9D5B' : PLUM, WebkitTapHighlightColor: 'transparent' }}
+      aria-label="Copy email address"
     >
-      <span className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase flex-shrink-0" style={{ color: LABEL }}>{label}</span>
-      <span className="min-w-0 flex items-center justify-end gap-2">
-        <span className="min-w-0 break-all text-right text-[0.85rem] font-semibold leading-snug" style={{ color: VALUE }}>{value}</span>
-        <span className="flex-shrink-0 inline-flex items-center gap-1 text-[0.58rem] font-bold uppercase tracking-wide" style={{ color: PLUM }}>
-          {copied ? (
-            <><svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.4" className="w-3 h-3">{ICON.check}</svg>Copied</>
-          ) : (
-            <><svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.8" className="w-3 h-3">{ICON.copy}</svg>Copy</>
-          )}
-        </span>
-      </span>
+      {copied ? (
+        <><svg viewBox="0 0 24 24" fill="none" stroke="#3F9D5B" strokeWidth="2.6" className="w-3 h-3">{ICON.check}</svg>Copied</>
+      ) : (
+        <><svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.8" className="w-3 h-3">{ICON.copy}</svg>Copy</>
+      )}
     </button>
   );
 }
@@ -779,37 +771,33 @@ export default function UploadZelle() {
                       </p>
                     </div>
 
-                    {/* How to send — spelled out so nobody expects the email or
-                        the button to open Zelle for them. */}
-                    <div className="px-4 py-4" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}`, background: '#FEFCFD' }}>
+                    {/* How to send + who to send to, in ONE card so the whole
+                        deposit action lives in a single clear space. */}
+                    <div className="px-4 py-4" style={{ borderRadius: 14, border: `1px solid ${CARD_BORDER}`, background: '#FEFCFD' }}>
                       <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-3" style={{ color: PLUM }}>How to send your deposit</p>
                       <ol className="flex flex-col gap-2.5">
-                        <HowStep n={1}>Open your <strong style={{ color: VALUE }}>Zelle app</strong> and send{depositDisplay ? <> <strong style={{ color: VALUE }}>{depositDisplay}</strong></> : ' your deposit'} to the email below.</HowStep>
+                        <HowStep n={1}>Open your <strong style={{ color: VALUE }}>Zelle app</strong> and send{depositDisplay ? <> <strong style={{ color: VALUE }}>{depositDisplay}</strong></> : ' your deposit'} to the address below.</HowStep>
                         <HowStep n={2}>Take a <strong style={{ color: VALUE }}>screenshot</strong> of the confirmation.</HowStep>
                         <HowStep n={3}>Come back here and upload it{isBridal ? ' with your photos' : ''}.</HowStep>
                       </ol>
-                    </div>
 
-                    {/* Who to send to — the email is tap-to-copy so nobody
-                        retypes it, and it clearly reads as a value to copy. */}
-                    <div className="flex flex-col gap-2">
-                      <div className="overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
-                        <div className="divide-y" style={{ borderColor: DIVIDER }}>
-                          <SummaryRow label="Zelle to" value="Ruqia Moshref" />
-                          <CopyField label="Email" value="makeupbyroko22@gmail.com" />
-                          <SummaryRow label="Date" value={dateFormatted} />
+                      {/* Recipient, folded into the same card with a one-tap copy. */}
+                      <div className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDER}` }}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[0.56rem] font-semibold tracking-[0.14em] uppercase" style={{ color: LABEL }}>Zelle to</span>
+                          <span className="text-[0.85rem] font-semibold" style={{ color: VALUE }}>Ruqia Moshref</span>
                         </div>
+                        <div className="mt-2.5 flex items-center justify-between gap-2.5">
+                          <div className="min-w-0">
+                            <p className="text-[0.56rem] font-semibold tracking-[0.14em] uppercase mb-0.5" style={{ color: LABEL }}>Email</p>
+                            <p className="text-[0.85rem] font-bold break-all leading-snug" style={{ color: VALUE }}>makeupbyroko22@gmail.com</p>
+                          </div>
+                          <CopyButton value="makeupbyroko22@gmail.com" />
+                        </div>
+                        <p className="mt-3 text-[0.66rem] leading-[1.55]" style={{ color: LABEL }}>
+                          Tap <strong style={{ color: PLUM_DARK }}>Copy</strong> and paste it into your Zelle app (it's the recipient address, not a link). Add your <strong style={{ color: PLUM_DARK }}>name + {isBridal ? 'wedding' : 'appointment'} date</strong> in the memo. Remaining balance is cash on the day.
+                        </p>
                       </div>
-                      <p className="px-1 text-[0.66rem] leading-[1.55]" style={{ color: LABEL }}>
-                        Tap <strong style={{ color: PLUM_DARK }}>Copy</strong>, then paste this into your Zelle app. It's the recipient address, not a link, so tapping it won't open Zelle.
-                      </p>
-                    </div>
-
-                    <div className="px-4 py-3 flex items-start gap-2.5" style={{ borderRadius: 8, background: HEAD_BG, borderLeft: `2px solid ${PLUM}` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.6" className="w-4 h-4 mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-                      <p className="text-[0.74rem] leading-[1.6]" style={{ color: PLUM_DARK }}>
-                        Add your <strong style={{ color: VALUE }}>name</strong> + <strong style={{ color: VALUE }}>appointment date</strong> in the Zelle memo. Remaining balance is due in cash on the day.
-                      </p>
                     </div>
 
                     {/* Screenshot dropzone */}
