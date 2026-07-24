@@ -9,3 +9,8 @@ export const STUDIO_ADDRESS = process.env.NEXT_PUBLIC_STUDIO_ADDRESS || '1301 S 
 export const STUDIO_TOWN = 'Mountain House, CA';
 export const STUDIO_DISPLAY = STUDIO_ADDRESS || `${STUDIO_TOWN} (exact address shared before your class)`;
 export const STUDIO_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(STUDIO_ADDRESS || STUDIO_TOWN)}`;
+// The readable label stored as a bridal booking's location when the bride
+// chooses to get ready at the studio (instead of an on-location address). Shared
+// so the form that stamps it and the email that reads it can never disagree:
+// location === STUDIO_READY_VALUE is the single "no travel fee" signal.
+export const STUDIO_READY_VALUE = `Roko's Studio (${STUDIO_TOWN})`;
