@@ -97,7 +97,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
     ${content}
     <tr><td style="padding:22px 28px 0;background:#FBF5F8;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #F0E6EC;border-radius:12px;"><tr><td style="padding:14px 18px;text-align:center;">
-        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Questions, or need to change your time? Just <a href="mailto:${REPLY_TO}?subject=${encodeURIComponent('Question about my Makeup by Roko booking')}" style="color:#16110F;font-weight:700;text-decoration:underline;">reply to this email</a> and it comes straight to Roko.</p>
+        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Questions, or need to change your time? Just hit <strong style="color:#16110F;">Reply</strong> on this email and it comes straight to Roko, right here in this thread.</p>
       </td></tr></table>
     </td></tr>
     <tr><td style="padding:20px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
@@ -298,6 +298,44 @@ function cZoom(zoomLink) {
   </td></tr></table>`;
 }
 
+// ── Shared Zelle deposit pieces ────────────────────────────────────────────
+// Both deposit boxes (cdeposit and cdepositBreakdown) render the SAME numbered
+// steps and recipient card, so a client sees the identical "how to pay" guidance
+// no matter which email the box lands in.
+
+// Numbered "how to send" steps. `amount` shows the exact figure when it's a real
+// dollar value ("$375"); a label like "Deposit" or a missing amount just reads
+// "your deposit".
+function czelleSteps(amount, photos) {
+  const isMoney = /^\s*\$/.test(String(amount || ''));
+  const sendWhat = isMoney ? `<strong style="color:#16110F;">${amount}</strong>` : 'your deposit';
+  const step = (n, html) => `<tr>
+    <td width="30" valign="top" style="padding:7px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="22" height="22" align="center" valign="middle" bgcolor="#FBF1F6" style="border-radius:50%;font-size:11px;font-weight:700;color:#C4849A;">${n}</td></tr></table>
+    </td>
+    <td valign="middle" style="padding:7px 0 7px 6px;font-size:13px;color:#5A5258;line-height:1.5;">${html}</td>
+  </tr>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 16px;"><tr><td style="padding:16px 16px 6px;text-align:left;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">How to send your deposit</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      ${step(1, `Open your <strong style="color:#16110F;">Zelle app</strong> (or your bank's Zelle) and send ${sendWhat} to the email below.`)}
+      ${step(2, `Take a <strong style="color:#16110F;">screenshot</strong> of the confirmation.`)}
+      ${step(3, `Tap the button below and <strong style="color:#16110F;">upload your screenshot${photos ? ' &amp; photos' : ''}</strong>.`)}
+    </table>
+  </td></tr></table>`;
+}
+
+// Recipient card. Deliberately plain (not a link) with a caption that heads off
+// the "I tapped the email and Zelle didn't open" confusion.
+function czelleRecipient() {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF7F9;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;text-align:left;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A8E94;margin:0 0 8px;">Send your Zelle to</p>
+    <p style="font-size:15px;color:#16110F;font-weight:700;margin:0;">Ruqia Moshref</p>
+    <p style="font-size:15px;color:#16110F;font-weight:700;margin:3px 0 0;word-break:break-all;">makeupbyroko22@gmail.com</p>
+    <p style="font-size:11.5px;color:#A99FA4;margin:8px 0 0;line-height:1.5;">This is the email address to enter <strong style="color:#6B636A;">inside your Zelle app</strong>. It's a recipient to copy, not a link, so tapping it won't open Zelle.</p>
+  </td></tr></table>`;
+}
+
 function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
   return `<tr><td style="padding:16px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
@@ -305,13 +343,9 @@ function cdeposit({ amount, uploadUrl, hideAmount, photos }) {
         <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#C4849A;margin:0 0 ${hideAmount ? '4px' : '8px'};">${hideAmount ? 'Send Your Deposit' : 'Reserve Your Date'}</p>
         ${hideAmount ? '' : `<p style="font-family:${EMAIL_FONT};font-size:36px;line-height:1;color:#16110F;margin:0 0 4px;">${amount}</p>`}
         <p style="font-size:13px;color:#8A7F85;margin:0 0 18px;">Send via Zelle to lock in your date</p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="font-size:13px;color:#9A8E94;padding:0 0 6px;">Zelle to</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;padding:0 0 6px;">Ruqia Moshref</td></tr>
-            <tr><td style="font-size:13px;color:#9A8E94;">Email</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">makeupbyroko22@gmail.com</td></tr>
-          </table>
-        </td></tr></table>
-        ${clientButton(uploadUrl, photos ? 'Upload Screenshot & Photos' : 'Upload Zelle Screenshot')}
+        ${czelleSteps(hideAmount ? null : amount, photos)}
+        ${czelleRecipient()}
+        ${clientButton(uploadUrl, photos ? 'Upload Screenshot &amp; Photos' : 'Upload Zelle Screenshot')}
         ${photos ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
           <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:#C4849A;margin:0 0 4px;">Also upload your photos</p>
           <p style="font-size:12px;color:#6B636A;margin:0;line-height:1.55;">Use this same link to add photos of yourself <strong style="color:#16110F;">with makeup</strong> and <strong style="color:#16110F;">without makeup</strong> so Roko can prep for your consultation.</p>
@@ -384,15 +418,6 @@ function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted,
     <p style="font-size:11.5px;color:#9A8E94;line-height:1.55;margin:12px 0 0;">On-location bookings include a travel fee <strong style="color:#16110F;">from $200</strong>, so this may not be your final total. Roko confirms the exact amount when she reaches out. In-studio appointments have no travel fee.</p>
   </td></tr>` : '';
 
-  // Numbered "how to send" steps so a first-timer knows the deposit is a manual
-  // Zelle transfer, not something the email or the button can do for them.
-  const step = (n, html) => `<tr>
-    <td width="30" valign="top" style="padding:7px 0;">
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="22" height="22" align="center" valign="middle" bgcolor="#FBF1F6" style="border-radius:50%;font-size:11px;font-weight:700;color:#C4849A;">${n}</td></tr></table>
-    </td>
-    <td valign="middle" style="padding:7px 0 7px 6px;font-size:13px;color:#5A5258;line-height:1.5;">${html}</td>
-  </tr>`;
-
   return `<tr><td style="padding:16px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
       <tr><td style="padding:26px 22px;text-align:center;">
@@ -403,21 +428,8 @@ function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted,
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${breakdown}${travelNote}</table>
         </td></tr></table>
 
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 16px;"><tr><td style="padding:16px 16px 6px;text-align:left;">
-          <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">How to send your deposit</p>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            ${step(1, `Open your <strong style="color:#16110F;">Zelle app</strong> (or your bank's Zelle) and send <strong style="color:#16110F;">${amount}</strong> to the email below.`)}
-            ${step(2, `Take a <strong style="color:#16110F;">screenshot</strong> of the confirmation.`)}
-            ${step(3, `Tap the button below and <strong style="color:#16110F;">upload your screenshot${photos ? ' &amp; photos' : ''}</strong>.`)}
-          </table>
-        </td></tr></table>
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF7F9;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;text-align:left;">
-          <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A8E94;margin:0 0 8px;">Send your Zelle to</p>
-          <p style="font-size:15px;color:#16110F;font-weight:700;margin:0;">Ruqia Moshref</p>
-          <p style="font-size:15px;color:#16110F;font-weight:700;margin:3px 0 0;word-break:break-all;">makeupbyroko22@gmail.com</p>
-          <p style="font-size:11.5px;color:#A99FA4;margin:8px 0 0;line-height:1.5;">This is the email address to enter <strong style="color:#6B636A;">inside your Zelle app</strong>. It's a recipient to copy, not a link, so tapping it won't open Zelle.</p>
-        </td></tr></table>
+        ${czelleSteps(amount, photos)}
+        ${czelleRecipient()}
 
         ${clientButton(uploadUrl, photos ? 'Upload Screenshot &amp; Photos' : 'Upload Zelle Screenshot')}
         ${photos ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
