@@ -23,6 +23,7 @@ const ICON = {
   camera: <><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>,
   sparkle: <path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9z" />,
   arrow: <polyline points="9 18 15 12 9 6" />,
+  copy: <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>,
 };
 
 // Keyframes + helpers scoped to this page (kept in-component so the change
@@ -86,6 +87,65 @@ function SummaryRow({ label, value, caption, highlight }) {
         {caption && <span className="block text-[0.6rem] font-medium mt-0.5" style={{ color: LABEL }}>{caption}</span>}
       </span>
     </div>
+  );
+}
+
+// A tap-to-copy value row. Same visual language as SummaryRow, but the whole
+// row is a button that copies the value (with a plain-JS fallback for browsers
+// that block navigator.clipboard) and flips to "Copied" for a beat. Used for the
+// Zelle email so a client copies it into their Zelle app instead of expecting a
+// tap to launch Zelle.
+function CopyField({ label, value }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* clipboard blocked — the value is still on screen to copy by hand */ }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left touch-manipulation transition-colors active:opacity-80"
+      style={{ background: copied ? HEAD_BG : 'transparent', WebkitTapHighlightColor: 'transparent' }}
+      aria-label={`Copy ${label}`}
+    >
+      <span className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase flex-shrink-0" style={{ color: LABEL }}>{label}</span>
+      <span className="min-w-0 flex items-center justify-end gap-2">
+        <span className="min-w-0 break-all text-right text-[0.85rem] font-semibold leading-snug" style={{ color: VALUE }}>{value}</span>
+        <span className="flex-shrink-0 inline-flex items-center gap-1 text-[0.58rem] font-bold uppercase tracking-wide" style={{ color: PLUM }}>
+          {copied ? (
+            <><svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="2.4" className="w-3 h-3">{ICON.check}</svg>Copied</>
+          ) : (
+            <><svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.8" className="w-3 h-3">{ICON.copy}</svg>Copy</>
+          )}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+// One numbered line in the on-site "How to send your deposit" list.
+function HowStep({ n, children }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold" style={{ background: HEAD_BG, color: PLUM }}>{n}</span>
+      <span className="text-[0.76rem] leading-[1.55]" style={{ color: PLUM_DARK }}>{children}</span>
+    </li>
   );
 }
 
@@ -318,7 +378,7 @@ export default function UploadZelle() {
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [introReady, setIntroReady] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState(null);
   const [uploaded, setUploaded] = useState(false);
 
@@ -333,32 +393,53 @@ export default function UploadZelle() {
   const [withoutItems, setWithoutItems] = useState([]); // [{ file, preview }]
   const [withItems, setWithItems] = useState([]);
 
-  // Brief branded intro so the page "reveals" rather than pops in.
-  useEffect(() => {
-    const t = setTimeout(() => setIntroReady(true), 750);
-    return () => clearTimeout(t);
-  }, []);
-
+  // Load the booking behind this upload link. Wrapped so a flaky or slow
+  // connection can never leave the page stuck on the loader forever: the
+  // request is aborted after 15s and surfaced as a *retryable* error instead of
+  // an infinite spinner. `reloadKey` lets the "Try again" button re-run it, and
+  // `ignore` drops any late response from a superseded attempt.
   useEffect(() => {
     if (!bookingId || !token) {
-      setError('Invalid link. Please check your email for the correct link.');
+      setError('This link is missing its booking details. Please open the link straight from your confirmation email.');
       setLoading(false);
       return;
     }
+    let ignore = false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    setLoading(true);
+    setError(null);
     fetch('/api/get-booking-by-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, booking_id: bookingId }),
+      signal: ctrl.signal,
     })
-      .then(r => r.json())
-      .then(res => {
-        if (res.error) throw new Error(res.error);
-        setBooking(res.booking);
-        if (res.booking.zelle_screenshot) setUploaded(true);
+      .then(async r => {
+        const res = await r.json().catch(() => ({}));
+        if (!r.ok || res.error) throw new Error(res.error || `HTTP ${r.status}`);
+        return res;
       })
-      .catch(() => setError('This link is invalid or has expired.'))
-      .finally(() => setLoading(false));
-  }, [bookingId, token]);
+      .then(res => {
+        if (ignore) return;
+        setBooking(res.booking);
+        if (res.booking?.zelle_screenshot) setUploaded(true);
+        setLoading(false);
+      })
+      .catch(err => {
+        if (ignore) return;
+        // A real "not found / invalid token" comes back as a server error;
+        // an abort, an offline device, or a 5xx is a connection hiccup the
+        // client can simply retry.
+        const offlineish = err?.name === 'AbortError' || /Failed to fetch|NetworkError|HTTP 5\d\d/i.test(err?.message || '');
+        setError(offlineish
+          ? "We couldn't reach the server. Check your connection and tap Try again."
+          : 'This link is invalid or has expired.');
+        setLoading(false);
+      })
+      .finally(() => clearTimeout(timer));
+    return () => { ignore = true; clearTimeout(timer); ctrl.abort(); };
+  }, [bookingId, token, reloadKey]);
 
   const dateFormatted = booking?.date
     ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
@@ -483,15 +564,24 @@ export default function UploadZelle() {
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h2 className="font-serif text-xl mb-2" style={{ color: VALUE }}>Invalid Link</h2>
+          <h2 className="font-serif text-xl mb-2" style={{ color: VALUE }}>Something went wrong</h2>
           <p className="text-[0.82rem] leading-[1.7]" style={{ color: PLUM_DARK }}>{error}</p>
-          <p className="text-[0.75rem] mt-3" style={{ color: LABEL }}>Need help? Email <a href="mailto:roko@makeupbyroko.org" className="underline" style={{ color: PLUM }}>roko@makeupbyroko.org</a></p>
+          <button
+            type="button"
+            onClick={() => { setError(null); setLoading(true); setReloadKey(k => k + 1); }}
+            className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-[0.8rem] font-semibold touch-manipulation transition-all active:scale-95"
+            style={{ borderRadius: 12, background: INK, color: '#fff', boxShadow: '0 8px 26px rgba(196,132,154,0.3)' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" className="w-4 h-4"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
+            Try again
+          </button>
+          <p className="text-[0.75rem] mt-4" style={{ color: LABEL }}>Still stuck? Email <a href="mailto:roko@makeupbyroko.org" className="underline" style={{ color: PLUM }}>roko@makeupbyroko.org</a></p>
         </div>
       </div>
     );
   }
 
-  if (loading || !introReady) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6" style={pageBg}>
         <Style />
@@ -689,13 +779,30 @@ export default function UploadZelle() {
                       </p>
                     </div>
 
-                    {/* Who to send to */}
-                    <div className="overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
-                      <div className="divide-y" style={{ borderColor: DIVIDER }}>
-                        <SummaryRow label="Zelle to" value="Ruqia Moshref" />
-                        <SummaryRow label="Email" value="makeupbyroko22@gmail.com" />
-                        <SummaryRow label="Date" value={dateFormatted} />
+                    {/* How to send — spelled out so nobody expects the email or
+                        the button to open Zelle for them. */}
+                    <div className="px-4 py-4" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}`, background: '#FEFCFD' }}>
+                      <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-3" style={{ color: PLUM }}>How to send your deposit</p>
+                      <ol className="flex flex-col gap-2.5">
+                        <HowStep n={1}>Open your <strong style={{ color: VALUE }}>Zelle app</strong> and send{depositDisplay ? <> <strong style={{ color: VALUE }}>{depositDisplay}</strong></> : ' your deposit'} to the email below.</HowStep>
+                        <HowStep n={2}>Take a <strong style={{ color: VALUE }}>screenshot</strong> of the confirmation.</HowStep>
+                        <HowStep n={3}>Come back here and upload it{isBridal ? ' with your photos' : ''}.</HowStep>
+                      </ol>
+                    </div>
+
+                    {/* Who to send to — the email is tap-to-copy so nobody
+                        retypes it, and it clearly reads as a value to copy. */}
+                    <div className="flex flex-col gap-2">
+                      <div className="overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+                        <div className="divide-y" style={{ borderColor: DIVIDER }}>
+                          <SummaryRow label="Zelle to" value="Ruqia Moshref" />
+                          <CopyField label="Email" value="makeupbyroko22@gmail.com" />
+                          <SummaryRow label="Date" value={dateFormatted} />
+                        </div>
                       </div>
+                      <p className="px-1 text-[0.66rem] leading-[1.55]" style={{ color: LABEL }}>
+                        Tap <strong style={{ color: PLUM_DARK }}>Copy</strong>, then paste this into your Zelle app. It's the recipient address, not a link, so tapping it won't open Zelle.
+                      </p>
                     </div>
 
                     <div className="px-4 py-3 flex items-start gap-2.5" style={{ borderRadius: 8, background: HEAD_BG, borderLeft: `2px solid ${PLUM}` }}>
