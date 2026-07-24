@@ -299,13 +299,14 @@ function cZoom(zoomLink) {
 }
 
 // ── Reserve-Your-Date money box ────────────────────────────────────────────
-// One clear focal number (the deposit) with everything else demoted to a quiet
-// summary line, so a non-technical client instantly sees "pay this now". The
-// full payment mechanics (Zelle recipient, copy, upload) live on the linked
-// upload page, not here, so the email stays short and drives one clear action.
+// A big focal deposit (what to pay now) over a calm invoice-style receipt, so a
+// non-technical client sees both "pay this now" AND the full picture without it
+// looking hectic. The payment mechanics (Zelle recipient, copy, upload) live on
+// the linked upload page, not here, so the email stays short and drives one
+// clear action.
 //
-// `travelFee` on-location only: adds a flat $200 that rolls into the total and
-// the cash-on-the-day remaining. Studio pickups pass false and never see it.
+// `travelFee` on-location only: adds a flat $200 line that rolls into the total
+// and the cash-on-the-day remaining. Studio pickups pass false and never see it.
 function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false }) {
   const TRAVEL_FEE = 200;
   const priceN = moneyToNum(price);
@@ -317,35 +318,50 @@ function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false 
     : (amount || 'Your deposit');
   const heroIsMoney = !!depositN;
 
-  // Quiet one-line summary under the hero, travel-aware when the math is firm.
-  let total = '', remain = '', travelSub = '';
-  if (travelFee && priceN && depositN) {
-    const totalN = priceN + TRAVEL_FEE;
-    total = fmtMoney(totalN);
-    remain = fmtMoney(totalN - depositN);
-    travelSub = `${price} package + ${fmtMoney(TRAVEL_FEE)} local travel`;
-  } else if (priceN) {
-    total = price;
-    remain = remaining || (depositN && priceN > depositN ? fmtMoney(priceN - depositN) : '');
-  }
-
-  const summary = total ? `
-        <div style="border-top:1px solid #F0DCE6;max-width:300px;margin:20px auto 0;"></div>
-        <p style="font-size:14px;color:#6B636A;margin:16px 0 0;line-height:1.5;">Total <strong style="color:#16110F;">${total}</strong>${remain ? ` &nbsp;&middot;&nbsp; <strong style="color:#16110F;">${remain}</strong> due in cash on the day` : ''}</p>
-        ${travelSub ? `<p style="font-size:12px;color:#B3A6AC;margin:5px 0 0;">${travelSub}</p>` : ''}` : '';
-
   const hero = heroIsMoney
     ? `<p style="font-family:${EMAIL_FONT};font-size:46px;line-height:1;color:#16110F;margin:0;">${depositClean}</p>
         <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">deposit due now to lock in ${dateFormatted || 'your date'}</p>`
     : `<p style="font-family:${EMAIL_FONT};font-size:26px;line-height:1.15;color:#16110F;margin:0;">${depositClean}</p>
         <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">Send it via Zelle to lock in ${dateFormatted || 'your date'}</p>`;
 
+  // The receipt. Kept calm on purpose: muted labels, dark values, exactly ONE
+  // pink accent (the deposit due today), and a single hairline before the totals
+  // so it reads like a clean invoice instead of a busy table. Travel is a real
+  // line item only when it applies AND the package price is a firm number.
+  const rrow = (label, value, o = {}) => {
+    const edge = o.top ? 'border-top:1px solid #EFDEE7;padding-top:13px;' : '';
+    return `<tr>
+      <td style="padding:8px 0;${edge}font-size:13px;color:${o.bold ? '#16110F' : '#9A8E94'};${o.bold ? 'font-weight:700;' : ''}">${label}</td>
+      <td align="right" style="padding:8px 0;${edge}font-size:${o.bold ? '15px' : '13px'};font-weight:700;color:${o.accent || '#16110F'};">${value}</td>
+    </tr>`;
+  };
+
+  let receipt = '';
+  if (heroIsMoney && priceN) {
+    const totalN = priceN + (travelFee ? TRAVEL_FEE : 0);
+    const rows = [
+      rrow('Package total', price),
+      travelFee ? rrow('Local travel fee', `+${fmtMoney(TRAVEL_FEE)}`) : '',
+      travelFee ? rrow('Total investment', fmtMoney(totalN), { bold: true, top: true }) : '',
+      rrow('Deposit due today', depositClean, { accent: '#C4849A', top: !travelFee }),
+      rrow('Remaining balance', fmtMoney(totalN - depositN)),
+    ].filter(Boolean).join('');
+    const foot = travelFee
+      ? '*Travel fee applies to locations within approximately one hour of Mountain House, CA. Remaining balance is due in cash on the day.'
+      : 'Remaining balance is due in cash on the day.';
+    receipt = `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;margin:22px 0 0;"><tr><td style="padding:15px 18px;text-align:left;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
+          <p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:14px 0 0;">${foot}</p>
+        </td></tr></table>`;
+  }
+
   return `<tr><td style="padding:16px 24px 6px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
       <tr><td style="padding:30px 22px;text-align:center;">
         <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 16px;">Reserve Your Date</p>
         ${hero}
-        ${summary}
+        ${receipt}
       </td></tr>
     </table>
   </td></tr>`;
