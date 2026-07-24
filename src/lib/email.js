@@ -332,7 +332,7 @@ function czelleRecipient() {
     <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A8E94;margin:0 0 8px;">Send your Zelle to</p>
     <p style="font-size:15px;color:#16110F;font-weight:700;margin:0;">Ruqia Moshref</p>
     <p style="font-size:15px;color:#16110F;font-weight:700;margin:3px 0 0;word-break:break-all;">makeupbyroko22@gmail.com</p>
-    <p style="font-size:11.5px;color:#A99FA4;margin:8px 0 0;line-height:1.5;">This is the email address to enter <strong style="color:#6B636A;">inside your Zelle app</strong>. It's a recipient to copy, not a link, so tapping it won't open Zelle.</p>
+    <p style="font-size:11.5px;color:#A99FA4;margin:8px 0 0;line-height:1.5;"><strong style="color:#6B636A;">Press and hold to copy</strong> this address, then paste it into your Zelle app. Tapping it won't open Zelle on its own.</p>
   </td></tr></table>`;
 }
 
@@ -396,27 +396,51 @@ function corder(items) {
 // (a service row with no price, or a travel estimate that can't be divided) the
 // breakdown quietly collapses to just the deposit line.
 function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted, photos = false, noteLabel = 'appointment date', travelFee = false }) {
-  const breakdown = [
-    price ? `<tr>
-      <td style="padding:9px 0;font-size:13px;color:#9A8E94;border-bottom:1px solid #F6EDF2;">Package total</td>
-      <td align="right" style="padding:9px 0;font-size:13px;font-weight:700;color:#16110F;border-bottom:1px solid #F6EDF2;">${price}</td>
-    </tr>` : '',
-    `<tr>
-      <td style="padding:9px 0;font-size:13px;color:#9A8E94;${remaining ? 'border-bottom:1px solid #F6EDF2;' : ''}">Deposit due now</td>
-      <td align="right" style="padding:9px 0;font-size:15px;font-weight:700;color:#C4849A;${remaining ? 'border-bottom:1px solid #F6EDF2;' : ''}">${amount}</td>
-    </tr>`,
-    remaining ? `<tr>
-      <td style="padding:9px 0;font-size:13px;color:#9A8E94;">Remaining, cash on the day</td>
-      <td align="right" style="padding:9px 0;font-size:13px;font-weight:700;color:#16110F;">${remaining}</td>
-    </tr>` : '',
-  ].filter(Boolean).join('');
+  const TRAVEL_FEE = 200;
+  const priceN = moneyToNum(price);
+  const depositN = moneyToNum(amount);
+  // Rows show the deposit without the trailing word "deposit" (the hero already
+  // says it), so a row reads "Deposit due today  $375".
+  const depositClean = String(amount || '').replace(/\s*deposit\s*$/i, '').trim() || amount;
 
-  // Travel fee stated as a note, not a line item, so it never disturbs the
-  // deposit / remaining math. Matches the service agreement: studio = none,
-  // on-location = from $200, final total confirmed by Roko.
-  const travelNote = travelFee ? `<tr><td colspan="2" style="padding:12px 0 0;border-top:1px solid #F6EDF2;">
-    <p style="font-size:11.5px;color:#9A8E94;line-height:1.55;margin:12px 0 0;">On-location bookings include a travel fee <strong style="color:#16110F;">from $200</strong>, so this may not be your final total. Roko confirms the exact amount when she reaches out. In-studio appointments have no travel fee.</p>
-  </td></tr>` : '';
+  const brow = (label, value, o = {}) => {
+    const edge = o.last ? '' : 'border-bottom:1px solid #F6EDF2;';
+    return `<tr>
+      <td style="padding:9px 0;font-size:13px;color:${o.strong ? '#16110F' : '#9A8E94'};${o.strong ? 'font-weight:700;' : ''}${edge}">${label}</td>
+      <td align="right" style="padding:9px 0;font-size:${o.big ? '15px' : '13px'};font-weight:700;color:${o.accent || '#16110F'};${edge}">${value}</td>
+    </tr>`;
+  };
+
+  // When we have a real package price + deposit AND travel applies, show Roko's
+  // full picture: package + travel = total investment, deposit today, and the
+  // remaining balance (which now carries the travel fee) as cash on the day.
+  const showTravel = travelFee && priceN && depositN;
+  let rows, footnote = '';
+  if (showTravel) {
+    const totalN = priceN + TRAVEL_FEE;
+    rows = [
+      brow('Package total', price),
+      brow('Local travel fee', `+${fmtMoney(TRAVEL_FEE)}`, { accent: '#C4849A' }),
+      brow('Total investment', fmtMoney(totalN), { strong: true }),
+      brow('Deposit due today', depositClean, { accent: '#C4849A', big: true }),
+      brow('Remaining balance', fmtMoney(totalN - depositN), { last: true }),
+    ].join('');
+    footnote = `<tr><td colspan="2" style="padding:12px 0 0;">
+      <p style="font-size:11.5px;color:#A99FA4;line-height:1.55;margin:0;">*Travel fee applies to locations within approximately one hour of Mountain House, CA. Remaining balance is due in cash on the day.</p>
+    </td></tr>`;
+  } else {
+    rows = [
+      price ? brow('Package total', price) : '',
+      brow('Deposit due today', depositClean, { accent: '#C4849A', big: true, last: !remaining }),
+      remaining ? brow('Remaining balance', remaining, { last: true }) : '',
+    ].filter(Boolean).join('');
+    // travelFee but no firm math to divide (e.g. a "$750+" estimate) → keep a note.
+    if (travelFee) {
+      footnote = `<tr><td colspan="2" style="padding:12px 0 0;border-top:1px solid #F6EDF2;">
+        <p style="font-size:11.5px;color:#9A8E94;line-height:1.55;margin:12px 0 0;">On-location bookings include a travel fee <strong style="color:#16110F;">from $200</strong> (locations within about an hour of Mountain House, CA). Roko confirms your exact total when she reaches out.</p>
+      </td></tr>`;
+    }
+  }
 
   return `<tr><td style="padding:16px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
@@ -425,7 +449,7 @@ function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted,
         <p style="font-family:${EMAIL_FONT};font-size:36px;line-height:1;color:#16110F;margin:0 0 6px;">${amount}</p>
         <p style="font-size:13px;color:#8A7F85;margin:0 0 18px;">Send via Zelle to lock in ${dateFormatted}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 16px;"><tr><td style="padding:14px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${breakdown}${travelNote}</table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}${footnote}</table>
         </td></tr></table>
 
         ${czelleSteps(amount, photos)}
@@ -485,20 +509,13 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
     ? fmtMoney(totalNum - depositNum)
     : '';
 
-  const steps = [
-    ['1', `Send your ${serviceDeposit || 'Zelle'} deposit`, 'Ruqia Moshref · makeupbyroko22@gmail.com'],
-    ['2', 'Upload your screenshot', 'Use the secure button above'],
-    ['3', 'Roko confirms your appointment', 'Within 24–48 hours'],
-    remaining ? ['4', `Bring ${remaining} in cash on the day`, 'Remaining balance, due at your appointment'] : null,
-  ].filter(Boolean);
-
   return clientShell({
     preheader: `Your ${serviceName} request is in. Send your deposit to lock in ${dateFormatted}.`,
     content: `
       ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up ✦" })}
       ${cintro(`Your request is in! I'll reach out to confirm your time within <strong style="color:#16110F;">24–48 hours</strong>.`)}
       ${cdepositBreakdown({ amount: serviceDeposit || 'Deposit', price: total, remaining, uploadUrl, dateFormatted, travelFee: hasTravelFee })}
-      ${cstepsPanel('What Happens Next', steps)}
+      ${cpanel(`${ctitle('What Happens Next')}<p style="font-size:14px;color:#5A5258;line-height:1.7;margin:0;">Once your deposit lands, Roko confirms your appointment time within <strong style="color:#16110F;">24–48 hours</strong>. Your remaining balance is due in cash on the day.</p>`)}
       ${cpanel(`${ctitle('Booking Summary')}${crows(summaryRows + ctotalRow('Estimated Total', total))}`)}
       ${contractSection}
     `,
@@ -540,22 +557,13 @@ export function bridalConfirmationEmail({
     hairstylist ? crow('Hairstylist', hairstylist) : '',
   ].filter(Boolean).join('');
 
-  const steps = [
-    ['1', `Send your ${bridalDeposit || 'Zelle'} deposit`, 'Ruqia Moshref · makeupbyroko22@gmail.com'],
-    ['2', 'Upload your screenshot & photos', 'Use your private link above'],
-    ['3', 'Roko confirms + schedules your consultation', 'Within 24–48 hours'],
-    bridalRemaining
-      ? ['4', `Bring ${bridalRemaining} in cash on the day`, 'Remaining balance, due at your appointment']
-      : null,
-  ].filter(Boolean);
-
   return clientShell({
     preheader: `Your bridal inquiry for ${bridalTitle} is in. ${bridalDeposit || 'Your deposit'} locks in ${bridalDateFormatted}.`,
     content: `
       ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
       ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
       ${cdepositBreakdown({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, uploadUrl, dateFormatted: bridalDateFormatted, photos: true, noteLabel: 'wedding date', travelFee: !isTrialPkg })}
-      ${cstepsPanel('What Happens Next', steps)}
+      ${cpanel(`${ctitle('What Happens Next')}<p style="font-size:14px;color:#5A5258;line-height:1.7;margin:0;">Once your deposit lands, Roko confirms your date and schedules your consultation within <strong style="color:#16110F;">24–48 hours</strong>. Your remaining balance is due in cash on the day.</p>`)}
       ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
       ${additionalDetails ? cpanel(`${ctitle('Your Vision')}<p style="font-size:14px;color:#5A5258;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>`) : ''}
