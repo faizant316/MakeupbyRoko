@@ -367,22 +367,18 @@ function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false 
   </td></tr>`;
 }
 
-// The one big call to action. Sits right under the money box so the next move
-// is unmissable: a bold pointing lead-in, a full-width oversized button, and a
-// plain-language note about what happens on the other side (so it never feels
-// risky). Deliberately the loudest element in the email, everything above is
-// meant to funnel the eye straight to it.
+// The one big call to action, right under the money box. A single quiet prompt
+// over a large, full-width, pill-shaped button, so it's inviting and obvious
+// without any hype copy around it.
 function cactionButton(uploadUrl, { photos = false } = {}) {
   const label = photos ? 'Send Deposit &amp; Upload Photos' : 'Send Deposit &amp; Upload';
-  return `<tr><td style="padding:12px 24px 6px;text-align:center;">
-    <p style="font-size:15px;font-weight:700;color:#16110F;margin:0 0 4px;">Ready? Here's your one button 👇</p>
-    <p style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 14px;">Tap it to send your deposit</p>
+  return `<tr><td style="padding:14px 24px 10px;text-align:center;">
+    <p style="font-size:14px;font-weight:600;color:#6B636A;margin:0 0 15px;">Tap below to send your deposit</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td align="center" bgcolor="#C4849A" style="border-radius:16px;box-shadow:0 10px 26px rgba(196,132,154,0.5);">
-        <a href="${uploadUrl}" style="display:block;padding:22px 20px;font-size:19px;font-weight:800;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:16px;text-align:center;">${label} &nbsp;→</a>
+      <td align="center" bgcolor="#C4849A" style="border-radius:999px;box-shadow:0 8px 20px rgba(196,132,154,0.3);">
+        <a href="${uploadUrl}" style="display:block;padding:22px 24px;font-size:18px;font-weight:700;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:999px;text-align:center;">${label} &nbsp;→</a>
       </td>
     </tr></table>
-    <p style="font-size:12.5px;color:#8A7F85;margin:14px 0 0;line-height:1.55;">This is the only button you need. On the next screen you'll send your Zelle deposit${photos ? ' and add a couple photos' : ''}, all in one place, in about two minutes.</p>
   </td></tr>`;
 }
 
