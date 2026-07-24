@@ -948,6 +948,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <label className={labelClass}>Where would you like to get ready? *</label>
                 <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Wherever you'll be getting ready, hotel, home, or venue. Roko travels to you for full-day coverage, she doesn't do full days at her studio.</p>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
+                <div className="mt-3 relative pl-3.5">
+                  <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                  <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
+                  <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                    Full-day coverage is on-location, so it includes a <strong style={{ color: '#4A423E' }}>$200 local travel fee</strong>, added to your remaining balance and paid in cash on the day. Applies to locations within about an hour of Mountain House, CA.
+                  </p>
+                </div>
               </div>
             ) : (
               <div>
@@ -984,6 +991,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <div className="mt-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
                     <label className={labelClass}>Where will you be getting ready? *</label>
                     <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
+                    <div className="mt-3 relative pl-3.5">
+                      <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                      <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
+                      <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                        On-location bookings include a <strong style={{ color: '#4A423E' }}>$200 local travel fee</strong>, added to your remaining balance and paid in cash on the day. Applies to locations within about an hour of Mountain House, CA.
+                      </p>
+                    </div>
                   </div>
                 )}
 
