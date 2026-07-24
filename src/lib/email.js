@@ -97,7 +97,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
     ${content}
     <tr><td style="padding:22px 28px 0;background:#FBF5F8;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #F0E6EC;border-radius:12px;"><tr><td style="padding:14px 18px;text-align:center;">
-        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Questions, or need to change your time? Just <strong style="color:#16110F;">reply to this email</strong> and it comes straight to Roko.</p>
+        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Questions, or need to change your time? Just <a href="mailto:${REPLY_TO}?subject=${encodeURIComponent('Question about my Makeup by Roko booking')}" style="color:#16110F;font-weight:700;text-decoration:underline;">reply to this email</a> and it comes straight to Roko.</p>
       </td></tr></table>
     </td></tr>
     <tr><td style="padding:20px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
@@ -361,7 +361,7 @@ function corder(items) {
 // "appointment date". Price and remaining are optional: when they're missing
 // (a service row with no price, or a travel estimate that can't be divided) the
 // breakdown quietly collapses to just the deposit line.
-function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted, photos = false, noteLabel = 'appointment date' }) {
+function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted, photos = false, noteLabel = 'appointment date', travelFee = false }) {
   const breakdown = [
     price ? `<tr>
       <td style="padding:9px 0;font-size:13px;color:#9A8E94;border-bottom:1px solid #F6EDF2;">Package total</td>
@@ -377,19 +377,48 @@ function cdepositBreakdown({ amount, price, remaining, uploadUrl, dateFormatted,
     </tr>` : '',
   ].filter(Boolean).join('');
 
+  // Travel fee stated as a note, not a line item, so it never disturbs the
+  // deposit / remaining math. Matches the service agreement: studio = none,
+  // on-location = from $200, final total confirmed by Roko.
+  const travelNote = travelFee ? `<tr><td colspan="2" style="padding:12px 0 0;border-top:1px solid #F6EDF2;">
+    <p style="font-size:11.5px;color:#9A8E94;line-height:1.55;margin:12px 0 0;">On-location bookings include a travel fee <strong style="color:#16110F;">from $200</strong>, so this may not be your final total. Roko confirms the exact amount when she reaches out. In-studio appointments have no travel fee.</p>
+  </td></tr>` : '';
+
+  // Numbered "how to send" steps so a first-timer knows the deposit is a manual
+  // Zelle transfer, not something the email or the button can do for them.
+  const step = (n, html) => `<tr>
+    <td width="30" valign="top" style="padding:7px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="22" height="22" align="center" valign="middle" bgcolor="#FBF1F6" style="border-radius:50%;font-size:11px;font-weight:700;color:#C4849A;">${n}</td></tr></table>
+    </td>
+    <td valign="middle" style="padding:7px 0 7px 6px;font-size:13px;color:#5A5258;line-height:1.5;">${html}</td>
+  </tr>`;
+
   return `<tr><td style="padding:16px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
       <tr><td style="padding:26px 22px;text-align:center;">
         <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">Reserve Your Date</p>
         <p style="font-family:${EMAIL_FONT};font-size:36px;line-height:1;color:#16110F;margin:0 0 6px;">${amount}</p>
         <p style="font-size:13px;color:#8A7F85;margin:0 0 18px;">Send via Zelle to lock in ${dateFormatted}</p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${breakdown}</table>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;padding-top:14px;border-top:1px solid #F0E0E9;">
-            <tr><td style="font-size:13px;color:#9A8E94;padding:0 0 6px;">Zelle to</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;padding:0 0 6px;">Ruqia Moshref</td></tr>
-            <tr><td style="font-size:13px;color:#9A8E94;">Email</td><td align="right" style="font-size:13px;color:#16110F;font-weight:700;">makeupbyroko22@gmail.com</td></tr>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 16px;"><tr><td style="padding:14px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${breakdown}${travelNote}</table>
+        </td></tr></table>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 16px;"><tr><td style="padding:16px 16px 6px;text-align:left;">
+          <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">How to send your deposit</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            ${step(1, `Open your <strong style="color:#16110F;">Zelle app</strong> (or your bank's Zelle) and send <strong style="color:#16110F;">${amount}</strong> to the email below.`)}
+            ${step(2, `Take a <strong style="color:#16110F;">screenshot</strong> of the confirmation.`)}
+            ${step(3, `Tap the button below and <strong style="color:#16110F;">upload your screenshot${photos ? ' &amp; photos' : ''}</strong>.`)}
           </table>
         </td></tr></table>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF7F9;border-radius:12px;border:1px solid #F0E0E9;margin:0 0 18px;"><tr><td style="padding:14px 16px;text-align:left;">
+          <p style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A8E94;margin:0 0 8px;">Send your Zelle to</p>
+          <p style="font-size:15px;color:#16110F;font-weight:700;margin:0;">Ruqia Moshref</p>
+          <p style="font-size:15px;color:#16110F;font-weight:700;margin:3px 0 0;word-break:break-all;">makeupbyroko22@gmail.com</p>
+          <p style="font-size:11.5px;color:#A99FA4;margin:8px 0 0;line-height:1.5;">This is the email address to enter <strong style="color:#6B636A;">inside your Zelle app</strong>. It's a recipient to copy, not a link, so tapping it won't open Zelle.</p>
+        </td></tr></table>
+
         ${clientButton(uploadUrl, photos ? 'Upload Screenshot &amp; Photos' : 'Upload Zelle Screenshot')}
         ${photos ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 0;background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;"><tr><td style="padding:13px 16px;text-align:left;">
           <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:#C4849A;margin:0 0 4px;">Also upload your photos</p>
@@ -456,7 +485,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
     content: `
       ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up ✦" })}
       ${cintro(`Your request is in! I'll reach out to confirm your time within <strong style="color:#16110F;">24–48 hours</strong>.`)}
-      ${cdepositBreakdown({ amount: serviceDeposit || 'Deposit', price: total, remaining, uploadUrl, dateFormatted })}
+      ${cdepositBreakdown({ amount: serviceDeposit || 'Deposit', price: total, remaining, uploadUrl, dateFormatted, travelFee: hasTravelFee })}
       ${cstepsPanel('What Happens Next', steps)}
       ${cpanel(`${ctitle('Booking Summary')}${crows(summaryRows + ctotalRow('Estimated Total', total))}`)}
       ${contractSection}
@@ -513,7 +542,7 @@ export function bridalConfirmationEmail({
     content: `
       ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
       ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
-      ${cdepositBreakdown({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, uploadUrl, dateFormatted: bridalDateFormatted, photos: true, noteLabel: 'wedding date' })}
+      ${cdepositBreakdown({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, uploadUrl, dateFormatted: bridalDateFormatted, photos: true, noteLabel: 'wedding date', travelFee: !isTrialPkg })}
       ${cstepsPanel('What Happens Next', steps)}
       ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
