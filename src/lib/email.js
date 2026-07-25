@@ -376,7 +376,7 @@ function cactionButton(uploadUrl, { photos = false } = {}) {
     <p style="font-size:14px;font-weight:600;color:#6B636A;margin:0 0 15px;">Tap below to send your deposit</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
       <td align="center" bgcolor="#C4849A" style="border-radius:999px;box-shadow:0 8px 20px rgba(196,132,154,0.3);">
-        <a href="${uploadUrl}" style="display:block;padding:22px 24px;font-size:18px;font-weight:700;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:999px;text-align:center;">${label} &nbsp;→</a>
+        <a href="${uploadUrl}" style="display:block;padding:19px 18px;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:999px;text-align:center;">${label}</a>
       </td>
     </tr></table>
   </td></tr>`;
