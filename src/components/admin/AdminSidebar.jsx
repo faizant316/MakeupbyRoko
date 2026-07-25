@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 export const ADMIN_TABS = [
   { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments', icon: 'home'     },
   { key: 'clients',      label: 'Clients',        sub: 'Directory & smart groups', icon: 'users'    },
-  { key: 'availability', label: 'Availability',   sub: 'Capacity & days off',     icon: 'calendar' },
+  { key: 'availability', label: 'Calendar',       sub: 'Appointments & days off', icon: 'calendar' },
   { key: 'services',     label: 'Services',       sub: 'Edit & update offerings',  icon: 'sparkles' },
   { key: 'reviews',      label: 'Reviews',        sub: 'Approve & manage',        icon: 'star'     },
   { key: 'classes',      label: 'Class Sign-Ups', sub: 'Registrations',           icon: 'cap'      },
