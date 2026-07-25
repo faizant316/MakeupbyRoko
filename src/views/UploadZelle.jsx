@@ -118,14 +118,14 @@ function CopyButton({ value }) {
     <button
       type="button"
       onClick={copy}
-      className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.62rem] font-bold uppercase tracking-wide touch-manipulation transition-all active:scale-95"
-      style={{ background: copied ? '#EAF6EE' : HEAD_BG, color: copied ? '#3F9D5B' : PLUM, WebkitTapHighlightColor: 'transparent' }}
+      className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[0.68rem] font-bold uppercase tracking-wide text-white touch-manipulation transition-all active:scale-95"
+      style={{ background: copied ? '#3F9D5B' : PLUM, boxShadow: copied ? 'none' : '0 4px 12px rgba(196,132,154,0.35)', WebkitTapHighlightColor: 'transparent' }}
       aria-label="Copy email address"
     >
       {copied ? (
-        <><svg viewBox="0 0 24 24" fill="none" stroke="#3F9D5B" strokeWidth="2.6" className="w-3 h-3">{ICON.check}</svg>Copied</>
+        <><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" className="w-3.5 h-3.5">{ICON.check}</svg>Copied</>
       ) : (
-        <><svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.8" className="w-3 h-3">{ICON.copy}</svg>Copy</>
+        <><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" className="w-3.5 h-3.5">{ICON.copy}</svg>Copy</>
       )}
     </button>
   );
@@ -776,26 +776,28 @@ export default function UploadZelle() {
                     <div className="px-4 py-4" style={{ borderRadius: 14, border: `1px solid ${CARD_BORDER}`, background: '#FEFCFD' }}>
                       <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-3" style={{ color: PLUM }}>How to send your deposit</p>
                       <ol className="flex flex-col gap-2.5">
-                        <HowStep n={1}>Open your <strong style={{ color: VALUE }}>Zelle app</strong> and send{depositDisplay ? <> <strong style={{ color: VALUE }}>{depositDisplay}</strong></> : ' your deposit'} to the address below.</HowStep>
+                        <HowStep n={1}>Open <strong style={{ color: VALUE }}>Zelle</strong> in your banking app and send{depositDisplay ? <> <strong style={{ color: VALUE }}>{depositDisplay}</strong></> : ' your deposit'} to the address below.</HowStep>
                         <HowStep n={2}>Take a <strong style={{ color: VALUE }}>screenshot</strong> of the confirmation.</HowStep>
-                        <HowStep n={3}>Come back here and upload it{isBridal ? ' with your photos' : ''}.</HowStep>
+                        <HowStep n={3}>Come back and <strong style={{ color: VALUE }}>upload your screenshot</strong> here.</HowStep>
                       </ol>
 
-                      {/* Recipient, folded into the same card with a one-tap copy. */}
+                      {/* Recipient, folded into the same card. Name + email are
+                          right-aligned values; the copy button is a big filled
+                          pill so it's obviously the thing to tap. */}
                       <div className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDER}` }}>
                         <div className="flex items-center justify-between gap-3">
                           <span className="text-[0.56rem] font-semibold tracking-[0.14em] uppercase" style={{ color: LABEL }}>Zelle to</span>
                           <span className="text-[0.85rem] font-semibold" style={{ color: VALUE }}>Ruqia Moshref</span>
                         </div>
-                        <div className="mt-2.5 flex items-center justify-between gap-2.5">
+                        <div className="mt-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-[0.56rem] font-semibold tracking-[0.14em] uppercase mb-0.5" style={{ color: LABEL }}>Email</p>
-                            <p className="text-[0.85rem] font-bold break-all leading-snug" style={{ color: VALUE }}>makeupbyroko22@gmail.com</p>
+                            <p className="text-[0.9rem] font-bold break-all leading-snug" style={{ color: VALUE }}>makeupbyroko22@gmail.com</p>
                           </div>
                           <CopyButton value="makeupbyroko22@gmail.com" />
                         </div>
-                        <p className="mt-3 text-[0.66rem] leading-[1.55]" style={{ color: LABEL }}>
-                          Tap <strong style={{ color: PLUM_DARK }}>Copy</strong> and paste it into your Zelle app (it's the recipient address, not a link). Add your <strong style={{ color: PLUM_DARK }}>name + {isBridal ? 'wedding' : 'appointment'} date</strong> in the memo. Remaining balance is cash on the day.
+                        <p className="mt-3 text-[0.68rem] leading-[1.5]" style={{ color: LABEL }}>
+                          Add your <strong style={{ color: PLUM_DARK }}>name + {isBridal ? 'wedding' : 'appointment'} date</strong> in the Zelle memo.
                         </p>
                       </div>
                     </div>
