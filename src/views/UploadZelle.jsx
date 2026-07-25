@@ -118,14 +118,14 @@ function CopyButton({ value }) {
     <button
       type="button"
       onClick={copy}
-      className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[0.68rem] font-bold uppercase tracking-wide text-white touch-manipulation transition-all active:scale-95"
-      style={{ background: copied ? '#3F9D5B' : PLUM, boxShadow: copied ? 'none' : '0 4px 12px rgba(196,132,154,0.35)', WebkitTapHighlightColor: 'transparent' }}
+      className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[0.6rem] font-bold uppercase tracking-wide text-white touch-manipulation transition-all active:scale-95"
+      style={{ background: copied ? '#3F9D5B' : PLUM, WebkitTapHighlightColor: 'transparent' }}
       aria-label="Copy email address"
     >
       {copied ? (
-        <><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" className="w-3.5 h-3.5">{ICON.check}</svg>Copied</>
+        <><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" className="w-3 h-3">{ICON.check}</svg>Copied</>
       ) : (
-        <><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" className="w-3.5 h-3.5">{ICON.copy}</svg>Copy</>
+        <><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" className="w-3 h-3">{ICON.copy}</svg>Copy</>
       )}
     </button>
   );
@@ -792,7 +792,7 @@ export default function UploadZelle() {
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-[0.56rem] font-semibold tracking-[0.14em] uppercase mb-0.5" style={{ color: LABEL }}>Email</p>
-                            <p className="text-[0.9rem] font-bold break-all leading-snug" style={{ color: VALUE }}>makeupbyroko22@gmail.com</p>
+                            <p className="text-[0.82rem] font-bold break-all leading-snug" style={{ color: VALUE }}>makeupbyroko22@gmail.com</p>
                           </div>
                           <CopyButton value="makeupbyroko22@gmail.com" />
                         </div>
