@@ -1,15 +1,46 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { scrollToTarget } from '@/lib/lenis';
 import AdminCalendar from './AdminCalendar';
 
 const SETTING_KEY = 'max_bookings_per_day';
 const DEFAULT_CAP = 3;
+const MAX_RANGE_DAYS = 120; // guards against a mistyped year closing the calendar
 const pad = (n) => String(n).padStart(2, '0');
 const keyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const todayKey = () => keyOf(new Date());
 const fmtDay = (key, opts) =>
   new Date(key + 'T00:00:00').toLocaleDateString('en-US', opts || { weekday: 'short', month: 'short', day: 'numeric' });
+
+// Every date from `from` to `to` inclusive. Built by stepping a local Date so
+// month ends and DST both fall out correctly.
+const datesBetween = (from, to) => {
+  const out = [];
+  const d = new Date(from + 'T00:00:00');
+  const end = new Date(to + 'T00:00:00');
+  while (d <= end) { out.push(keyOf(d)); d.setDate(d.getDate() + 1); }
+  return out;
+};
+
+const dayAfter = (key) => { const d = new Date(key + 'T00:00:00'); d.setDate(d.getDate() + 1); return keyOf(d); };
+
+// Collapse a sorted list of days off into trips: consecutive days that share a
+// reason become one entry, so a week away reads as one row, not seven. Days
+// with different reasons stay apart even when they touch.
+const groupRuns = (rows) => {
+  const runs = [];
+  for (const r of rows) {
+    const last = runs[runs.length - 1];
+    if (last && dayAfter(last.end) === r.date && (last.reason || '') === (r.reason || '')) {
+      last.end = r.date;
+      last.items.push(r);
+    } else {
+      runs.push({ start: r.date, end: r.date, reason: r.reason || '', items: [r] });
+    }
+  }
+  return runs;
+};
 
 // ── Circular capacity meter ─────────────────────────────────
 // Shows how full a day is at a glance: ring fills as bookings approach the
@@ -73,6 +104,11 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
   const [defaultEdit, setDefaultEdit] = useState(DEFAULT_CAP);
   const [defaultSaved, setDefaultSaved] = useState(false);
   const [daySaved, setDaySaved] = useState(false);
+  const [rangeFrom, setRangeFrom] = useState('');
+  const [rangeTo, setRangeTo] = useState('');
+  const [rangeReason, setRangeReason] = useState('');
+  const [rangeDone, setRangeDone] = useState(0);
+  const panelRef = useRef(null);
 
   // ── Data ──
   const { data: settings = [] } = useQuery({
@@ -117,6 +153,38 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
     () => blocked.filter(b => b.date >= tk).sort((a, b) => a.date.localeCompare(b.date)),
     [blocked, tk],
   );
+  // Days off read as trips ("Aug 19 to Aug 26"), not 8 separate rows.
+  const blockedRuns = useMemo(() => groupRuns(upcomingBlocked), [upcomingBlocked]);
+
+  // ── Range picker preview ──
+  // A missing end date just means a single day, so From alone is already valid.
+  const rangeEnd = rangeTo && rangeTo >= rangeFrom ? rangeTo : rangeFrom;
+  const rangeBackwards = Boolean(rangeFrom && rangeTo && rangeTo < rangeFrom);
+  const rangeDays = useMemo(
+    () => (rangeFrom && !rangeBackwards ? datesBetween(rangeFrom, rangeEnd) : []),
+    [rangeFrom, rangeEnd, rangeBackwards],
+  );
+  const rangeTooLong = rangeDays.length > MAX_RANGE_DAYS;
+  const rangeNew = useMemo(() => rangeDays.filter(d => !blockedSet.has(d)), [rangeDays, blockedSet]);
+  // Closing a day never cancels anything, so surface what's already on the
+  // books before she commits rather than after.
+  const rangeConflicts = useMemo(() => {
+    if (!rangeDays.length) return [];
+    const inRange = new Set(rangeDays);
+    const out = [];
+    (bookings || []).forEach(b => {
+      if (inRange.has(b.date) && ['confirmed', 'pending'].includes(b.status)) {
+        out.push({ date: b.date, label: b.name || 'Client', kind: b.service || 'Appointment' });
+      }
+    });
+    (classRegs || []).forEach(c => {
+      if (inRange.has(c.appointment_date)) {
+        out.push({ date: c.appointment_date, label: c.full_name || 'Client', kind: 'Class' });
+      }
+    });
+    return out.sort((a, b) => a.date.localeCompare(b.date));
+  }, [rangeDays, bookings, classRegs]);
+
   const fullyBookedSoon = useMemo(() => {
     let n = 0; const d = new Date();
     for (let i = 0; i < 30; i++) {
@@ -188,9 +256,59 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
     onSettled: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
   });
 
+  // Whole trip in one request, then clear the form and report how many landed.
+  const blockRange = useMutation({
+    mutationFn: (dates) => api.entities.BlockedDate.create(dates.map(date => ({ date, reason: rangeReason.trim() }))),
+    onSuccess: (_d, dates) => {
+      qc.invalidateQueries({ queryKey: ['blocked-dates'] });
+      setRangeDone(dates.length);
+      setRangeFrom(''); setRangeTo(''); setRangeReason('');
+      setTimeout(() => setRangeDone(0), 3200);
+    },
+  });
+  // Reopening a trip is one tap, not one per day.
+  const unblockMany = useMutation({
+    mutationFn: (rows) => Promise.all(
+      rows
+        // Re-resolve against the cache so an optimistic temp row from a
+        // just-blocked day doesn't send a bogus id to the server.
+        .map(r => blockedRecByDate[r.date] || r)
+        .filter(r => r?.id && !String(r.id).startsWith('temp-'))
+        .map(r => api.entities.BlockedDate.delete(r.id)),
+    ),
+    onMutate: async (rows) => {
+      await qc.cancelQueries({ queryKey: ['blocked-dates'] });
+      const prev = qc.getQueryData(['blocked-dates']);
+      const gone = new Set(rows.map(r => r.date));
+      qc.setQueryData(['blocked-dates'], (old = []) => old.filter(b => !gone.has(b.date)));
+      return { prev };
+    },
+    onError: (_e, _rows, ctx) => { if (ctx?.prev) qc.setQueryData(['blocked-dates'], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
+  });
+
   const jumpTo = (key) => { setSelectedDate(key); setMonth(new Date(key + 'T00:00:00')); };
 
+  // On a phone the control panel sits below the calendar, so tapping a date
+  // used to leave "Close this day off" off-screen. Go through Lenis, which
+  // owns the scroll position (a bare scrollIntoView gets undone by its RAF).
+  useEffect(() => {
+    if (!selectedDate || typeof window === 'undefined') return;
+    if (window.matchMedia('(min-width: 1024px)').matches) return; // side by side already
+    const id = requestAnimationFrame(() => {
+      if (panelRef.current) scrollToTarget(panelRef.current, { offset: -72 });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [selectedDate]);
+
   const card = { background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` };
+  const field = {
+    background: dm ? '#1e1e24' : '#fff',
+    border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}`,
+    color: dm ? '#e4e4e7' : '#111',
+    colorScheme: dm ? 'dark' : 'light',
+  };
+  const fieldLabel = { color: dm ? '#71717a' : '#A6A6AF' };
   const spotsLeft = effForSelected - selBooked;
 
   // ── Glance stats ──
@@ -206,7 +324,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
     <div className="pb-4">
       {/* Intro line */}
       <p className="text-[0.8rem] leading-relaxed mb-5 max-w-xl" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
-        Control how many bookings you take each day. Set a default for every day, then tap any date to give it a custom limit or close it off entirely.
+        Control how many bookings you take each day. Tap any date to give it a custom limit or close it off, or use "Going away?" to close a whole trip at once. Mondays and Thursdays are always closed, so you never need to block those.
       </p>
 
       {/* Glance stats */}
@@ -234,7 +352,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
         />
 
         {/* Control panel */}
-        <div className="lg:sticky lg:top-20 flex flex-col gap-4">
+        <div ref={panelRef} className="lg:sticky lg:top-20 flex flex-col gap-4 scroll-mt-20">
           {/* Selected-day editor */}
           {selectedDate ? (
             <div className="rounded-xl p-5" style={card}>
@@ -338,6 +456,156 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
             </div>
           )}
 
+          {/* Block time off — a whole trip in one go */}
+          <div className="rounded-xl p-5" style={card}>
+            <h3 className="text-[0.78rem] font-semibold mb-1.5" style={{ color: dm ? '#ECEDF1' : '#111' }}>Going away?</h3>
+            <p className="text-[0.7rem] mb-4 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+              Pick the first and last day of your trip and close the whole stretch at once. Leave the last day empty to close just one day.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase" style={fieldLabel}>First day</span>
+                <input
+                  type="date" value={rangeFrom} min={tk}
+                  onChange={(e) => { setRangeFrom(e.target.value); if (rangeTo && rangeTo < e.target.value) setRangeTo(''); }}
+                  className="w-full rounded-xl px-3 py-2.5 text-[0.8rem] outline-none" style={field} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase" style={fieldLabel}>Last day</span>
+                <input
+                  type="date" value={rangeTo} min={rangeFrom || tk} disabled={!rangeFrom}
+                  onChange={(e) => setRangeTo(e.target.value)}
+                  className="w-full rounded-xl px-3 py-2.5 text-[0.8rem] outline-none disabled:opacity-45" style={field} />
+              </label>
+            </div>
+
+            <input
+              type="text" value={rangeReason} onChange={(e) => setRangeReason(e.target.value)}
+              placeholder="Reason (optional), e.g. Canada trip" maxLength={60}
+              className="w-full rounded-xl px-3 py-2.5 text-[0.8rem] outline-none mt-2.5" style={field} />
+
+            {/* Live read-out of exactly what the button will do */}
+            {rangeFrom && (
+              <div className="mt-3.5 text-[0.72rem] leading-relaxed">
+                {rangeBackwards ? (
+                  <p style={{ color: '#E0795B' }}>The last day is before the first day.</p>
+                ) : rangeTooLong ? (
+                  <p style={{ color: '#E0795B' }}>
+                    That's {rangeDays.length} days. Close {MAX_RANGE_DAYS} days or fewer at a time.
+                  </p>
+                ) : (
+                  <p style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+                    <span className="font-semibold" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
+                      {fmtDay(rangeFrom)}{rangeDays.length > 1 ? ` to ${fmtDay(rangeEnd)}` : ''}
+                    </span>
+                    {' · '}{rangeDays.length} day{rangeDays.length === 1 ? '' : 's'}
+                    {rangeNew.length < rangeDays.length && (
+                      <span style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                        {' '}({rangeDays.length - rangeNew.length} already closed)
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Closing a day never cancels anything, so say what's already booked */}
+            {rangeConflicts.length > 0 && !rangeTooLong && (
+              <div className="mt-3 rounded-xl px-3 py-2.5" style={{ background: dm ? 'rgba(224,121,91,0.12)' : '#FFF8F5', border: `1px solid ${dm ? 'rgba(224,121,91,0.35)' : '#F6DCD1'}` }}>
+                <p className="text-[0.68rem] font-semibold mb-1" style={{ color: '#E0795B' }}>
+                  {rangeConflicts.length} booking{rangeConflicts.length === 1 ? '' : 's'} already on these days
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {rangeConflicts.slice(0, 4).map((c, i) => (
+                    <p key={i} className="text-[0.66rem]" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+                      {fmtDay(c.date)} · {c.label} · {c.kind}
+                    </p>
+                  ))}
+                  {rangeConflicts.length > 4 && (
+                    <p className="text-[0.66rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>+{rangeConflicts.length - 4} more</p>
+                  )}
+                </div>
+                <p className="text-[0.64rem] mt-1.5 leading-relaxed" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                  Closing the days won't cancel these. Reach out to them yourself.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => blockRange.mutate(rangeNew)}
+              disabled={!rangeNew.length || rangeTooLong || rangeBackwards || blockRange.isPending}
+              className="w-full mt-4 py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99]"
+              style={(!rangeNew.length || rangeTooLong || rangeBackwards)
+                ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#52525b' : '#b4b4bd', cursor: 'not-allowed' }
+                : { background: '#E05549', color: '#fff', boxShadow: '0 1px 3px rgba(224,85,73,0.25)' }}>
+              {blockRange.isPending
+                ? 'Closing…'
+                : !rangeFrom
+                ? 'Pick a first day'
+                : rangeBackwards
+                ? 'Check those dates'
+                : rangeTooLong
+                ? 'Too many days'
+                : !rangeNew.length
+                ? 'Already closed'
+                : `Close ${rangeNew.length} day${rangeNew.length === 1 ? '' : 's'} off`}
+            </button>
+
+            {rangeDone > 0 && (
+              <p className="text-[0.7rem] font-medium mt-2.5 text-center" style={{ color: '#A0607A' }}>
+                ✓ Closed {rangeDone} day{rangeDone === 1 ? '' : 's'}. Clients can't book them.
+              </p>
+            )}
+            {blockRange.isError && (
+              <p className="text-[0.7rem] mt-2.5 text-center" style={{ color: '#E05549' }}>
+                Couldn't save that. Check your connection and try again.
+              </p>
+            )}
+          </div>
+
+          {/* Days off — consecutive days collapse into one trip */}
+          {blockedRuns.length > 0 && (
+            <div className="rounded-xl p-5" style={card}>
+              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={fieldLabel}>
+                Days off · {upcomingBlocked.length} day{upcomingBlocked.length === 1 ? '' : 's'} coming up
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {blockedRuns.map(run => {
+                  const many = run.items.length > 1;
+                  const isSel = run.items.some(i => i.date === selectedDate);
+                  return (
+                    <div key={`${run.start}-${run.end}`}
+                      onClick={() => jumpTo(run.start)}
+                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all"
+                      style={{ background: isSel ? (dm ? '#2e1e1e' : '#FEF2F2') : (dm ? '#1e1e24' : '#FdF8F7'), border: `1px solid ${isSel ? 'rgba(239,68,68,0.5)' : (dm ? '#3a3a48' : '#f3e6e2')}` }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[0.7rem] flex-shrink-0" style={{ color: '#EF4444' }}>✕</span>
+                        <div className="min-w-0">
+                          <p className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>
+                            {many ? `${fmtDay(run.start)} to ${fmtDay(run.end)}` : fmtDay(run.start)}
+                          </p>
+                          {(many || run.reason) && (
+                            <p className="text-[0.63rem] truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                              {many ? `${run.items.length} days` : ''}{many && run.reason ? ' · ' : ''}{run.reason}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); unblockMany.mutate(run.items); }}
+                        className="text-[0.62rem] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0"
+                        style={{ color: dm ? '#a1a1aa' : '#9c9ca4' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#A0607A'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#9c9ca4'; }}>
+                        {many ? 'Reopen all' : 'Reopen'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Default capacity */}
           <div className="rounded-xl p-5" style={card}>
             <div className="flex items-center gap-2 mb-1.5">
@@ -361,33 +629,6 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
             </div>
           </div>
 
-          {/* Days off */}
-          {upcomingBlocked.length > 0 && (
-            <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>Days off</p>
-              <div className="flex flex-col gap-1.5">
-                {upcomingBlocked.map(b => (
-                  <div key={b.id}
-                    onClick={() => jumpTo(b.date)}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all"
-                    style={{ background: selectedDate === b.date ? (dm ? '#2e1e1e' : '#FEF2F2') : (dm ? '#1e1e24' : '#FdF8F7'), border: `1px solid ${selectedDate === b.date ? 'rgba(239,68,68,0.5)' : (dm ? '#3a3a48' : '#f3e6e2')}` }}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[0.7rem]" style={{ color: '#EF4444' }}>✕</span>
-                      <span className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>{fmtDay(b.date)}</span>
-                      {b.reason && <span className="text-[0.65rem] truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>· {b.reason}</span>}
-                    </div>
-                    <button onClick={(e) => { e.stopPropagation(); unblockDay.mutate(b.date); }}
-                      className="text-[0.62rem] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0"
-                      style={{ color: dm ? '#a1a1aa' : '#9c9ca4' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#A0607A'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#9c9ca4'; }}>
-                      Reopen
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
