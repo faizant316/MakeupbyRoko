@@ -240,6 +240,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           dense
           activeDay={selectedDate}
           onOpenDay={handleSingleClick}
+          onDoubleActivate={(key) => (blockedSet.has(key) ? handleUnblock(blockedMap[key]?.id) : handleDoubleClick(key))}
           onEventClick={openEvent}
         />
       </>
@@ -342,7 +343,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             })}
           </div>
           <span className="text-[0.6rem] tracking-wide hidden sm:block italic" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
-            {view === 'month' ? 'Tap a day to filter · days off live in Calendar' : 'Double-click to block a date'}
+            {view === 'month' ? 'Tap a day to filter · double-tap to close it off' : 'Double-click to block a date'}
           </span>
         </div>
 
