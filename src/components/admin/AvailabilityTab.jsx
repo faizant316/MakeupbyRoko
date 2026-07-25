@@ -3,6 +3,7 @@ import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
 import MonthCalendar, { OFF_RED, CLASS_PINK, startTime, dotOf } from './MonthCalendar';
+import BlockDaysSheet from './BlockDaysSheet';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { STATUS_COLORS, CONSULT_INK } from './statusColors';
 
@@ -97,6 +98,9 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
   const [selectMode, setSelectMode] = useState(false);
   const [picked, setPicked] = useState(() => new Set());
   const [bulkDone, setBulkDone] = useState('');
+  // Days waiting on the confirm sheet. Nothing is written until she confirms.
+  const [pendingBlock, setPendingBlock] = useState(null);
+  const [showAllDaysOff, setShowAllDaysOff] = useState(false);
   const panelRef = useRef(null);
 
   // ── Data ──
@@ -212,12 +216,13 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
     onSettled: () => qc.invalidateQueries({ queryKey: ['blocked-dates'] }),
   });
 
-  // Whole selection in one request.
+  // Whole selection in one request, with the reason from the confirm sheet.
   const blockMany = useMutation({
-    mutationFn: (dates) => api.entities.BlockedDate.create(dates.map(date => ({ date, reason: '' }))),
-    onSuccess: (_d, dates) => {
+    mutationFn: ({ dates, reason }) => api.entities.BlockedDate.create(dates.map(date => ({ date, reason }))),
+    onSuccess: (_d, { dates }) => {
       qc.invalidateQueries({ queryKey: ['blocked-dates'] });
       setBulkDone(`Closed ${dates.length} day${dates.length === 1 ? '' : 's'}`);
+      setPendingBlock(null);
       exitSelect();
     },
   });
@@ -256,6 +261,34 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
 
   const jumpTo = (key) => { setSelectedDate(key); setMonth(new Date(key + 'T00:00:00')); };
   const openDay = (key) => setSelectedDate(prev => (prev === key ? null : key));
+
+  // Double-click on desktop, double-tap on a phone. A closed day reopens
+  // straight away (nothing to confirm, it's not destructive); an open one goes
+  // through the same confirm sheet as a bulk close.
+  const doubleActivate = (key) => {
+    if (blockedSet.has(key)) { unblockDay.mutate(key); setBulkDone(`Reopened ${fmtDay(key)}`); return; }
+    setPendingBlock([key]);
+  };
+
+  // Bookings already sitting on the days about to be closed. Closing never
+  // cancels, so she gets told before it happens, not after.
+  const pendingConflicts = useMemo(() => {
+    if (!pendingBlock?.length) return [];
+    const inRange = new Set(pendingBlock);
+    const out = [];
+    (bookings || []).forEach(b => {
+      if (inRange.has(b.date) && ['confirmed', 'pending'].includes(b.status)) {
+        out.push({ date: b.date, label: b.name || 'Client', kind: b.service || 'Appointment' });
+      }
+      if (inRange.has(b.consultation_date) && b.status !== 'cancelled') {
+        out.push({ date: b.consultation_date, label: b.name || 'Client', kind: 'Consultation' });
+      }
+    });
+    (classRegs || []).forEach(c => {
+      if (inRange.has(c.appointment_date)) out.push({ date: c.appointment_date, label: c.full_name || 'Client', kind: 'Class' });
+    });
+    return out.sort((a, b) => a.date.localeCompare(b.date));
+  }, [pendingBlock, bookings, classRegs]);
 
   // On a phone the control panel sits below the calendar, so tapping a date
   // used to leave "Close this day off" off-screen. Go through Lenis, which
@@ -302,8 +335,8 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
   return (
     <div className="pb-4">
       <p className="text-[0.8rem] leading-relaxed mb-5 max-w-2xl" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
-        Everything on your calendar, and everything you're closed for, in one place. Tap a day to see it or close it.
-        To take a whole trip off, hit <span className="font-semibold" style={{ color: dm ? '#d4d4d8' : '#55555d' }}>Select</span>, tap the days, then close them together.
+        Everything on your calendar, and everything you're closed for, in one place. Tap a day to see it, or double-tap it to close it off.
+        To take a whole trip off, hit <span className="font-semibold" style={{ color: dm ? '#d4d4d8' : '#55555d' }}>Select days</span>, tap the days, then close them together.
         Mondays and Thursdays are always closed, so you never need to block those.
       </p>
 
@@ -343,25 +376,24 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
             </button>
           </div>
 
-          <div className="overflow-x-auto -mx-1 px-1">
-            <div className="min-w-[620px]">
-              <MonthCalendar
-                cur={month}
-                evMap={evMap}
-                offMap={offMap}
-                todayKey={tk}
-                dm={dm}
-                capFor={capFor}
-                bookedFor={bookedFor}
-                activeDay={selectedDate}
-                onOpenDay={openDay}
-                selectMode={selectMode}
-                selectedDays={picked}
-                onToggleDay={togglePick}
-                onEventClick={openEvent}
-              />
-            </div>
-          </div>
+          {/* No min-width and no sideways scrolling: the grid fits whatever
+              screen it's on, so today is always visible without swiping. */}
+          <MonthCalendar
+            cur={month}
+            evMap={evMap}
+            offMap={offMap}
+            todayKey={tk}
+            dm={dm}
+            capFor={capFor}
+            bookedFor={bookedFor}
+            activeDay={selectedDate}
+            onOpenDay={openDay}
+            onDoubleActivate={doubleActivate}
+            selectMode={selectMode}
+            selectedDays={picked}
+            onToggleDay={togglePick}
+            onEventClick={openEvent}
+          />
 
           {/* Action bar for the tapped days. Replaces the old typed date range. */}
           {selectMode ? (
@@ -381,7 +413,7 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                   </button>
                 )}
                 <button
-                  onClick={() => blockMany.mutate(toClose)}
+                  onClick={() => setPendingBlock(toClose)}
                   disabled={!toClose.length || blockMany.isPending}
                   className="px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-95"
                   style={!toClose.length
@@ -568,8 +600,11 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
               <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>
                 Days off · {upcomingBlocked.length} coming up
               </p>
-              <div className="flex flex-col gap-1.5 max-h-[320px] overflow-auto">
-                {blockedRuns.map(run => {
+              {/* No inner scrollbar. Page-level Lenis owns the wheel, so a
+                  nested scroller here just felt stuck. It grows instead, and
+                  folds anything past the first few behind a toggle. */}
+              <div className="flex flex-col gap-1.5">
+                {(showAllDaysOff ? blockedRuns : blockedRuns.slice(0, 5)).map(run => {
                   const many = run.items.length > 1;
                   const isSel = run.items.some(i => i.date === selectedDate);
                   return (
@@ -601,6 +636,14 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                   );
                 })}
               </div>
+              {blockedRuns.length > 5 && (
+                <button
+                  onClick={() => setShowAllDaysOff(v => !v)}
+                  className="w-full mt-2.5 py-2 rounded-xl text-[0.68rem] font-semibold transition-all"
+                  style={{ background: dm ? '#1e1e24' : '#F7F7FB', color: dm ? '#a1a1aa' : '#83838d' }}>
+                  {showAllDaysOff ? 'Show less' : `Show all ${blockedRuns.length}`}
+                </button>
+              )}
             </div>
           )}
 
@@ -626,6 +669,17 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
           </div>
         </div>
       </div>
+
+      {pendingBlock?.length > 0 && (
+        <BlockDaysSheet
+          dates={pendingBlock}
+          conflicts={pendingConflicts}
+          busy={blockMany.isPending}
+          dm={dm}
+          onConfirm={(reason) => blockMany.mutate({ dates: pendingBlock, reason })}
+          onClose={() => setPendingBlock(null)}
+        />
+      )}
     </div>
   );
 }
