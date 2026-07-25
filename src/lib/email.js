@@ -318,11 +318,14 @@ function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false,
     : (amount || 'Your deposit');
   const heroIsMoney = !!depositN;
 
+  // Keep the date as one unit so "August 25" never orphans the day onto its own
+  // line, the whole date wraps together instead.
+  const dateNoWrap = `<span style="white-space:nowrap;">${dateFormatted || 'your date'}</span>`;
   const hero = heroIsMoney
     ? `<p style="font-family:${EMAIL_FONT};font-size:46px;line-height:1;color:#16110F;margin:0;">${depositClean}</p>
-        <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">deposit due now to lock in ${dateFormatted || 'your date'}</p>`
+        <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">deposit due now to lock in ${dateNoWrap}</p>`
     : `<p style="font-family:${EMAIL_FONT};font-size:26px;line-height:1.15;color:#16110F;margin:0;">${depositClean}</p>
-        <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">Send it via Zelle to lock in ${dateFormatted || 'your date'}</p>`;
+        <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">Send it via Zelle to lock in ${dateNoWrap}</p>`;
 
   // The receipt. Kept calm on purpose: muted labels, dark values, exactly ONE
   // pink accent (the deposit due today), and a single hairline before the totals
