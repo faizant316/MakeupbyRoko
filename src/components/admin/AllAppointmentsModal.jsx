@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/apiClient';
 import { STATUS_COLORS, STATUS_COLORS_DM, STATUS_LABELS, CONSULT_INK, isBridalService } from './statusColors';
 import { timeToMinutes } from './timeline';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
+const OFF_RED = '#EF4444';
 
 // Just the start of a time or "9:30 AM – 1:00 PM" range, so a chip stays tidy.
 const startTime = (t) => (t ? String(t).split(/[–-]/)[0].trim() : '');
@@ -25,6 +28,16 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
 
   const now = new Date();
   const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+  // Days she's closed. Shares the 'blocked-dates' cache with AdminCalendar and
+  // the Availability tab, so closing a day anywhere updates all three at once.
+  const { data: blockedDates = [] } = useQuery({
+    queryKey: ['blocked-dates'],
+    queryFn: () => api.entities.BlockedDate.list(),
+  });
+  const offMap = {};
+  blockedDates.forEach(b => { offMap[b.date] = b; });
+  const isOff = (key) => offMap[key] != null;
 
   // date key -> events on that day. A booking lands on its appointment date, or
   // its consultation date when it's consult-only, so nothing is listed twice.
@@ -84,6 +97,7 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
   const monthCount = Object.entries(evMap)
     .filter(([k]) => k.startsWith(monthPrefix))
     .reduce((n, [, list]) => n + list.length, 0);
+  const monthOffCount = Object.keys(offMap).filter(k => k.startsWith(monthPrefix)).length;
 
   const goPrev = () => setCur(new Date(year, month - 1, 1));
   const goNext = () => setCur(new Date(year, month + 1, 1));
@@ -99,6 +113,7 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
     { c: STATUS_COLORS.cancelled, label: 'Cancelled' },
     { c: CONSULT_INK.light, label: 'Consultation' },
     { c: '#C76BA6', label: 'Makeup Class' },
+    { c: OFF_RED, label: 'Day off' },
   ];
 
   // ── Expanded single day ──
@@ -138,10 +153,15 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
                 {focusDay
                   ? (focusEvents.length > 0
                       ? `${focusEvents.length} ${focusEvents.length === 1 ? 'appointment' : 'appointments'} · tap one to open`
-                      : 'Nothing scheduled on this day')
+                      : isOff(focusDay) ? 'Closed to new bookings' : 'Nothing scheduled on this day')
                   : (monthCount > 0
                       ? `${monthCount} ${monthCount === 1 ? 'item' : 'items'} in ${monthLabel} · tap a day to expand`
                       : `Nothing scheduled in ${monthLabel}`)}
+                {!focusDay && monthOffCount > 0 && (
+                  <span style={{ color: OFF_RED }}>
+                    {' · '}{monthOffCount} day{monthOffCount === 1 ? '' : 's'} off
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -185,6 +205,22 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
       {focusDay ? (
         <div className="flex-1 min-h-0 overflow-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-[720px] mx-auto">
+            {/* Closed-day banner. Sits above the list because a closed day can
+                still hold bookings taken before she closed it. */}
+            {isOff(focusDay) && (
+              <div className="rounded-2xl px-4 py-3.5 mb-4 flex items-start gap-3"
+                style={{ background: dm ? 'rgba(153,27,27,0.16)' : '#FEF5F4', border: `1px solid ${dm ? 'rgba(153,27,27,0.4)' : '#FECACA'}` }}>
+                <span className="text-[0.9rem] leading-none mt-0.5" style={{ color: OFF_RED }}>✕</span>
+                <div className="min-w-0">
+                  <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#fca5a5' : '#C0392B' }}>Day off</p>
+                  <p className="text-[0.74rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+                    Clients can't book this day on the site.
+                    {offMap[focusDay]?.reason ? ` ${offMap[focusDay].reason}.` : ''}
+                    {focusEvents.length > 0 && ' Anything already booked below still stands.'}
+                  </p>
+                </div>
+              </div>
+            )}
             {focusEvents.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center py-24">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: dm ? '#26262e' : '#F5F5F9' }}>
@@ -193,7 +229,9 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
                   </svg>
                 </div>
                 <p className="text-[0.9rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>Nothing scheduled this day</p>
-                <p className="text-[0.78rem] mt-1" style={{ color: dm ? '#71717a' : '#b6b6bf' }}>This day is wide open.</p>
+                <p className="text-[0.78rem] mt-1" style={{ color: dm ? '#71717a' : '#b6b6bf' }}>
+                  {isOff(focusDay) ? 'This day is closed off.' : 'This day is wide open.'}
+                </p>
               </div>
             ) : (
               <div className="flex flex-col gap-2.5">
@@ -262,6 +300,10 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
                 const key = `${monthPrefix}-${pad(day)}`;
                 const events = evMap[key] || [];
                 const isToday = key === todayKey;
+                const off = isOff(key);
+                // A closed day can still hold bookings made before it was
+                // closed, so the two states stack rather than replace.
+                const restBorder = off ? (dm ? 'rgba(153,27,27,0.4)' : '#FECACA') : (dm ? '#2e2e38' : '#ECECF1');
                 return (
                   <div
                     key={key}
@@ -269,25 +311,33 @@ export default function AllAppointmentsModal({ allBookings = [], classRegs = [],
                     tabIndex={0}
                     onClick={() => setFocusDay(key)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFocusDay(key); } }}
-                    title="Open this day"
+                    title={off ? `Day off${offMap[key]?.reason ? ` · ${offMap[key].reason}` : ''}` : 'Open this day'}
                     className="group rounded-xl p-1.5 flex flex-col gap-1 cursor-pointer transition-colors outline-none"
                     style={{
                       minHeight: 104,
-                      background: dm ? '#26262e' : '#fff',
-                      border: `1px solid ${isToday ? '#D4A0B0' : (dm ? '#2e2e38' : '#ECECF1')}`,
+                      background: off ? (dm ? 'rgba(153,27,27,0.16)' : '#FEF5F4') : (dm ? '#26262e' : '#fff'),
+                      border: `1px solid ${isToday ? '#D4A0B0' : restBorder}`,
                       boxShadow: isToday ? '0 0 0 1px #D4A0B0' : 'none',
                     }}
-                    onMouseEnter={e => { if (!isToday) e.currentTarget.style.borderColor = 'rgba(212,160,176,0.5)'; }}
-                    onMouseLeave={e => { if (!isToday) e.currentTarget.style.borderColor = dm ? '#2e2e38' : '#ECECF1'; }}
+                    onMouseEnter={e => { if (!isToday) e.currentTarget.style.borderColor = off ? OFF_RED : 'rgba(212,160,176,0.5)'; }}
+                    onMouseLeave={e => { if (!isToday) e.currentTarget.style.borderColor = restBorder; }}
                   >
                     <div className="flex items-center justify-between px-0.5">
                       <span className="text-[0.72rem] font-semibold tabular-nums"
-                        style={{ color: isToday ? '#A0607A' : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
+                        style={{ color: isToday ? '#A0607A' : off ? OFF_RED : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
                       {events.length > 0 && (
                         <span className="text-[0.58rem] font-semibold tabular-nums px-1.5 py-0.5 rounded-full"
                           style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{events.length}</span>
                       )}
                     </div>
+
+                    {off && (
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md"
+                        style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1' }}>
+                        <span className="text-[0.6rem] leading-none" style={{ color: OFF_RED }}>✕</span>
+                        <span className="text-[0.53rem] font-bold tracking-[0.1em] uppercase truncate" style={{ color: dm ? '#fca5a5' : '#C0392B' }}>Day off</span>
+                      </div>
+                    )}
 
                     {events.map(ev => {
                       const dot = dotOf(ev);
