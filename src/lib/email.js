@@ -488,12 +488,16 @@ export function bridalConfirmationEmail({
   // A trial is a studio appointment, so its one time field is her preferred
   // time, not an "event start". Same rule adminBridalEmail uses.
   const isTrialPkg = /trial/i.test(bridalTitle || '');
+  // Full Day is priced with travel already in it, so it must never get the
+  // travel line even though it's always on-location. Only Luxury (and any other
+  // per-service bridal booking) that leaves the studio pays it.
+  const isFullDayPkg = /full.?day/i.test(bridalTitle || '');
 
   // Travel fee applies only when she's getting ready ON-LOCATION. Studio pickups
   // store the shared studio label as their location, so that (and trials, which
   // are always at the studio) means no travel fee. An empty location is treated
   // as studio so we never guess a fee onto an under-filled admin booking.
-  const onLocation = !!eventLocation && eventLocation !== STUDIO_READY_VALUE && !isTrialPkg;
+  const onLocation = !!eventLocation && eventLocation !== STUDIO_READY_VALUE && !isTrialPkg && !isFullDayPkg;
 
   const inquiryRows = [
     crow('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),

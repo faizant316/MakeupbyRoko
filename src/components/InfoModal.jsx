@@ -53,7 +53,7 @@ const INFO_CONTENT = {
       },
       {
         title: 'Travel Fee',
-        body: 'For on-location services (bridal, event, photoshoot), a flat travel fee of $200 applies regardless of distance, in addition to the service price. Studio appointments in Mountain House have no travel fee. The travel fee is due along with the remaining balance.'
+        body: 'For on-location services (bridal, event, photoshoot), a flat travel fee of $200 applies regardless of distance, in addition to the service price. Studio appointments in Mountain House have no travel fee. The Full Day Service includes travel in its price, so no travel fee is added to it. The travel fee is due along with the remaining balance.'
       },
       {
         title: 'Destination Bookings',

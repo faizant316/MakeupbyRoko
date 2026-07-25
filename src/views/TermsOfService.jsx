@@ -33,7 +33,7 @@ const SECTIONS = [
   },
   {
     title: 'Travel Fees',
-    body: `Studio appointments in Mountain House, California have no travel fee. On-location services (the artist traveling to you) are subject to a flat travel fee starting at $200, regardless of distance. For destination events, all travel-related expenses (flights, hotel, per diem) are the client's responsibility.`
+    body: `Studio appointments in Mountain House, California have no travel fee. On-location services (the artist traveling to you) are subject to a flat travel fee starting at $200, regardless of distance. The Full Day Service is an exception: travel is included in its package price and no additional travel fee is charged. For destination events, all travel-related expenses (flights, hotel, per diem) are the client's responsibility.`
   },
   {
     title: 'Limitation of Liability',

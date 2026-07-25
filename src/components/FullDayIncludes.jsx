@@ -7,7 +7,10 @@ const TIMELINE = [
 ];
 
 const PERFECT_FOR = [
-  'Early ceremony start times (before 10 AM)',
+  // 7 AM, not 10. Every other surface (service record, FAQs, the booking form's
+  // early-arrival surcharge, the emails) uses 7 AM as the trigger; this line was
+  // the only place saying 10 and it read as a second, softer rule.
+  'Early ceremony start times (before 7 AM)',
   'Venues over 1 hour from the studio',
   'Bridal switch looks between ceremony & reception',
   'Brides who want a calm, unhurried experience',
