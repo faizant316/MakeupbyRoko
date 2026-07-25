@@ -40,5 +40,6 @@ out/
 .agents/
 .codex/
 
-# Booksy capture holds a live session token, never commit it
+# Booksy capture holds live session cookies/tokens, never commit it
 booksy-capture*.json
+*.har
