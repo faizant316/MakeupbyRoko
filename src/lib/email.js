@@ -307,7 +307,7 @@ function cZoom(zoomLink) {
 //
 // `travelFee` on-location only: adds a flat $200 line that rolls into the total
 // and the cash-on-the-day remaining. Studio pickups pass false and never see it.
-function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false }) {
+function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false, uploadUrl, photos = false }) {
   const TRAVEL_FEE = 200;
   const priceN = moneyToNum(price);
   const depositN = moneyToNum(amount);
@@ -362,24 +362,25 @@ function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false 
         <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 16px;">Reserve Your Date</p>
         ${hero}
         ${receipt}
+        ${uploadUrl ? cactionButton(uploadUrl, { photos }) : ''}
       </td></tr>
     </table>
   </td></tr>`;
 }
 
-// The one big call to action, right under the money box. A single quiet prompt
-// over a large, full-width, pill-shaped button, so it's inviting and obvious
-// without any hype copy around it.
+// The one big call to action. Lives INSIDE the money box (right under the
+// receipt) so "here's what you owe" and "here's the button to handle it" read
+// as a single card, one clear step. A quiet prompt over a large, full-width,
+// pill-shaped button. Returns a fragment (no row wrapper) so it can be embedded.
 function cactionButton(uploadUrl, { photos = false } = {}) {
   const label = photos ? 'Send Deposit &amp; Upload Photos' : 'Send Deposit &amp; Upload';
-  return `<tr><td style="padding:14px 24px 10px;text-align:center;">
-    <p style="font-size:14px;font-weight:600;color:#6B636A;margin:0 0 15px;">Tap below to send your deposit</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td align="center" bgcolor="#C4849A" style="border-radius:999px;box-shadow:0 8px 20px rgba(196,132,154,0.3);">
-        <a href="${uploadUrl}" style="display:block;padding:19px 18px;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:999px;text-align:center;">${label}</a>
-      </td>
-    </tr></table>
-  </td></tr>`;
+  return `
+        <p style="font-size:14px;font-weight:600;color:#6B636A;margin:24px 0 14px;">Tap below to send your deposit</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td align="center" bgcolor="#C4849A" style="border-radius:999px;box-shadow:0 8px 20px rgba(196,132,154,0.3);">
+            <a href="${uploadUrl}" style="display:block;padding:19px 18px;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:999px;text-align:center;">${label}</a>
+          </td>
+        </tr></table>`;
 }
 
 // A "hold onto this" banner, in warm gold rather than the usual pink so it
@@ -462,8 +463,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
     content: `
       ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up ✦" })}
       ${cintro(`Your request is in! I'll reach out to confirm your time within <strong style="color:#16110F;">24–48 hours</strong>.`)}
-      ${cmoneyBox({ amount: serviceDeposit || 'Deposit', price: total, remaining, dateFormatted, travelFee: hasTravelFee })}
-      ${cactionButton(uploadUrl)}
+      ${cmoneyBox({ amount: serviceDeposit || 'Deposit', price: total, remaining, dateFormatted, travelFee: hasTravelFee, uploadUrl })}
       ${cpanel(`${ctitle('What Happens Next')}<p style="font-size:14px;color:#5A5258;line-height:1.7;margin:0;">Once your deposit lands, Roko confirms your appointment time within <strong style="color:#16110F;">24–48 hours</strong>. Your remaining balance is due in cash on the day.</p>`)}
       ${cpanel(`${ctitle('Booking Summary')}${crows(summaryRows + ctotalRow('Estimated Total', total))}`)}
       ${contractSection}
@@ -517,8 +517,7 @@ export function bridalConfirmationEmail({
     content: `
       ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
       ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
-      ${cmoneyBox({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, dateFormatted: bridalDateFormatted, travelFee: onLocation })}
-      ${cactionButton(uploadUrl, { photos: true })}
+      ${cmoneyBox({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, dateFormatted: bridalDateFormatted, travelFee: onLocation, uploadUrl, photos: true })}
       ${cpanel(`${ctitle('What Happens Next')}<p style="font-size:14px;color:#5A5258;line-height:1.7;margin:0;">Once your deposit lands, Roko confirms your date and schedules your consultation within <strong style="color:#16110F;">24–48 hours</strong>. Your remaining balance is due in cash on the day.</p>`)}
       ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
@@ -730,8 +729,7 @@ export function depositReminderEmail({ name, service, date, uploadUrl }) {
     content: `
       ${clientHero({ emoji: '⏰', eyebrow: 'Deposit Reminder', title: 'Secure your', titleAccent: 'date' })}
       ${cintro(`Hey <strong style="color:#16110F;">${name}</strong>, just a friendly reminder to send your Zelle deposit to secure your <strong style="color:#16110F;">${service}</strong> appointment on <strong style="color:#16110F;">${date}</strong>.`)}
-      ${cmoneyBox({ amount: 'Your deposit', dateFormatted: date })}
-      ${cactionButton(uploadUrl)}
+      ${cmoneyBox({ amount: 'Your deposit', dateFormatted: date, uploadUrl })}
     `,
   });
 }
@@ -892,7 +890,7 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         (time ? crow('Time', `<strong>${time}</strong>`) : '') +
         crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
       )}`)}
-      ${!migrated && showDeposit ? cmoneyBox({ amount: 'Your deposit', dateFormatted }) + cactionButton(uploadUrl, { photos: true }) : ''}
+      ${!migrated && showDeposit ? cmoneyBox({ amount: 'Your deposit', dateFormatted, uploadUrl, photos: true }) : ''}
       ${!migrated && !showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
       ${cstepsPanel('To Prepare', [
         ['1', 'Save your inspiration', 'Screenshots, Pinterest boards, anything you love'],
