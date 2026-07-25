@@ -327,7 +327,11 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
     { c: OFF_RED, label: 'Day off' },
   ];
 
+  // Tap a client anywhere on this tab (a day's list, or a chip in the grid)
+  // and their card takes over the tab. Jump to the top first, otherwise the
+  // card opens at whatever scroll depth the calendar was at.
   const openEvent = (ev) => {
+    scrollToTarget(0, { immediate: true });
     if (ev.kind === 'class') onSelectClassReg?.(ev.raw);
     else onSelect?.(ev.raw);
   };

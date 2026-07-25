@@ -325,9 +325,14 @@ export default function Admin() {
   // (use the menu to switch sections); everywhere else it returns one level up.
   const isDetailOpen =
     (activeTab === 'bookings' && !!selectedBooking) ||
-    (activeTab === 'classes' && !!selectedClassReg);
+    (activeTab === 'classes' && !!selectedClassReg) ||
+    // The Calendar tab opens client cards in place, so back there means
+    // "close the card and show the calendar again", not "leave the tab".
+    (activeTab === 'availability' && (!!selectedBooking || !!selectedClassReg));
   const canGoBack = isDetailOpen || activeTab !== 'bookings';
   const handleBack = () => {
+    if (activeTab === 'availability' && selectedBooking) { setSelectedBooking(null); return; }
+    if (activeTab === 'availability' && selectedClassReg) { setSelectedClassReg(null); return; }
     if (activeTab === 'bookings' && selectedBooking) { setSelectedBooking(null); return; }
     if (activeTab === 'classes' && selectedClassReg) { setSelectedClassReg(null); return; }
     if (activeTab !== 'bookings') {
@@ -510,7 +515,7 @@ export default function Admin() {
                     darkMode={dm} onAddClient={() => setShowAddClient(true)} onBulkImport={() => setShowBulkImport(true)}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                    onViewAllCalendar={() => setActiveTab('availability')}
+                    onViewAllCalendar={() => { setActiveTab('availability'); setSelectedBooking(null); setSelectedClassReg(null); }}
                     onBulkUpdate={bulkUpdateBookings}
                     onBulkDelete={bulkDeleteBookings}
                   />
@@ -573,13 +578,39 @@ export default function Admin() {
           />
         )}
 
-        {activeTab === 'availability' && (
+        {/* Calendar. Opening a client from a day swaps the card in right here
+            instead of throwing you into another tab, so Back lands you on the
+            calendar you came from. */}
+        {activeTab === 'availability' && !selectedBooking && !selectedClassReg && (
           <AvailabilityTab
             bookings={bookings}
             classRegs={classRegs}
             darkMode={dm}
             onSelect={setSelectedBooking}
-            onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+            onSelectClassReg={setSelectedClassReg}
+          />
+        )}
+
+        {activeTab === 'availability' && selectedBooking && (
+          <BookingDetail
+            booking={selectedBooking}
+            onBack={() => setSelectedBooking(null)}
+            onUpdateStatus={(status) => updateBookingMutation.mutate({ id: selectedBooking.id, data: { status } })}
+            onUpdateBooking={(data) => updateBookingMutation.mutate({ id: selectedBooking.id, data })}
+            onDelete={() => deleteBookingMutation.mutate(selectedBooking.id)}
+            allBookings={bookings}
+            classRegs={classRegs}
+            onSelectBooking={setSelectedBooking}
+            onSelectClassReg={(r) => { setSelectedBooking(null); setSelectedClassReg(r); }}
+            darkMode={dm}
+          />
+        )}
+
+        {activeTab === 'availability' && selectedClassReg && (
+          <ClassRegistrationDetail
+            reg={selectedClassReg}
+            onBack={() => setSelectedClassReg(null)}
+            darkMode={dm}
           />
         )}
 
