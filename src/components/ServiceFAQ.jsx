@@ -12,7 +12,7 @@ const GENERAL_FAQ = [
 
 const BRIDAL_FAQ = [
   { q: "What does the Luxury Bridal Look include?", a: "The Luxury Bridal Look is $750 (2-hour service) with a $375 deposit. It includes full bridal makeup, lash application, a professional touch-up kit, and a 30-min Zoom consultation. Bridesmaid add-ons are available." },
-  { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
+  { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added when Roko travels to you for the Luxury Bridal Look or a trial. Studio appointments in Mountain House, CA have no travel fee, and the Full Day Service has travel built into its price, so no fee is added." },
   { q: "When is a Full Day Service required?", a: "The Full Day Service ($1,700, $850 deposit) is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a start time before 7 AM." },
   { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid add-ons are available. Let me know how many people need glam in your inquiry so timing can be planned accordingly." },
   { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
@@ -22,7 +22,7 @@ const BRIDAL_FAQ = [
 const FULL_DAY_FAQ = [
   { q: "What does the Full Day Service include?", a: "The Full Day Service is $1,700 (4 hours of coverage) with an $850 deposit. Roko stays with you from prep through ceremony, no rushing and no handoffs. It includes full bridal makeup, lash application, a bridal switch (second look) when needed, a professional touch-up kit, and a 30-min Zoom consultation. Bridesmaid & MOB add-ons are available." },
   { q: "When is the Full Day Service required?", a: "The Full Day Service is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a ceremony start time before 7 AM. It's also ideal for anyone who wants a calm, unhurried morning." },
-  { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
+  { q: "Is there a travel fee?", a: "No. Roko travels to you for full-day coverage and that travel is already included in the $1,700 price, so there's no separate travel fee. (The $200+ travel fee applies to the Luxury Bridal Look and trials when they're held somewhere other than the studio.)" },
   { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid & MOB add-ons are available. Let me know how many people need glam in your inquiry so timing can be planned accordingly." },
   { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
   ...GENERAL_FAQ.slice(0, 3),
@@ -54,7 +54,7 @@ const BRIDAL_TRIAL_FAQ = [
   { q: "When should I schedule my bridal trial?", a: "Ideally 1 to 3 months before your wedding date. This gives enough time to review your look, make adjustments, and feel completely confident going into your wedding day." },
   { q: "What should I bring to my trial?", a: "Bring inspiration photos (close-up makeup shots and full-face references), photos of your gown and accessories, and any skin concerns or allergies noted in advance. Come with clean, moisturized skin and no heavy makeup on." },
   { q: "Can I make changes after the trial?", a: "Absolutely. The trial is specifically designed for that. Bring notes and any updated inspiration photos and all adjustments will be applied on your wedding day." },
-  { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added for any bridal services not held at the studio in Mountain House, CA." },
+  { q: "What is the travel fee?", a: "Trials are held at the studio in Mountain House, CA, so there's no travel fee. If Roko travels to you instead, a $200+ travel fee is added." },
   ...GENERAL_FAQ.slice(1, 5),
 ];
 

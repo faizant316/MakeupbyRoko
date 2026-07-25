@@ -441,11 +441,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     const siteBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
     // Carry the package price + remaining balance (price − deposit) on the upload
     // link so the confirmation page can show the exact dollar figure owed, not a
-    // vague "cash on the day". Travel, when it applies, is a separate line item.
+    // vague "cash on the day". Only send it when price − deposit is the WHOLE
+    // truth: an on-location Luxury booking also owes the travel fee, so quoting
+    // the bare difference there would under-state what she brings in cash. Full
+    // Day is priced with travel included, so it always gets an exact figure.
     const money = (s) => { const n = parseFloat(String(s || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
     const _priceN = money(bridalPrice);
     const _depositN = money(bridalDeposit);
-    const bridalRemaining = (_priceN != null && _depositN != null && _priceN > _depositN)
+    const _hasTravelFee = !isFullDay && !isTrial
+      && !!form.event_location && form.event_location !== STUDIO_READY_VALUE;
+    const bridalRemaining = (!_hasTravelFee && _priceN != null && _depositN != null && _priceN > _depositN)
       ? `$${(_priceN - _depositN).toLocaleString('en-US')}`
       : '';
     const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(bridalPrice || '')}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
@@ -579,7 +584,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <div className="w-px h-8 bg-gray-200" />
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Travel</p>
-                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">$200+</p>
+                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">Included</p>
               </div>
             </div>
             <p className="hidden sm:block text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Private consultation 1 month before</p>
@@ -950,9 +955,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
                 <div className="mt-3 relative pl-3.5">
                   <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                  <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
+                  <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
                   <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                    Full-day coverage is on-location, so it includes a <strong style={{ color: '#4A423E' }}>$200 local travel fee</strong>, added to your remaining balance and paid in cash on the day. Applies to locations within about an hour of Mountain House, CA.
+                    Roko travels to you and <strong style={{ color: '#4A423E' }}>travel is already included</strong> in the full-day price, so there's no separate travel fee to add. Your remaining balance is the package price minus your deposit, paid in cash on the day.
                   </p>
                 </div>
               </div>

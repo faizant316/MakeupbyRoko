@@ -42,11 +42,12 @@ function buildSections(luxury, fullday) {
       // section below so nothing here has to be read as a rule.
       category: 'Travel & location',
       rows: [
-        { label: 'Studio (Mountain House, CA)', luxury: true, fullday: true },
+        // Full Day is always on-location (Roko doesn't do full days at the
+        // studio), which is why it has no studio row and no travel line: travel
+        // is already priced into the package.
+        { label: 'Studio (Mountain House, CA)', luxury: true, fullday: null },
         { label: 'Travels to your venue', luxury: true, fullday: true },
-        // The contract wording is "starting at $200, regardless of distance", so
-        // this is a floor, not a flat fee. Don't write it as "+$200 fee".
-        { label: 'On-location travel fee', luxury: 'From +$200', fullday: 'From +$200' },
+        { label: 'On-location travel fee', luxury: 'From +$200', fullday: 'Included' },
       ],
     },
     {
