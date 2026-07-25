@@ -1,13 +1,17 @@
 // Import Roko's Booksy days off into blocked_dates.
 //
-// Pairs with scripts/booksy-capture.js (the browser snippet that produces
-// booksy-capture.json). Booksy's response shape isn't documented, so this
-// walks the whole payload looking for anything that reads as time off
-// rather than assuming a fixed schema. Always dry-runs first.
+// Booksy has no export and no public API for availability, so the input is a
+// HAR file: Chrome DevTools -> Network -> click through the calendar months ->
+// right-click -> "Save all as HAR with content". That records every response
+// the browser received, which beats trying to patch fetch (Booksy's bundle
+// captures its own fetch reference before any console snippet can hook it).
 //
-//   node scripts/import-booksy-daysoff.mjs booksy-capture.json
-//   node scripts/import-booksy-daysoff.mjs booksy-capture.json --verbose
-//   node scripts/import-booksy-daysoff.mjs booksy-capture.json --apply
+// Their response shape isn't documented, so this walks the whole payload
+// looking for anything that reads as time off rather than assuming a schema.
+// Always dry-runs first.
+//
+//   node scripts/import-booksy-daysoff.mjs booksy.har --staffer Roko --verbose
+//   node scripts/import-booksy-daysoff.mjs booksy.har --staffer Roko --apply
 //
 // Flags
 //   --apply            actually write to blocked_dates (default: dry run)
@@ -143,16 +147,50 @@ try {
   capture = JSON.parse(readFileSync(file, 'utf8'));
 } catch (e) {
   console.error(`Could not read ${file}: ${e.message}`);
-  console.error('Run scripts/booksy-capture.js in the Booksy tab first, then drop booksy-capture.json in the project root.');
+  console.error('Expected a HAR file saved from Chrome DevTools -> Network -> "Save all as HAR with content".');
   process.exit(1);
 }
 
-const bodies = (capture.calls || []).map(c => c.body).filter(b => b && typeof b === 'object');
+// HAR files nest everything under log.entries; response bodies are strings
+// (sometimes base64) so they need decoding and parsing before the walk.
+function bodiesFromHar(har) {
+  const out = [];
+  let booksyCalls = 0;
+  for (const entry of har.log?.entries || []) {
+    const url = entry.request?.url || '';
+    if (!/booksy\.(com|net)/i.test(url)) continue;
+    booksyCalls++;
+    const content = entry.response?.content;
+    let text = content?.text;
+    if (!text) continue;
+    if (content.encoding === 'base64') {
+      try { text = Buffer.from(text, 'base64').toString('utf8'); } catch { continue; }
+    }
+    if (!/^[\s]*[{[]/.test(text)) continue; // not JSON
+    try { out.push({ url, body: JSON.parse(text) }); } catch { /* truncated or not JSON */ }
+  }
+  return { out, booksyCalls };
+}
+
+let bodies, totalCalls;
+if (capture.log?.entries) {
+  const { out, booksyCalls } = bodiesFromHar(capture);
+  bodies = out.map(x => x.body);
+  totalCalls = booksyCalls;
+  console.log(`\nRead ${file} (HAR): ${capture.log.entries.length} requests, ${booksyCalls} to Booksy, ${bodies.length} with JSON bodies.\n`);
+} else {
+  // legacy shape from the old console-snippet capture
+  bodies = (capture.calls || []).map(c => c.body).filter(b => b && typeof b === 'object');
+  totalCalls = (capture.calls || []).length;
+  console.log(`\nRead ${file}: ${totalCalls} calls, ${bodies.length} with JSON bodies.\n`);
+}
+
 if (!bodies.length) {
-  console.error('No JSON responses in that capture. Re-run the browser snippet and click around the calendar before saving.');
+  console.error('No Booksy JSON responses in that file.');
+  console.error('Make sure you saved with "Save all as HAR with content" (the plain "Save as HAR" drops response bodies),');
+  console.error('and that you clicked through calendar months while the Network tab was recording.\n');
   process.exit(1);
 }
-console.log(`\nRead ${file}: ${capture.calls.length} calls, ${bodies.length} with JSON bodies.\n`);
 
 // ── extract ─────────────────────────────────────────────────
 const found = new Map(); // date -> reason
