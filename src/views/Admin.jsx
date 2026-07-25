@@ -510,6 +510,7 @@ export default function Admin() {
                     darkMode={dm} onAddClient={() => setShowAddClient(true)} onBulkImport={() => setShowBulkImport(true)}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+                    onViewAllCalendar={() => setActiveTab('availability')}
                     onBulkUpdate={bulkUpdateBookings}
                     onBulkDelete={bulkDeleteBookings}
                   />
@@ -573,7 +574,13 @@ export default function Admin() {
         )}
 
         {activeTab === 'availability' && (
-          <AvailabilityTab bookings={bookings} classRegs={classRegs} darkMode={dm} />
+          <AvailabilityTab
+            bookings={bookings}
+            classRegs={classRegs}
+            darkMode={dm}
+            onSelect={setSelectedBooking}
+            onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
+          />
         )}
 
         {activeTab === 'services' && (

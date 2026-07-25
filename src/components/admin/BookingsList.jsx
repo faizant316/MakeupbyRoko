@@ -3,7 +3,6 @@ import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, timeToMinutes } from './timeline';
-import AllAppointmentsModal from './AllAppointmentsModal';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -222,7 +221,7 @@ export default function BookingsList({
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient, onBulkImport,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
-  onBulkUpdate, onBulkDelete,
+  onBulkUpdate, onBulkDelete, onViewAllCalendar,
 }) {
   const [showArchive, setShowArchive] = useState(false);
   // iOS-style multi-select for the appointments list. `selectMode` flips rows
@@ -246,7 +245,6 @@ export default function BookingsList({
   // On load only "This Week" (and urgent Past Due) is open — "This Month" and
   // "Later" start folded so the list lands clean; Roko can open them herself.
   const [collapsedGroups, setCollapsedGroups] = useState({ month: true, later: true });
-  const [showAllAppointments, setShowAllAppointments] = useState(false);
 
   // Deposits that landed and haven't been looked at. Opening the client card
   // is what clears one, so this empties itself as she works and never needs a
@@ -410,12 +408,13 @@ export default function BookingsList({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* View all — opens the full-screen month calendar with every
-              appointment laid out in its day. Subtle ghost button so it sits
-              quietly next to the primary actions. */}
+          {/* View all — jumps to the Calendar tab, which is now the single
+              full calendar (appointments, days off and capacity together).
+              It used to open a separate overlay, which meant three different
+              calendars showing the same data. */}
           {!selectMode && (
             <button
-              onClick={() => setShowAllAppointments(true)}
+              onClick={() => onViewAllCalendar?.()}
               aria-label="View all appointments"
               title="View all appointments"
               className="flex flex-shrink-0 items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap active:scale-95"
@@ -979,13 +978,23 @@ export default function BookingsList({
             const isZoom = r.consultation_type === 'Zoom';
             const isPhone = r.consultation_type === 'Phone';
             return (
+              // Opens the class card, matching the consultation rows above. A
+              // div, not a button, because Join/phone are interactive children
+              // and a button inside a button is invalid.
               <div
                 key={r.id}
-                className="w-full flex items-center gap-4 px-4 py-3.5"
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelectClassReg?.(r)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectClassReg?.(r); } }}
+                title={`Open ${r.full_name || 'this client'}'s card`}
+                className="w-full flex items-center gap-4 px-4 py-3.5 cursor-pointer transition-colors group outline-none"
                 style={{
                   background: dm ? '#1e1e24' : '#fff',
                   borderBottom: i < lessonsOnDate.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#ebebeb'}` : 'none',
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = dm ? '#27272e' : '#FAFAFB'}
+                onMouseLeave={e => e.currentTarget.style.background = dm ? '#1e1e24' : '#fff'}
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(199,107,166,0.12)' }}>
                   {isZoom ? (
@@ -1009,7 +1018,7 @@ export default function BookingsList({
                 {isZoom && (meetingId || zoomMatch) ? (
                   <button
                     type="button"
-                    onClick={() => openZoomRoom(zoomMatch?.[1], meetingId)}
+                    onClick={(e) => { e.stopPropagation(); openZoomRoom(zoomMatch?.[1], meetingId); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80"
                     style={{ background: '#D4A0B0', color: '#fff' }}
                   >
@@ -1021,12 +1030,16 @@ export default function BookingsList({
                 ) : isPhone && r.phone ? (
                   <a
                     href={`tel:${phoneHref(r.phone)}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.62rem] font-semibold transition-all flex-shrink-0 hover:opacity-80 tabular-nums"
                     style={{ background: 'rgba(199,107,166,0.1)', color: LESSON_COLOR, border: '1px solid rgba(199,107,166,0.25)' }}
                   >
                     {formatPhone(r.phone)}
                   </a>
                 ) : null}
+                <svg viewBox="0 0 24 24" fill="none" stroke={LESSON_COLOR} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
               </div>
             );
           })}
@@ -1383,17 +1396,6 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Full-screen "all appointments" calendar */}
-      {showAllAppointments && (
-        <AllAppointmentsModal
-          allBookings={allBookings}
-          classRegs={classRegs}
-          darkMode={dm}
-          onSelect={onSelect}
-          onSelectClassReg={onSelectClassReg}
-          onClose={() => setShowAllAppointments(false)}
-        />
-      )}
     </div>
   );
 }
