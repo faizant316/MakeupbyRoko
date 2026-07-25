@@ -12,6 +12,7 @@
 // Flags
 //   --apply            actually write to blocked_dates (default: dry run)
 //   --verbose          print every matched object so the heuristic can be checked
+//   --staffer NAME     keep only that staff member's time off (her Booksy has 3)
 //   --include-weekly   also close her recurring weekly days off, date by date
 //   --months N         how far ahead --include-weekly materializes (default 12)
 //
@@ -35,6 +36,7 @@ const APPLY = has('--apply');
 const VERBOSE = has('--verbose');
 const WEEKLY = has('--include-weekly');
 const MONTHS = parseInt(args[args.indexOf('--months') + 1], 10) || 12;
+const STAFFER = has('--staffer') ? args[args.indexOf('--staffer') + 1] : null;
 
 // ── helpers ─────────────────────────────────────────────────
 const pad = (n) => String(n).padStart(2, '0');
@@ -63,6 +65,9 @@ const OPEN_FLAGS = /^(available|is_available|working|is_working|open|is_open|has
 const DATE_KEYS = /^(date|day|start|start_date|start_time|from|date_from|begin|begins_at|start_at|starts_at)$/i;
 const END_KEYS = /^(end|end_date|end_time|to|date_to|finish|ends_at|end_at|until)$/i;
 const CLIENT_KEYS = /^(customer|client|customer_id|client_id|booking_id|appointment_id)$/i;
+// Her Booksy has multiple staff (Roko, Shak, Maryam). Time off is per staffer,
+// so we track who each block belongs to and let --staffer narrow it down.
+const STAFF_KEYS = /^(staffer|staff|staff_member|employee|resource|staffer_id|staff_id|employee_id|resource_id|staffer_name|staff_name)$/i;
 
 const isoDate = (v) => {
   if (typeof v !== 'string') return null;
@@ -71,9 +76,14 @@ const isoDate = (v) => {
 };
 
 function classify(obj) {
-  let date = null, end = null, offReason = null, looksLikeAppointment = false;
+  let date = null, end = null, offReason = null, looksLikeAppointment = false, staffer = null;
 
   for (const [k, v] of Object.entries(obj)) {
+    if (STAFF_KEYS.test(k) && v != null) {
+      // may be a bare id, a name, or a nested { id, name } object
+      if (typeof v === 'object') staffer = staffer || v.name || v.full_name || (v.id != null ? String(v.id) : null);
+      else staffer = staffer || String(v);
+    }
     // A nested customer/client object is the strongest "this is a real
     // appointment" signal, so check that before dropping to scalars.
     if (CLIENT_KEYS.test(k) && v && typeof v === 'object' && Object.keys(v).length) looksLikeAppointment = true;
@@ -91,7 +101,7 @@ function classify(obj) {
   // blocked time as a pseudo-appointment with no customer, so this stays safe.
   if (looksLikeAppointment) return null;
   if (!date || !offReason) return null;
-  return { date, end: end && end >= date ? end : date, reason: String(offReason).trim() };
+  return { date, end: end && end >= date ? end : date, reason: String(offReason).trim(), staffer };
 }
 
 // ── weekly closed days (working hours) ──────────────────────
@@ -147,6 +157,7 @@ console.log(`\nRead ${file}: ${capture.calls.length} calls, ${bodies.length} wit
 // ── extract ─────────────────────────────────────────────────
 const found = new Map(); // date -> reason
 const matches = [];
+const staffersSeen = new Set();
 
 for (const body of bodies) {
   for (const [obj, path] of walk(body)) {
@@ -154,6 +165,11 @@ for (const body of bodies) {
     const hit = classify(obj);
     if (!hit) continue;
     matches.push({ ...hit, path });
+    if (hit.staffer) staffersSeen.add(hit.staffer);
+
+    // Multiple staff share this calendar, so a block belonging to Shak or
+    // Maryam must not close Roko's day. Only skip when a filter was given.
+    if (STAFFER && !String(hit.staffer || '').toLowerCase().includes(STAFFER.toLowerCase())) continue;
 
     // expand multi-day time off into individual dates
     const d = new Date(hit.date + 'T00:00:00');
@@ -169,9 +185,21 @@ for (const body of bodies) {
 
 if (VERBOSE && matches.length) {
   console.log('Matched objects (check these look like real time off):');
-  for (const m of matches.slice(0, 60)) console.log(`  ${m.date}${m.end !== m.date ? ` → ${m.end}` : ''}  "${m.reason}"  ${m.path}`);
+  for (const m of matches.slice(0, 60)) {
+    console.log(`  ${m.date}${m.end !== m.date ? ` → ${m.end}` : ''}  "${m.reason}"${m.staffer ? `  [${m.staffer}]` : ''}  ${m.path}`);
+  }
   if (matches.length > 60) console.log(`  … and ${matches.length - 60} more`);
   console.log('');
+}
+
+if (staffersSeen.size > 1) {
+  console.log(`Time off found for ${staffersSeen.size} staff: ${[...staffersSeen].join(', ')}`);
+  console.log(STAFFER
+    ? `  Filtering to "${STAFFER}".\n`
+    : '  NOT FILTERED. She shares this calendar, so this may include other staff.\n'
+      + '  Re-run with --staffer Roko to keep only hers.\n');
+} else if (STAFFER) {
+  console.log(`Filtering to "${STAFFER}", but no staffer info was present on the matches, so nothing was excluded.\n`);
 }
 
 // weekly pattern
