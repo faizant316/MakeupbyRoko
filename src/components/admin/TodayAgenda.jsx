@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/apiClient';
 import { openZoomRoom, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { timeToMinutes } from './timeline';
@@ -72,6 +74,14 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
 
   const hasItems = total > 0;
 
+  // Whether she's closed today. Without this the card reads "You're all clear"
+  // on a day off, which looks identical to a quiet working day.
+  const { data: blockedDates = [] } = useQuery({
+    queryKey: ['blocked-dates'],
+    queryFn: () => api.entities.BlockedDate.list(),
+  });
+  const offToday = blockedDates.find(b => b.date === todayKey);
+
   return (
     <div className="mb-8">
       {/* Header */}
@@ -83,6 +93,13 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
           <span className="text-[0.62rem] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
             style={{ background: 'rgba(212,160,176,0.16)', color: '#A0607A' }}>
             {total} {total === 1 ? 'booking' : 'bookings'}
+          </span>
+        )}
+        {offToday && (
+          <span className="text-[0.58rem] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+            style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1', color: dm ? '#fca5a5' : '#C0392B' }}
+            title={offToday.reason || 'Closed to new bookings'}>
+            ✕ Day off
           </span>
         )}
       </div>
@@ -161,10 +178,14 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
         </div>
       ) : (
         <div className="flex items-center gap-2.5 py-1">
-          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#C0C0C9'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
-            <path d="M20 6 9 17l-5-5" />
+          <svg viewBox="0 0 24 24" fill="none" stroke={offToday ? '#EF4444' : (dm ? '#52525b' : '#C0C0C9')} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
+            {offToday ? <><circle cx="12" cy="12" r="9" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></> : <path d="M20 6 9 17l-5-5" />}
           </svg>
-          <p className="text-[0.8rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>Nothing scheduled today. You're all clear.</p>
+          <p className="text-[0.8rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+            {offToday
+              ? `You're off today. Clients can't book this day.${offToday.reason ? ` (${offToday.reason})` : ''}`
+              : "Nothing scheduled today. You're all clear."}
+          </p>
         </div>
       )}
     </div>

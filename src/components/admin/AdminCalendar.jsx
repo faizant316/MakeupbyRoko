@@ -443,7 +443,12 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             <span className="w-3 h-3 rounded-md bg-amber-50 border border-amber-200 inline-block" /> Filling Up
           </span>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
-            <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-block" /> Full / Blocked
+            <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-block" /> Fully booked
+          </span>
+          {/* Days off share the red cell but carry an ✕, so they get their own
+              key rather than being lumped in with "fully booked". */}
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
+            <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-flex items-center justify-center text-[0.5rem] leading-none">✕</span> Day off
           </span>
           {Object.entries(STATUS_COLORS).filter(([s]) => s !== 'cancelled').map(([s, color]) => (
             <span key={s} className="flex items-center gap-1.5 text-[0.6rem] font-medium capitalize" style={{ color: dm ? '#71717a' : '#999' }}>
