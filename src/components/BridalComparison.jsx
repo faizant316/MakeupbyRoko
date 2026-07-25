@@ -6,7 +6,10 @@ import { useState } from 'react';
 // retyped here. They used to be hardcoded, which had already drifted: the table
 // claimed Full Day was "Four hours" while the service itself says "Up to 4
 // hours". Anything below the Pricing/Duration rows is editorial (it isn't in the
-// services table), so it stays as config.
+// services table), so it stays as config, but every editorial row here has to
+// match the signed contract (src/lib/contract.js) and ServiceFAQ. Rows that
+// implied Luxury couldn't do a venue wedding, or that Full Day travel was free,
+// were both wrong and have been removed.
 const cleanDeposit = (d) => (d || '').replace(/\s*deposit\s*$/i, '').trim();
 
 function buildSections(luxury, fullday) {
@@ -21,34 +24,40 @@ function buildSections(luxury, fullday) {
       ],
     },
     {
-      category: 'Service scope',
+      category: "What's included",
       rows: [
         { label: 'Duration', luxury: luxury.duration, fullday: fullday.duration },
         { label: 'Full bridal makeup', luxury: true, fullday: true },
         { label: 'Lash application', luxury: true, fullday: true },
         { label: 'Touch-up kit', luxury: true, fullday: true },
-        { label: 'Second look / bridal switch', luxury: null, fullday: true },
         // Every bridal booking gets one, Full Day included. The Full Day service
         // record just doesn't list it, which is a gap in that record, not policy.
         { label: 'Zoom consultation (30 min)', luxury: true, fullday: true },
+        { label: 'Artist stays through ceremony', luxury: null, fullday: true },
+        { label: 'Second look / bridal switch', luxury: null, fullday: true },
       ],
     },
     {
+      // Facts only. The three "you must book Full Day" triggers live in their own
+      // section below so nothing here has to be read as a rule.
       category: 'Travel & location',
       rows: [
         { label: 'Studio (Mountain House, CA)', luxury: true, fullday: true },
-        { label: 'On-location travel', luxury: '+$200 fee', fullday: '+$200 fee' },
-        { label: 'Start before 7 AM', luxury: 'Upgrade required', fullday: 'Included' },
-        { label: 'Location over 1 hr away', luxury: 'Upgrade required', fullday: 'Included' },
+        { label: 'Travels to your venue', luxury: true, fullday: true },
+        // The contract wording is "starting at $200, regardless of distance", so
+        // this is a floor, not a flat fee. Don't write it as "+$200 fee".
+        { label: 'On-location travel fee', luxury: 'From +$200', fullday: 'From +$200' },
       ],
     },
     {
-      category: 'When to choose',
+      // The heading carries the rule, so a dash in the Luxury column reads as
+      // "not available on this package" without repeating "Full Day required"
+      // on every row. These three triggers are the policy (see ServiceFAQ).
+      category: 'When Full Day is required',
       rows: [
-        { label: 'Studio / elopement wedding', luxury: true, fullday: null },
-        { label: 'Venue wedding with bridal suite', luxury: null, fullday: true },
-        { label: 'Early morning ceremony', luxury: null, fullday: true },
-        { label: 'Need a second look on the day', luxury: null, fullday: true },
+        { label: 'Venue over 1 hr from the studio', luxury: null, fullday: true },
+        { label: 'Start time before 7 AM', luxury: null, fullday: true },
+        { label: 'Second look on the day', luxury: null, fullday: true },
       ],
     },
   ];
@@ -156,6 +165,14 @@ export default function BridalComparison({ bridalServices, onSelect }) {
               ))}
             </div>
           ))}
+
+          {/* Without this the table only ever says when Full Day is required and
+              never closes the loop on the cheaper package. */}
+          <div className="px-4 py-3 bg-[#FBF5F7] border-t border-[#F1E7EA]">
+            <p className="text-[0.74rem] text-[#6B4055] leading-snug text-center">
+              If none of those apply, the <strong className="font-medium">Luxury Bridal Look</strong> is your package.
+            </p>
+          </div>
 
           {/* CTAs */}
           <div className={`${GRID} border-t border-[#E7E7EA]`}>
