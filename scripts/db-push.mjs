@@ -1,7 +1,9 @@
 // Apply every migration the live database hasn't run yet.
 //
-//   npm run db:push            apply pending migrations
-//   npm run db:push -- --dry   list what would run, change nothing
+//   npm run db:push                    apply pending migrations
+//   npm run db:push -- --dry           list what would run, change nothing
+//   npm run db:push -- --baseline 0013 record everything up to 0013 as applied,
+//                                      WITHOUT running it
 //
 // Until now migrations were applied by hand, by pasting SQL into the Supabase
 // dashboard. That is how 0006 ended up sitting in supabase/migrations for a
@@ -36,6 +38,15 @@ if (!token) {
 
 const ref = new URL(url).hostname.split('.')[0];
 const dryRun = process.argv.includes('--dry');
+// Adopting a database whose history was applied by hand. Everything up to and
+// including this prefix is recorded as done without being executed, because it
+// demonstrably already is. Needed once, and safer than replaying: 0005 rewrites
+// a live `services` row that Roko edits directly, so a blind replay would
+// silently revert her copy.
+const baselineTo = (() => {
+  const i = process.argv.indexOf('--baseline');
+  return i !== -1 ? process.argv[i + 1] : null;
+})();
 
 // The Management API is the one path that runs arbitrary DDL with just an
 // access token (no database password, no direct Postgres connection).
@@ -72,13 +83,26 @@ if (!pending.length) {
 }
 
 // A first run against a database whose history was applied by hand would try to
-// re-run everything. That is safe by construction here (every migration in this
-// repo is written idempotently: `add column if not exists`, `drop not null`,
-// `create index if not exists`), but it should still be a deliberate choice.
-if (!applied.size && files.length > 1) {
+// re-run everything. Most of these are idempotent DDL, but not all of them are
+// harmless: --baseline is how you say "this history is already true".
+if (!applied.size && files.length > 1 && !baselineTo) {
   console.log(`  No ledger yet, so all ${files.length} migrations count as pending.`);
-  console.log('  Every migration in this repo is idempotent, so re-running is safe;');
-  console.log('  it simply records what is already true.\n');
+  console.log('  If this database already has them, record them instead of replaying:');
+  console.log(`    npm run db:push -- --baseline ${files.at(-2)?.split('_')[0] || '0001'}\n`);
+}
+
+if (baselineTo) {
+  const upTo = pending.filter(f => f.split('_')[0] <= baselineTo);
+  if (!upTo.length) { console.log(`  Nothing pending at or before ${baselineTo}.\n`); process.exit(0); }
+  console.log(`  Recording ${upTo.length} migration(s) as applied WITHOUT running them:`);
+  console.log(upTo.map(f => `    ${f}`).join('\n') + '\n');
+  if (dryRun) { console.log('  Dry run, nothing recorded.\n'); process.exit(0); }
+  for (const file of upTo) {
+    await sql(`insert into applied_migrations (version) values ('${file.replace(/'/g, "''")}')
+               on conflict (version) do nothing;`);
+  }
+  console.log(`  Done. Re-run \`npm run db:push\` to apply anything after ${baselineTo}.\n`);
+  process.exit(0);
 }
 
 console.log(`  ${pending.length} pending:\n${pending.map(f => `    ${f}`).join('\n')}\n`);

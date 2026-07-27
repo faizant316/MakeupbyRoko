@@ -10,9 +10,13 @@
 // throws and never blocks the request: alerting about a broken booking must not
 // be the thing that breaks the booking.
 import { createClient } from './supabase/server';
-import { sendEmail } from './email';
+import { DEVELOPER_EMAILS } from './adminAllowlist';
 
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
+// Whoever maintains the site, NOT ADMIN_NOTIFICATION_EMAIL. That one is Roko's
+// personal Gmail, where new-booking notifications land; a Postgres error code
+// arriving beside them tells her the thing she paid for is broken and gives her
+// nothing she can do. Set ALERT_EMAIL in Vercel to override.
+const ALERT_TO = process.env.ALERT_EMAIL || DEVELOPER_EMAILS[0];
 
 // One email per problem per hour. A form that is broken is broken for every
 // visitor, so the unthrottled version would be a hundred identical emails and a
@@ -81,10 +85,16 @@ export async function raiseAlert({ source, kind, message, context = {}, severity
     console.error(`ALERT ${severity} ${source} ${kind}: ${message}`);
     if (alreadyNotified) return;
 
+    // Imported lazily so email.js can alert on its OWN failures without the two
+    // modules forming a static import cycle.
+    const { sendEmail } = await import('./email');
     await sendEmail({
-      to: ADMIN_EMAIL,
+      to: ALERT_TO,
       subject: `Site alert: ${source} (${kind})`,
       html: alertEmail({ source, kind, message, context }),
+      // Don't let a failure to send THIS raise another alert, which would try
+      // to send another email, forever.
+      _internal: true,
     });
     await supabase.from('system_alerts').update({ notified_at: new Date().toISOString() }).eq('id', row.id);
   } catch (err) {
