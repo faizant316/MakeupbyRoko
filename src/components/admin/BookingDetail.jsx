@@ -1478,7 +1478,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // Fetch bridal inquiry if this is a bridal booking
   const isBridal = /bridal|bride|wedding|full day/i.test(booking.service || '') && !/non-bridal/i.test(booking.service || '');
 
-  const { data: bridalInquiry } = useQuery({
+  const { data: bridalInquiry, isPending: bridalInquiryPending } = useQuery({
     queryKey: ['bridal-inquiry', booking.upload_token, booking.email],
     queryFn: async () => {
       // The inquiry and its booking share an upload_token — the exact 1:1 link.
@@ -1495,6 +1495,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     },
     enabled: isBridal && (!!booking.upload_token || !!booking.email),
   });
+  // With nothing to match on, the query never runs and stays `pending` forever —
+  // which would silently hide the "no inquiry linked" notice in exactly the case
+  // that guarantees there isn't one. Treat that as settled-and-empty.
+  const bridalInquiryMissing = isBridal && !bridalInquiry
+    && (!bridalInquiryPending || (!booking.upload_token && !booking.email));
 
   // Derived bridal values for the redesigned details block
   const biWedding = bridalInquiry?.wedding_date && bridalInquiry.wedding_date !== 'partial'
@@ -1514,6 +1519,29 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const biOosLabel = bridalInquiry && [true, false, 'true', 'false'].includes(bridalInquiry.out_of_state)
     ? (biOos ? 'Yes, out of state' : 'No, local')
     : null;
+
+  // ── The client's morning, beside Roko's window ────────────────────────────
+  // The inquiry answers who else is in the room and when, but that lived only
+  // in the emailed copy — so the card showed "5:00 AM – 7:00 AM" with nothing
+  // saying why 5:00. Roko's read of her own booking shouldn't require digging
+  // up an email. Everything the bride answered about the day's timing goes on
+  // one rail right under the window, in the order it happens.
+  const dayTimeline = [
+    { label: 'Venue access', time: bridalInquiry?.venue_access_time },
+    { label: 'Hairstylist arrives', time: bridalInquiry?.ready_by_time },
+    { label: isTrialBooking ? 'Preferred time' : 'Event starts', time: bridalInquiry?.event_start_time },
+    { label: 'Photographer arrives', time: bridalInquiry?.photographer_arrival_time },
+  ]
+    .filter(s => s.time)
+    .map(s => ({ ...s, min: clockToMin(s.time) }))
+    .sort((a, b) => (a.min ?? 1e9) - (b.min ?? 1e9));
+  // Roko's own start is the anchor: anything the bride expects BEFORE she's
+  // finished is something to work around, and that's the whole point of showing
+  // it. `mine` marks her window inline so the rail reads as one morning.
+  const dayRail = apptStartMin != null && apptEndMin != null
+    ? [...dayTimeline, { label: 'You start', time: parseRange(booking.time).start, min: apptStartMin, mine: true }]
+      .sort((a, b) => (a.min ?? 1e9) - (b.min ?? 1e9))
+    : dayTimeline;
 
   // ── Bridal pipeline: where the consultation scheduler lives ───────────────
   // Once a bridal booking has a working window, confirming + the consultation
@@ -2123,6 +2151,35 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </div>
                 )}
 
+                {/* ── Their morning ────────────────────────────────────────
+                    Why the window starts when it does. Roko sets her time
+                    around the hairstylist and the venue, so those answers
+                    belong beside the window rather than in an email she'd
+                    have to go find. Her own start sits in the sequence, in
+                    plum, so the whole morning reads in one pass. */}
+                {isBridal && dayRail.length > (apptStartMin != null ? 1 : 0) && (
+                  <div className="px-4 pb-4">
+                    <div className="pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+                        {firstName}&apos;s morning
+                      </p>
+                      <div className="flex flex-wrap gap-x-5 gap-y-3">
+                        {dayRail.map((s, i) => (
+                          <div key={i} className="flex items-start gap-2 min-w-0">
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[0.42rem]"
+                              style={{ background: s.mine ? '#C4849A' : (dm ? '#52525b' : '#D8D8E0') }} />
+                            <div className="min-w-0">
+                              <p className="text-[0.86rem] font-semibold leading-tight tabular-nums"
+                                style={{ color: s.mine ? '#C4849A' : (dm ? '#ECEDF1' : '#1E1E27') }}>{s.time}</p>
+                              <p className="text-[0.66rem] leading-tight mt-0.5" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>{s.label}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Travel / early-arrival flags */}
                 {notes.flags.length > 0 && (
                   <div className="px-4 pb-4 -mt-1 flex flex-wrap gap-2">
@@ -2464,6 +2521,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {/* The requested ready-by sometimes lives only in the booking
                     notes, but it's still an inquiry answer — always show it here. */}
                 <BField dm={dm} label="Ready By (Requested)" value={bridalInquiry.makeup_ready_by_time || notes.readyBy} accent />
+                <BField dm={dm} label={isTrialBooking ? 'Preferred Time' : 'Event Starts'} value={bridalInquiry.event_start_time} />
                 <BField dm={dm} label="Venue Access" value={bridalInquiry.venue_access_time} />
                 <BField dm={dm} label="Hairstylist Arrive By" value={bridalInquiry.ready_by_time} />
                 <BField dm={dm} label="Photographer Arrives" value={bridalInquiry.photographer_arrival_time} />
@@ -2517,6 +2575,27 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <p className="text-[0.84rem] leading-[1.7]" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{bridalInquiry.additional_details}</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* No inquiry row to show. Rendering nothing here is what made a saving
+            bug invisible for a week: the section simply vanished and the card
+            read as if the bride had never answered anything. Say it out loud
+            instead, and point at the copy that does exist (the inquiry email),
+            so a gap always looks like a gap. */}
+        {bridalInquiryMissing && (
+          <div className="mb-6 flex items-start gap-2.5 px-4 py-3.5 rounded-[8px]"
+            style={{ background: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', border: `1px solid ${dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9'}` }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#F5B83C' : '#B26A04'} strokeWidth="1.9" strokeLinecap="round" className="w-4 h-4 flex-shrink-0 mt-0.5">
+              <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/>
+            </svg>
+            <div className="min-w-0">
+              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#F5B83C' : '#A9660B' }}>No inquiry form linked to this booking</p>
+              <p className="text-[0.72rem] leading-[1.55] mt-0.5" style={{ color: dm ? '#c9a86a' : '#8A6420' }}>
+                The wedding details (hairstylist, photographer, venue access, guest count) aren&apos;t on file here.
+                Your &ldquo;New Bridal Inquiry&rdquo; email for {firstName} has the full copy.
+              </p>
             </div>
           </div>
         )}
