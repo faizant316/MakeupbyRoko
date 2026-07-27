@@ -151,6 +151,15 @@ export default function ServicesPage() {
     setActiveCategory(key);
   }, []);
 
+  // "View all services" under a filtered list: drop the filter and put them back
+  // at the top of the grid, so they don't have to scroll up to the tabs to reset.
+  const handleShowAll = useCallback(() => {
+    setActiveCategory('all');
+    requestAnimationFrame(() => {
+      scrollToTarget('#services-grid', { offset: -60 });
+    });
+  }, []);
+
   const handleViewDetail = useCallback((svc, e) => {
     setDetailOrigin(e ? { x: e.clientX, y: e.clientY } : null);
     setDetailService(svc);
@@ -538,6 +547,34 @@ export default function ServicesPage() {
                   <CoursesFeature key={svc.key} svc={svc} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Reset the filter from the bottom of a single category, instead of
+              making them scroll all the way back up to the tabs. */}
+          {activeCategory !== 'all' && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={handleShowAll}
+                className="group inline-flex items-center gap-2.5 rounded-full transition-all duration-200 touch-manipulation"
+                style={{
+                  border: '1px solid #eae2dc',
+                  background: '#fff',
+                  padding: '11px 22px',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.63rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: '#111',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.background = '#fdf9fa'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#eae2dc'; e.currentTarget.style.background = '#fff'; }}
+              >
+                <span style={{ color: '#D4A0B0', fontSize: '0.6rem', lineHeight: 1 }}>✦</span>
+                View all services
+              </button>
             </div>
           )}
           </div>

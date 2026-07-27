@@ -45,9 +45,16 @@ export default function ClassFormatStep({ format, onFormat, onClose, onNext }) {
         style={{ borderBottom: `1px solid ${PLUM.border}` }}
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,160,176,0.14)' }}>
-            <span style={{ color: PLUM.pink }} className="text-xs">✦</span>
-          </div>
+          {/* Step 1 has nothing behind it, so back closes the flow — same shape
+              and position as the back bubble on steps 2 and 3, and on the other
+              service modals. */}
+          <button onClick={onClose} aria-label="Back"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-[#f0eef0]"
+            style={{ background: PLUM.tint2, color: PLUM.gray }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
           <div>
             <span className="font-serif text-[1.1rem] tracking-tight text-[#111] block leading-tight">Makeup Classes by Roko</span>
             <span className="text-[0.62rem] tracking-wide" style={{ color: PLUM.gray }}>Online or in person</span>
