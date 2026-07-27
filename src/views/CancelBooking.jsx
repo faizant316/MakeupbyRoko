@@ -108,7 +108,7 @@ export default function CancelBooking() {
         body: JSON.stringify({ token, reason }),
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'Something went wrong. Please reply to your email.');
+      if (!r.ok) throw new Error(data.error || 'Something went wrong. Please hit the Reply button on your confirmation email and Roko will sort it out.');
       setDone({ type: data.type });
     } catch (e) {
       setError(e.message);
@@ -189,7 +189,7 @@ export default function CancelBooking() {
           <p style={{ fontSize: 14, color: BODY, lineHeight: 1.6, margin: '0 auto', maxWidth: 330 }}>
             {alreadyRequested
               ? 'We already have your cancellation request. Roko will reach out to you personally. No need to do anything else.'
-              : 'This booking has already been cancelled. If that was not you, just reply to your email and it comes straight to Roko.'}
+              : 'This booking has already been cancelled. If that was not you, hit the Reply button on your confirmation email and it comes straight to Roko.'}
           </p>
           <a href={SITE_URL} style={{ display: 'inline-block', marginTop: 24, fontSize: 13, fontWeight: 600, color: PLUM, textDecoration: 'none' }}>Back to makeupbyroko.org →</a>
         </div>
