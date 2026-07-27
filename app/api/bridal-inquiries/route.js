@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
+import { raiseAlert, keysOf } from '../../../src/lib/alerts';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(req) {
@@ -26,9 +27,12 @@ export async function GET(req) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req) {
+  // Hoisted so the catch can report WHICH fields the form sent. That list is
+  // the whole diagnosis when a column and a form drift apart.
+  let body = null;
   try {
     const supabase = createClient();
-    const body = await req.json();
+    body = await req.json();
 
     const { bride_name, soon_to_be_last_name, email, phone, instagram_handle, wedding_date,
       event_location, event_start_time, photographer, hairstylist, venue_access_time,
@@ -84,13 +88,27 @@ export async function POST(req) {
       delete attempt[col];
       dropped.push(col);
     }
+    // Saved, but not whole. The bride answered a question that is now missing
+    // from her record, which is a smaller version of the same bug and just as
+    // invisible, so it gets the same alarm.
     if (dropped.length) {
-      console.error(`POST /api/bridal-inquiries: saved without [${dropped.join(', ')}] — run the pending migration`);
+      await raiseAlert({
+        source: 'api/bridal-inquiries', kind: 'columns_dropped', severity: 'warning',
+        message: `A bridal inquiry saved without ${dropped.length} answer(s) because the live table has no column for them. Run \`npm run db:push\`.`,
+        context: { dropped, table: 'bridal_inquiries' },
+      });
     }
     if (error) throw error;
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });
   } catch (err) {
-    console.error('POST /api/bridal-inquiries:', err);
+    // The one that hid for six days. The form deliberately does not block the
+    // booking on this failure, so this alert is the ONLY signal that a bride's
+    // wedding details were just thrown away.
+    await raiseAlert({
+      source: 'api/bridal-inquiries', kind: 'insert_failed',
+      message: 'A bridal inquiry was submitted but could not be saved. The booking and emails still went through, so the client saw nothing wrong, but her wedding details are not on file.',
+      context: { error: err?.message, code: err?.code, sent_keys: keysOf(body) },
+    });
     return NextResponse.json({ error: 'Failed to create inquiry' }, { status: 500 });
   }
 }
