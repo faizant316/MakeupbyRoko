@@ -16,3 +16,17 @@ export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'roko@makeupbyroko.org,
 export function isAdminEmail(email) {
   return !!email && ADMIN_EMAILS.includes(String(email).toLowerCase());
 }
+
+// Who sees the plumbing. Roko is an admin, not an engineer: a red bar quoting a
+// Postgres error code tells her the thing she paid for is broken, and gives her
+// nothing she can act on. System alerts are for whoever maintains the site, so
+// the failure banner and the alert emails go here rather than to every admin.
+// Override with DEVELOPER_EMAILS (comma-separated) in Vercel.
+export const DEVELOPER_EMAILS = (process.env.DEVELOPER_EMAILS || 'faizant316@gmail.com')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export function isDeveloperEmail(email) {
+  return !!email && DEVELOPER_EMAILS.includes(String(email).toLowerCase());
+}

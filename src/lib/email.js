@@ -421,13 +421,45 @@ function corder(items) {
 
 // ─── Client Templates ──────────────────────────────────────────────────────────
 
-export async function sendEmail({ to, subject, html }) {
+// Alerting lives in alerts.js, which sends its own email through here. Imported
+// lazily at the point of failure so the two modules don't form a static cycle,
+// and skipped entirely for the alert's own email (`_internal`) so a broken
+// Resend key can't start an infinite send-fail-alert-send loop.
+async function reportEmailFailure({ to, subject, reason, _internal }) {
+  console.error(`Email to ${to} failed (${subject}):`, reason);
+  if (_internal) return;
+  try {
+    const { raiseAlert } = await import('./alerts');
+    await raiseAlert({
+      source: 'email', kind: 'send_failed', severity: 'critical',
+      message: `An email failed to send: "${subject}". If this was a confirmation, the client is waiting on information she will never receive.`,
+      // The recipient's domain is enough to tell a Resend outage from one bad
+      // address, without putting a client's address in the alert log.
+      context: { subject, recipient_domain: String(to || '').split('@')[1] || 'unknown', error: String(reason?.message || reason).slice(0, 300) },
+    });
+  } catch (err) { console.error('Could not raise email alert:', err?.message); }
+}
+
+export async function sendEmail({ to, subject, html, _internal = false }) {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const result = await resend.emails.send({ from: FROM, to: [to], replyTo: REPLY_TO, subject, html });
-  if (result.error) throw new Error(result.error.message);
+  let result;
+  try {
+    result = await resend.emails.send({ from: FROM, to: [to], replyTo: REPLY_TO, subject, html });
+  } catch (err) {
+    await reportEmailFailure({ to, subject, reason: err, _internal });
+    throw err;
+  }
+  if (result.error) {
+    await reportEmailFailure({ to, subject, reason: result.error, _internal });
+    throw new Error(result.error.message);
+  }
   return result;
 }
 
+// Used for the client + admin pair on a booking. It deliberately does NOT throw
+// (one failed email must not roll back a confirmed booking), which is exactly
+// why the failure needs to be reported: before this, a client's confirmation
+// could silently never arrive and the only trace was a serverless log line.
 export async function sendEmailPair(emails) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const results = await Promise.allSettled(
@@ -436,9 +468,9 @@ export async function sendEmailPair(emails) {
         .then(r => { if (r.error) throw new Error(r.error.message); return r; })
     )
   );
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') console.error(`Email ${i} failed:`, r.reason);
-  });
+  await Promise.all(results.map((r, i) => r.status === 'rejected'
+    ? reportEmailFailure({ to: emails[i]?.to, subject: emails[i]?.subject, reason: r.reason })
+    : null));
 }
 
 export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection = '' }) {
