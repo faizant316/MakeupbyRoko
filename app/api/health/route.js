@@ -54,24 +54,26 @@ export async function GET(req) {
     });
   }
 
-  // Surface anything raised since the last run, so a single glance at this
-  // endpoint answers "is the site actually healthy right now?".
-  let openAlerts = [];
+  // A rolling 24h window rather than "unresolved": alerts are emailed, not
+  // triaged in an app, so nothing ever marks one handled and an all-time list
+  // would report the site as unhealthy forever after a single old blip.
+  let recentAlerts = [];
   try {
     const supabase = createClient();
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data } = await supabase
       .from('system_alerts')
       .select('id, created_at, source, kind, severity, message')
-      .is('resolved_at', null)
+      .gte('created_at', since)
       .order('created_at', { ascending: false })
-      .limit(20);
-    openAlerts = data || [];
+      .limit(50);
+    recentAlerts = data || [];
   } catch { /* the alerts table not existing must not fail the schema check */ }
 
   return NextResponse.json({
-    ok: schema.ok && openAlerts.length === 0,
+    ok: schema.ok && recentAlerts.length === 0,
     checkedAt,
     schema: { ok: schema.ok, problems: schema.problems, tables: schema.tables },
-    openAlerts,
+    alertsLast24h: recentAlerts,
   }, { status: 200 });
 }
