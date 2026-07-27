@@ -10,7 +10,6 @@ import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
 import ContractSettings from '../components/admin/ContractSettings';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
-import SystemAlertBanner from '../components/admin/SystemAlertBanner';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
 import TodayAgenda from '../components/admin/TodayAgenda';
 import ClassSignupsCard from '../components/admin/ClassSignupsCard';
@@ -465,10 +464,6 @@ export default function Admin() {
               </p>
             </div>
           </div>
-
-        {/* Above the work, on every tab, whenever a write path has failed.
-            Renders nothing when there's nothing wrong. */}
-        <SystemAlertBanner dm={dm} />
 
         {/* Keyed so every navigation (open/close a card, switch tabs) replays
             the same quiet fade-rise. The title above stays put for stability. */}

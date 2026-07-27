@@ -8,9 +8,12 @@
 -- because an outage gets fixed the same hour.
 --
 -- So every write path that can lose client data now writes a row here when it
--- fails, and the admin dashboard reads unresolved rows as a red banner. The
--- table is deliberately generic: any future check that discovers something is
--- wrong should raise an alert rather than invent its own reporting.
+-- fails, and emails whoever maintains the site. The email is the alarm; this
+-- table is the record, for answering "how long has this been broken?" and "how
+-- many clients did it touch?" after the fact. Nothing surfaces it in the admin
+-- dashboard on purpose: Roko is the other admin and this is not her problem to
+-- read. The table is deliberately generic, so any future check that discovers
+-- something wrong should raise an alert rather than invent its own reporting.
 create table if not exists system_alerts (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -25,7 +28,9 @@ create table if not exists system_alerts (
   -- Whatever helps diagnose it: the Postgres code, the table, the payload KEYS
   -- (never the values, so client PII stays out of the alert log).
   context jsonb,
-  -- Set when someone marks it handled in admin. Unresolved rows drive the banner.
+  -- Reserved for marking one handled. Nothing writes it today (alerts are dealt
+  -- with by fixing the cause, not by clicking anything), kept so the history can
+  -- be annotated later without another migration.
   resolved_at timestamptz,
   -- Set when the alert email went out, so the throttle is a fact rather than a
   -- guess about what was sent.

@@ -5,10 +5,18 @@
 // could fail on every single submission for six days while the site behaved
 // normally in every other respect. The failure had nowhere to go.
 //
-// raiseAlert is the place it goes now. It writes a row (for the admin banner),
-// and emails Roko once per problem rather than once per occurrence. It NEVER
-// throws and never blocks the request: alerting about a broken booking must not
-// be the thing that breaks the booking.
+// raiseAlert is the place it goes now: an email to whoever maintains the site,
+// once per problem rather than once per occurrence, plus a durable row for
+// working out afterwards how long something had been broken.
+//
+// Email is the ONLY surface. There is deliberately no in-app banner: Roko is
+// the other admin and a red bar quoting a Postgres error tells her the site she
+// paid for is broken while giving her nothing to act on, and a dashboard is the
+// wrong place to learn about this anyway. It should arrive where you already
+// get interrupted.
+//
+// It NEVER throws and never blocks the request: alerting about a broken booking
+// must not be the thing that breaks the booking.
 import { createClient } from './supabase/server';
 import { DEVELOPER_EMAILS } from './adminAllowlist';
 
@@ -48,8 +56,8 @@ function alertEmail({ source, kind, message, context }) {
       ${rows}
     </table>
     <p style="font-size:12px;color:#888;line-height:1.6;margin:0;">
-      Client data may not have saved. This is recorded on the admin dashboard until it's marked handled.
-      Further identical failures in the next hour will not send another email.
+      Client data may not have saved. Every occurrence is recorded in the system_alerts table;
+      further identical failures in the next hour will not send another email.
     </p>
   </div>`;
 }
