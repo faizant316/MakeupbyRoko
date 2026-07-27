@@ -97,7 +97,8 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
     ${content}
     <tr><td style="padding:22px 28px 0;background:#FBF5F8;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #F0E6EC;border-radius:12px;"><tr><td style="padding:14px 18px;text-align:center;">
-        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Questions, or need to change your time? Just hit <strong style="color:#16110F;">Reply</strong> on this email and it comes straight to Roko, right here in this thread.</p>
+        <p style="font-size:13px;font-weight:700;color:#16110F;line-height:1.6;margin:0 0 5px;">Questions, or need to change your time?</p>
+        <p style="font-size:13px;color:#6B636A;line-height:1.6;margin:0;">Use the <strong style="color:#16110F;">Reply</strong> button in your email app, at the bottom of this message in Gmail, up at the top in Outlook and Apple Mail. Your reply comes straight to Roko, right here in this thread.</p>
       </td></tr></table>
     </td></tr>
     <tr><td style="padding:20px 28px 30px;background:#FBF5F8;border-top:1px solid #F0E6EC;text-align:center;">
@@ -629,7 +630,7 @@ export function bookingCancelledEmail({ name, service, date, reason }) {
       ${clientHero({ eyebrow: 'Booking Update', title: 'Booking', titleAccent: 'Cancelled' })}
       ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I'm so sorry, but your <strong style="color:#16110F;">${service}</strong> appointment on <strong style="color:#16110F;">${date}</strong> has to be cancelled.`)}
       ${reasonBlock}
-      ${cintro(`I'd genuinely love to still make it work another time. You can rebook anytime below, or just reply to this email.`)}
+      ${cintro(`I'd genuinely love to still make it work another time. You can rebook anytime below, or just hit the Reply button in your email app.`)}
       <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
     `,
   });
@@ -651,7 +652,7 @@ export function clientCancelledEmail({ name, service, date, kind = 'appointment'
       ${clientHero({ emoji: '✓', eyebrow: isClass ? 'Class Cancelled' : 'Appointment Cancelled', title: 'All', titleAccent: 'done' })}
       ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''} has been cancelled.`)}
       ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${moneyLine}</p>`)}
-      ${cintro(`I'd genuinely love to work with you another time. You can rebook whenever you're ready, or just reply to this email.`)}
+      ${cintro(`I'd genuinely love to work with you another time. You can rebook whenever you're ready, or just hit the Reply button in your email app.`)}
       <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
     `,
   });
@@ -666,7 +667,7 @@ export function bridalCancelRequestEmail({ name, service, date }) {
       ${clientHero({ eyebrow: 'Request Received', title: 'We got your', titleAccent: 'request' })}
       ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I've received your request to cancel your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''}.`)}
       ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">Because this is a wedding booking, I handle every cancellation personally. <strong style="color:#16110F;">Your date is still held for now.</strong> I'll reach out within 24 hours so we can talk it through together.</p>`)}
-      ${cintro(`If anything is urgent, just reply to this email and it comes straight to me.`)}
+      ${cintro(`If anything is urgent, just hit the Reply button in your email app and it comes straight to me.`)}
     `,
   });
 }
