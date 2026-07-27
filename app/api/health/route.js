@@ -54,6 +54,27 @@ export async function GET(req) {
     });
   }
 
+  // ── Payments ──────────────────────────────────────────────────────────────
+  // Going live means swapping Stripe env vars by hand, which is exactly the
+  // kind of step that gets half-done. Test keys in production decline every
+  // real card, and a missing webhook secret means paid classes never finalize:
+  // both are silent from the outside, so they get checked every day rather
+  // than remembered.
+  const stripeKey = process.env.STRIPE_SECRET_KEY || '';
+  const stripe = {
+    mode: stripeKey.startsWith('sk_live_') ? 'live' : stripeKey.startsWith('sk_test_') ? 'test' : 'unset',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ? 'set' : 'missing',
+  };
+  if (stripe.mode !== 'live' || stripe.webhookSecret === 'missing') {
+    await raiseAlert({
+      source: 'api/health', kind: 'stripe_misconfigured', severity: 'critical',
+      message: stripe.mode !== 'live'
+        ? `Production is running Stripe in ${stripe.mode} mode. Real cards will be declined, so nobody can buy a class.`
+        : 'STRIPE_WEBHOOK_SECRET is missing in production, so paid classes will never be finalized: no confirmation, no Zoom link, no date.',
+      context: stripe,
+    });
+  }
+
   // A rolling 24h window rather than "unresolved": alerts are emailed, not
   // triaged in an app, so nothing ever marks one handled and an all-time list
   // would report the site as unhealthy forever after a single old blip.
@@ -71,9 +92,10 @@ export async function GET(req) {
   } catch { /* the alerts table not existing must not fail the schema check */ }
 
   return NextResponse.json({
-    ok: schema.ok && recentAlerts.length === 0,
+    ok: schema.ok && stripe.mode === 'live' && stripe.webhookSecret === 'set' && recentAlerts.length === 0,
     checkedAt,
     schema: { ok: schema.ok, problems: schema.problems, tables: schema.tables },
+    stripe,
     alertsLast24h: recentAlerts,
   }, { status: 200 });
 }

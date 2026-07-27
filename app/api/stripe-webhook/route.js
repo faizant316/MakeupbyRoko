@@ -50,14 +50,19 @@ export async function POST(req) {
     // pair — no more duplicate 🎨 / 💳 messages.
     await finalizeClassRegistration(supabase, { registrationId, sessionId: session.id, sessionMeta: session.metadata || {} });
   } catch (err) {
-    // Note this still answers 200 below, so Stripe will NOT retry. That is the
-    // existing behaviour and payment retry semantics aren't something to change
-    // quietly, but it does mean this alert is the only chance to catch it.
     await raiseAlert({
       source: 'api/stripe-webhook', kind: 'finalize_failed', severity: 'critical',
-      message: 'A class payment succeeded but finalizing the registration failed. The client has been charged and may have received no confirmation, no Zoom link, and no scheduled date. Stripe will not retry this.',
+      message: 'A class payment succeeded but finalizing the registration failed. The client has been charged. Stripe will retry this automatically; if the retries also fail, she has no confirmation, no Zoom link and no date.',
       context: { error: err?.message, event_id: event?.id, session_id: event?.data?.object?.id },
     });
+    // 500 so Stripe retries (it backs off over ~3 days). Safe in both branches:
+    // finalizeClassRegistration claims the row atomically BEFORE doing anything
+    // else, and everything after that claim already swallows its own errors. So
+    // a throw here almost always means the claim itself failed, leaving the
+    // claim available for the retry to win and recover fully. In the unlikely
+    // case something post-claim threw, the retry matches 0 rows, returns
+    // alreadyDone, and sends nothing twice.
+    return NextResponse.json({ error: 'Finalize failed, please retry' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
