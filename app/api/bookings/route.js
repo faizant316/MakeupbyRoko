@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
+import { raiseAlert, keysOf } from '../../../src/lib/alerts';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET() {
@@ -24,9 +25,11 @@ export async function GET() {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req) {
+  // Hoisted so a failure can report which fields the form actually sent.
+  let body = null;
   try {
     const supabase = createClient();
-    const body = await req.json();
+    body = await req.json();
 
     const { name, email, phone, service, date, time, notes, status, reference_photos, deposit_received, source } = body;
     if (!name || !service) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -83,7 +86,13 @@ export async function POST(req) {
 
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });
   } catch (err) {
-    console.error('POST /api/bookings:', err);
+    // A booking that doesn't save is a client who thinks she has an appointment
+    // and a Roko who has never heard of her. Loudest possible signal.
+    await raiseAlert({
+      source: 'api/bookings', kind: 'insert_failed', severity: 'critical',
+      message: 'A booking could not be saved. If the client reached a confirmation screen, she believes she is booked and there is no appointment on file.',
+      context: { error: err?.message, code: err?.code, sent_keys: keysOf(body) },
+    });
     return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 });
   }
 }

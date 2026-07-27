@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '../../../src/lib/supabase/server';
+import { raiseAlert } from '../../../src/lib/alerts';
 
 import { CLASS_CATALOG, CLASS_FORMATS, classMeta, startWindows } from '../../../src/lib/classCatalog';
 import { isBookableWednesday, regHoldsDate, regDateOf } from '../../../src/lib/classSchedule';
@@ -135,7 +136,13 @@ export async function POST(req) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error('create-class-checkout:', err);
+    // Money is involved here, so a failure can also mean a charge with no
+    // registration behind it. Always worth waking someone up for.
+    await raiseAlert({
+      source: 'api/create-class-checkout', kind: 'checkout_failed', severity: 'critical',
+      message: 'A class checkout failed. If Stripe took payment, there may be a charge with no registration attached to it.',
+      context: { error: err?.message, code: err?.code },
+    });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

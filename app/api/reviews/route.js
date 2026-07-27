@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
+import { raiseAlert, keysOf } from '../../../src/lib/alerts';
 
 export async function GET(req) {
   try {
@@ -17,9 +18,10 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  let body = null;
   try {
     const supabase = createClient();
-    const body = await req.json();
+    body = await req.json();
     const { name, rating, message, service, highlights, location, photo } = body;
     if (!name || !message) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     const { data, error } = await supabase
@@ -38,6 +40,13 @@ export async function POST(req) {
     if (error) throw error;
     return NextResponse.json({ ...data, created_date: data.created_at }, { status: 201 });
   } catch (err) {
+    // This catch used to be completely empty, not even a console.error: a
+    // client's review could vanish without leaving a single trace anywhere.
+    await raiseAlert({
+      source: 'api/reviews', kind: 'insert_failed',
+      message: 'A client submitted a review and it could not be saved.',
+      context: { error: err?.message, code: err?.code, sent_keys: keysOf(body) },
+    });
     return NextResponse.json({ error: 'Failed to submit review' }, { status: 500 });
   }
 }

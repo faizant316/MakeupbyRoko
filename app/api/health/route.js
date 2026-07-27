@@ -1,0 +1,77 @@
+// The check that runs when nobody is watching.
+//
+// `npm run db:check` only helps if someone remembers to run it. This is the
+// same check, on a Vercel cron, against production. If the schema and the forms
+// ever drift apart again, this notices within a day and emails, rather than
+// waiting for a bride to submit an inquiry that gets thrown away.
+//
+// It is READ-ONLY by design. A synthetic probe that inserted real rows could
+// leave a fake booking in Roko's dashboard if cleanup ever failed, which trades
+// one embarrassment for another. Runtime raiseAlert() calls cover everything a
+// schema check can't see.
+import { NextResponse } from 'next/server';
+import { createClient } from '../../../src/lib/supabase/server';
+import { checkSchema } from '../../../src/lib/schemaContract.mjs';
+import { raiseAlert } from '../../../src/lib/alerts';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req) {
+  // Vercel cron sends `Authorization: Bearer $CRON_SECRET`. A logged-in admin
+  // can also run it on demand from the dashboard. Anyone else gets nothing:
+  // this reports on internal structure and shouldn't be a public endpoint.
+  const secret = process.env.CRON_SECRET;
+  const authed = secret && req.headers.get('authorization') === `Bearer ${secret}`;
+  if (!authed) {
+    const { authError } = await requireAdmin();
+    if (authError) return authError;
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const checkedAt = new Date().toISOString();
+
+  let schema;
+  try {
+    schema = await checkSchema(url, key);
+  } catch (err) {
+    await raiseAlert({
+      source: 'api/health', kind: 'check_failed', severity: 'critical',
+      message: 'The scheduled health check could not read the database schema, so nothing is currently verifying that the booking forms still save.',
+      context: { error: err?.message },
+    });
+    return NextResponse.json({ ok: false, checkedAt, error: err?.message }, { status: 500 });
+  }
+
+  if (!schema.ok) {
+    // One alert naming every drifted table: four separate emails about one
+    // migration would be four chances to skim past it.
+    await raiseAlert({
+      source: 'api/health', kind: 'schema_drift', severity: 'critical',
+      message: `The database no longer matches what the forms send. ${schema.problems.length} write path(s) affected. Client submissions to these are being discarded.`,
+      context: Object.fromEntries(schema.problems.map(p => [p.table, p.detail])),
+    });
+  }
+
+  // Surface anything raised since the last run, so a single glance at this
+  // endpoint answers "is the site actually healthy right now?".
+  let openAlerts = [];
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('system_alerts')
+      .select('id, created_at, source, kind, severity, message')
+      .is('resolved_at', null)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    openAlerts = data || [];
+  } catch { /* the alerts table not existing must not fail the schema check */ }
+
+  return NextResponse.json({
+    ok: schema.ok && openAlerts.length === 0,
+    checkedAt,
+    schema: { ok: schema.ok, problems: schema.problems, tables: schema.tables },
+    openAlerts,
+  }, { status: 200 });
+}
