@@ -6,6 +6,7 @@ import {
   parseContractSettings,
   buildContract,
   defaultContractTemplate,
+  healSupersededSection,
 } from '@/lib/contract';
 import ContractEditorModal, { ContractPreview } from './ContractEditorModal';
 
@@ -32,7 +33,9 @@ function effectiveContract(current) {
       title: current.title || def.title,
       intro: current.intro || def.intro,
       consent: current.photoConsentQuestion || def.photoConsentQuestion,
-      sections: current.sections.map(s => ({ ...s })),
+      // Heal untouched copies of superseded wording so the editor opens on what
+      // clients actually see, and saving can't re-freeze the outdated text.
+      sections: current.sections.map(s => ({ ...healSupersededSection(s, def.sections) })),
     };
   }
   const sections = def.sections.map(s => ({ ...s }));
