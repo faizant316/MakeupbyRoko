@@ -562,19 +562,19 @@ export default function ServicesPage() {
                   background: 'none',
                   padding: '10px 0',
                   fontFamily: 'var(--font-sans)',
-                  fontSize: '0.63rem',
-                  fontWeight: 400,
-                  letterSpacing: '0.14em',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.11em',
                   textTransform: 'uppercase',
-                  color: '#9a938c',
+                  color: '#D4A0B0',
                   textDecoration: 'underline',
-                  textUnderlineOffset: '5px',
+                  textUnderlineOffset: '6px',
                   textDecorationThickness: '1px',
-                  textDecorationColor: 'rgba(154,147,140,0.35)',
+                  textDecorationColor: 'rgba(212,160,176,0.6)',
                   cursor: 'pointer',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#111'; e.currentTarget.style.textDecorationColor = 'rgba(17,17,17,0.35)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#9a938c'; e.currentTarget.style.textDecorationColor = 'rgba(154,147,140,0.35)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#b8778c'; e.currentTarget.style.textDecorationColor = '#b8778c'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#D4A0B0'; e.currentTarget.style.textDecorationColor = 'rgba(212,160,176,0.6)'; }}
               >
                 View all services
               </button>
