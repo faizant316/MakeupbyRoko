@@ -553,26 +553,29 @@ export default function ServicesPage() {
           {/* Reset the filter from the bottom of a single category, instead of
               making them scroll all the way back up to the tabs. */}
           {activeCategory !== 'all' && (
-            <div className="flex justify-center pt-2">
+            <div className="flex justify-start pt-1">
               <button
                 onClick={handleShowAll}
-                className="group inline-flex items-center gap-2.5 rounded-full transition-all duration-200 touch-manipulation"
+                className="inline-flex items-center transition-colors duration-200 touch-manipulation"
                 style={{
-                  border: '1px solid #eae2dc',
-                  background: '#fff',
-                  padding: '11px 22px',
+                  border: 'none',
+                  background: 'none',
+                  padding: '10px 0',
                   fontFamily: 'var(--font-sans)',
                   fontSize: '0.63rem',
-                  fontWeight: 500,
+                  fontWeight: 400,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: '#111',
+                  color: '#9a938c',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '5px',
+                  textDecorationThickness: '1px',
+                  textDecorationColor: 'rgba(154,147,140,0.35)',
                   cursor: 'pointer',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.background = '#fdf9fa'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#eae2dc'; e.currentTarget.style.background = '#fff'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#111'; e.currentTarget.style.textDecorationColor = 'rgba(17,17,17,0.35)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#9a938c'; e.currentTarget.style.textDecorationColor = 'rgba(154,147,140,0.35)'; }}
               >
-                <span style={{ color: '#D4A0B0', fontSize: '0.6rem', lineHeight: 1 }}>✦</span>
                 View all services
               </button>
             </div>
