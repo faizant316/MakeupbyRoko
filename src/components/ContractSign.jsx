@@ -45,20 +45,57 @@ export default function ContractSign({ contract, clientName = '', submitting = f
       {/* Scrollable contract body.
           data-lenis-prevent lets this inner box scroll natively with the wheel:
           the modal's own Lenis instance would otherwise capture the wheel and
-          scroll the whole sheet instead of this box. */}
-      <div
-        data-lenis-prevent
-        className="rounded-2xl border border-[#F0E0E9] bg-[#FDFBFC] px-5 py-4 mb-5 max-h-[42vh] overflow-y-auto overscroll-contain"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-        <p className="text-[0.62rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-2">{contract.title}</p>
-        <p className="text-[0.78rem] text-[#444] leading-[1.7] mb-4">{contract.intro}</p>
-        {contract.sections.map((s, i) => (
-          <div key={i} className="mb-3.5">
-            <p className="text-[0.75rem] font-semibold text-[#111] mb-1">{i + 1}. {s.heading}</p>
-            <p className="text-[0.75rem] text-[#666] leading-[1.65]">{s.body}</p>
+          scroll the whole sheet instead of this box.
+          The wrapper is relative so the bottom fade can sit over the scroller
+          and hint that there is more agreement below the fold. */}
+      <div className="relative mb-5">
+        <div
+          data-lenis-prevent
+          className="rounded-2xl border border-[#F0E0E9] bg-[#FDFBFC] px-5 py-4 max-h-[42vh] overflow-y-auto overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {/* Header: what this is, then the money at a glance, then the intro.
+              A client should be able to answer "what do I pay, and when?"
+              without reading a single clause. */}
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <p className="text-[0.62rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">{contract.title}</p>
+            <p className="text-[0.56rem] tracking-[0.12em] uppercase text-[#CBBDC4]">{contract.version}</p>
           </div>
-        ))}
+
+          {contract.summary?.length > 0 && (
+            <dl className="rounded-xl border border-[#F3E7EE] bg-white px-3.5 py-2.5 mb-3.5">
+              {contract.summary.map((row, i) => (
+                <div
+                  key={row.label}
+                  className={`flex items-baseline justify-between gap-4 py-1.5 ${i > 0 ? 'border-t border-[#FAF3F6]' : ''}`}
+                >
+                  <dt className="text-[0.7rem] text-[#9A8E94] flex-shrink-0">{row.label}</dt>
+                  <dd className="text-right">
+                    <span className={row.strong ? 'text-[0.82rem] font-semibold text-[#111]' : 'text-[0.74rem] text-[#444]'}>
+                      {row.value}
+                    </span>
+                    {row.note && <span className="block text-[0.6rem] text-[#B3A7AD] mt-0.5">{row.note}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <p className="text-[0.78rem] text-[#444] leading-[1.7] mb-4">{contract.intro}</p>
+
+          {contract.sections.map((s, i) => (
+            <div key={i} className="mb-4 last:mb-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="flex-shrink-0 w-[18px] h-[18px] rounded-full bg-[#F6E7EE] text-[#B9788F] text-[0.58rem] font-semibold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <p className="text-[0.75rem] font-semibold text-[#111]">{s.heading}</p>
+              </div>
+              <p className="text-[0.75rem] text-[#666] leading-[1.65] pl-[26px]">{s.body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute inset-x-px bottom-px h-8 rounded-b-2xl bg-gradient-to-t from-[#FDFBFC] to-transparent" />
       </div>
 
       {/* Photo consent — explicit yes/no */}

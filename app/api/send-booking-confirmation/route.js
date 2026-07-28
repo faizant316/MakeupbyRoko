@@ -61,7 +61,9 @@ export async function POST(req) {
         serviceName: isBridal ? bridalTitle : serviceName,
         dateFormatted: isBridal ? bridalDateFormatted : dateFormatted,
         depositAmount: isBridal ? bridalDeposit : serviceDeposit,
-        priceAmount: isBridal ? undefined : servicePrice,
+        // Pass the bridal price too: the emailed copy has to state the same
+        // numbers the bride actually signed on site, not "the quoted amount".
+        priceAmount: isBridal ? bridalPrice : servicePrice,
         locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
         kind: 'appointment',
         overrides,

@@ -54,21 +54,26 @@ function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, block
   const isPartial = bookingCount > 0 && !isFull;
   const isToday = day.date.getTime() === today.getTime();
 
-  // A wedding date is fixed, so any future date (past the 2-week minimum) is
-  // selectable. The dots stay purely informational about Roko's existing load.
-  const disabled = isTooSoon;
+  // A wedding date isn't limited to Roko's regular open days, so Mon/Thu stay
+  // pickable. Days she's actually closed are a different thing: if she's marked
+  // the day off (a trip, time off) or it's already at capacity, she can't take
+  // the date at all, so it can't be picked here either.
+  const unavailable = isBlocked || isFull;
+  const disabled = isTooSoon || unavailable;
 
   return (
-    <button type="button" onClick={() => handleDayClick(day)}
-      title={isBlocked ? 'Roko has this date blocked — she\'ll confirm' : isFull ? 'Filling up — she\'ll confirm availability' : undefined}
+    <button type="button" onClick={() => handleDayClick(day)} disabled={disabled}
+      title={isBlocked ? 'Roko is away this day' : isFull ? 'Fully booked' : undefined}
       className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-all relative rounded-none ${
-        disabled ? 'text-gray-200 cursor-not-allowed'
+        isTooSoon ? 'text-gray-200 cursor-not-allowed'
+        : isBlocked ? 'text-red-300 cursor-not-allowed line-through decoration-red-300'
+        : isFull ? 'text-red-300 cursor-not-allowed'
         : isSel ? 'bg-[#111] text-white font-semibold rounded-sm'
         : isToday ? 'text-[#D4A0B0] font-bold cursor-pointer'
         : 'text-[#888] hover:text-[#111] cursor-pointer'
       }`}>
       <span>{day.d}</span>
-      {!disabled && !isSel && (isBlocked || isFull) && (
+      {!isTooSoon && !isSel && unavailable && (
         <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" />
       )}
       {!disabled && !isSel && !isBlocked && !isFull && isPartial && (
@@ -328,10 +333,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
   const handleDayClick = (day) => {
     if (!day) return;
-    // Wedding dates are fixed — accept any date past the 2-week minimum, even on
-    // a closed day / filling / blocked date. Roko sorts out the rest on confirm.
+    // Wedding dates are fixed, so a closed day (Mon/Thu) or a filling one is
+    // still fair game past the 2-week minimum. Days Roko has blocked off, or
+    // days already at capacity, are not: she genuinely can't take those.
     if (day.date < minDate) return;
     const key = dateKey(year, month, day.d);
+    if (blockedSet.has(key)) return;
+    if ((bookedDateMap?.[key] || 0) >= getMaxForDay(key)) return;
     // Tap the already-selected day to clear it.
     setSelectedDate(prev => prev === key ? null : key);
   };
@@ -748,16 +756,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block"></span> Filling
                 </span>
                 <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block"></span> Booked
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block"></span> Unavailable
                 </span>
                 <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
                   <span className="w-3.5 h-3.5 rounded-sm bg-[#111] inline-block"></span> Selected
                 </span>
               </div>
 
-              {/* Wedding dates aren't limited to Roko's regular open days — make that clear. */}
+              {/* Wedding dates aren't limited to Roko's regular open days, but the
+                  days she's away or fully booked are genuinely off the table. */}
               <p className="text-center text-[0.66rem] text-gray-400 mt-3 leading-[1.6]">
-                Any day works for {isTrial ? 'trials' : 'weddings'}. The dots just show Roko's current load. Tap a selected date again to clear it.
+                Any open day works for {isTrial ? 'trials' : 'weddings'}, weekdays included. Dates in red are days Roko is away or fully booked. Tap a selected date again to clear it.
               </p>
             </div>
 

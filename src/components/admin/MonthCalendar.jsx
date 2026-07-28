@@ -85,7 +85,10 @@ export default function MonthCalendar({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const maxChips = dense ? 2 : 4;
+  // The Home grid is a picker sitting in a narrow column, with the full detail
+  // already listed beside it — so it shows one name and a count of the rest,
+  // in bigger type, instead of cramming the day into a 74px box.
+  const maxChips = dense ? 1 : 4;
 
   // One handler for both, because a phone has no double-CLICK. A second tap on
   // the same day inside the window counts as a double.
@@ -101,8 +104,8 @@ export default function MonthCalendar({
     selectMode ? onToggleDay?.(key) : onOpenDay?.(key);
   };
 
-  const cellPad = dense ? 'p-1 sm:p-1.5' : 'p-1 sm:p-1.5';
-  const cellMinH = dense ? 'min-h-[54px] sm:min-h-[74px]' : 'min-h-[62px] sm:min-h-[104px]';
+  const cellPad = dense ? 'p-1.5 sm:p-2' : 'p-1 sm:p-1.5';
+  const cellMinH = dense ? 'min-h-[56px] sm:min-h-[92px]' : 'min-h-[62px] sm:min-h-[104px]';
 
   return (
     <>
@@ -168,13 +171,14 @@ export default function MonthCalendar({
               <div className="flex items-center justify-between gap-0.5 sm:gap-1 px-0.5">
                 <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
                   {selectMode && <Checkbox on={picked} dm={dm} />}
-                  <span className="text-[0.68rem] sm:text-[0.72rem] font-semibold tabular-nums"
-                    style={{ color: isToday ? '#A0607A' : off ? OFF_RED : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
+                  <span className={`${dense ? 'text-[0.78rem] sm:text-[0.88rem]' : 'text-[0.68rem] sm:text-[0.72rem]'} font-semibold tabular-nums`}
+                    style={{ color: isToday ? '#A0607A' : off ? OFF_RED : dense ? (dm ? '#c4c4cc' : '#6b6b76') : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
                 </span>
                 {/* Counts EVERY item on the day, so it never disagrees with the
-                    booking line below. */}
+                    booking line below. Hidden on the wide Home grid, where the
+                    chip and its "+N more" already say the same thing. */}
                 {events.length > 0 && (
-                  <span className="text-[0.52rem] sm:text-[0.58rem] font-semibold tabular-nums px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0"
+                  <span className={`text-[0.52rem] sm:text-[0.58rem] font-semibold tabular-nums px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0 ${dense ? 'sm:hidden' : ''}`}
                     style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{events.length}</span>
                 )}
               </div>
@@ -184,7 +188,7 @@ export default function MonthCalendar({
                 <div className="flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded-md min-w-0"
                   style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1' }}>
                   <span className="text-[0.55rem] sm:text-[0.6rem] leading-none flex-shrink-0" style={{ color: OFF_RED }}>✕</span>
-                  <span className="hidden sm:block text-[0.53rem] font-bold tracking-[0.08em] uppercase truncate"
+                  <span className={`hidden sm:block ${dense ? 'text-[0.58rem]' : 'text-[0.53rem]'} font-bold tracking-[0.08em] uppercase truncate`}
                     style={{ color: dm ? '#fca5a5' : '#C0392B' }} title={reason || 'Day off'}>
                     {reason || 'Day off'}
                   </span>
@@ -216,7 +220,7 @@ export default function MonthCalendar({
                         if (!onEventClick || selectMode) return;
                         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onEventClick(ev); }
                       }}
-                      className="w-full flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-md text-left transition-colors outline-none"
+                      className={`w-full flex items-center gap-1.5 pr-1 rounded-md text-left transition-colors outline-none ${dense ? 'pl-2 py-1.5' : 'pl-1.5 py-1'}`}
                       style={{
                         background: dm ? '#2e2e38' : '#F7F7FB',
                         borderLeft: `2.5px solid ${dot}`,
@@ -228,11 +232,11 @@ export default function MonthCalendar({
                       title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
                     >
                       {startTime(ev.time) && (
-                        <span className="text-[0.62rem] font-semibold tabular-nums flex-shrink-0" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
+                        <span className={`${dense ? 'text-[0.66rem]' : 'text-[0.62rem]'} font-semibold tabular-nums flex-shrink-0`} style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
                           {startTime(ev.time)}
                         </span>
                       )}
-                      <span className="text-[0.68rem] font-medium truncate flex-1 min-w-0"
+                      <span className={`${dense ? 'text-[0.76rem]' : 'text-[0.68rem]'} font-medium truncate flex-1 min-w-0`}
                         style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
                         {ev.name}
                         {ev.bridal && <span className="ml-1" style={{ color: '#A0607A' }} title="Bridal">·</span>}
@@ -245,7 +249,7 @@ export default function MonthCalendar({
                   );
                 })}
                 {events.length > maxChips && (
-                  <span className="text-[0.58rem] font-semibold pl-1.5" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
+                  <span className={`${dense ? 'text-[0.64rem] pl-2' : 'text-[0.58rem] pl-1.5'} font-semibold`} style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
                     +{events.length - maxChips} more
                   </span>
                 )}
@@ -253,9 +257,11 @@ export default function MonthCalendar({
 
               {/* Booking capacity, spelled out. Consultations and classes are
                   deliberately NOT in this number, which is why it says
-                  "booked" rather than sitting bare as "0/4". */}
-              {cap != null && !off && (
-                <span className="mt-auto pl-0.5 text-[0.5rem] sm:text-[0.56rem] font-semibold tabular-nums tracking-wide whitespace-nowrap"
+                  "booked" rather than sitting bare as "0/4". On Home an empty
+                  day stays empty: thirty grey "0/4 booked" lines were most of
+                  what made that grid look busy. */}
+              {cap != null && !off && (!dense || booked > 0) && (
+                <span className={`mt-auto pl-0.5 ${dense ? 'text-[0.58rem] sm:text-[0.62rem]' : 'text-[0.5rem] sm:text-[0.56rem]'} font-semibold tabular-nums tracking-wide whitespace-nowrap`}
                   style={{ color: full ? '#E0795B' : booked > 0 ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#52525b' : '#c2c2cb') }}>
                   {full ? <><span className="hidden sm:inline">Fully booked</span><span className="sm:hidden">Full</span></>
                         : <>{booked}/{cap}<span className="hidden sm:inline"> booked</span></>}
