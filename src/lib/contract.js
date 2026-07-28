@@ -46,6 +46,7 @@ export const CONTRACT_PLACEHOLDERS = [
   { token: '{time}', label: 'Appointment time', sample: '11:00 AM' },
   { token: '{deposit}', label: 'Deposit amount', sample: '$375' },
   { token: '{price}', label: 'Service price', sample: '$750' },
+  { token: '{balance}', label: 'Balance left after the deposit', sample: '$375' },
   { token: '{days}', label: 'Cancellation notice (days)', sample: '14' },
   { token: '{travelFee}', label: 'Travel fee starts at', sample: '$200' },
   { token: '{artistName}', label: 'Your business name', sample: ARTIST_NAME },
@@ -85,7 +86,25 @@ export function parseContractSettings(raw) {
   } catch { return {}; }
 }
 
-const money = (v) => (v == null || v === '' ? null : String(v).trim());
+// The services table stores deposits with the word baked into the value
+// ("$375 deposit"), which made the agreement read "a deposit of $375 deposit".
+// Strip a trailing "deposit" so {deposit} is always just the amount. A label
+// with no amount in it ("50% deposit via Zelle") is left whole.
+const cleanAmount = (v) => (v == null ? '' : String(v)).trim().replace(/\s*deposit\s*$/i, '').trim();
+
+const money = (v) => cleanAmount(v) || null;
+
+// "$1,700" → 1700. Returns null for anything that isn't one exact figure
+// ("See Classes", "$200+", "starting at $200", "50% via Zelle"), so the
+// contract falls back to generic wording rather than printing a wrong number.
+const amountValue = (v) => {
+  const s = cleanAmount(v);
+  if (!s || !s.includes('$') || /[+%]|starting|from|varies/i.test(s)) return null;
+  const n = parseFloat(s.replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+const formatMoney = (n) => `$${n.toLocaleString('en-US')}`;
 
 // Replace {token} occurrences with resolved values. Unknown tokens are left
 // as-is so a typo shows up visibly rather than silently vanishing.
@@ -127,7 +146,7 @@ export function defaultContractTemplate({ kind = 'appointment' } = {}) {
   const sections = isClass
     ? [
         { id: 'booking', heading: 'Booking & Confirmation', body: `Submitting this form and completing checkout reserves your seat in the class. Seats are limited and are confirmed once payment is received. {artistName} reserves the right to reschedule a class if needed, in which case you may attend the new date or receive a refund.` },
-        { id: 'payment', heading: 'Payment', body: `Your class fee (total {price}) is paid in full at checkout by card to reserve your seat.` },
+        { id: 'payment', heading: 'Payment', body: `Your class fee of {price} is paid in full by card at checkout to reserve your seat. That is the full cost of the class: there is no separate deposit, and nothing further is due on the day.` },
         { id: 'cancellation', heading: 'Cancellation & Rescheduling', body: `You must give at least {days} days notice to cancel or reschedule. With {days} or more days notice, you may either move your payment one time to another available Wednesday at no charge, or receive a refund of your class fee minus the card processing fee. Cancellations with less than {days} days notice, and no-shows, forfeit the payment in full. If the Artist must cancel or reschedule (for example due to illness or emergency), you will receive a full refund of everything you paid, including the processing fee, or the option to reschedule at no additional cost.` },
         shared.health,
         { id: 'punctuality', heading: 'Punctuality', body: `Please arrive on time. Arrivals more than 15 minutes late may result in a shortened class or cancellation at the Artist's discretion, without a refund.` },
@@ -136,7 +155,7 @@ export function defaultContractTemplate({ kind = 'appointment' } = {}) {
       ]
     : [
         { id: 'booking', heading: 'Booking & Confirmation', body: `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.` },
-        { id: 'payment', heading: 'Deposit & Payment', body: `A non-refundable deposit of {deposit} is required to secure your date. The remaining balance (base service price {price}, plus any travel fee or add-ons) is due in cash on the day of your appointment. No digital payments are accepted for the balance.` },
+        { id: 'payment', heading: 'Deposit & Payment', body: `Your service price is {price}. A non-refundable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due in cash on the day of your appointment, plus any travel fee or add-ons. No digital payments are accepted for the balance.` },
         { id: 'cancellation', heading: 'Cancellation & Rescheduling', body: `The Client must give at least 24 hours notice to cancel or reschedule. The deposit is non-refundable and non-transferable. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.` },
         { id: 'travel', heading: 'Travel Fee', body: `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance. The Full Day Service is an exception: travel is included in its package price and no additional travel fee is charged.` },
         shared.health,
@@ -185,6 +204,15 @@ export function buildContract({
   // Every {token} the templates can reference, resolved for this booking.
   const timeText = (time || '').toString().trim();
   const dateText = dateFormatted || 'your selected date';
+
+  // What is actually left to pay on the day. The deposit is part of the service
+  // price, never on top of it, so the balance is price − deposit. When either
+  // figure isn't an exact number, {balance} degrades to the bare word "balance"
+  // so the sentence still reads correctly ("the remaining balance is due…").
+  const priceN = amountValue(priceAmount);
+  const depositN = amountValue(depositAmount);
+  const balanceN = priceN != null && depositN != null && priceN > depositN ? priceN - depositN : null;
+
   const values = {
     artistName,
     businessName: BUSINESS_NAME,
@@ -197,6 +225,7 @@ export function buildContract({
     time: timeText,
     deposit: money(depositAmount) || 'the required amount',
     price: money(priceAmount) || 'the quoted amount',
+    balance: balanceN != null ? formatMoney(balanceN) : 'balance',
     days: String(days),
     travelFee: travelStart,
     studioLocation: CONTRACT_POLICIES.studioLocation,
@@ -231,11 +260,33 @@ export function buildContract({
     }))
     .filter(s => s.heading || s.body);
 
+  // "At a glance" rows shown above the terms, so the money is unmissable before
+  // anyone reads a word of legal copy. Rows with no firm value are dropped
+  // rather than shown as vague filler.
+  const dateKnown = !/^your /i.test(dateText);
+  const summary = (isClass
+    ? [
+        { label: 'Class', value: values.serviceName },
+        dateKnown ? { label: 'Date', value: values.date } : null,
+        priceN != null ? { label: 'Paid in full at checkout', value: values.price, strong: true } : null,
+      ]
+    : [
+        { label: 'Service', value: values.serviceName },
+        dateKnown ? { label: 'Date', value: values.date } : null,
+        priceN != null ? { label: 'Service price', value: values.price } : null,
+        depositN != null ? { label: 'Deposit to book', value: values.deposit } : null,
+        balanceN != null
+          ? { label: 'Due in cash on the day', value: values.balance, strong: true, note: 'plus any travel fee or add-ons' }
+          : null,
+      ]
+  ).filter(Boolean);
+
   return {
     version: CONTRACT_VERSION,
     title: fillTemplate(custom.title || base.title, values).trim() || base.title,
     intro: fillTemplate(custom.intro || base.intro, values).trim(),
     sections,
+    summary,
     // The explicit yes/no the Client must choose for photo use.
     photoConsentQuestion: fillTemplate(custom.photoConsentQuestion || base.photoConsentQuestion, values).trim(),
   };
@@ -248,6 +299,10 @@ export function contractToPlainText(contract, { signedName, signedAt, photoConse
   lines.push('');
   lines.push(contract.intro);
   lines.push('');
+  if (contract.summary?.length) {
+    contract.summary.forEach(r => lines.push(`${r.label}: ${r.value}${r.note ? ` (${r.note})` : ''}`));
+    lines.push('');
+  }
   contract.sections.forEach((s, i) => {
     lines.push(`${i + 1}. ${s.heading}`);
     lines.push(s.body);

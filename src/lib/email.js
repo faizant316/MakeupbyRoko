@@ -124,10 +124,21 @@ export function contractCopyEmail({ clientName, serviceName, dateFormatted, time
     <p style="font-size:13px;font-weight:700;color:#16110F;margin:14px 0 4px;">${i + 1}. ${s.heading}</p>
     <p style="font-size:12px;line-height:1.65;color:#6b6169;margin:0;">${s.body}</p>
   `).join('');
+  // Same at-a-glance rows as the on-site sign step, so the standalone record
+  // answers "what do I pay, and when?" before any clause is read.
+  const summaryHtml = c.summary?.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 0;background:#FBF5F8;border-radius:10px;"><tr><td style="padding:12px 14px;">
+        ${c.summary.map((r, i) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td style="padding:6px 0;${i ? 'border-top:1px solid #F2E4EB;' : ''}font-size:12px;color:#9A8E94;">${r.label}</td>
+          <td align="right" style="padding:6px 0;${i ? 'border-top:1px solid #F2E4EB;' : ''}font-size:${r.strong ? '14px' : '12px'};${r.strong ? 'font-weight:700;' : ''}color:#16110F;">${r.value}${r.note ? `<span style="display:block;font-size:10px;font-weight:400;color:#B3A7AD;">${r.note}</span>` : ''}</td>
+        </tr></table>`).join('')}
+      </td></tr></table>`
+    : '';
   const content = `
     <tr><td style="padding:26px 28px 6px;">
       <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">${forAdmin ? 'Signed Agreement — Copy' : 'Your Signed Service Agreement'}</p>
       <p style="font-size:13px;line-height:1.6;color:#4b434a;margin:0;">${c.intro}</p>
+      ${summaryHtml}
     </td></tr>
     <tr><td style="padding:0 28px;">${sectionsHtml}</td></tr>
     <tr><td style="padding:18px 28px 26px;">

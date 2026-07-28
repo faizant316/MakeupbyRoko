@@ -318,11 +318,41 @@ export function ContractPreview({ c, dm }) {
   return (
     <div>
       <p className="text-[0.56rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-1.5">{c.title}</p>
+      {c.summary?.length > 0 && (
+        <dl
+          className="rounded-lg px-2.5 py-1.5 mb-2.5"
+          style={{ border: `1px solid ${dm ? '#33333f' : '#F3E7EE'}`, background: dm ? '#1b1b22' : '#fff' }}
+        >
+          {c.summary.map((row, i) => (
+            <div
+              key={row.label}
+              className="flex items-baseline justify-between gap-3 py-1"
+              style={i > 0 ? { borderTop: `1px solid ${dm ? '#2a2a33' : '#FAF3F6'}` } : undefined}
+            >
+              <dt className="text-[0.62rem] flex-shrink-0" style={{ color: dm ? '#8b8b96' : '#9A8E94' }}>{row.label}</dt>
+              <dd className="text-right">
+                <span className={row.strong ? 'text-[0.7rem] font-semibold' : 'text-[0.66rem]'} style={{ color: row.strong ? textMain : textBody }}>
+                  {row.value}
+                </span>
+                {row.note && <span className="block text-[0.55rem]" style={{ color: dm ? '#6f6f7a' : '#B3A7AD' }}>{row.note}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <p className="text-[0.72rem] leading-[1.7] mb-3" style={{ color: textBody }}>{c.intro}</p>
       {c.sections.map((s, i) => (
         <div key={i} className="mb-3">
-          <p className="text-[0.7rem] font-semibold mb-0.5" style={{ color: textMain }}>{i + 1}. {s.heading}</p>
-          <p className="text-[0.68rem] leading-[1.6]" style={{ color: textBody }}>{s.body}</p>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span
+              className="flex-shrink-0 w-[15px] h-[15px] rounded-full text-[0.5rem] font-semibold flex items-center justify-center"
+              style={{ background: dm ? '#3a2a33' : '#F6E7EE', color: dm ? '#e0a8bd' : '#B9788F' }}
+            >
+              {i + 1}
+            </span>
+            <p className="text-[0.7rem] font-semibold" style={{ color: textMain }}>{s.heading}</p>
+          </div>
+          <p className="text-[0.68rem] leading-[1.6] pl-[21px]" style={{ color: textBody }}>{s.body}</p>
         </div>
       ))}
       {c.photoConsentQuestion && (
