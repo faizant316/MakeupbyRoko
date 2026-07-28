@@ -54,6 +54,38 @@ export const CONTRACT_PLACEHOLDERS = [
   { token: '{studioLocation}', label: 'Studio location', sample: CONTRACT_POLICIES.studioLocation },
 ];
 
+// Wording that shipped as a built-in default in an earlier version.
+//
+// Roko's saved agreement is a snapshot of whatever the defaults said the day
+// she last opened the editor, and her snapshot wins over the code. That meant
+// corrections shipped here never reached a single client: the deposit/balance
+// rewrite, and before it the Full Day travel exception. A saved section whose
+// body is byte-identical to a superseded default was never actually edited by
+// her, so it heals to the current wording instead of freezing forever. Anything
+// she genuinely rewrote is left untouched.
+//
+// When you correct a default body below, move the old text here.
+const SUPERSEDED_SECTION_BODIES = {
+  payment: [
+    `A non-refundable deposit of {deposit} is required to secure your date. The remaining balance (base service price {price}, plus any travel fee or add-ons) is due in cash on the day of your appointment. No digital payments are accepted for the balance.`,
+    `Your class fee (total {price}) is paid in full at checkout by card to reserve your seat.`,
+  ],
+  travel: [
+    `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance.`,
+  ],
+};
+
+// Swap a saved section back to the current default when its body is an
+// untouched copy of superseded wording. `defaults` is the current section list.
+export function healSupersededSection(section, defaults) {
+  const stale = SUPERSEDED_SECTION_BODIES[section?.id];
+  if (!stale) return section;
+  const body = (section.body || '').trim();
+  if (!stale.some(old => old.trim() === body)) return section; // genuinely edited, leave alone
+  const current = defaults.find(d => d.id === section.id);
+  return current ? { ...section, heading: current.heading, body: current.body } : section;
+}
+
 // Parse the stored JSON value into a clean overrides object for buildContract.
 // Safe on bad/missing input (returns {}), so the contract always renders.
 // Understands both the legacy shape (scalar fields only) and the full-edit
@@ -213,6 +245,17 @@ export function buildContract({
   const depositN = amountValue(depositAmount);
   const balanceN = priceN != null && depositN != null && priceN > depositN ? priceN - depositN : null;
 
+  // Only ever print a figure that reads as money. A catalogue label like
+  // "See Classes" or "50% deposit via Zelle" degrades to generic wording so the
+  // agreement never says "Your service price is See Classes". A soft price like
+  // "$200+" is still money, so it prints as-is.
+  const asMoneyText = (v, fallback) => {
+    const s = money(v);
+    return s && s.includes('$') ? s : fallback;
+  };
+  const priceText = asMoneyText(priceAmount, null);
+  const depositText = asMoneyText(depositAmount, null);
+
   const values = {
     artistName,
     businessName: BUSINESS_NAME,
@@ -223,8 +266,8 @@ export function buildContract({
     // yet (booking request), it stays a plain date with no dangling "at".
     date: timeText ? `${dateText} at ${timeText}` : dateText,
     time: timeText,
-    deposit: money(depositAmount) || 'the required amount',
-    price: money(priceAmount) || 'the quoted amount',
+    deposit: depositText || 'the required amount',
+    price: priceText || 'the quoted amount',
     balance: balanceN != null ? formatMoney(balanceN) : 'balance',
     days: String(days),
     travelFee: travelStart,
@@ -241,7 +284,9 @@ export function buildContract({
   // "extra clause" folded in before the signature block for backward compat.
   let sectionTemplates;
   if (Array.isArray(custom.sections) && custom.sections.length) {
-    sectionTemplates = custom.sections;
+    // Her saved copy wins, except where a section is an untouched copy of
+    // wording this file has since corrected. See SUPERSEDED_SECTION_BODIES.
+    sectionTemplates = custom.sections.map(s => healSupersededSection(s, base.sections));
   } else {
     sectionTemplates = base.sections.slice();
     const extra = (custom.extraClause || '').trim();
@@ -268,13 +313,13 @@ export function buildContract({
     ? [
         { label: 'Class', value: values.serviceName },
         dateKnown ? { label: 'Date', value: values.date } : null,
-        priceN != null ? { label: 'Paid in full at checkout', value: values.price, strong: true } : null,
+        priceText ? { label: 'Paid in full at checkout', value: values.price, strong: true } : null,
       ]
     : [
         { label: 'Service', value: values.serviceName },
         dateKnown ? { label: 'Date', value: values.date } : null,
-        priceN != null ? { label: 'Service price', value: values.price } : null,
-        depositN != null ? { label: 'Deposit to book', value: values.deposit } : null,
+        priceText ? { label: 'Service price', value: values.price } : null,
+        depositText ? { label: 'Deposit to book', value: values.deposit } : null,
         balanceN != null
           ? { label: 'Due in cash on the day', value: values.balance, strong: true, note: 'plus any travel fee or add-ons' }
           : null,
