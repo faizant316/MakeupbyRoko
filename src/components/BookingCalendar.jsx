@@ -29,6 +29,15 @@ export function getMinBookingDate(days = BRIDAL_LEAD_DAYS) {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
+// One-time mount assemble (see .cal-head-in / calCellIn in index.css).
+// Cells step 11ms apart but the total is capped, so a 6-row month doesn't take
+// noticeably longer to build than a 5-row one.
+const CELL_STEP_MS = 11;
+const ASSEMBLE_CELLS_MS = 430;
+// Long enough to cover the last cell's delay plus its own 320ms, after which the
+// inline animation is dropped from every cell for good.
+const ASSEMBLE_MS = ASSEMBLE_CELLS_MS + 420;
+
 // The swipe track holds three months side by side (previous · current · next)
 // and is three viewports wide, so "one viewport" is 33.3333% of the track.
 // Resting position shows the middle panel.
@@ -86,9 +95,18 @@ function dayState({ day, year, month, minDate, blockedSet, bookedDateMap, maxPer
   return { key, isTooSoon, closedWeekday, isBlocked, isFull, isPartial, isToday, disabled, isOpen };
 }
 
-function CalDay({ state, day, selectedDate, onPick }) {
+// `enterDelay` is a millisecond offset for the one-time mount assemble, or null
+// once it has played (see ASSEMBLE_MS in BookingCalendar). Null means no inline
+// animation at all, so nothing lingers on the cell during a swipe.
+function CalDay({ state, day, selectedDate, onPick, enterDelay = null }) {
   const { key, isTooSoon, closedWeekday, isBlocked, isFull, isPartial, isToday, disabled, isOpen } = state;
   const isSel = selectedDate === key;
+  const assembling = enterDelay !== null;
+  // Dots land after the grid has finished settling, so availability reads as a
+  // second beat rather than arriving with the numbers.
+  const dotStyle = assembling
+    ? { animation: `calDotIn 0.26s var(--ease) ${ASSEMBLE_CELLS_MS + 40}ms both` }
+    : undefined;
 
   const tone =
     isTooSoon || closedWeekday ? 'text-gray-200 cursor-not-allowed'
@@ -116,6 +134,7 @@ function CalDay({ state, day, selectedDate, onPick }) {
       // is what made the drag stutter. Colour is the only thing that ever
       // transitions here anyway.
       className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-colors relative rounded-none touch-manipulation ${tone}`}
+      style={assembling ? { animation: `calCellIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) ${enterDelay}ms both` } : undefined}
     >
       <span>{day.d}</span>
       {/* Red = "she can't take this date". Deliberately NOT shown on a weekday
@@ -124,13 +143,13 @@ function CalDay({ state, day, selectedDate, onPick }) {
           problem. (In bridal, closedWeekday is never true, so a blocked Monday
           there still gets its dot — Mondays are bookable for weddings.) */}
       {!isSel && !isTooSoon && !closedWeekday && (isBlocked || isFull) && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" />
+        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" style={dotStyle} />
       )}
       {!isSel && !disabled && isPartial && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#F0C27A]" />
+        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#F0C27A]" style={dotStyle} />
       )}
       {!isSel && isOpen && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400" style={dotStyle} />
       )}
     </button>
   );
@@ -164,6 +183,24 @@ export default function BookingCalendar({
 
   const viewportRef = useRef(null);
   const trackRef = useRef(null);
+
+  // Mount-once grid assemble. Deliberately NOT keyed on the month: it must not
+  // replay when the visitor swipes or jumps months, only the first time the
+  // calendar appears. Flipping this back to false removes the inline animation
+  // from every cell, so nothing is left on the animation path during a drag.
+  //
+  // Reduced motion is checked here rather than in CSS because the per-cell delay
+  // has to be an inline style, and inline animation beats any media query.
+  const [assembling, setAssembling] = useState(() =>
+    typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+  useEffect(() => {
+    if (!assembling) return;
+    const t = setTimeout(() => setAssembling(false), ASSEMBLE_MS);
+    return () => clearTimeout(t);
+    // Mount only: re-running this on the assembling flip would re-arm the timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Previous · current · next, all built up front so a swipe reveals a real
   // month under the finger rather than empty space.
@@ -475,7 +512,7 @@ export default function BookingCalendar({
         </div>
       )}
 
-      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3">
+      <div className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3 ${assembling ? 'cal-head-in' : ''}`}>
         {WEEKDAYS.map(d => (
           <div key={d} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
         ))}
@@ -509,6 +546,12 @@ export default function BookingCalendar({
                       state={p.states.get(dateKey(p.y, p.m, day.d))}
                       selectedDate={selectedDate}
                       onPick={(d) => pick(p, d)}
+                      // Centre panel only. The neighbours are off-screen, and
+                      // animating them too would put three months of cells on the
+                      // animation path for the track's own transform.
+                      enterDelay={assembling && i === 1
+                        ? Math.min(idx * CELL_STEP_MS, ASSEMBLE_CELLS_MS)
+                        : null}
                     />
                   )
                 )}
