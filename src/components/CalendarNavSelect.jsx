@@ -11,7 +11,12 @@ import { createPortal } from 'react-dom';
  * fully styleable. On touch devices it uses the native <select> wheel, which is
  * genuinely nicer to operate with a thumb.
  */
-export default function CalendarNavSelect({ value, options, onChange, ariaLabel, align = 'center', menuMinWidth = 150 }) {
+/**
+ * `hideChevron` drops this trigger's own chevron. Used for the month half of the
+ * month+year pair: two chevrons side by side read as two controls, when the pair
+ * is really one "which month am I looking at" affordance.
+ */
+export default function CalendarNavSelect({ value, options, onChange, ariaLabel, align = 'center', menuMinWidth = 150, hideChevron = false }) {
   const [open, setOpen] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
   const [coords, setCoords] = useState(null);
@@ -74,7 +79,9 @@ export default function CalendarNavSelect({ value, options, onChange, ariaLabel,
       <div className="relative inline-flex items-center">
         <span className="font-serif text-[1.2rem] text-[#111] tracking-tight inline-flex items-center gap-1.5 pointer-events-none">
           {selected?.label}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 text-[#C4849A]"><polyline points="6 9 12 15 18 9" /></svg>
+          {!hideChevron && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 text-[#C4849A]"><polyline points="6 9 12 15 18 9" /></svg>
+          )}
         </span>
         <select
           aria-label={ariaLabel}
@@ -102,13 +109,15 @@ export default function CalendarNavSelect({ value, options, onChange, ariaLabel,
           ${open ? 'bg-[#D4A0B0]/12' : 'hover:bg-[#F6EEF1]'}`}
       >
         {selected?.label}
-        <svg
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          className="w-3.5 h-3.5 text-[#C4849A] transition-transform duration-200"
-          style={{ transform: open ? 'rotate(180deg)' : 'none' }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        {!hideChevron && (
+          <svg
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            className="w-3.5 h-3.5 text-[#C4849A] transition-transform duration-200"
+            style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        )}
       </button>
 
       {open && coords && typeof document !== 'undefined' && createPortal(

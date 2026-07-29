@@ -356,9 +356,11 @@ export default function ServicesHero() {
             Every service is crafted for you, from your everyday glow to your wedding day.
           </p>
 
-          {/* CTA — solid, not a ghost outline. This is the one button that takes
-              a visitor to the services, so it reads as a real button and clears
-              the 44px tap minimum (the old outline version was ~40px tall). */}
+          {/* CTA — solid so it still reads as a real button, but sized to its own
+              words rather than the full column. Full-width + a wide pink glow made
+              it the loudest thing on a phone screen; this keeps the same colour and
+              weight at roughly half the footprint, still well over the 44px tap
+              minimum. */}
           <a
             href="#services-grid"
             onClick={(e) => { e.preventDefault(); scrollToTarget('#services-grid', { offset: -60 }); }}
@@ -369,20 +371,19 @@ export default function ServicesHero() {
               justifyContent: 'center',
               gap: '0.5rem',
               marginBottom: '1.5rem',
-              padding: '0.95rem 1.6rem',
+              padding: '0.8rem 1.4rem',
               background: '#D4A0B0',
               border: '1px solid #D4A0B0',
               color: '#1A1416',
               borderRadius: '2px',
-              fontSize: '0.76rem',
+              fontSize: '0.72rem',
               fontFamily: 'var(--font-sans)',
               fontWeight: 600,
-              letterSpacing: '0.12em',
+              letterSpacing: '0.1em',
               textTransform: 'uppercase',
               textDecoration: 'none',
-              width: '100%',
-              maxWidth: '320px',
-              boxShadow: '0 10px 30px rgba(212,160,176,0.28)',
+              width: 'fit-content',
+              boxShadow: '0 4px 14px rgba(212,160,176,0.16)',
               transition: 'background-color 0.25s, box-shadow 0.25s',
             }}
           >
