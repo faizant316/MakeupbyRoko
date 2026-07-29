@@ -523,6 +523,9 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
   // with no consultation yet: send just the consultation email, don't re-send
   // the confirmation or touch status.
   const consultOnly = bridal && confirmed && !hasConsult;
+  // Unconfirmed bridal: this row IS step 2's only action, so it gets filled-
+  // button styling instead of the quiet dashed placeholder.
+  const leadStep = bridal && !confirmed;
   const parsed = parseConsultNotes(booking.consultation_notes);
   // First-ever email to a Booksy-imported client (no link stored yet) is a
   // "welcome to the new site" message, not a "your time changed" one.
@@ -700,22 +703,24 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
       {/* Empty state */}
       {!hasConsult && !expanded && (
         <button onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all touch-manipulation hover:opacity-90"
-          style={{ background: dm ? '#27272a' : '#fff', border: `1px dashed ${dm ? '#4a4a58' : '#d9cfe8'}` }}>
+          className="w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all touch-manipulation active:scale-[0.99] hover:opacity-90"
+          style={leadStep
+            ? { background: dm ? '#2c2333' : '#FBF4F8', border: `1px solid ${CONSULT_BORDER}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(120, 80, 110, 0.07)' }
+            : { background: dm ? '#27272a' : '#fff', border: `1px dashed ${dm ? '#4a4a58' : '#d9cfe8'}` }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: leadStep ? (dm ? CONSULT_DM : CONSULT_COLOR) : CONSULT_BG }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={leadStep ? (dm ? '#1c1c28' : '#fff') : CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{bridal && !confirmed ? 'Confirm & Schedule Consultation' : 'Schedule Consultation'}</p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>
-                {bridal && !confirmed ? 'Sends one email: confirmation + consultation + upload link'
+              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{leadStep ? 'Pick a consultation time' : 'Schedule Consultation'}</p>
+              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8b8792' : '#a89ba2' }}>
+                {leadStep ? 'Then one email sends the confirmation + upload link'
                   : bridal ? 'Sends the consultation details, with a Zoom link if you add one'
                   : 'Set date, time & meeting type'}
               </p>
             </div>
           </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className="w-3.5 h-3.5 opacity-40">
+          <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className={`w-3.5 h-3.5 ${leadStep ? 'opacity-80' : 'opacity-40'}`}>
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </button>
@@ -2378,15 +2383,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <StepDot n={2} state="active" dm={dm} color={CONSULT_COLOR} />
                       <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>Confirm &amp; consultation</p>
                     </div>
-                    <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
-                      Time's set. Confirm with {firstName} and set up the consultation.
-                    </p>
-                    {consultScheduler}
+                    <div className="mt-2.5">{consultScheduler}</div>
                     {!consultExpanded && booking.email && !confirmLaterOpen && (
                       <button type="button" onClick={() => setConfirmLaterOpen(true)}
                         className="mt-2.5 text-[0.72rem] font-medium underline underline-offset-4 transition-opacity hover:opacity-75"
                         style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>
-                        or confirm now and schedule the consultation later
+                        or confirm now, pick a time later
                       </button>
                     )}
                     {!consultExpanded && confirmLaterOpen && (
