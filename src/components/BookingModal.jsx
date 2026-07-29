@@ -269,16 +269,9 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-start sm:justify-center"
-      style={{
-        // Lighter blur (was 22px): a full-viewport backdrop-filter re-rasterizes
-        // every frame while the sheet slides up over it, which is what made the
-        // form open choppy on the MacBook. 12px keeps the frosted look but
-        // roughly halves the per-frame blur cost.
-        background: 'radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.45) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.38) 0%, transparent 45%), radial-gradient(ellipse at 50% 0%, rgba(212,160,176,0.25) 0%, transparent 50%), rgba(0,0,0,0.58)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)'
-      }}
+      // Tint + blur live in .sheet-backdrop so they can be scoped to the widths
+      // that can actually see them (see src/index.css).
+      className="sheet-backdrop fixed inset-0 z-[500] flex items-start sm:justify-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div

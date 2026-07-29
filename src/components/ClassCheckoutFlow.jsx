@@ -142,15 +142,9 @@ export default function ClassCheckoutFlow({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[500] flex items-start sm:justify-center"
-      style={{
-        // Lighter blur (was 20px) so the sheet's slide-up doesn't have to
-        // re-rasterize a heavy full-viewport backdrop-filter every frame — that
-        // was the choppy course-form open on the MacBook.
-        background: 'radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.4) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.33) 0%, transparent 45%), rgba(0,0,0,0.55)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}
+      // Tint + blur live in .sheet-backdrop--class so they can be scoped to the
+      // widths that can actually see them (see src/index.css).
+      className="sheet-backdrop--class fixed inset-0 z-[500] flex items-start sm:justify-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div

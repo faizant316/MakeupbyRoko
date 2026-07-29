@@ -177,7 +177,11 @@ export default function Navigation({ onCloseModal }) {
       <nav
         id="nav"
         style={{ zIndex: 9999 }}
-        className={`fixed top-0 left-0 right-0 h-[52px] transition-all duration-500 backdrop-blur-[12px] ${
+        // The 12px backdrop blur is DESKTOP ONLY. This bar is fixed and always on
+        // screen, so on a phone the browser was re-sampling and re-blurring a
+        // full-width strip on every single scroll frame — to produce an effect
+        // hidden behind a 95%-opaque background. Pure cost, no visible result.
+        className={`fixed top-0 left-0 right-0 h-[52px] transition-all duration-500 md:backdrop-blur-[12px] ${
           scrolled
             ? 'bg-[rgba(255,255,255,0.95)] border-b border-[var(--border)]'
             : 'bg-[rgba(12,10,9,0.85)] border-b border-transparent'
