@@ -307,6 +307,30 @@
   100% { transform: translateX(400%); opacity: 0; }
 }
 
+/* ── Calendar assemble ────────────────────────────────────────────────────────
+   The month grid builds itself once, the first time the calendar mounts: weekday
+   header, then day cells rising row by row, then the availability dots. Watching
+   it work out what's open is the whole effect.
+
+   Runs ONCE and only on the centred panel. The swipe track holds three months at
+   a time and transforms as a whole, so animating all three would put ~126 cells
+   on the animation path during a drag (the same reason CalDay uses
+   transition-colors and not transition-all). BookingCalendar drops the inline
+   animation entirely once it has played, so no transform lingers on the cells. */
+@keyframes calCellIn {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes calDotIn {
+  from { opacity: 0; transform: scale(0.3); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.cal-head-in { animation: fadeRiseIn 0.34s var(--ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-head-in { animation: none; }
+}
+
 /* ── Skeletons ────────────────────────────────────────────────────────────────
    A directional highlight travelling across a correctly-shaped placeholder, not
    an opacity throb on a gray box. The throb is what makes a loading state look
