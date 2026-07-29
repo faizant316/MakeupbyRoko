@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { formatPhone } from '@/lib/phone';
 import { useScrollLock, useHideSiteNav } from '@/lib/useScrollLock';
@@ -23,72 +23,7 @@ import TimePicker from './TimePicker';
 import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
-
-const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
-
-const pad = (n) => String(n).padStart(2, '0');
-const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
-
-// Minimum booking date is 2 weeks from now
-function getMinBookingDate() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 14);
-  return d;
-}
-
-function BookingCalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const isPast = day.date < today;
-  const isTooSoon = day.date < minDate;
-  const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
-  const key = dateKey(year, month, day.d);
-  const isSel = selectedDate === key;
-  const isBlocked = !isPast && blockedSet?.has(key);
-  const bookingCount = bookedDateMap?.[key] || 0;
-  const isFull = bookingCount >= maxPerDay;
-  const isPartial = bookingCount > 0 && !isFull;
-  const unavailable = isTooSoon || !isAvail || isBlocked || isFull;
-
-  const isToday = day.date.getTime() === today.getTime();
-
-  return (
-    <button type="button" onClick={() => handleDayClick(day)}
-      title={
-        isBlocked ? 'Blocked'
-        : isFull ? 'Fully booked'
-        : unavailable ? 'Unavailable'
-        : undefined
-      }
-      className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-all relative rounded-none ${
-        isBlocked
-          ? 'text-red-300 cursor-not-allowed line-through decoration-red-300'
-          : isFull
-          ? 'text-red-300 cursor-not-allowed'
-          : unavailable
-          ? 'text-gray-200 cursor-not-allowed'
-          : isSel
-          ? 'bg-[#111] text-white font-semibold rounded-sm'
-          : isToday
-          ? 'text-[#D4A0B0] font-bold'
-          : isPartial
-          ? 'text-[#555] font-medium hover:text-[#111]'
-          : 'text-[#888] hover:text-[#111]'
-      }`}>
-      <span>{day.d}</span>
-      {/* Status dot — larger and more visible */}
-      {!unavailable && !isSel && isPartial && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#F0C27A]" />
-      )}
-      {!unavailable && !isSel && !isPartial && isAvail && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
-      )}
-      {isFull && !isBlocked && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" />
-      )}
-    </button>
-  );
-}
+import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
 
 // Sized to match the bridal form's fields so non-bridal (photoshoot / other
 // services) inquiries feel just as substantial on desktop, not shrunken.
@@ -105,11 +40,15 @@ export default function BookingModal({ service: initialService, onClose }) {
   const [bridalStep, setBridalStep] = useState('date');
   const bridalBackRef = useRef(null);
 
-  const minDate = getMinBookingDate();
+  // Stable for the life of the sheet — a fresh Date every render would make the
+  // calendar re-derive its day states (and re-bind its swipe listeners) on every
+  // keystroke elsewhere in the form.
+  const minDate = useMemo(() => getMinBookingDate(), []);
   // Start calendar on the month of the minimum booking date
-  const [currentDate, setCurrentDate] = useState(new Date(minDate.getFullYear(), minDate.getMonth()));
+  const [currentDate, setCurrentDate] = useState(() => new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
-  const [calDays, setCalDays] = useState([]);
+  // Mobile-only focus mode: fold everything but the calendar and the pinned CTA.
+  const [calFocus, setCalFocus] = useState(false);
   const [formData, setFormData] = useState({ fname: '', lname: '', email: '', phone: '', notes: '', early_arrival: null, travel_requested: null });
   const [newBookingId, setNewBookingId] = useState(null);
   const [uploadToken, setUploadToken] = useState(null);
@@ -134,7 +73,10 @@ export default function BookingModal({ service: initialService, onClose }) {
     initialData: [],
   });
 
-  const blockedSet = new Set(blockedDates.map(b => b.date));
+  // Memoised because BookingCalendar keys its day-state work off these. Rebuilt
+  // fresh every render they would invalidate that work on every keystroke
+  // elsewhere in the sheet.
+  const blockedSet = useMemo(() => new Set(blockedDates.map(b => b.date)), [blockedDates]);
 
   const rawCounts = useBookingCounts();
   const bookedDateMap = rawCounts ?? {};
@@ -153,38 +95,13 @@ export default function BookingModal({ service: initialService, onClose }) {
     queryFn: () => api.entities.DayCapacity.list('-date', 200),
     staleTime: 30000,
   });
-  const dayCapacityMap = {};
-  dayCapacities.forEach(d => { dayCapacityMap[d.date] = d.capacity; });
+  const getMaxForDay = useMemo(() => {
+    const map = {};
+    dayCapacities.forEach(d => { map[d.date] = d.capacity; });
+    return (key) => map[key] ?? DEFAULT_MAX;
+  }, [dayCapacities, DEFAULT_MAX]);
 
-  const getMaxForDay = (dateKey) => dayCapacityMap[dateKey] ?? DEFAULT_MAX;
-
-  useEffect(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const days = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let d = 1; d <= daysInMonth; d++) days.push({ d, date: new Date(year, month, d) });
-    setCalDays(days);
-  }, [currentDate]);
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-  const handleDayClick = (day) => {
-    if (!day) return;
-    const isTooSoon = day.date < minDate;
-    const isAvailable = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
-    if (!isAvailable) return;
-    const key = dateKey(year, month, day.d);
-    if (blockedSet.has(key)) return;
-    const count = bookedDateMap[key] || 0;
-    if (count >= getMaxForDay(key)) return;
-    // Tap the already-selected day to clear it.
-    setSelectedDate(prev => prev === key ? null : key);
-  };
+  // Grid building, day states and the pick guard all live in BookingCalendar now.
 
   // ── Step navigation ──
   const goStep = (next, dir = 'forward') => { setDirection(dir); setStep(next); };
@@ -305,6 +222,13 @@ export default function BookingModal({ service: initialService, onClose }) {
 
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
+
+  // Jump the sheet back to the top on either toggle: folding content out from
+  // ABOVE the current scroll position would otherwise leave a blank screen.
+  const toggleCalFocus = () => {
+    setCalFocus(f => !f);
+    requestAnimationFrame(() => scrollModalTop(scrollRef.current));
+  };
 
   // Scroll to top of the sheet whenever the step changes (keeps each step
   // starting cleanly at the top, like Booksy).
@@ -522,8 +446,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                   <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.06] pointer-events-none"
                     style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
-                  {/* Calendar heading */}
-                  <div className="flex items-center gap-3 mb-5 relative z-10">
+                  {/* Calendar heading — folded away in mobile focus mode */}
+                  <div className={`${calFocus ? 'hidden sm:flex' : 'flex'} items-center gap-3 mb-5 relative z-10`}>
                     <div className="w-11 h-11 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5">
                         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -535,109 +459,33 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
                   </div>
 
-                  {/* 2-week notice */}
-                  <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-2.5 mb-3 relative z-10">
-                    <p className="text-[0.72rem] text-[#888]">
-                      Bookings must be made at least <strong className="text-[#555]">2 weeks in advance</strong>. Earliest available: <strong className="text-[#555]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                  {/* 2-week notice — quiet rule-and-line, matching bridal. */}
+                  <div className={`${calFocus ? 'hidden sm:block' : 'block'} relative z-10 pl-3 mb-4`} style={{ borderLeft: '2px solid #E7C3D1' }}>
+                    <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
+                      Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
                     </p>
                   </div>
 
-                  {/* Month availability summary */}
-                  {(() => {
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    let openCount = 0;
-                    let fillingCount = 0;
-                    let fullCount = 0;
-                    for (let d = 1; d <= daysInMonth; d++) {
-                      const dt = new Date(year, month, d);
-                      const k = dateKey(year, month, d);
-                      if (dt < minDate || !AVAILABLE_DAYS.includes(dt.getDay()) || blockedSet.has(k)) continue;
-                      const cnt = bookedDateMap[k] || 0;
-                      const cap = getMaxForDay(k);
-                      if (cnt >= cap) fullCount++;
-                      else if (cnt > 0) fillingCount++;
-                      else openCount++;
-                    }
-                    return (
-                      <div className="flex items-center gap-3 mb-4 relative z-10">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                          <span className="text-[0.65rem] font-semibold text-emerald-700">{openCount} open</span>
-                        </div>
-                        {fillingCount > 0 && (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A]" />
-                            <span className="text-[0.65rem] font-semibold text-amber-700">{fillingCount} filling</span>
-                          </div>
-                        )}
-                        {fullCount > 0 && (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-300" />
-                            <span className="text-[0.65rem] font-semibold text-red-500">{fullCount} booked</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Calendar */}
-                  <div className="relative z-10">
-                    <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
-                      <button type="button" onClick={() => setCurrentDate(new Date(year, month - 1))}
-                        className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl">
-                        ‹
-                      </button>
-                      <span className="font-serif text-[1.2rem] text-[#111] tracking-tight">{monthName}</span>
-                      <button type="button" onClick={() => setCurrentDate(new Date(year, month + 1))}
-                        className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl">
-                        ›
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center mb-2">
-                      {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((d, i) => (
-                        <div key={i} className="text-[0.55rem] sm:text-[0.65rem] font-semibold text-gray-300 uppercase py-2 tracking-[0.1em]">{d}</div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center justify-items-center">
-                      {calDays.map((day, idx) => (
-                        !day
-                          ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
-                          : <BookingCalDay
-                            key={dateKey(year, month, day.d)}
-                            day={day}
-                            year={year}
-                            month={month}
-                            minDate={minDate}
-                            selectedDate={selectedDate}
-                            handleDayClick={handleDayClick}
-                            blockedSet={blockedSet}
-                            bookedDateMap={bookedDateMap}
-                            maxPerDay={getMaxForDay(dateKey(year, month, day.d))}
-                          />
-                      ))}
-                    </div>
-
-                    {/* Legend */}
-                    <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5 mt-5 pt-4 border-t border-gray-100">
-                      <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Open
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block"></span> Filling
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block"></span> Booked
-                      </span>
-                      <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                        <span className="w-3.5 h-3.5 rounded-sm bg-[#111] inline-block"></span> Selected
-                      </span>
-                    </div>
-                  </div>
+                  {/* Calendar — shared with the bridal flow. No allowClosedDays
+                      here: everything except bridal is limited to Roko's regular
+                      open days, so Mon/Thu stay greyed out. */}
+                  <BookingCalendar
+                    value={currentDate}
+                    onMonthChange={setCurrentDate}
+                    minDate={minDate}
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                    blockedSet={blockedSet}
+                    bookedDateMap={bookedDateMap}
+                    getMaxForDay={getMaxForDay}
+                    unavailableLabel="Booked"
+                    focused={calFocus}
+                    onToggleFocus={toggleCalFocus}
+                    helperText="Tap a selected date again to clear it."
+                  />
 
                   {/* Info note about time */}
-                  <div className="mt-5 bg-white rounded-xl border border-gray-200 p-4 relative z-10">
+                  <div className={`${calFocus ? 'hidden sm:block' : 'block'} mt-5 bg-white rounded-xl border border-gray-200 p-4 relative z-10`}>
                     <div className="flex items-start gap-3">
                       <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -652,7 +500,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                   </div>
 
                   {/* FAQ */}
-                  <div className="mt-6 pt-6 border-t border-gray-100 relative z-10">
+                  <div className={`${calFocus ? 'hidden sm:block' : 'block'} mt-6 pt-6 border-t border-gray-100 relative z-10`}>
                     <ServiceFAQ service={service} />
                   </div>
                 </div>
