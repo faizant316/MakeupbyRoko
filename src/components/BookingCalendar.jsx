@@ -110,7 +110,12 @@ function CalDay({ state, day, selectedDate, onPick }) {
         : closedWeekday ? 'Roko is closed this day'
         : undefined
       }
-      className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-all relative rounded-none touch-manipulation ${tone}`}
+      // transition-colors, NOT transition-all: three months of cells live in the
+      // swipe track at once, and `all` puts every one of them on the animation
+      // path for any style change — including the track's own transform, which
+      // is what made the drag stutter. Colour is the only thing that ever
+      // transitions here anyway.
+      className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-colors relative rounded-none touch-manipulation ${tone}`}
     >
       <span>{day.d}</span>
       {/* Red = "she can't take this date". Deliberately NOT shown on a weekday
@@ -372,19 +377,6 @@ export default function BookingCalendar({
     };
   }, [settle]);
 
-  // One-time nudge on phones: the grid slides a little and comes back, which
-  // says "this moves" faster than any label can. Only on a coarse pointer, only
-  // once per mount, and never when the visitor has asked for less motion.
-  const [nudge, setNudge] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    if (!window.matchMedia('(pointer: coarse)').matches) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const on = setTimeout(() => setNudge(true), 600);
-    const off = setTimeout(() => setNudge(false), 2400);
-    return () => { clearTimeout(on); clearTimeout(off); };
-  }, []);
-
   const pick = useCallback((panel, day) => {
     const key = dateKey(panel.y, panel.m, day.d);
     const s = panel.states.get(key);
@@ -411,13 +403,12 @@ export default function BookingCalendar({
           ‹
         </button>
 
-        {/* Month + year read as one control: only the year carries the chevron,
-            so the pair says "tap me" once instead of twice. */}
+        {/* Month and year each carry their own chevron — that's what says "this is
+            a dropdown you can pick from". */}
         <div className="flex-1 flex items-center justify-center gap-1 min-w-0">
           <CalendarNavSelect
             ariaLabel="Month"
             align="right"
-            hideChevron
             value={month}
             onChange={v => goToMonth(year, Number(v))}
             options={MONTHS.map((m, i) => ({ value: i, label: m }))}
@@ -461,7 +452,8 @@ export default function BookingCalendar({
         )}
       </div>
 
-      {/* Month availability summary */}
+      {/* Month availability summary, with the swipe hint riding quietly on the
+          right of the same row. */}
       {(summary.open + summary.filling + summary.full > 0) && (
         <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
           {summary.open > 0 && (
@@ -479,25 +471,11 @@ export default function BookingCalendar({
               <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{summary.full} full
             </span>
           )}
+          <span className="sm:hidden ml-auto text-[0.58rem] text-gray-300 tracking-[0.04em]">Swipe to change month</span>
         </div>
       )}
 
-      {/* Swipe cue — mobile only, sitting directly on top of the grid it
-          describes. The old version was 0.58rem grey text tucked at the end of a
-          row and nobody saw it; this one is centred, in the accent colour, and
-          its chevrons drift outward so it reads as a gesture rather than a
-          caption. Pairs with the one-time nudge of the grid itself. */}
-      <div className="sm:hidden flex items-center justify-center gap-2 mt-3 mb-0.5">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="cal-cue-l w-3 h-3 text-[#D4A0B0]">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#c9a4b2]">Swipe to change month</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="cal-cue-r w-3 h-3 text-[#D4A0B0]">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-3 mb-3">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3">
         {WEEKDAYS.map(d => (
           <div key={d} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
         ))}
@@ -514,7 +492,6 @@ export default function BookingCalendar({
             width: '300%',
             transform: BASE_X,
             willChange: 'transform',
-            animation: nudge ? 'calSwipeNudge 1.25s cubic-bezier(0.4,0,0.2,1) 1' : undefined,
           }}
         >
           {panels.map((p, i) => (

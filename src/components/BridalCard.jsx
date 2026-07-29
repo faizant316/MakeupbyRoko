@@ -25,7 +25,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
             style={{ objectPosition: svc.title === 'Bridal Trial' ? 'center 42%' : 'top' }} />
           {svc.photos?.length > 1 && (
             <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-              style={{ background: 'rgba(0,0,0,0.48)', backdropFilter: 'blur(4px)' }}>
+              style={{ background: 'rgba(0,0,0,0.55)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" width={11} height={11}>
                 <rect x="3" y="8" width="18" height="13" rx="2"/><path d="M16 8V6a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><circle cx="12" cy="14" r="2"/>
               </svg>
