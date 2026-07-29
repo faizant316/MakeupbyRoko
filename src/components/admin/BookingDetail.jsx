@@ -190,8 +190,11 @@ function CopyableAddress({ address, dm }) {
       <p className="text-[0.85rem] font-medium leading-snug" style={{ color: dm ? '#e4e4e7' : '#111' }}>
         {address}
       </p>
+      {/* #52525b sat at ~1.9:1 on the dark card, so the copy hint under every
+          address was effectively invisible. #71717a is the muted token the rest
+          of this file already uses. */}
       <span className="text-[0.62rem] mt-0.5 inline-flex items-center gap-1 transition-colors"
-        style={{ color: copied ? '#22c55e' : dm ? '#52525b' : '#bbb' }}>
+        style={{ color: copied ? '#22c55e' : dm ? '#71717a' : '#bbb' }}>
         {copied ? (
           <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!</>
         ) : (

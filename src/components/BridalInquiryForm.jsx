@@ -1078,14 +1078,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <label className={labelClass}>Bridal party glam</label>
                 <div className="relative pl-3.5 mt-1.5">
                   <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                  {/* Two numbers next to each other do the explaining a whole
-                      paragraph was doing before: how far out she is, and what
-                      it takes. Roko asked for fewer words and more numbers. */}
+                  {/* Lead with the RULE, not the arithmetic. "14 days out ·
+                      needs 30" made the bride solve for the rule herself; she
+                      has to be told outright that party glam is booked a month
+                      ahead. Her own date comes second, as the reason it doesn't
+                      apply to her. */}
                   <p className="text-[0.88rem] font-semibold mb-1" style={{ color: '#B06883' }}>
-                    {daysToDate != null ? `${daysToDate} days out · needs 30` : 'Needs 30 days'}
+                    Must be booked 30+ days in advance
                   </p>
                   <p className="text-[0.82rem] leading-[1.6]" style={{ color: '#6E6058' }}>
-                    This covers you only. Want your party glammed? Add a note below.
+                    Your {dateNoun} is {daysToDate != null ? `${daysToDate} ${daysToDate === 1 ? 'day' : 'days'} away` : 'sooner than that'}, so this covers you only. Want your party glammed? Add a note below.
                   </p>
                 </div>
               </div>
