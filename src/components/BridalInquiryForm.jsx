@@ -26,6 +26,7 @@ import TimePicker from './TimePicker';
 import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_READY_VALUE } from '@/lib/studio';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
+import { BRIDAL_LEAD_DAYS, canAddParty } from '@/lib/bookingLeadTime';
 
 // The two-part bridal flow (plan it, then wear it). Rendered twice on step one:
 // the always-open desktop card and the collapsible mobile row. Defined once here
@@ -232,7 +233,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // Stable for the life of the sheet — a fresh Date on every render would make
   // the calendar re-derive everything (and re-bind its swipe listeners) whenever
   // anything else in the form changed.
-  const minDate = useMemo(() => getMinBookingDate(), []);
+  // Brides deliberately keep the 2-week window: the month rule exists to protect
+  // her bridal calendar, so applying it to brides would defeat its own purpose.
+  const minDate = useMemo(() => getMinBookingDate(BRIDAL_LEAD_DAYS), []);
   const [calDate, setCalDate] = useState(() => new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
   // Mobile-only: the "every bride gets a private consultation" detail starts
@@ -265,10 +268,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const contractOverrides = useContractOverrides();
 
+  // Party add-ons need a month. Derived from the date the bride actually picked,
+  // so it re-evaluates if she goes back and moves her date.
+  const partyAllowed = canAddParty(selectedDate);
+
   // One human-readable answer for "who needs glam", stored + emailed so Roko always
-  // sees either the bridal-party count or an explicit "Just the bride".
-  const glamSummary =
-    form.bridal_party_glam === true
+  // sees either the bridal-party count or an explicit "Just the bride". When the
+  // date is inside the party window Roko never asked the question, so the record
+  // says exactly that instead of implying the bride chose to come alone.
+  const glamSummary = !partyAllowed
+    ? 'Just the bride (inside 1 month, party glam not offered)'
+    : form.bridal_party_glam === true
       ? (form.num_people_glam.trim() || 'Yes, final count to confirm')
       : form.bridal_party_glam === false
       ? 'Just the bride'
@@ -342,7 +352,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
     // Both are Yes/No booleans that start undefined, so "unanswered" is == null
     // rather than falsy — a deliberate "No" is false and must pass.
-    if (form.bridal_party_glam == null) { alert('Please let Roko know if your bridal party needs glam too.'); return; }
+    // Only required when the question was actually shown. Inside the 1-month
+    // party window it isn't, so demanding an answer would dead-end the form.
+    if (partyAllowed && form.bridal_party_glam == null) { alert('Please let Roko know if your bridal party needs glam too.'); return; }
     if (form.out_of_state == null) { alert('Please let Roko know if this is an out-of-state event.'); return; }
     goStep('sign');
   };
@@ -485,7 +497,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
-      { label: 'Who needs glam', value: glamSummary },
+      // The bride sees the plain answer. The parenthetical on glamSummary is
+      // for Roko's copy, so she knows the bride never turned a party down —
+      // she was never offered one.
+      { label: 'Who needs glam', value: partyAllowed ? glamSummary : 'Just you' },
       { label: 'Photographer', value: form.photographer },
       { label: 'Hairstylist', value: form.hairstylist },
       { label: 'Out-of-state event', value: form.out_of_state == null ? '' : form.out_of_state ? 'Yes' : 'No' },
@@ -1012,45 +1027,63 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
 
-            <div>
-              <label className={labelClass}>Does your bridal party need glam too? *</label>
-              <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
-              <div className="flex gap-3 mt-1">
-                {['No', 'Yes'].map(opt => {
-                  const active = opt === 'Yes' ? form.bridal_party_glam === true : form.bridal_party_glam === false;
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        const yes = opt === 'Yes';
-                        set('bridal_party_glam', yes);
-                        if (!yes) set('num_people_glam', '');
-                      }}
-                      className={`flex-1 py-3 rounded-xl text-[0.82rem] font-medium border transition-all ${
-                        active
-                          ? 'bg-[#111] text-white border-[#111]'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      {opt === 'Yes' ? 'Yes, add glam' : 'No, just me'}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {form.bridal_party_glam === true && (
-                <div className="mt-3" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
-                  <label className={labelClass}>How Many Need Glam? (Besides You)</label>
-                  <input
-                    value={form.num_people_glam}
-                    onChange={e => set('num_people_glam', e.target.value)}
-                    placeholder="e.g. 3 bridesmaids + mom"
-                    className={inputClass}
-                  />
+            {/* A bridal party needs a month's notice: more chairs means more
+                hours and more product than Roko can absorb late. Inside that
+                window the question isn't asked at all rather than asked and
+                then refused, so a bride is never offered something that gets
+                taken back. She can still book herself, which is the point. */}
+            {partyAllowed ? (
+              <div>
+                <label className={labelClass}>Does your bridal party need glam too? *</label>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
+                <div className="flex gap-3 mt-1">
+                  {['No', 'Yes'].map(opt => {
+                    const active = opt === 'Yes' ? form.bridal_party_glam === true : form.bridal_party_glam === false;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => {
+                          const yes = opt === 'Yes';
+                          set('bridal_party_glam', yes);
+                          if (!yes) set('num_people_glam', '');
+                        }}
+                        className={`flex-1 py-3 rounded-xl text-[0.82rem] font-medium border transition-all ${
+                          active
+                            ? 'bg-[#111] text-white border-[#111]'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {opt === 'Yes' ? 'Yes, add glam' : 'No, just me'}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
+
+                {form.bridal_party_glam === true && (
+                  <div className="mt-3" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
+                    <label className={labelClass}>How Many Need Glam? (Besides You)</label>
+                    <input
+                      value={form.num_people_glam}
+                      onChange={e => set('num_people_glam', e.target.value)}
+                      placeholder="e.g. 3 bridesmaids + mom"
+                      className={inputClass}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className={labelClass}>Bridal party glam</label>
+                <div className="relative pl-3.5 mt-1.5">
+                  <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                  <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Needs 1 month&apos;s notice</p>
+                  <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                    Party glam (bridesmaids, mother of the bride) is booked at least a month ahead, so Roko can plan the extra time and product. Your {dateNoun} is sooner than that, so this inquiry covers you only. If you'd still like glam for your party, send Roko a note below and she'll tell you what she can do.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="w-full h-px bg-gray-100" />
 

@@ -24,6 +24,9 @@ import ContractSign from './ContractSign';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
+import { NON_BRIDAL_LEAD_DAYS } from '@/lib/bookingLeadTime';
+import { cityFromLocation } from '@/lib/location';
+import LocationAutocomplete from './LocationAutocomplete';
 
 // Sized to match the bridal form's fields so non-bridal (photoshoot / other
 // services) inquiries feel just as substantial on desktop, not shrunken.
@@ -43,13 +46,13 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Stable for the life of the sheet — a fresh Date every render would make the
   // calendar re-derive its day states (and re-bind its swipe listeners) on every
   // keystroke elsewhere in the form.
-  const minDate = useMemo(() => getMinBookingDate(), []);
+  const minDate = useMemo(() => getMinBookingDate(NON_BRIDAL_LEAD_DAYS), []);
   // Start calendar on the month of the minimum booking date
   const [currentDate, setCurrentDate] = useState(() => new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
   // Mobile-only focus mode: fold everything but the calendar and the pinned CTA.
   const [calFocus, setCalFocus] = useState(false);
-  const [formData, setFormData] = useState({ fname: '', lname: '', email: '', phone: '', notes: '', early_arrival: null, travel_requested: null });
+  const [formData, setFormData] = useState({ fname: '', lname: '', email: '', phone: '', notes: '', early_arrival: null, travel_requested: null, location: '' });
   const [newBookingId, setNewBookingId] = useState(null);
   const [uploadToken, setUploadToken] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -122,6 +125,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
     if (!formData.ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
+    if (hasTravelFee && !formData.location?.trim()) { alert('Please add the address or venue Roko should travel to.'); return; }
     goStep('sign');
   };
 
@@ -148,6 +152,10 @@ export default function BookingModal({ service: initialService, onClose }) {
         time: '',
         notes: `${formData.notes}${earlySurcharge}${readyByNote}${travelNote}${signedContractNote}`.trim(),
         status: 'pending',
+        // Only set for travel bookings. A studio appointment has no client
+        // address to record, and writing one would make the admin list claim
+        // she is driving somewhere she isn't.
+        ...(hasTravelFee && formData.location ? { location: formData.location, location_city: cityFromLocation(formData.location) } : {}),
         upload_token: token,
         contract_signed: true,
         contract_signed_name: sig.name,
@@ -459,10 +467,16 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
                   </div>
 
-                  {/* 2-week notice — quiet rule-and-line, matching bridal. */}
+                  {/* Lead-time notice — quiet rule-and-line, matching bridal.
+                      Says WHY as well as what: without the reason, a month out
+                      reads as Roko being hard to book rather than as brides
+                      getting first call on the near-term calendar. */}
                   <div className={`${calFocus ? 'hidden sm:block' : 'block'} relative z-10 pl-3 mb-4`} style={{ borderLeft: '2px solid #E7C3D1' }}>
                     <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
-                      Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                      Bookable at least <strong className="text-[#444] font-semibold">1 month out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                    </p>
+                    <p className="text-[0.72rem] lg:text-[0.76rem] leading-[1.5] text-[#9a918b] mt-1">
+                      Roko keeps the next few weeks open for her brides, so non-bridal books a month ahead.
                     </p>
                   </div>
 
@@ -630,13 +644,30 @@ export default function BookingModal({ service: initialService, onClose }) {
                         ))}
                       </div>
                       {hasTravelFee && (
-                        <div className="mt-3 relative pl-3.5">
-                          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                          <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel · bridal pricing $750+</p>
-                          <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                            For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.
-                          </p>
-                        </div>
+                        <>
+                          <div className="mt-3 relative pl-3.5">
+                            <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                            <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel · bridal pricing $750+</p>
+                            <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                              For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.
+                            </p>
+                          </div>
+
+                          {/* Asking "travel?" without asking "where?" is how every
+                              travel booking before this arrived with no address.
+                              Required, because the rate depends on the answer. */}
+                          <div className="mt-4">
+                            <label className={labelClass}>Where should Roko come to? *</label>
+                            <LocationAutocomplete
+                              value={formData.location}
+                              onChange={v => setFormData({ ...formData, location: v })}
+                              placeholder="Address or venue, with city"
+                            />
+                            <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
+                              Roko's travel rate depends on how far she's going, so the city matters. An approximate address is fine for now.
+                            </p>
+                          </div>
+                        </>
                       )}
                     </div>
 

@@ -1,6 +1,7 @@
 ﻿'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '@/api/apiClient';
+import { cityFromLocation } from '@/lib/location';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import AdminCalendar from '../components/admin/AdminCalendar';
@@ -81,10 +82,41 @@ export default function Admin() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { data: bookings = [], isLoading: loadingBookings } = useQuery({
+  const { data: rawBookings = [], isLoading: loadingBookings } = useQuery({
     queryKey: ['admin-bookings'],
     queryFn: () => api.entities.Booking.list('-created_date', 200),
   });
+
+  // A bride's address lives on her INQUIRY (event_location), not her booking,
+  // so without this the appointments list could show a location for every
+  // travelling non-bridal client and nothing at all for the brides — which is
+  // the exact case Roko asked to see. Fetched once here and merged in rather
+  // than queried per row.
+  const { data: inquiries = [] } = useQuery({
+    queryKey: ['admin-bridal-inquiries'],
+    queryFn: () => api.entities.BridalInquiry.list('-created_date', 200),
+    staleTime: 30000,
+  });
+
+  const bookings = useMemo(() => {
+    if (!inquiries.length) return rawBookings;
+    // upload_token is the exact 1:1 link between a booking and its inquiry;
+    // email is the fallback for older rows booked before tokens existed.
+    const byToken = new Map(), byEmail = new Map();
+    for (const q of inquiries) {
+      if (q.upload_token) byToken.set(q.upload_token, q);
+      if (q.email) byEmail.set(q.email.toLowerCase(), q);
+    }
+    return rawBookings.map(b => {
+      // A location on the booking itself always wins: it is where she is
+      // actually going, whereas the inquiry is what the bride typed months ago.
+      if (b.location || b.location_city) return b;
+      const q = (b.upload_token && byToken.get(b.upload_token))
+        || (b.email && byEmail.get(b.email.toLowerCase()));
+      if (!q?.event_location) return b;
+      return { ...b, location: q.event_location, location_city: cityFromLocation(q.event_location) };
+    });
+  }, [rawBookings, inquiries]);
 
   // Auto-complete finished work: once a CONFIRMED appointment's date has passed,
   // roll it to "completed" so it leaves Past Due for the Completed Archive on its

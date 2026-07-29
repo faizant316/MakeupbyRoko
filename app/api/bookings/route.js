@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
-import { requireAdmin } from '../../../src/lib/requireAdmin';
+import { requireAdmin, isAdminRequest } from '../../../src/lib/requireAdmin';
+import { NON_BRIDAL_LEAD_DAYS, meetsLead } from '../../../src/lib/bookingLeadTime';
+import { cityFromLocation } from '../../../src/lib/location';
 import { raiseAlert, keysOf } from '../../../src/lib/alerts';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -40,10 +42,40 @@ export async function POST(req) {
     if (email && !EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     if (!email && !phone) return NextResponse.json({ error: 'Need an email or phone' }, { status: 400 });
 
+    // ── Lead time ───────────────────────────────────────────────────────────
+    // The calendar already greys out dates that are too soon, but that is only
+    // the browser's opinion: a tab left open overnight, a resubmitted form or a
+    // hand-rolled POST would all sail past it. Roko is exempt (she books
+    // walk-ins from admin), and so are Booksy imports of appointments that
+    // already happened.
+    if (date && !isImport && !(await isAdminRequest())) {
+      // Bridal keeps the shorter window, so the rule turns on what was actually
+      // booked. Read from the service's category rather than its title: the
+      // titles get edited live in Supabase, categories don't.
+      const { data: svc } = await supabase
+        .from('services').select('category').eq('title', service).maybeSingle();
+      // Unknown service falls back to the stricter window rather than the
+      // looser one, so a renamed service can never quietly reopen the calendar.
+      const isBridalService = svc?.category === 'bridal';
+      if (!isBridalService && !meetsLead(date, NON_BRIDAL_LEAD_DAYS)) {
+        return NextResponse.json({
+          error: 'Non-bridal appointments are booked at least 1 month ahead. Please pick a later date.',
+        }, { status: 400 });
+      }
+    }
+
     const upload_token = body.upload_token || uuidv4();
     const insert = { name, email: email || null, phone, service, date, time, notes, status, reference_photos, upload_token };
     if (deposit_received !== undefined) insert.deposit_received = deposit_received;
     if (source) insert.source = source;
+    // Travel bookings only (0015). Derive the city here rather than trusting a
+    // client-sent one, so the chip in the admin list always matches the address
+    // sitting next to it.
+    if (body.location) {
+      insert.location = body.location;
+      insert.location_city = body.location_city || cityFromLocation(body.location);
+    }
+    if (body.travel_fee != null) insert.travel_fee = body.travel_fee;
 
     let { data, error } = await supabase.from('bookings').insert(insert).select().single();
     // If migration 0007 hasn't been applied yet the `source` column doesn't

@@ -1891,6 +1891,39 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </div>
         </div>
 
+        {/* Client location (0015). Only shown when there IS one: a blank here
+            means a studio appointment or an import with nothing on file, and
+            an empty "Location —" row would read as missing data rather than as
+            "she isn't driving anywhere". Suppressed only when the inquiry's own
+            Get Ready Location block below is already showing an address, so a
+            bride imported from Booksy (who has no inquiry) still gets one. */}
+        {booking.location && !bridalInquiry?.event_location && (
+          <div className="mb-6 pb-6 flex items-start justify-between gap-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
+            <div className="flex items-start gap-2.5 min-w-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <div className="min-w-0">
+                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+                  Client Location
+                  {booking.travel_fee != null && (
+                    <span className="ml-2 normal-case tracking-normal" style={{ color: dm ? '#71717a' : '#b0a4aa' }}>
+                      travel fee ${Number(booking.travel_fee).toLocaleString()}
+                    </span>
+                  )}
+                </p>
+                <CopyableAddress address={booking.location} dm={dm} />
+              </div>
+            </div>
+            <a href={mapsUrl(booking.location)} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-opacity hover:opacity-80 flex-shrink-0"
+              style={{ borderRadius: 2, border: `1px solid ${dm ? '#5a4750' : '#E2C4D2'}`, color: '#C4849A', background: dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Maps
+            </a>
+          </div>
+        )}
+
         {/* Contact composer — Roko's personal email, sent as roko@makeupbyroko.org */}
         {showCompose && (
           <div ref={composeRef} className="mb-6 rounded-2xl overflow-hidden"

@@ -43,3 +43,4 @@ out/
 # Booksy capture holds live session cookies/tokens, never commit it
 booksy-capture*.json
 *.har
+.booksy-addresses.json
