@@ -55,3 +55,13 @@ export function meetsLead(dateKey, days, from = new Date()) {
 export function canAddParty(dateKey, from = new Date()) {
   return meetsLead(dateKey, PARTY_LEAD_DAYS, from);
 }
+
+/** Whole days from today to `dateKey`, or null if there's no date yet. */
+export function daysUntil(dateKey, from = new Date()) {
+  if (!dateKey) return null;
+  const picked = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(picked.getTime())) return null;
+  const today = new Date(from);
+  today.setHours(0, 0, 0, 0);
+  return Math.round((picked - today) / 86400000);
+}
