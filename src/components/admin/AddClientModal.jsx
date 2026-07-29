@@ -559,7 +559,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
               {nb.travel_requested === true && (
                 <div>
                   <label style={labelStyle}>Where are you going?</label>
-                  <LocationAutocomplete value={nb.location} onChange={v => setN('location', v)} placeholder="Address or venue" />
+                  <LocationAutocomplete value={nb.location} onChange={v => setN('location', v)} placeholder="Address or venue" dm={dm} />
                 </div>
               )}
             </>
@@ -609,7 +609,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
 
               <div>
                 <label style={labelStyle}>Event / Venue Location</label>
-                <LocationAutocomplete value={bridal.event_location} onChange={v => setBr('event_location', v)} placeholder="Venue name or address" />
+                <LocationAutocomplete value={bridal.event_location} onChange={v => setBr('event_location', v)} placeholder="Venue name or address" dm={dm} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

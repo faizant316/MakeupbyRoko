@@ -218,7 +218,7 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
               actually arrive. Blank means the studio. */}
           <Section>Client Location</Section>
           <div>
-            <LocationAutocomplete value={form.location} onChange={v => set('location', v)} placeholder="Address or venue (leave blank for studio)" />
+            <LocationAutocomplete value={form.location} onChange={v => set('location', v)} placeholder="Address or venue (leave blank for studio)" dm={dm} />
             <p className="text-[0.72rem] mt-2" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
               Shows on the appointment list so you can see where you're going without opening the card.
             </p>
