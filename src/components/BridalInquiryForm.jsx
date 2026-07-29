@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import ContractSign from './ContractSign';
@@ -18,7 +18,6 @@ function useBookingCounts() {
 }
 import { scrollModalTop } from '@/lib/modalLenis';
 import CustomSelect from './CustomSelect';
-import CalendarNavSelect from './CalendarNavSelect';
 import FullDayIncludes from './FullDayIncludes';
 import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
@@ -26,18 +25,7 @@ import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
 import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_READY_VALUE } from '@/lib/studio';
-
-const AVAILABLE_DAYS = [0, 2, 3, 5, 6]; // Sun, Tue, Wed, Fri, Sat (closed Mon/Thu)
-
-const pad = (n) => String(n).padStart(2, '0');
-const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
-
-function getMinBookingDate() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 14);
-  return d;
-}
+import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
 
 // The two-part bridal flow (plan it, then wear it). Rendered twice on step one:
 // the always-open desktop card and the collapsible mobile row. Defined once here
@@ -57,52 +45,6 @@ const CONSULT_STEPS = [
 
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
-
-function CalDay({ day, year, month, minDate, selectedDate, handleDayClick, blockedSet, bookedDateMap, maxPerDay }) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const isTooSoon = day.date < minDate; // also covers past dates
-  const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
-  const key = dateKey(year, month, day.d);
-  const isSel = selectedDate === key;
-  const isBlocked = !isTooSoon && blockedSet?.has(key);
-  const bookingCount = bookedDateMap?.[key] || 0;
-  const isFull = !isTooSoon && bookingCount >= maxPerDay;
-  const isPartial = bookingCount > 0 && !isFull;
-  const isToday = day.date.getTime() === today.getTime();
-
-  // A wedding date isn't limited to Roko's regular open days, so Mon/Thu stay
-  // pickable. Days she's actually closed are a different thing: if she's marked
-  // the day off (a trip, time off) or it's already at capacity, she can't take
-  // the date at all, so it can't be picked here either.
-  const unavailable = isBlocked || isFull;
-  const disabled = isTooSoon || unavailable;
-
-  return (
-    <button type="button" onClick={() => handleDayClick(day)} disabled={disabled}
-      title={isBlocked ? 'Roko is away this day' : isFull ? 'Fully booked' : undefined}
-      className={`w-full aspect-square max-w-[2.75rem] sm:max-w-[3.15rem] flex flex-col items-center justify-center text-[0.875rem] sm:text-[1rem] transition-all relative rounded-none ${
-        isTooSoon ? 'text-gray-200 cursor-not-allowed'
-        : isBlocked ? 'text-red-300 cursor-not-allowed line-through decoration-red-300'
-        : isFull ? 'text-red-300 cursor-not-allowed'
-        : isSel ? 'bg-[#111] text-white font-semibold rounded-sm'
-        : isToday ? 'text-[#D4A0B0] font-bold cursor-pointer'
-        : 'text-[#888] hover:text-[#111] cursor-pointer'
-      }`}>
-      <span>{day.d}</span>
-      {!isTooSoon && !isSel && unavailable && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-300" />
-      )}
-      {!disabled && !isSel && !isBlocked && !isFull && isPartial && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-[#F0C27A]" />
-      )}
-      {!disabled && !isSel && !isBlocked && !isFull && !isPartial && isAvail && (
-        <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
-      )}
-    </button>
-  );
-}
-
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, recapDate, recapRows, recapDateLabel = 'Wedding Date' }) {
   const firstName = (brideName || '').split(' ')[0] || 'there';
@@ -253,11 +195,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
   const { data: dayCapacities = [] } = useQuery({ queryKey: ['day-capacities'], queryFn: () => api.entities.DayCapacity.list('-date', 200), staleTime: 30000 });
 
-  const blockedSet = new Set(blockedDates.map(b => b.date));
+  // Memoised because BookingCalendar keys its day-state work off these. Rebuilt
+  // fresh every render they would invalidate that work on every keystroke
+  // elsewhere in the sheet.
+  const blockedSet = useMemo(() => new Set(blockedDates.map(b => b.date)), [blockedDates]);
   const DEFAULT_MAX = capacitySettings[0] ? parseInt(capacitySettings[0].value, 10) : 3;
-  const dayCapacityMap = {};
-  dayCapacities.forEach(d => { dayCapacityMap[d.date] = d.capacity; });
-  const getMaxForDay = (key) => dayCapacityMap[key] ?? DEFAULT_MAX;
+  const getMaxForDay = useMemo(() => {
+    const map = {};
+    dayCapacities.forEach(d => { map[d.date] = d.capacity; });
+    return (key) => map[key] ?? DEFAULT_MAX;
+  }, [dayCapacities, DEFAULT_MAX]);
 
   const activeService = passedService || bridalService;
   const isFullDay = /full.?day/i.test(activeService?.title || '');
@@ -282,12 +229,24 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     ? <>A full run-through of your bridal look before the big day, so everything is <strong>perfected ahead of time</strong>. Recommended 1 to 3 months before your wedding.</>
     : <>Your <strong>wedding-day makeup</strong>, custom-designed for your features and built to last from your first look through the celebration.</>;
 
-  const minDate = getMinBookingDate();
-  const [calDate, setCalDate] = useState(new Date(minDate.getFullYear(), minDate.getMonth()));
+  // Stable for the life of the sheet — a fresh Date on every render would make
+  // the calendar re-derive everything (and re-bind its swipe listeners) whenever
+  // anything else in the form changed.
+  const minDate = useMemo(() => getMinBookingDate(), []);
+  const [calDate, setCalDate] = useState(() => new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
   // Mobile-only: the "every bride gets a private consultation" detail starts
   // folded so the calendar isn't pushed below the fold. Desktop renders it open.
   const [consultOpen, setConsultOpen] = useState(false);
+  // Mobile-only focus mode: fold everything except the calendar and the pinned
+  // price + CTA, so picking a date is the only thing on screen. Jump the sheet
+  // back to the top on either toggle — folding content out from ABOVE the
+  // current scroll position would otherwise leave her staring at blank space.
+  const [calFocus, setCalFocus] = useState(false);
+  const toggleCalFocus = () => {
+    setCalFocus(f => !f);
+    requestAnimationFrame(() => scrollModalTop(document.querySelector('[data-modal-scroll]')));
+  };
   // Booksy-style stepped flow: date → form → success
   const [step, setStep] = useState('date');
   const [direction, setDirection] = useState('forward');
@@ -342,26 +301,11 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     if (isTrial) setForm(f => f.event_location ? f : { ...f, event_location: STUDIO_READY_VALUE });
   }, [isTrial]);
 
-  const year = calDate.getFullYear();
-  const month = calDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const calDays = [];
-  for (let i = 0; i < firstDay; i++) calDays.push(null);
-  for (let d = 1; d <= daysInMonth; d++) calDays.push({ d, date: new Date(year, month, d) });
-
-  const handleDayClick = (day) => {
-    if (!day) return;
-    // Wedding dates are fixed, so a closed day (Mon/Thu) or a filling one is
-    // still fair game past the 2-week minimum. Days Roko has blocked off, or
-    // days already at capacity, are not: she genuinely can't take those.
-    if (day.date < minDate) return;
-    const key = dateKey(year, month, day.d);
-    if (blockedSet.has(key)) return;
-    if ((bookedDateMap?.[key] || 0) >= getMaxForDay(key)) return;
-    // Tap the already-selected day to clear it.
-    setSelectedDate(prev => prev === key ? null : key);
-  };
+  // Grid building, day states and the pick guard now live in BookingCalendar.
+  // Wedding dates are fixed, so a closed day (Mon/Thu) is still fair game past
+  // the 2-week minimum — that's what allowClosedDays below turns on. Days Roko
+  // has blocked off, or days already at capacity, stay unpickable: she genuinely
+  // can't take those.
 
   const handleContinue = () => {
     if (!selectedDate) { alert(`Please select your ${dateNoun} date from the calendar.`); return; }
@@ -577,7 +521,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
           between a bride and the calendar. Same three facts (which package, the
           price, the deposit) in one ~68px row. The sticky footer repeats the
           price permanently, so this stays deliberately quiet. */}
-      <div className="sm:hidden flex items-center gap-3 px-4 py-2.5 border-b border-[#F2E6EC] flex-shrink-0" style={{ background: 'linear-gradient(180deg,#FFFFFF,#FDF9FA)' }}>
+      <div
+        className={`${calFocus && step === 'date' ? 'hidden' : 'flex sm:hidden'} items-center gap-3 px-4 py-2.5 border-b border-[#F2E6EC] flex-shrink-0`}
+        style={{ background: 'linear-gradient(180deg,#FFFFFF,#FDF9FA)' }}
+      >
         <img src="/IMG_9891.jpeg" alt="" aria-hidden="true" className="w-11 h-11 rounded-lg object-cover object-[center_30%] flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-[0.48rem] font-bold tracking-[0.2em] uppercase text-[#CE9BAD] leading-none mb-1">You're booking</p>
@@ -666,6 +613,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
             <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
+            {/* Everything between here and the calendar folds away in mobile
+                focus mode. `contents` keeps the wrapper invisible to the parent
+                flex layout, so the gap rhythm is identical either way; the
+                `sm:contents` half means a desktop viewport always shows it all,
+                regardless of the toggle's state. */}
+            <div className={calFocus ? 'hidden sm:contents' : 'contents'}>
+
             {/* Calendar heading — the main event of step one. Scaled back on
                 mobile (the 48px icon tile and 1.9rem serif were pushing the grid
                 itself below the fold). */}
@@ -745,106 +699,29 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </>
             )}
 
-            {/* Calendar */}
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                <button type="button" onClick={() => setCalDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">‹</button>
-                {/* Month + Year quick-jump — custom portal dropdowns so they look
-                    polished on desktop and still escape the panel's overflow. */}
-                <div className="flex-1 flex items-center justify-center gap-1">
-                  <CalendarNavSelect
-                    ariaLabel="Month"
-                    align="right"
-                    value={month}
-                    onChange={v => setCalDate(new Date(year, Number(v)))}
-                    options={MONTHS.map((m, i) => ({ value: i, label: m }))}
-                  />
-                  <CalendarNavSelect
-                    ariaLabel="Year"
-                    align="left"
-                    menuMinWidth={120}
-                    value={year}
-                    onChange={v => setCalDate(new Date(Number(v), month))}
-                    options={Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => ({ value: y, label: String(y) }))}
-                  />
-                </div>
-                <button type="button" onClick={() => setCalDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0">›</button>
-              </div>
+            </div>{/* end fold-in-focus-mode */}
 
-              {/* Month availability summary */}
-              {(() => {
-                const _today = new Date(); _today.setHours(0, 0, 0, 0);
-                let openCount = 0, fillingCount = 0, fullCount = 0;
-                calDays.forEach(day => {
-                  if (!day) return;
-                  if (day.date < _today) return;
-                  const isTooSoon = day.date < minDate;
-                  const isAvail = !isTooSoon && AVAILABLE_DAYS.includes(day.date.getDay());
-                  if (!isAvail) return;
-                  const key = dateKey(year, month, day.d);
-                  if (blockedSet?.has(key)) return;
-                  const count = bookedDateMap?.[key] || 0;
-                  if (count >= getMaxForDay(key)) fullCount++;
-                  else if (count > 0) fillingCount++;
-                  else openCount++;
-                });
-                if (openCount + fillingCount + fullCount === 0) return null;
-                return (
-                  <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
-                    {openCount > 0 && (
-                      <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />{openCount} open
-                      </span>
-                    )}
-                    {fillingCount > 0 && (
-                      <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(240,194,122,0.15)', color: '#92400e' }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block" />{fillingCount} filling
-                      </span>
-                    )}
-                    {fullCount > 0 && (
-                      <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.1)', color: '#b91c1c' }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{fullCount} full
-                      </span>
-                    )}
-                  </div>
-                );
-              })()}
+            {/* Calendar — shared with every other booking flow.
+                allowClosedDays: a wedding lands on whatever day it lands on, so
+                Mon/Thu stay pickable here even though the studio is normally
+                closed then. */}
+            <BookingCalendar
+              value={calDate}
+              onMonthChange={setCalDate}
+              minDate={minDate}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              blockedSet={blockedSet}
+              bookedDateMap={bookedDateMap}
+              getMaxForDay={getMaxForDay}
+              allowClosedDays
+              focused={calFocus}
+              onToggleFocus={toggleCalFocus}
+              helperText={`Any open day works for ${isTrial ? 'trials' : 'weddings'}, weekdays included. Dates in red are days Roko is away or fully booked. Tap a selected date again to clear it.`}
+            />
 
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3">
-                {['SU','MO','TU','WE','TH','FR','SA'].map((d, i) => (
-                  <div key={i} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center justify-items-center">
-                {calDays.map((day, idx) => !day
-                  ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
-                  : <CalDay key={dateKey(year, month, day.d)} day={day} year={year} month={month} minDate={minDate} selectedDate={selectedDate} handleDayClick={handleDayClick} blockedSet={blockedSet} bookedDateMap={bookedDateMap} maxPerDay={getMaxForDay(dateKey(year, month, day.d))} />
-                )}
-              </div>
-
-              {/* Legend */}
-              <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5 mt-5 pt-4 border-t border-gray-100">
-                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Open
-                </span>
-                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F0C27A] inline-block"></span> Filling
-                </span>
-                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block"></span> Unavailable
-                </span>
-                <span className="flex items-center gap-1.5 text-[0.58rem] font-medium text-gray-400">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-[#111] inline-block"></span> Selected
-                </span>
-              </div>
-
-              {/* Wedding dates aren't limited to Roko's regular open days, but the
-                  days she's away or fully booked are genuinely off the table. */}
-              <p className="text-center text-[0.66rem] text-gray-400 mt-3 leading-[1.6]">
-                Any open day works for {isTrial ? 'trials' : 'weddings'}, weekdays included. Dates in red are days Roko is away or fully booked. Tap a selected date again to clear it.
-              </p>
-            </div>
+            {/* Below the calendar — also folded in focus mode. */}
+            <div className={calFocus ? 'hidden sm:contents' : 'contents'}>
 
             {/* Includes */}
             <div className="border-t border-gray-100 pt-5 relative z-10">
@@ -870,6 +747,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <ServiceFAQ service={activeService} />
               </div>
             )}
+
+            </div>{/* end fold-in-focus-mode */}
           </div>
         )}
 
