@@ -239,8 +239,10 @@ export default function ServicesHero() {
     };
   }, []);
 
+  // Lenis owns the page scroll, so go through scrollToTarget — a raw
+  // window.scrollTo fights its RAF loop and gets snapped back.
   const handleScrollDown = () => {
-    window.scrollTo({ top: window.innerHeight * 0.85, behavior: 'smooth' });
+    scrollToTarget('#services-grid', { offset: -60 });
   };
 
   return (
@@ -354,7 +356,9 @@ export default function ServicesHero() {
             Every service is crafted for you, from your everyday glow to your wedding day.
           </p>
 
-          {/* CTA ghost button — same position as desktop */}
+          {/* CTA — solid, not a ghost outline. This is the one button that takes
+              a visitor to the services, so it reads as a real button and clears
+              the 44px tap minimum (the old outline version was ~40px tall). */}
           <a
             href="#services-grid"
             onClick={(e) => { e.preventDefault(); scrollToTarget('#services-grid', { offset: -60 }); }}
@@ -362,24 +366,28 @@ export default function ServicesHero() {
               pointerEvents: 'auto',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '0.5rem',
               marginBottom: '1.5rem',
-              padding: '0.75rem 1.4rem',
+              padding: '0.95rem 1.6rem',
+              background: '#D4A0B0',
               border: '1px solid #D4A0B0',
-              color: '#D4A0B0',
-              borderRadius: '1px',
-              fontSize: '0.72rem',
+              color: '#1A1416',
+              borderRadius: '2px',
+              fontSize: '0.76rem',
               fontFamily: 'var(--font-sans)',
-              fontWeight: 400,
-              letterSpacing: '0.1em',
+              fontWeight: 600,
+              letterSpacing: '0.12em',
               textTransform: 'uppercase',
               textDecoration: 'none',
-              width: 'fit-content',
-              transition: 'border-color 0.25s, color 0.25s',
+              width: '100%',
+              maxWidth: '320px',
+              boxShadow: '0 10px 30px rgba(212,160,176,0.28)',
+              transition: 'background-color 0.25s, box-shadow 0.25s',
             }}
           >
             Book a Service
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: '12px', height: '12px' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '13px', height: '13px' }}>
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
@@ -393,6 +401,29 @@ export default function ServicesHero() {
               </div>
             ))}
           </div>
+
+          {/* Scroll cue — quietly says "there's more below". The hero fills the
+              whole screen on a phone, so without it the fold reads as the end. */}
+          <button
+            type="button"
+            onClick={handleScrollDown}
+            aria-label="Scroll to services"
+            style={{
+              pointerEvents: 'auto',
+              alignSelf: 'center',
+              marginTop: '1.35rem',
+              background: 'none',
+              border: 'none',
+              padding: '6px',
+              lineHeight: 0,
+              cursor: 'pointer',
+              animation: 'scrollCueBob 2.1s ease-in-out infinite',
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -457,22 +488,27 @@ export default function ServicesHero() {
             Every service is crafted for you, from your everyday glow to your wedding day. Roqia works with a limited number of clients to ensure the highest level of care.
           </p>
 
+          {/* Solid to match mobile — same button, same weight, both breakpoints. */}
           <a
             href="#services-grid"
             className="group"
+            onClick={(e) => { e.preventDefault(); scrollToTarget('#services-grid', { offset: -60 }); }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
-              fontSize: '0.8rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-              color: '#D4A0B0', border: '1px solid #D4A0B0',
-              padding: '0.875rem 1.75rem', width: 'fit-content',
-              transition: 'all 0.25s', borderRadius: '1px',
+              fontSize: '0.8rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+              fontWeight: 600,
+              color: '#1A1416', background: '#D4A0B0', border: '1px solid #D4A0B0',
+              padding: '1rem 2rem', width: 'fit-content',
+              transition: 'background-color 0.25s, border-color 0.25s, box-shadow 0.25s',
+              borderRadius: '2px',
+              boxShadow: '0 10px 30px rgba(212,160,176,0.22)',
               textDecoration: 'none',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,160,176,0.12)'; e.currentTarget.style.borderColor = '#E0B4C2'; e.currentTarget.style.color = '#E0B4C2'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#E0B4C2'; e.currentTarget.style.borderColor = '#E0B4C2'; e.currentTarget.style.boxShadow = '0 14px 38px rgba(212,160,176,0.34)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#D4A0B0'; e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(212,160,176,0.22)'; }}
           >
             Book a Service
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: '14px', height: '14px' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '14px', height: '14px' }}>
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>

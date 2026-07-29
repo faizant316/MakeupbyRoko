@@ -74,11 +74,13 @@ export default function About() {
     return () => observer.disconnect();
   }, []);
 
+  // border-t (not -b): About now follows the services grid, so the dividing rule
+  // belongs above it. The gallery below brings its own gray background.
   return (
     <section
       id="about"
       ref={sectionRef}
-      className="border-b border-[#f0ebe6] px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]"
+      className="border-t border-[#f0ebe6] px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]"
     >
       <div className="max-w-[1200px] mx-auto">
 

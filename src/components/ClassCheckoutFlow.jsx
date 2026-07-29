@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useScrollLock } from '@/lib/useScrollLock';
+import { useScrollLock, useHideSiteNav } from '@/lib/useScrollLock';
 import ClassFormatStep from './class-checkout/ClassFormatStep';
 import ClassSelector from './class-checkout/ClassSelector';
 import ClassContactForm from './class-checkout/ClassContactForm';
@@ -35,6 +35,9 @@ export default function ClassCheckoutFlow({ onClose }) {
   // Lock the page behind the modal + stop page-level Lenis so the modal's own
   // scroll containers can take over the wheel.
   useScrollLock();
+  // Same as the booking sheet: full-screen flow with its own header, so the
+  // fixed site nav above it is only stealing height.
+  useHideSiteNav();
 
   // Check for success/cancel return from Stripe
   useEffect(() => {
@@ -155,13 +158,12 @@ export default function ClassCheckoutFlow({ onClose }) {
         onAnimationEnd={(e) => { if (e.animationName === 'slideUpSheet') e.currentTarget.style.willChange = 'auto'; }}
         style={{
           willChange: 'transform',
-          // Top-anchored + dynamic viewport height (dvh) so the sheet's header
-          // (back / ✕) always sits flush UNDER the nav and is never cropped —
-          // on mobile Safari 100vh overshoots the visible area and a
-          // bottom-anchored sheet used to get pushed up behind the nav.
+          // Full-height: the site nav is hidden while this flow is open
+          // (useHideSiteNav). Dynamic viewport height (dvh) rather than vh, since
+          // on mobile Safari 100vh overshoots the visible area and used to push
+          // the sheet's header (back / ✕) up out of sight.
           animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
-          marginTop: 'var(--nav-h, 52px)',
-          height: 'calc(100dvh - var(--nav-h, 52px))',
+          height: '100dvh',
           boxShadow: '0 -1px 0 rgba(212,160,176,0.3)',
         }}
         onClick={e => e.stopPropagation()}

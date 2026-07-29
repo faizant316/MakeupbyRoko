@@ -258,10 +258,10 @@ export default function ServicesPage() {
         }}
       >
 
-      {/* About — who is Roqia */}
-      <About />
-
-      {/* Services Grid */}
+      {/* Services Grid — deliberately the FIRST thing in the white panel.
+          About used to sit here, which meant a visitor scrolled a full hero plus
+          a full About section (roughly 2.2 screens on a phone) before reaching a
+          single service. The offer comes first now; her story follows it. */}
       <div id="services-grid" className="px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]">
         <div className="max-w-[1280px] mx-auto flex flex-col gap-6">
 
@@ -585,6 +585,11 @@ export default function ServicesPage() {
 
         </div>
       </div>
+
+      {/* About — who is Roqia. Sits after the services so her story supports the
+          "which one do I pick" moment instead of standing between the visitor
+          and the offer. */}
+      <About />
 
       {/* Before & After */}
       <BeforeAfterGallery />

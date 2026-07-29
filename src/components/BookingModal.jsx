@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { formatPhone } from '@/lib/phone';
-import { useScrollLock } from '@/lib/useScrollLock';
+import { useScrollLock, useHideSiteNav } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
 
@@ -299,6 +299,9 @@ export default function BookingModal({ service: initialService, onClose }) {
   // close (shared, reference-counted lock so a service-preview → booking-sheet
   // handoff never restarts the page scroller mid-flight). See useScrollLock.
   useScrollLock();
+  // Take the site nav off screen — this sheet is full-screen and has its own
+  // back / close, so the fixed bar above it was 52px of wasted height.
+  useHideSiteNav();
 
   const scrollRef = useRef(null);
   useModalLenis(scrollRef);
@@ -352,13 +355,13 @@ export default function BookingModal({ service: initialService, onClose }) {
         // it so it doesn't hold a layer for the modal's whole lifetime.
         onAnimationEnd={(e) => { if (e.animationName === 'slideUpSheet') e.currentTarget.style.willChange = 'auto'; }}
         style={{
-          // Top-anchored + dvh so the sticky header (back / ✕) is never cropped
-          // behind the nav on mobile (100vh/100% overshoot the visible area).
+          // Full-height: the site nav is hidden while this sheet is open
+          // (useHideSiteNav), so there is nothing left to offset around. dvh
+          // rather than vh/100% so iOS browser chrome never crops the header.
           animation: 'slideUpSheet 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
           willChange: 'transform',
           boxShadow: typeof window !== 'undefined' && window.innerWidth >= 640 ? 'inset 0 0 200px rgba(212,140,170,0.12), inset 100px 0 200px rgba(212,140,170,0.08), inset -100px 0 200px rgba(180,140,220,0.08), 0 -1px 0 rgba(212,160,176,0.35)' : undefined,
-          marginTop: 'var(--nav-h, 52px)',
-          height: 'calc(100dvh - var(--nav-h, 52px))',
+          height: '100dvh',
         }}
       >
         {/* Header — slim & sleek */}
@@ -450,8 +453,30 @@ export default function BookingModal({ service: initialService, onClose }) {
                 Lives inside the scroller (and outside the animated step body,
                 so it doesn't re-animate on every step) so it scrolls away
                 exactly like the bridal banner instead of staying pinned. */}
+            {/* Compact identity strip — MOBILE ONLY. Mirrors the bridal sheet:
+                which service, the price, the deposit, in one ~62px row instead
+                of the ~120px stacked block below. The sticky footer already
+                repeats the total, so this stays quiet. */}
             {step !== 'done' && (
-              <div className="flex-shrink-0 border-b px-6 sm:px-10 py-3.5" style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
+              <div className="sm:hidden flex items-center gap-3 px-4 py-2.5 border-b flex-shrink-0" style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.48rem] font-bold tracking-[0.2em] uppercase text-[#c2b4a6] leading-none mb-1">You're booking</p>
+                  <p className="font-serif text-[0.98rem] leading-tight text-[#2C1A14] truncate">{service.title}</p>
+                </div>
+                <div className="text-right flex-shrink-0 leading-tight">
+                  <p className="font-serif text-[0.95rem] text-[#111]">{service.price}</p>
+                  {/* Rendered verbatim — the stored value already carries its own
+                      wording (e.g. "$375 deposit"), so appending the word again
+                      is how you get "$375 deposit deposit". */}
+                  {service.deposit && (
+                    <p className="text-[0.55rem] text-[#b5a99a] uppercase tracking-[0.08em]">{service.deposit}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {step !== 'done' && (
+              <div className="hidden sm:block flex-shrink-0 border-b px-6 sm:px-10 py-3.5" style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
                 <div className="text-center mb-2.5">
                   <p className="text-[0.5rem] sm:text-[0.55rem] font-semibold tracking-[0.22em] uppercase text-[#c2b4a6]">You're booking</p>
                   <h2 className="font-serif text-[1.25rem] sm:text-[1.5rem] leading-tight text-[#2C1A14] mt-0.5">{service.title}</h2>
@@ -490,7 +515,7 @@ export default function BookingModal({ service: initialService, onClose }) {
 
               {/* ───────── STEP 1: DATE ───────── */}
               {step === 'date' && (
-                <div className="w-full max-w-[600px] lg:max-w-[720px] mx-auto px-6 lg:px-7 py-6 flex flex-col relative overflow-hidden">
+                <div className="w-full max-w-[600px] lg:max-w-[720px] mx-auto px-4 lg:px-7 py-4 lg:py-6 flex flex-col relative overflow-hidden">
                   {/* Soft glow background */}
                   <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.08] pointer-events-none"
                     style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
