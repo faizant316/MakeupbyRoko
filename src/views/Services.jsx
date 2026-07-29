@@ -355,11 +355,42 @@ export default function ServicesPage() {
 
           </div>
 
-          {/* Loading state */}
+          {/* Loading state.
+              Built to the real layout (section label, then a 3-up card grid on
+              desktop and a single card on mobile where the carousel shows one at
+              a time) so the services land where the placeholders were instead of
+              shoving the page down. The sweep and the per-card stagger live in
+              .skel / .skel-2 / .skel-3 in index.css. */}
           {servicesLoading && (
-            <div className="flex flex-col gap-5">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="rounded-2xl animate-pulse" style={{ height: '180px', background: '#f5f0ec' }} />
+            <div role="status" aria-label="Loading services" className="flex flex-col gap-8">
+              {[0, 1].map(section => (
+                <div key={section} className="flex flex-col gap-4">
+                  {/* Mirrors the "Bridal Services" / "Non-Bridal" label row */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-[3px] h-[14px] rounded-full flex-shrink-0" style={{ background: 'rgba(212,160,176,0.4)' }} />
+                    <div className="skel h-[9px] w-[110px] rounded-full" />
+                    <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/15 to-transparent" />
+                  </div>
+
+                  <div className="grid gap-5 grid-cols-1 lg:grid-cols-3">
+                    {[0, 1, 2].map(i => {
+                      const lag = i === 1 ? 'skel-2' : i === 2 ? 'skel-3' : '';
+                      return (
+                        <div
+                          key={i}
+                          className={`rounded-2xl border border-[#F0E8E3] bg-white overflow-hidden ${i > 0 ? 'hidden lg:block' : ''}`}
+                        >
+                          <div className={`skel ${lag} aspect-[4/3] w-full`} />
+                          <div className="p-4 flex flex-col gap-2.5">
+                            <div className={`skel ${lag} h-[13px] w-3/4 rounded-full`} />
+                            <div className={`skel ${lag} h-[9px] w-1/2 rounded-full`} />
+                            <div className={`skel ${lag} h-[11px] w-[64px] rounded-full mt-1`} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
           )}

@@ -307,6 +307,43 @@
   100% { transform: translateX(400%); opacity: 0; }
 }
 
+/* ── Skeletons ────────────────────────────────────────────────────────────────
+   A directional highlight travelling across a correctly-shaped placeholder, not
+   an opacity throb on a gray box. The throb is what makes a loading state look
+   like a stock template: it says "something is pulsing", where a sweep says
+   "content is arriving". Same left-to-right motion as everything else here.
+
+   Shape matters more than the animation. Because .skel blocks are built to the
+   real card's dimensions, the cards fade in exactly where the placeholders were
+   instead of shoving the page down as they land. */
+@keyframes skelSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(220%); }
+}
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: #F3EDE9;
+}
+.skel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.78) 50%, transparent 100%);
+  animation: skelSweep 1.5s var(--ease) infinite;
+}
+/* Staggered so the three cards read as a group filling in rather than three
+   unrelated things flashing in lockstep. */
+.skel-2::after { animation-delay: 0.12s; }
+.skel-3::after { animation-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skel::after { animation: none; width: 100%; opacity: 0.35; }
+}
+
 /* ── Stripe handoff ───────────────────────────────────────────────────────────
    The class flow hands the page off to Stripe, which means an unload we do not
    control and the longest wait anywhere on the site. One hairline crosses the
