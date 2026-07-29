@@ -204,7 +204,7 @@ export default function ClassCheckoutFlow({ onClose }) {
           <>
             <div
               className="flex-shrink-0 bg-white/95 backdrop-blur-sm flex justify-between items-center px-6 sm:px-10 py-4 sm:py-5"
-              style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}
+              style={{ borderBottom: '1px solid rgba(0,0,0,0.07)', position: 'relative' }}
             >
               <button onClick={() => setStep('details')}
                 className="flex items-center gap-2 text-[0.72rem] font-semibold tracking-[0.08em] uppercase text-[#D4A0B0] hover:text-[#b8849a] transition-colors">
@@ -217,8 +217,31 @@ export default function ClassCheckoutFlow({ onClose }) {
                 style={{ background: 'rgba(0,0,0,0.06)' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
+
+              {/* Handoff cue. This is the longest wait in any flow (the page is
+                  about to unload to Stripe), so it gets more than a busy button:
+                  one rose hairline crosses the header, once. It does NOT loop,
+                  because a looping bar reads as "stuck" while a single pass reads
+                  as "this is going somewhere". */}
+              {isRedirecting && (
+                <span aria-hidden className="pointer-events-none absolute left-0 right-0 bottom-0 h-[2px] overflow-hidden">
+                  <span
+                    className="block h-full w-1/3 rounded-full"
+                    style={{
+                      background: 'linear-gradient(90deg, transparent, #D4A0B0 50%, transparent)',
+                      animation: 'handoffSweep 0.9s cubic-bezier(0.4, 0, 0.2, 1) both',
+                    }}
+                  />
+                </span>
+              )}
             </div>
-            <div data-lenis-prevent className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Dimming the signed agreement behind the button makes the wait read
+                as a deliberate transition rather than a freeze, and makes a second
+                tap feel obviously pointless. */}
+            <div
+              data-lenis-prevent
+              className={`flex-1 overflow-y-auto overscroll-contain ${isRedirecting ? 'handoff-dim' : 'handoff-live'}`}
+            >
               <ContractSign
                 contract={classContract}
                 clientName={`${form.first_name} ${form.last_name}`.trim()}

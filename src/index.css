@@ -307,6 +307,31 @@
   100% { transform: translateX(400%); opacity: 0; }
 }
 
+/* ── Stripe handoff ───────────────────────────────────────────────────────────
+   The class flow hands the page off to Stripe, which means an unload we do not
+   control and the longest wait anywhere on the site. One hairline crosses the
+   header ONCE (no loop: a loop reads as stuck, a single pass reads as departure)
+   while the signed agreement behind it dims out of the way. */
+@keyframes handoffSweep {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(400%); opacity: 0; }
+}
+.handoff-dim {
+  opacity: 0.45;
+  filter: saturate(0.55);
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease), filter 0.35s var(--ease);
+}
+/* Named rather than left bare so the dim has something to transition back from
+   if the checkout call fails and the flow returns the client to the agreement. */
+.handoff-live {
+  opacity: 1;
+  filter: none;
+  transition: opacity 0.35s var(--ease), filter 0.35s var(--ease);
+}
+
 /* ── Busy button ──────────────────────────────────────────────────────────────
    The submit button IS the progress indicator. While a booking, inquiry, or
    review is saving, a rose sheen sweeps across the button's own surface (the same
