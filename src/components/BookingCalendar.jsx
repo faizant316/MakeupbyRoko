@@ -270,24 +270,33 @@ export default function BookingCalendar({
 
   return (
     <div className="relative z-10">
-      {/* Month nav */}
+      {/* Month nav.
+          The ‹ › steppers are DESKTOP ONLY. On a phone this strip was carrying six
+          separate chevrons within about 40px of each other (prev, month, year,
+          next, plus the focus toggle), which is what made the calendar read as
+          busy. Phones move months by swiping the grid — already the primary
+          gesture, and labelled below it — or by tapping the month name, so
+          dropping the steppers there costs nothing. */}
       <div className="flex items-center gap-1 pb-3 border-b border-gray-100">
         <button
           type="button"
           onClick={prevMonth}
           disabled={!canGoPrev}
           aria-label="Previous month"
-          className={`w-9 h-9 flex items-center justify-center transition-colors text-xl flex-shrink-0 ${
+          className={`hidden sm:flex w-9 h-9 items-center justify-center transition-colors text-xl flex-shrink-0 ${
             canGoPrev ? 'text-gray-300 hover:text-[#D4A0B0]' : 'text-gray-100 cursor-not-allowed'
           }`}
         >
           ‹
         </button>
 
+        {/* Month + year read as one control: only the year carries the chevron,
+            so the pair says "tap me" once instead of twice. */}
         <div className="flex-1 flex items-center justify-center gap-1 min-w-0">
           <CalendarNavSelect
             ariaLabel="Month"
             align="right"
+            hideChevron
             value={month}
             onChange={v => goToMonth(year, Number(v))}
             options={MONTHS.map((m, i) => ({ value: i, label: m }))}
@@ -306,7 +315,7 @@ export default function BookingCalendar({
           type="button"
           onClick={nextMonth}
           aria-label="Next month"
-          className="w-9 h-9 flex items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0"
+          className="hidden sm:flex w-9 h-9 items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0"
         >
           ›
         </button>
@@ -331,9 +340,11 @@ export default function BookingCalendar({
         )}
       </div>
 
-      {/* Month availability summary */}
-      {(summary.open + summary.filling + summary.full > 0) && (
-        <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
+      {/* Month availability summary. The swipe hint rides on the right of this
+          same row on mobile: with the ‹ › steppers gone it needs to sit near the
+          month name rather than under the legend (where the sticky footer often
+          cuts it off), and sharing this row costs no extra height. */}
+      <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
           {summary.open > 0 && (
             <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />{summary.open} open
@@ -349,8 +360,8 @@ export default function BookingCalendar({
               <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{summary.full} full
             </span>
           )}
-        </div>
-      )}
+        <span className="sm:hidden ml-auto text-[0.58rem] text-gray-300 tracking-[0.04em]">Swipe to change month</span>
+      </div>
 
       <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3">
         {WEEKDAYS.map(d => (
@@ -400,12 +411,6 @@ export default function BookingCalendar({
       {helperText && (
         <p className="text-center text-[0.66rem] text-gray-400 mt-3 leading-[1.6]">{helperText}</p>
       )}
-
-      {/* Swipe affordance — mobile only, and only where swiping is the fastest
-          way to move. Static rather than animated: it's a label, not a nudge. */}
-      <p className="sm:hidden text-center text-[0.6rem] text-gray-300 mt-2 tracking-[0.04em]">
-        Swipe the calendar to change months
-      </p>
     </div>
   );
 }

@@ -28,19 +28,18 @@ import { STUDIO_READY_VALUE } from '@/lib/studio';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
 import { BRIDAL_LEAD_DAYS, canAddParty, daysUntil } from '@/lib/bookingLeadTime';
 
-// The two-part bridal flow (plan it, then wear it). Rendered twice on step one:
-// the always-open desktop card and the collapsible mobile row. Defined once here
-// so the wording can never drift between the two.
+// The two-part bridal flow (plan it, then wear it). Desktop only — on a phone
+// step one carries the one-line version of this next to the lead-time note.
 const CONSULT_STEPS = [
   {
     n: 1,
     dot: '#CE9BAD',
-    body: <><strong className="text-[#3A2C26]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong> your date. In person or over a call, we plan your entire bridal look together.</>,
+    body: <><strong className="text-[#3A2C26]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong>, in person or over a call. We plan your whole look together.</>,
   },
   {
     n: 2,
     dot: '#E0BCC8',
-    body: <><strong className="text-[#3A2C26]">Your wedding day</strong>. I arrive and glam you flawlessly, exactly the way we planned.</>,
+    body: <><strong className="text-[#3A2C26]">Your wedding day</strong>. I arrive and glam you exactly as planned.</>,
   },
 ];
 
@@ -225,10 +224,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // the same thoughtfully-laid-out descriptor + Package Price line that Full Day has.
   const aboutTag = isFullDay ? 'Full Day Coverage' : isTrial ? 'Bridal Trial' : 'Wedding Day Look';
   const aboutBlurb = isFullDay
-    ? <>Roko stays with you from <strong>prep through ceremony</strong>, no rushing, no handoffs. Perfect for early start times, bridal switch looks, or venues over 1 hour from the studio.</>
+    ? <>Roko stays with you from <strong>prep through ceremony</strong>. Best for early starts, switch looks, or venues over an hour away.</>
     : isTrial
-    ? <>A full run-through of your bridal look before the big day, so everything is <strong>perfected ahead of time</strong>. Recommended 1 to 3 months before your wedding.</>
-    : <>Your <strong>wedding-day makeup</strong>, custom-designed for your features and built to last from your first look through the celebration.</>;
+    ? <>A full run-through of your bridal look <strong>before the big day</strong>. Best 1 to 3 months out.</>
+    : <>Your <strong>wedding-day makeup</strong>, designed for your features and built to last all day.</>;
 
   // Stable for the life of the sheet — a fresh Date on every render would make
   // the calendar re-derive everything (and re-bind its swipe listeners) whenever
@@ -238,9 +237,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const minDate = useMemo(() => getMinBookingDate(BRIDAL_LEAD_DAYS), []);
   const [calDate, setCalDate] = useState(() => new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
-  // Mobile-only: the "every bride gets a private consultation" detail starts
-  // folded so the calendar isn't pushed below the fold. Desktop renders it open.
-  const [consultOpen, setConsultOpen] = useState(false);
   // Mobile-only focus mode: fold everything except the calendar and the pinned
   // price + CTA, so picking a date is the only thing on screen. Jump the sheet
   // back to the top on either toggle — folding content out from ABOVE the
@@ -538,10 +534,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
           price, the deposit) in one ~68px row. The sticky footer repeats the
           price permanently, so this stays deliberately quiet. */}
       <div
-        className={`${calFocus && step === 'date' ? 'hidden' : 'flex sm:hidden'} items-center gap-3 px-4 py-2.5 border-b border-[#F2E6EC] flex-shrink-0`}
-        style={{ background: 'linear-gradient(180deg,#FFFFFF,#FDF9FA)' }}
+        className={`${calFocus && step === 'date' ? 'hidden' : 'flex sm:hidden'} items-center gap-3 px-4 py-2.5 border-b border-[#F5EDF1] flex-shrink-0 bg-white`}
       >
-        <img src="/IMG_9891.jpeg" alt="" aria-hidden="true" className="w-11 h-11 rounded-lg object-cover object-[center_30%] flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-[0.48rem] font-bold tracking-[0.2em] uppercase text-[#CE9BAD] leading-none mb-1">You're booking</p>
           <p className="font-serif text-[0.98rem] leading-tight text-[#2C1A14] truncate">{bridalTitle}</p>
@@ -656,63 +650,36 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
                 Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest {isTrial ? 'trial' : 'wedding'} date: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
+              {/* The consultation promise, folded into this note on mobile as a
+                  second quiet line. It used to be its own bordered pill with a
+                  dropdown chevron, which read as a control competing with the
+                  calendar's own arrows right below it. */}
+              {!isTrial && (
+                <p className="sm:hidden text-[0.72rem] leading-[1.5] text-[#9a918b] mt-1">
+                  Every bride gets a private consultation about a month before.
+                </p>
+              )}
             </div>
 
             {/* How bridal works — the private consultation is a real, required
-                step, so it has to be visible before she picks a date. On desktop
-                that's the full two-step card. On mobile it collapses to a single
-                tappable line: the promise still reads at a glance, and the ~130px
-                of detail only opens if she wants it. Two renders rather than one
-                stateful block so the desktop default stays open with no
-                client-only media query (and no hydration mismatch). */}
+                step, so it has to be visible before she picks a date. Desktop has
+                the room for the full two-step card; on mobile it's the one-line
+                note above instead, so nothing sits between the heading and the
+                calendar but plain text. */}
             {!isTrial && (
-              <>
-                {/* Desktop: always open */}
-                <div className="hidden sm:block relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
-                  <div className="flex items-center gap-2 px-3.5 pt-2.5 pb-2" style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)', borderBottom: '1px solid #F5E9EF' }}>
-                    <p className="text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD]">Every bride gets a private consultation</p>
-                  </div>
-                  <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white">
-                    {CONSULT_STEPS.map(({ n, dot, body }) => (
-                      <div key={n} className="flex items-start gap-2.5">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: dot }}>{n}</span>
-                        <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">{body}</p>
-                      </div>
-                    ))}
-                  </div>
+              <div className="hidden sm:block relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
+                <div className="flex items-center gap-2 px-3.5 pt-2.5 pb-2" style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)', borderBottom: '1px solid #F5E9EF' }}>
+                  <p className="text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD]">Every bride gets a private consultation</p>
                 </div>
-
-                {/* Mobile: collapsed by default */}
-                <div className="sm:hidden relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
-                  <button
-                    type="button"
-                    onClick={() => setConsultOpen(o => !o)}
-                    aria-expanded={consultOpen}
-                    className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left"
-                    style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)' }}
-                  >
-                    <span className="flex-1 text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD] leading-[1.4]">
-                      Every bride gets a private consultation
-                    </span>
-                    <svg
-                      viewBox="0 0 24 24" fill="none" stroke="#CE9BAD" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-                      className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-300 ${consultOpen ? 'rotate-180' : ''}`}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-                  {consultOpen && (
-                    <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white" style={{ borderTop: '1px solid #F5E9EF' }}>
-                      {CONSULT_STEPS.map(({ n, dot, body }) => (
-                        <div key={n} className="flex items-start gap-2.5">
-                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: dot }}>{n}</span>
-                          <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">{body}</p>
-                        </div>
-                      ))}
+                <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white">
+                  {CONSULT_STEPS.map(({ n, dot, body }) => (
+                    <div key={n} className="flex items-start gap-2.5">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: dot }}>{n}</span>
+                      <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">{body}</p>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </>
+              </div>
             )}
 
             </div>{/* end fold-in-focus-mode */}
@@ -733,7 +700,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               allowClosedDays
               focused={calFocus}
               onToggleFocus={toggleCalFocus}
-              helperText={`Any open day works for ${isTrial ? 'trials' : 'weddings'}, weekdays included. Dates in red are days Roko is away or fully booked. Tap a selected date again to clear it.`}
+              helperText="Weekdays included. Red dates are unavailable. Tap a date again to clear it."
             />
 
             {/* Below the calendar — also folded in focus mode. */}
@@ -828,7 +795,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <div className="min-w-0">
                   <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#C4849A] mb-0.5">Held at Roko's Studio</p>
                   <p className="text-[0.82rem] leading-[1.6] text-[#6E6058]">
-                    All trials take place at Roko's studio in <strong className="text-[#4A423E]">Mountain House</strong>. She'll share the exact address once your date is confirmed.
+                    Trials are at Roko's studio in <strong className="text-[#4A423E]">Mountain House</strong>. Exact address once your date is confirmed.
                   </p>
                 </div>
               </div>
@@ -873,7 +840,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time works best for you? *</label>
                   <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                    Your preferred start time for the trial. Roko confirms the final time and can move it with you if needed.
+                    Roko confirms the final time and can move it with you.
                   </p>
                 </div>
 
@@ -890,7 +857,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                     <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
                     <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
-                      You'll get a personal upload link to send recent photos of yourself <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without makeup</span>. These help Roko study your features and plan your look before the trial. You'll add them from that link, not here.
+                      You'll get a private upload link. Send one photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>, so Roko can plan your look. Nothing to upload here.
                     </p>
                   </div>
                 </div>
@@ -922,7 +889,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
               <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
               <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                Your preference for when you'd like your makeup finished. Roko sets the final timeline, but she'll plan around getting you ready by then.
+                When you want your makeup finished. Roko builds the timeline around it.
               </p>
             </div>
 
@@ -931,20 +898,20 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             {isFullDay ? (
               <div>
                 <label className={labelClass}>Where would you like to get ready? *</label>
-                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Wherever you'll be getting ready, hotel, home, or venue. Roko travels to you for full-day coverage, she doesn't do full days at her studio.</p>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Hotel, home, or venue. Roko travels to you for full days.</p>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
                 <div className="mt-3 relative pl-3.5">
                   <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                   <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
                   <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                    Roko travels to you and <strong style={{ color: '#4A423E' }}>travel is already included</strong> in the full-day price, so there's no separate travel fee to add. Your remaining balance is the package price minus your deposit, paid in cash on the day.
+                    <strong style={{ color: '#4A423E' }}>No separate travel fee</strong>, it's already in the full-day price. Your balance is the price minus your deposit, in cash on the day.
                   </p>
                 </div>
               </div>
             ) : (
               <div>
                 <label className={labelClass}>Where would you like to get ready? *</label>
-                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Wherever you'll be when Roko does your makeup, not necessarily the venue. Get ready at her studio, or she'll come to your hotel, home, or venue.</p>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Where Roko does your makeup, not necessarily the venue.</p>
                 <div className="flex gap-3 mt-1">
                   {[
                     { key: 'studio', title: "Roko's studio", sub: 'Mountain House' },
@@ -980,7 +947,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                       <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                       <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
                       <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                        On-location bookings include a <strong style={{ color: '#4A423E' }}>$200 local travel fee</strong>, added to your remaining balance and paid in cash on the day. Applies to locations within about an hour of Mountain House, CA.
+                        <strong style={{ color: '#4A423E' }}>$200</strong> within about an hour of Mountain House. Added to your balance, in cash on the day.
                       </p>
                     </div>
                   </div>
@@ -991,7 +958,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                     <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>You're all set</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                      You'll come to Roko's studio in Mountain House. She'll share the exact address once your date is confirmed.
+                      Roko's studio in Mountain House. Exact address once your date is confirmed.
                     </p>
                   </div>
                 )}
@@ -1014,7 +981,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
               <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
               <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                If your hairstylist isn't <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>, Roko plans her timing around when yours arrives. She doesn't glam at the same time as other hairstylists.
+                Roko won't glam at the same time as another hairstylist, so she works around when yours arrives. (Unless it's <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>.)
               </p>
             </div>
 
@@ -1036,7 +1003,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             {partyAllowed ? (
               <div>
                 <label className={labelClass}>Does your bridal party need glam too? *</label>
-                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mother of the bride &amp; more. Add-ons are available alongside your bridal makeup.</p>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mom, anyone else getting glammed with you.</p>
                 <div className="flex gap-3 mt-1">
                   {['No', 'Yes'].map(opt => {
                     const active = opt === 'Yes' ? form.bridal_party_glam === true : form.bridal_party_glam === false;
@@ -1105,7 +1072,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                 <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
                 <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
-                  You'll get a personal upload link to send recent photos of yourself <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without makeup</span>. These are required so Roko can study your features and hand-select the right products and techniques for your day. You'll add them from that link, not here.
+                  You'll get a private upload link. Send one photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>, so Roko can pick the right products for you. Required, but not on this form.
                 </p>
               </div>
             </div>
@@ -1148,7 +1115,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <div className="mt-3 bg-white border border-[#E2C4D2] rounded-xl p-4 flex flex-col gap-2">
                   <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-0.5">Out-of-State Requirements</p>
                   <p className="text-[0.75rem] text-[#555] leading-[1.7]">
-                    Roko loves destination events! For out-of-state bookings, the following are required and must be covered by the client:
+                    Roko loves destination events! You'd cover:
                   </p>
                   <ul className="flex flex-col gap-1.5 mt-1">
                     <li className="flex items-start gap-2 text-[0.75rem] text-[#444]">
@@ -1166,7 +1133,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   </ul>
                   <div className="mt-2 pt-2.5 border-t border-[#EDD5E2]">
                     <p className="text-[0.72rem] text-[#999]">
-                      For pricing & details on out-of-state bookings, email us at{' '}
+                      For pricing, email{' '}
                       <a href="mailto:roko@makeupbyroko.org" className="text-[#D4A0B0] hover:underline font-medium">roko@makeupbyroko.org</a>
                       {' '}or DM{' '}
                       <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer" className="text-[#D4A0B0] hover:underline font-medium">@makeupbyroko_</a>

@@ -301,8 +301,12 @@ export default function BookingModal({ service: initialService, onClose }) {
           // Step subtitle, shared by bridal (driven by bridalStep) and non-bridal (step)
           const activeStep = isBridal ? bridalStep : step;
           const isDone = activeStep === 'done';
+          // The header names the SERVICE, not the flow. "Bridal Inquiry" was the
+          // same three words on all three bridal forms, so once the identity strip
+          // scrolled away there was nothing on screen telling a bride whether she
+          // was in Full Day, Luxury, or the Trial.
           const title = isBridal
-            ? (isDone ? 'Request Sent!' : 'Bridal Inquiry')
+            ? (isDone ? 'Request Sent!' : (service?.title || 'Bridal Inquiry'))
             : (step === 'done' ? 'Request Sent!' : `Book: ${service.title}`);
           const subtitle = isDone ? null
             : isBridal
@@ -476,7 +480,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                       Bookable at least <strong className="text-[#444] font-semibold">1 month out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
                     </p>
                     <p className="text-[0.72rem] lg:text-[0.76rem] leading-[1.5] text-[#9a918b] mt-1">
-                      Roko keeps the next few weeks open for her brides, so non-bridal books a month ahead.
+                      Roko keeps the next few weeks open for brides.
                     </p>
                   </div>
 
@@ -508,7 +512,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                       </div>
                       <div>
                         <p className="text-[0.75rem] font-medium text-[#333] mb-1">What about the time?</p>
-                        <p className="text-[0.72rem] text-[#999] leading-[1.6]">Just pick a date. Roko will reach out to confirm your appointment time based on availability.</p>
+                        <p className="text-[0.72rem] text-[#999] leading-[1.6]">Just pick a date. Roko confirms your time.</p>
                       </div>
                     </div>
                   </div>
@@ -601,7 +605,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                           <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                           <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Early arrival · +$100</p>
                           <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                            Getting your look done before 7:00 AM includes a $100 early arrival fee, added to your total.
+                            Anything before 7:00 AM adds <strong style={{ color: '#4A423E' }}>$100</strong> to your total.
                           </p>
                         </div>
                       )}
@@ -616,7 +620,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                         placeholder="Select time"
                       />
                       <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                        This is your preference. Roko will do her best to have you ready by this time. Your actual appointment time will be confirmed separately.
+                        Your preference. Roko confirms the actual appointment time separately.
                       </p>
                     </div>
 
@@ -624,7 +628,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                     <div className="mt-4">
                       <label className={labelClass}>Do you need Roko to travel to you?</label>
                       <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mb-2 leading-[1.6]">
-                        By default, all appointments are held at Roko's studio. Select "Yes" only if you need her to come to your location.
+                        Appointments are at Roko's studio by default.
                       </p>
                       <div className="flex gap-3 mt-1">
                         {[{ label: 'Yes', value: true }, { label: 'No', value: false }].map(opt => (
@@ -649,7 +653,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                             <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                             <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel · bridal pricing $750+</p>
                             <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                              For non-bridal bookings that require Roko to travel to you, bridal pricing of $750+ applies. Roko will confirm the exact rate when she reaches out.
+                              Non-bridal bookings that need travel move to bridal pricing, <strong style={{ color: '#4A423E' }}>$750+</strong>. Roko confirms the exact rate.
                             </p>
                           </div>
 
@@ -664,7 +668,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                               placeholder="Address or venue, with city"
                             />
                             <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                              Roko's travel rate depends on how far she's going, so the city matters. An approximate address is fine for now.
+                              The city sets the rate. An approximate address is fine.
                             </p>
                           </div>
                         </>
