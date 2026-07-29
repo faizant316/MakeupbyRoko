@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CalendarNavSelect from './CalendarNavSelect';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
 
@@ -28,6 +28,22 @@ export function getMinBookingDate(days = BRIDAL_LEAD_DAYS) {
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+// The swipe track holds three months side by side (previous · current · next)
+// and is three viewports wide, so "one viewport" is 33.3333% of the track.
+// Resting position shows the middle panel.
+const BASE_X = 'translate3d(-33.3333%,0,0)';
+const PREV_X = 'translate3d(0%,0,0)';
+const NEXT_X = 'translate3d(-66.6667%,0,0)';
+// Short and hard-eased-out, so a released swipe lands rather than glides. New
+// touches are ignored for its duration (see onStart), which is why it stays well
+// under 300ms — long enough to read as motion, short enough that a second swipe
+// never feels dropped.
+const SETTLE = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)';
+
+// useLayoutEffect is the right hook for "fix the transform before the browser
+// paints", but React warns about it during SSR. Same hook, no warning.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 // Leading blanks to line the 1st up under its weekday, then one entry per day.
 function buildMonthGrid(year, month) {
@@ -141,38 +157,53 @@ export default function BookingCalendar({
   const year = value.getFullYear();
   const month = value.getMonth();
 
-  // 'forward' | 'back' — which way the month grid should slide in.
-  const [slideDir, setSlideDir] = useState('forward');
-  const gridRef = useRef(null);
+  const viewportRef = useRef(null);
+  const trackRef = useRef(null);
 
-  const days = useMemo(() => buildMonthGrid(year, month), [year, month]);
-
-  const states = useMemo(() => {
-    const out = new Map();
-    days.forEach(day => {
-      if (!day) return;
-      const key = dateKey(year, month, day.d);
-      out.set(key, dayState({
-        day, year, month, minDate, blockedSet, bookedDateMap,
-        maxPerDay: getMaxForDay(key), allowClosedDays,
-      }));
+  // Previous · current · next, all built up front so a swipe reveals a real
+  // month under the finger rather than empty space.
+  const panels = useMemo(() => {
+    const built = [-1, 0, 1].map(off => {
+      const d = new Date(year, month + off, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const days = buildMonthGrid(y, m);
+      const states = new Map();
+      days.forEach(day => {
+        if (!day) return;
+        const key = dateKey(y, m, day.d);
+        states.set(key, dayState({
+          day, year: y, month: m, minDate, blockedSet, bookedDateMap,
+          maxPerDay: getMaxForDay(key), allowClosedDays,
+        }));
+      });
+      return { y, m, key: `${y}-${m}`, days, states };
     });
-    return out;
-  }, [days, year, month, minDate, blockedSet, bookedDateMap, getMaxForDay, allowClosedDays]);
+
+    // Pad all three to the same row count. Months are 5 or 6 rows deep, and a
+    // track whose panels disagree would grow and shrink under the finger
+    // mid-swipe. Padding only to the tallest of the three (rather than always
+    // six) keeps the common 5-row case from carrying a permanent empty row.
+    const rows = Math.max(...built.map(p => Math.ceil(p.days.length / 7)));
+    built.forEach(p => { while (p.days.length < rows * 7) p.days.push(null); });
+    return built;
+  }, [year, month, minDate, blockedSet, bookedDateMap, getMaxForDay, allowClosedDays]);
+
+  const current = panels[1];
 
   // Month tally. Counts only Roko's regular open days, matching the dots.
   const summary = useMemo(() => {
     let open = 0, filling = 0, full = 0;
-    days.forEach(day => {
+    current.days.forEach(day => {
       if (!day) return;
-      const s = states.get(dateKey(year, month, day.d));
+      const s = current.states.get(dateKey(current.y, current.m, day.d));
       if (!s || s.isTooSoon || !AVAILABLE_DAYS.includes(day.date.getDay()) || s.isBlocked) return;
       if (s.isFull) full++;
       else if (s.isPartial) filling++;
       else open++;
     });
     return { open, filling, full };
-  }, [days, states, year, month]);
+  }, [current]);
 
   // Never navigate earlier than the first month that holds a bookable date —
   // there is nothing to see there, every day is greyed out.
@@ -182,105 +213,195 @@ export default function BookingCalendar({
   );
   const canGoPrev = year > floor.y || (year === floor.y && month > floor.m);
 
+  // Direct jump, no track animation. Used by the month/year dropdowns, which can
+  // land any distance away — there is no meaningful slide between June and next
+  // March, so those swap instantly.
   const goToMonth = useCallback((y, m) => {
-    // Normalise (month -1 / 12 roll over the year) then clamp to the floor.
     const target = new Date(y, m);
     const clamped = (target.getFullYear() < floor.y || (target.getFullYear() === floor.y && target.getMonth() < floor.m))
       ? new Date(floor.y, floor.m)
       : target;
-    const isForward = clamped.getFullYear() > year || (clamped.getFullYear() === year && clamped.getMonth() > month);
     if (clamped.getFullYear() === year && clamped.getMonth() === month) return;
-    setSlideDir(isForward ? 'forward' : 'back');
     onMonthChange(clamped);
   }, [floor, year, month, onMonthChange]);
 
-  const prevMonth = useCallback(() => goToMonth(year, month - 1), [goToMonth, year, month]);
-  const nextMonth = useCallback(() => goToMonth(year, month + 1), [goToMonth, year, month]);
+  // ── Swipe / step animation ────────────────────────────────────────────────
+  // The track is moved directly on the DOM node, never through React state: a
+  // setState per touchmove would re-render 30-odd day buttons on every frame of
+  // the drag, which is exactly what made the old threshold-based swipe feel
+  // stiff. React only hears about it once, when the month actually changes.
+  //
+  // A commit is two beats: animate the track to the neighbour panel, then (once
+  // that lands) tell the parent about the new month and snap the track back to
+  // centre in the same layout pass. The panel under the finger and the panel
+  // that ends up centred hold identical content, so the snap is invisible.
+  const commitRef = useRef(null);   // 'next' | 'prev' while an animation is in flight
+  const fallbackRef = useRef(null);
+  const commitFnRef = useRef(() => {});
 
-  // ── Swipe between months ──────────────────────────────────────────────────
+  // Reassigned every render so the timer/transition callbacks always commit from
+  // the month that is current NOW, not the one captured when the drag started.
+  commitFnRef.current = () => {
+    const dir = commitRef.current;
+    if (!dir) return;
+    clearTimeout(fallbackRef.current);
+    onMonthChange(new Date(year, month + (dir === 'next' ? 1 : -1)));
+  };
+
+  const settle = useCallback((dir) => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.style.animation = 'none';   // cancel the first-run nudge if it's mid-flight
+    track.style.transition = SETTLE;
+    if (!dir) { track.style.transform = BASE_X; return; }
+    commitRef.current = dir;
+    track.style.transform = dir === 'next' ? NEXT_X : PREV_X;
+    // Belt and braces: if transitionend never arrives (element hidden mid-swipe,
+    // reduced-motion killing the transition) the calendar would otherwise jam
+    // with commitRef stuck set and every further gesture ignored.
+    clearTimeout(fallbackRef.current);
+    fallbackRef.current = setTimeout(() => commitFnRef.current(), 460);
+  }, []);
+
+  const handleTrackTransitionEnd = (e) => {
+    if (e.target !== trackRef.current || e.propertyName !== 'transform') return;
+    commitFnRef.current();
+  };
+
+  // Runs before paint, so the track is already back at centre by the time the
+  // new month's panels are drawn — no flash of the wrong month.
+  useIsoLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track || !commitRef.current) return;
+    commitRef.current = null;
+    track.style.transition = 'none';
+    track.style.transform = BASE_X;
+  }, [year, month]);
+
+  useEffect(() => () => clearTimeout(fallbackRef.current), []);
+
+  const stepMonth = useCallback((dir) => {
+    if (commitRef.current) return;
+    if (dir === 'prev' && !canGoPrev) return;
+    settle(dir);
+  }, [canGoPrev, settle]);
+
+  // ── Drag ──────────────────────────────────────────────────────────────────
   // Attached natively (not via React's onTouchMove) because React registers
   // touchmove as a PASSIVE listener on its root, and a passive listener cannot
   // preventDefault. Without that call, a horizontal drag would scroll the sheet
-  // vertically at the same time as changing the month.
+  // vertically at the same time as dragging the month.
   //
-  // The axis is locked once, on the first ~8px of movement, and horizontal has
-  // to beat vertical by 1.4x to win. That bias matters: this grid lives in a
-  // tall scrolling sheet, and a slightly-diagonal flick should still scroll the
-  // page rather than silently jumping the month.
+  // The axis is locked once, within the first ~6px, and horizontal has to beat
+  // vertical by 1.2x to win. That bias matters: this grid lives in a tall
+  // scrolling sheet, and a slightly-diagonal flick should still scroll the page.
   //
-  // The handlers read the current month navigation through a ref and the effect
-  // runs ONCE. Depending on the callbacks directly would tear the listeners down
-  // and rebuild them on every re-render, and a re-render landing mid-gesture
-  // (a capacity query resolving, say) would drop the in-progress touch on the
-  // floor and silently swallow the swipe.
-  const navRef = useRef(null);
-  navRef.current = { next: nextMonth, prev: prevMonth, canPrev: canGoPrev };
+  // Handlers read live values through refs and the effect runs ONCE. Depending
+  // on the callbacks directly would tear the listeners down and rebuild them on
+  // every re-render, and a re-render landing mid-gesture (a capacity query
+  // resolving, say) would drop the in-progress touch on the floor.
+  const liveRef = useRef({ canPrev: true });
+  liveRef.current.canPrev = canGoPrev;
 
   useEffect(() => {
-    const el = gridRef.current;
-    if (!el) return;
-    let touch = null;
+    const vp = viewportRef.current;
+    const track = trackRef.current;
+    if (!vp || !track) return;
+    let drag = null;
 
     const onStart = (e) => {
-      if (e.touches.length !== 1) { touch = null; return; }
-      touch = { x: e.touches[0].clientX, y: e.touches[0].clientY, axis: null };
+      if (commitRef.current) return;          // still landing the last swipe
+      if (e.touches.length !== 1) { drag = null; return; }
+      track.style.animation = 'none';
+      track.style.transition = 'none';        // from here the track tracks the thumb 1:1
+      const t = e.touches[0];
+      drag = { x0: t.clientX, y0: t.clientY, axis: null, dx: 0, lastX: t.clientX, lastT: e.timeStamp, v: 0 };
     };
 
     const onMove = (e) => {
-      if (!touch || e.touches.length !== 1) return;
-      const dx = e.touches[0].clientX - touch.x;
-      const dy = e.touches[0].clientY - touch.y;
-      if (touch.axis === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-        touch.axis = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'x' : 'y';
+      if (!drag || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - drag.x0;
+      const dy = t.clientY - drag.y0;
+
+      if (drag.axis === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        drag.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
       }
-      if (touch.axis === 'x' && e.cancelable) e.preventDefault();
+      if (drag.axis !== 'x') return;
+      if (e.cancelable) e.preventDefault();
+
+      const w = vp.offsetWidth || 1;
+      // Dragging back past the earliest bookable month has nothing real behind
+      // it, so it rubber-bands instead of revealing a month of dead dates.
+      let shift = dx > 0 && !liveRef.current.canPrev ? dx * 0.22 : dx;
+      shift = Math.max(-w, Math.min(w, shift));
+      drag.dx = shift;
+
+      const dt = e.timeStamp - drag.lastT;
+      if (dt > 0) drag.v = (t.clientX - drag.lastX) / dt;
+      drag.lastX = t.clientX;
+      drag.lastT = e.timeStamp;
+
+      track.style.transform = `translate3d(calc(-33.3333% + ${shift}px),0,0)`;
     };
 
-    const onEnd = (e) => {
-      const t = touch;
-      touch = null;
-      if (!t || t.axis !== 'x') return;
-      const dx = e.changedTouches[0].clientX - t.x;
-      if (Math.abs(dx) < 45) return; // too small to be deliberate
-      const nav = navRef.current;
-      if (dx < 0) nav.next();
-      else if (nav.canPrev) nav.prev();
+    const onEnd = () => {
+      const d = drag;
+      drag = null;
+      if (!d || d.axis !== 'x') return;
+      const w = vp.offsetWidth || 1;
+      // Either drag it a fifth of the way across, or flick it. The flick path is
+      // what makes a short, fast swipe work the way a phone user expects.
+      const far = Math.abs(d.dx) > w * 0.2;
+      const flick = Math.abs(d.v) > 0.35 && Math.abs(d.dx) > 18;
+      if (!far && !flick) { settle(null); return; }
+      if (d.dx < 0) settle('next');
+      else if (liveRef.current.canPrev) settle('prev');
+      else settle(null);
     };
 
-    el.addEventListener('touchstart', onStart, { passive: true });
-    el.addEventListener('touchmove', onMove, { passive: false });
-    el.addEventListener('touchend', onEnd, { passive: true });
-    el.addEventListener('touchcancel', onEnd, { passive: true });
+    vp.addEventListener('touchstart', onStart, { passive: true });
+    vp.addEventListener('touchmove', onMove, { passive: false });
+    vp.addEventListener('touchend', onEnd, { passive: true });
+    vp.addEventListener('touchcancel', onEnd, { passive: true });
     return () => {
-      el.removeEventListener('touchstart', onStart);
-      el.removeEventListener('touchmove', onMove);
-      el.removeEventListener('touchend', onEnd);
-      el.removeEventListener('touchcancel', onEnd);
+      vp.removeEventListener('touchstart', onStart);
+      vp.removeEventListener('touchmove', onMove);
+      vp.removeEventListener('touchend', onEnd);
+      vp.removeEventListener('touchcancel', onEnd);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settle]);
+
+  // One-time nudge on phones: the grid slides a little and comes back, which
+  // says "this moves" faster than any label can. Only on a coarse pointer, only
+  // once per mount, and never when the visitor has asked for less motion.
+  const [nudge, setNudge] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const on = setTimeout(() => setNudge(true), 600);
+    const off = setTimeout(() => setNudge(false), 2400);
+    return () => { clearTimeout(on); clearTimeout(off); };
   }, []);
 
-  const handlePick = useCallback((day) => {
-    if (!day) return;
-    const key = dateKey(year, month, day.d);
-    const s = states.get(key);
+  const pick = useCallback((panel, day) => {
+    const key = dateKey(panel.y, panel.m, day.d);
+    const s = panel.states.get(key);
     if (!s || s.disabled) return;
     onSelectDate(selectedDate === key ? null : key); // tap again to clear
-  }, [year, month, states, selectedDate, onSelectDate]);
+  }, [selectedDate, onSelectDate]);
 
   return (
     <div className="relative z-10">
       {/* Month nav.
-          The ‹ › steppers are DESKTOP ONLY. On a phone this strip was carrying six
-          separate chevrons within about 40px of each other (prev, month, year,
-          next, plus the focus toggle), which is what made the calendar read as
-          busy. Phones move months by swiping the grid — already the primary
-          gesture, and labelled below it — or by tapping the month name, so
-          dropping the steppers there costs nothing. */}
+          The ‹ › steppers are DESKTOP ONLY. On a phone this strip was carrying
+          six separate chevrons within about 40px of each other, which is what
+          made the calendar read as busy; phones swipe instead. */}
       <div className="flex items-center gap-1 pb-3 border-b border-gray-100">
         <button
           type="button"
-          onClick={prevMonth}
+          onClick={() => stepMonth('prev')}
           disabled={!canGoPrev}
           aria-label="Previous month"
           className={`hidden sm:flex w-9 h-9 items-center justify-center transition-colors text-xl flex-shrink-0 ${
@@ -313,7 +434,7 @@ export default function BookingCalendar({
 
         <button
           type="button"
-          onClick={nextMonth}
+          onClick={() => stepMonth('next')}
           aria-label="Next month"
           className="hidden sm:flex w-9 h-9 items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0"
         >
@@ -340,11 +461,9 @@ export default function BookingCalendar({
         )}
       </div>
 
-      {/* Month availability summary. The swipe hint rides on the right of this
-          same row on mobile: with the ‹ › steppers gone it needs to sit near the
-          month name rather than under the legend (where the sticky footer often
-          cuts it off), and sharing this row costs no extra height. */}
-      <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
+      {/* Month availability summary */}
+      {(summary.open + summary.filling + summary.full > 0) && (
+        <div className="flex items-center gap-2 flex-wrap mt-3 mb-2">
           {summary.open > 0 && (
             <span className="flex items-center gap-1.5 text-[0.6rem] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />{summary.open} open
@@ -360,10 +479,25 @@ export default function BookingCalendar({
               <span className="w-1.5 h-1.5 rounded-full bg-red-300 inline-block" />{summary.full} full
             </span>
           )}
-        <span className="sm:hidden ml-auto text-[0.58rem] text-gray-300 tracking-[0.04em]">Swipe to change month</span>
+        </div>
+      )}
+
+      {/* Swipe cue — mobile only, sitting directly on top of the grid it
+          describes. The old version was 0.58rem grey text tucked at the end of a
+          row and nobody saw it; this one is centred, in the accent colour, and
+          its chevrons drift outward so it reads as a gesture rather than a
+          caption. Pairs with the one-time nudge of the grid itself. */}
+      <div className="sm:hidden flex items-center justify-center gap-2 mt-3 mb-0.5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="cal-cue-l w-3 h-3 text-[#D4A0B0]">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#c9a4b2]">Swipe to change month</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="cal-cue-r w-3 h-3 text-[#D4A0B0]">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-3 mb-3">
         {WEEKDAYS.map(d => (
           <div key={d} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
         ))}
@@ -371,24 +505,39 @@ export default function BookingCalendar({
 
       {/* touchAction pan-y tells the browser this area scrolls vertically only,
           so a horizontal drag is ours to interpret. */}
-      <div ref={gridRef} style={{ touchAction: 'pan-y' }}>
+      <div ref={viewportRef} className="overflow-hidden" style={{ touchAction: 'pan-y' }}>
         <div
-          key={`${year}-${month}`}
-          style={{ animation: `${slideDir === 'back' ? 'stepInLeft' : 'stepInRight'} 0.28s cubic-bezier(0.22, 1, 0.36, 1)` }}
-          className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center justify-items-center"
+          ref={trackRef}
+          onTransitionEnd={handleTrackTransitionEnd}
+          className="flex"
+          style={{
+            width: '300%',
+            transform: BASE_X,
+            willChange: 'transform',
+            animation: nudge ? 'calSwipeNudge 1.25s cubic-bezier(0.4,0,0.2,1) 1' : undefined,
+          }}
         >
-          {days.map((day, idx) => !day
-            ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
-            : (
-              <CalDay
-                key={dateKey(year, month, day.d)}
-                day={day}
-                state={states.get(dateKey(year, month, day.d))}
-                selectedDate={selectedDate}
-                onPick={handlePick}
-              />
-            )
-          )}
+          {panels.map((p, i) => (
+            // Only the centred month is tappable. The neighbours are off-screen
+            // except mid-drag, where a stray tap would otherwise select a date in
+            // a month the visitor isn't actually looking at.
+            <div key={p.key} className="w-1/3 flex-shrink-0" style={{ pointerEvents: i === 1 ? 'auto' : 'none' }}>
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center justify-items-center">
+                {p.days.map((day, idx) => !day
+                  ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
+                  : (
+                    <CalDay
+                      key={dateKey(p.y, p.m, day.d)}
+                      day={day}
+                      state={p.states.get(dateKey(p.y, p.m, day.d))}
+                      selectedDate={selectedDate}
+                      onPick={(d) => pick(p, d)}
+                    />
+                  )
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

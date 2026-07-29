@@ -230,6 +230,7 @@ export default function ClassCheckoutFlow({ onClose }) {
                 clientName={`${form.first_name} ${form.last_name}`.trim()}
                 submitting={isRedirecting}
                 ctaLabel="Sign & Continue to Payment"
+                busyLabel="Taking you to secure checkout…"
                 onSign={handleCheckout}
               />
             </div>

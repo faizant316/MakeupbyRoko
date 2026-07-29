@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { PLUM } from '../../src/components/class-checkout/classTheme';
+import BrandLoader from '../../src/components/BrandLoader';
 
 const STORAGE_KEY = 'roko_class_checkout';
 
@@ -59,15 +60,11 @@ export default function PaymentSuccessPage() {
   const isOnline = data?.format === 'online';
   const isInPerson = data?.format === 'in_person';
 
+  // Verifying the Stripe session is the one moment a paying client is left
+  // waiting with money already gone, so it gets the branded loader rather than a
+  // bare spinner.
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 rounded-full animate-spin" style={{ borderColor: PLUM.pink, borderTopColor: 'transparent' }} />
-          <p className="text-[0.85rem]" style={{ color: PLUM.plum }}>Confirming your payment…</p>
-        </div>
-      </div>
-    );
+    return <BrandLoader caption="Confirming your payment" />;
   }
 
   if (status === 'error') {
