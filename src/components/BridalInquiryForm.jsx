@@ -650,16 +650,20 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
                 Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest {isTrial ? 'trial' : 'wedding'} date: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
-              {/* The consultation promise, folded into this note on mobile as a
-                  second quiet line. It used to be its own bordered pill with a
-                  dropdown chevron, which read as a control competing with the
-                  calendar's own arrows right below it. */}
-              {!isTrial && (
-                <p className="sm:hidden text-[0.72rem] leading-[1.5] text-[#9a918b] mt-1">
-                  Every bride gets a private consultation about a month before.
-                </p>
-              )}
             </div>
+
+            {/* The consultation promise still has to reach a bride before she
+                picks a date, but on a phone it's one quiet ✦ line rather than
+                the bordered, gradient-filled dropdown it used to be — that read
+                as a control competing with the calendar right below it, and ate
+                the room the calendar needed. Same ✦ idiom as "What's Included"
+                further down, so it sits with the page instead of shouting. */}
+            {!isTrial && (
+              <p className="sm:hidden relative z-10 flex items-start gap-1.5 text-[0.72rem] leading-[1.55] text-[#9a918b]">
+                <span className="text-[#D4A0B0] text-[0.6rem] mt-[0.2rem] flex-shrink-0">✦</span>
+                <span>Every bride gets a <span className="text-[#6E6660] font-medium">private consultation</span> about a month before her date.</span>
+              </p>
+            )}
 
             {/* How bridal works — the private consultation is a real, required
                 step, so it has to be visible before she picks a date. Desktop has
@@ -1166,6 +1170,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               clientName={`${form.bride_name} ${form.soon_to_be_last_name}`.trim()}
               submitting={submitting}
               ctaLabel="Sign & Submit Bridal Inquiry"
+              busyLabel="Sending your inquiry…"
               onSign={handleSubmit}
             />
           </div>

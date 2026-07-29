@@ -726,6 +726,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                   clientName={`${formData.fname} ${formData.lname}`.trim()}
                   submitting={submitting}
                   ctaLabel="Sign & Confirm Booking"
+                  busyLabel="Confirming your booking…"
                   onSign={handleSubmit}
                 />
               )}

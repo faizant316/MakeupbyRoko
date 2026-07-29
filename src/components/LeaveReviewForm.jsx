@@ -281,7 +281,7 @@ export default function LeaveReviewForm() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-[#e0d6cf] text-[0.78rem] text-[#8a7f78] hover:border-[#D4A0B0] hover:text-[#D4A0B0] transition-all disabled:opacity-60"
           >
             {photoUploading ? (
-              <span className="w-4 h-4 border-2 border-[#D4A0B0] border-t-transparent rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
+              <span className="inline-sweep" />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
@@ -294,12 +294,20 @@ export default function LeaveReviewForm() {
           onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} />
       </div>
 
+      {/* Busy state keeps the button dark and sweeps a sheen across it instead of
+          dimming to 60% opacity, which read as "disabled" rather than "working". */}
       <button
         type="submit"
         disabled={submitting}
-        className="w-full py-3.5 rounded-lg text-[0.8rem] font-medium tracking-[0.04em] bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.18)] active:scale-[0.98] transition-all disabled:opacity-60"
+        className={`w-full py-3.5 rounded-lg text-[0.8rem] font-medium tracking-[0.04em] bg-[#111] text-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all ${
+          submitting
+            ? 'btn-busy'
+            : 'hover:bg-[#222] hover:shadow-[0_6px_24px_rgba(0,0,0,0.18)] active:scale-[0.98]'
+        }`}
       >
-        {submitting ? 'Submitting…' : 'Submit Review ✦'}
+        <span key={submitting ? 'busy' : 'idle'} className="btn-busy-label relative z-[1]">
+          {submitting ? 'Posting your review…' : 'Submit Review ✦'}
+        </span>
       </button>
       <p className="text-[0.65rem] text-center text-gray-400">Reviews are moderated before appearing on the site</p>
     </form>

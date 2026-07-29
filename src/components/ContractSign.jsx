@@ -10,8 +10,17 @@ import { useState } from 'react';
 //   clientName  - prefill for the signature field (they can edit)
 //   submitting  - disables the button while the booking is saving
 //   ctaLabel    - button text (default "Sign & Confirm Booking")
+//   busyLabel   - button text while submitting; say what is happening, since this
+//                 is the longest wait in the flow (money + a date are on the line)
 //   onSign      - ({ name, photoConsent, signedAt, version }) => void
-export default function ContractSign({ contract, clientName = '', submitting = false, ctaLabel = 'Sign & Confirm Booking', onSign }) {
+export default function ContractSign({
+  contract,
+  clientName = '',
+  submitting = false,
+  ctaLabel = 'Sign & Confirm Booking',
+  busyLabel = 'Submitting…',
+  onSign,
+}) {
   const [name, setName] = useState(clientName || '');
   const [photoConsent, setPhotoConsent] = useState(null); // null | true | false
   const [agreed, setAgreed] = useState(false);
@@ -152,17 +161,26 @@ export default function ContractSign({ contract, clientName = '', submitting = f
         </span>
       </button>
 
+      {/* While saving, the button keeps its dark treatment and becomes its own
+          progress indicator via .btn-busy (a rose sheen sweeping across it).
+          Falling through to the gray disabled style here would read as "broken"
+          at the exact moment the client is waiting on us. The label sits above
+          the sheen (z-[1]) and is re-keyed so it crossfades instead of popping. */}
       <button
         type="button"
         onClick={submit}
         disabled={!canSign}
         className={`w-full py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.04em] transition-all ${
-          canSign
-            ? 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          submitting
+            ? 'btn-busy bg-[#111] text-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
+            : canSign
+              ? 'bg-[#111] text-white hover:bg-[#222] shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         }`}
       >
-        {submitting ? 'Submitting…' : ctaLabel}
+        <span key={submitting ? 'busy' : 'idle'} className="btn-busy-label relative z-[1]">
+          {submitting ? busyLabel : ctaLabel}
+        </span>
       </button>
       {!canSign && !submitting && (
         <p className="text-[0.66rem] text-gray-400 text-center mt-2">
