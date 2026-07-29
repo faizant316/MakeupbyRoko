@@ -43,7 +43,9 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
     (bookings || []).forEach(b => {
       if (b.status === 'cancelled') return;
       if (b.date === todayKey) {
-        appts.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', status: b.status || 'pending', onClick: () => onSelectBooking?.(b) });
+        // Where she's going belongs on today's card more than anywhere else:
+        // this is the view she checks before leaving the house.
+        appts.push({ id: `a-${b.id}`, time: b.time, name: b.name || 'Client', label: b.service || 'Appointment', location: b.location_city || b.location || '', status: b.status || 'pending', onClick: () => onSelectBooking?.(b) });
       }
       if (b.consultation_date === todayKey) {
         const joinUrl = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1] || '';
@@ -152,6 +154,14 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{item.name}</p>
                       <p className="text-[0.7rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{item.label}</p>
+                      {item.location && (
+                        <p className="flex items-center gap-1 text-[0.68rem] truncate mt-0.5" style={{ color: dm ? '#8fb3d9' : '#6a7f99' }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-2.5 h-2.5 flex-shrink-0">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          <span className="truncate">{item.location}</span>
+                        </p>
+                      )}
                     </div>
                     {canJoin && (
                       <button

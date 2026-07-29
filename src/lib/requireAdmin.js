@@ -20,6 +20,15 @@ export async function requireAdmin() {
   }
 }
 
+// True when the caller is a signed-in admin, without turning anyone away.
+// For routes that are public by design but should relax a client-facing rule
+// for Roko — she books walk-ins and squeezes people in, and no lead-time rule
+// meant for the public calendar should ever stop her own admin from doing that.
+export async function isAdminRequest() {
+  const { session } = await requireAdmin();
+  return !!session;
+}
+
 // Allowed image MIME types and max size for uploads
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB

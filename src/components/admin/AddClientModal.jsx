@@ -95,7 +95,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
     first_name: '', last_name: '', email: '', phone: '', service: '', date: '', time: '',
     notes: '', status: 'confirmed', deposit_received: false, notify: false,
   });
-  const [nb, setNb] = useState({ ready_by_time: '', early_arrival: null, travel_requested: null });
+  const [nb, setNb] = useState({ ready_by_time: '', early_arrival: null, travel_requested: null, location: '' });
   const [bridal, setBridal] = useState({
     event_start_time: '', venue_access_time: '', ready_by_time: '', makeup_ready_by_time: '',
     photographer_arrival_time: '', bridal_party_glam: null, num_people_glam: '',
@@ -110,6 +110,8 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
   const isBridal = category === 'bridal';
   const isClass = category === 'lessons';
   const isNonBridal = !!form.service && !isBridal && !isClass;
+  // Whichever branch of the form is showing, one address ends up on the booking.
+  const location = (isBridal ? bridal.event_location : nb.location)?.trim() || '';
   const isFullDay = /full.?day/i.test(form.service);
   const isTrial = /trial/i.test(form.service);
   const dateNounCap = isTrial ? 'Trial' : 'Wedding';
@@ -296,6 +298,10 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           name: fullName, email: form.email.trim(), phone: form.phone,
           service: form.service, date: form.date || null, time: form.time || null,
           notes: buildNotes(), status: form.status, deposit_received: form.deposit_received,
+          // A bride's address is captured on her inquiry below, so mirror it onto
+          // the booking too — the appointments list reads the booking, and a
+          // bride added by hand should show a location like everyone else.
+          ...(location ? { location } : {}),
         }),
       });
       const booking = await bookingRes.json();
@@ -548,6 +554,14 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
                   <YesNo value={nb.travel_requested} onChange={v => setN('travel_requested', v)} dm={dm} yes="Yes" no="No" />
                 </div>
               </div>
+              {/* Only once she's said she's travelling, since the address is
+                  meaningless for a studio appointment. */}
+              {nb.travel_requested === true && (
+                <div>
+                  <label style={labelStyle}>Where are you going?</label>
+                  <LocationAutocomplete value={nb.location} onChange={v => setN('location', v)} placeholder="Address or venue" />
+                </div>
+              )}
             </>
           )}
 

@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CalendarNavSelect from './CalendarNavSelect';
+import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
 
 // One calendar for every public booking flow.
 //
@@ -18,12 +19,11 @@ export const AVAILABLE_DAYS = [0, 2, 3, 5, 6];
 const pad = (n) => String(n).padStart(2, '0');
 export const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
-// Nothing is bookable inside two weeks.
-export function getMinBookingDate() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 14);
-  return d;
+// How far out a flow can book is NOT a property of the calendar — bridal and
+// non-bridal deliberately differ now (see src/lib/bookingLeadTime.js). Each
+// flow passes its own window in; the calendar just draws what it's told.
+export function getMinBookingDate(days = BRIDAL_LEAD_DAYS) {
+  return leadDate(days);
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

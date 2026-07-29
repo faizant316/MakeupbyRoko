@@ -3,6 +3,8 @@ import { lenisStop, lenisStart } from '@/lib/lenis';
 import { formatPhone } from '@/lib/phone';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { cityFromLocation } from '@/lib/location';
 
 const TIMES = [
   '4:00 AM', '4:30 AM', '5:00 AM', '5:30 AM',
@@ -45,8 +47,16 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
     notes: booking.notes || '',
     status: booking.status || 'pending',
     deposit_received: booking.deposit_received || false,
+    location: booking.location || '',
   });
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  // Keep the city derived from the address rather than editable on its own —
+  // two fields that can disagree is how a row ends up saying "Fremont" next to
+  // a Hayward street.
+  const set = (k, v) => setForm(f => (
+    k === 'location'
+      ? { ...f, location: v, location_city: cityFromLocation(v) }
+      : { ...f, [k]: v }
+  ));
 
   // Lock the page behind the modal. Lenis owns scrolling site-wide, so
   // overflow:hidden alone won't stop the wheel — pause Lenis too (this is what
@@ -201,6 +211,17 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
           <div>
             <label style={labelStyle}>Appointment Time Window</label>
             <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIMES} dm={dm} accent="#D4A0B0" />
+          </div>
+
+          {/* LOCATION — editable so Roko can correct an imported address or add
+              one the client gave her over text, which is where most of them
+              actually arrive. Blank means the studio. */}
+          <Section>Client Location</Section>
+          <div>
+            <LocationAutocomplete value={form.location} onChange={v => set('location', v)} placeholder="Address or venue (leave blank for studio)" />
+            <p className="text-[0.72rem] mt-2" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+              Shows on the appointment list so you can see where you're going without opening the card.
+            </p>
           </div>
 
           {/* NOTES */}

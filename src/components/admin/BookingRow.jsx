@@ -27,6 +27,19 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       : (dm ? '#a1a1aa' : '#83838d');
   const mutedColor = dm ? '#71717a' : '#9c9ca4';
 
+  // Travel bookings carry an address (0015); brides who filled in the site form
+  // carry a get-ready location on their inquiry, passed down as `location` by
+  // whichever list is rendering us. City first, then the street, so scanning a
+  // day tells her where she is going before it tells her the house number.
+  const locationCity = booking.location_city;
+  // First segment of the address is the street, which is all that fits and all
+  // that adds anything once the city is already shown.
+  const locationStreet = booking.location?.split(',')[0]?.trim();
+  const locationLine = locationCity && locationStreet && locationStreet !== locationCity
+    ? `${locationCity} · ${locationStreet}`
+    : locationCity || locationStreet || null;
+  const locationColor = dm ? '#8fb3d9' : '#6a7f99';
+
   const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
   const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
 
@@ -128,6 +141,19 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
           {booking.service || 'Service not set'}
         </p>
+        {/* Where she's driving, on the row itself. Before this the only way to
+            find out was opening the card, which is useless for the actual
+            question she asks the list: can these two jobs fit in one day.
+            City leads because that is what decides it; the street follows for
+            the days she is packing the car. */}
+        {locationLine && (
+          <p className="flex items-start gap-1.5 text-[0.7rem] mt-1" style={{ color: locationColor }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-2.5 h-2.5 flex-shrink-0 mt-[3px]">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span className="truncate">{locationLine}</span>
+          </p>
+        )}
         {depositTint && (
           <p
             className="flex items-center gap-1.5 text-[0.7rem] mt-1"

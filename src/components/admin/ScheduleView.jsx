@@ -111,6 +111,9 @@ export default function ScheduleView({
         const type = isBridalService(b.service) ? 'bridal' : 'appt';
         push(b.date, {
           id: `a-${b.id}`, type, name: b.name || 'Client', detail: b.service || 'Appointment',
+          // City only here. The grid is for judging whether a day is drivable,
+          // and a full street address would not fit in a block anyway.
+          location: b.location_city || '',
           timeStr: b.time || '', status: b.status || 'pending',
           onOpen: () => onSelectBooking?.(b),
         });
@@ -348,6 +351,11 @@ export default function ScheduleView({
                     <p className="text-[0.68rem] tabular-nums leading-tight" style={{ opacity: 0.85 }}>{ev.timeStr}</p>
                     <p className="text-[0.8rem] truncate leading-snug" style={{ fontWeight: 500 }}>{ev.name}</p>
                     {height >= 62 && <p className="text-[0.68rem] truncate leading-snug" style={{ opacity: 0.8 }}>{ev.detail}</p>}
+                    {/* Needs a taller block than the service line, so it only
+                        appears once there's genuinely room for a third row. */}
+                    {height >= 80 && ev.location && (
+                      <p className="text-[0.66rem] truncate leading-snug" style={{ opacity: 0.72 }}>◎ {ev.location}</p>
+                    )}
                   </>
                 )}
               </button>
@@ -460,7 +468,7 @@ export default function ScheduleView({
                       const width = 100 / ev.cols;
                       return (
                         <button key={ev.id} onClick={ev.onOpen}
-                          title={`${ev.timeStr || 'No time'} · ${ev.name} · ${ev.detail}`}
+                          title={[ev.timeStr || 'No time', ev.name, ev.detail, ev.location].filter(Boolean).join(' · ')}
                           className="absolute rounded-[3px] transition-opacity hover:opacity-75 z-10"
                           style={{
                             top, height,
