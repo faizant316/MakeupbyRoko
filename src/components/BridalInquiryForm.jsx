@@ -26,7 +26,7 @@ import TimePicker from './TimePicker';
 import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_READY_VALUE } from '@/lib/studio';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
-import { BRIDAL_LEAD_DAYS, canAddParty } from '@/lib/bookingLeadTime';
+import { BRIDAL_LEAD_DAYS, canAddParty, daysUntil } from '@/lib/bookingLeadTime';
 
 // The two-part bridal flow (plan it, then wear it). Rendered twice on step one:
 // the always-open desktop card and the collapsible mobile row. Defined once here
@@ -271,6 +271,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // Party add-ons need a month. Derived from the date the bride actually picked,
   // so it re-evaluates if she goes back and moves her date.
   const partyAllowed = canAddParty(selectedDate);
+  const daysToDate = daysUntil(selectedDate);
 
   // One human-readable answer for "who needs glam", stored + emailed so Roko always
   // sees either the bridal-party count or an explicit "Just the bride". When the
@@ -1077,9 +1078,14 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <label className={labelClass}>Bridal party glam</label>
                 <div className="relative pl-3.5 mt-1.5">
                   <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                  <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Needs 1 month&apos;s notice</p>
-                  <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                    Party glam (bridesmaids, mother of the bride) is booked at least a month ahead, so Roko can plan the extra time and product. Your {dateNoun} is sooner than that, so this inquiry covers you only. If you'd still like glam for your party, send Roko a note below and she'll tell you what she can do.
+                  {/* Two numbers next to each other do the explaining a whole
+                      paragraph was doing before: how far out she is, and what
+                      it takes. Roko asked for fewer words and more numbers. */}
+                  <p className="text-[0.88rem] font-semibold mb-1" style={{ color: '#B06883' }}>
+                    {daysToDate != null ? `${daysToDate} days out · needs 30` : 'Needs 30 days'}
+                  </p>
+                  <p className="text-[0.82rem] leading-[1.6]" style={{ color: '#6E6058' }}>
+                    This covers you only. Want your party glammed? Add a note below.
                   </p>
                 </div>
               </div>
