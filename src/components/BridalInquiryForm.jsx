@@ -39,6 +39,22 @@ function getMinBookingDate() {
   return d;
 }
 
+// The two-part bridal flow (plan it, then wear it). Rendered twice on step one:
+// the always-open desktop card and the collapsible mobile row. Defined once here
+// so the wording can never drift between the two.
+const CONSULT_STEPS = [
+  {
+    n: 1,
+    dot: '#CE9BAD',
+    body: <><strong className="text-[#3A2C26]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong> your date. In person or over a call, we plan your entire bridal look together.</>,
+  },
+  {
+    n: 2,
+    dot: '#E0BCC8',
+    body: <><strong className="text-[#3A2C26]">Your wedding day</strong>. I arrive and glam you flawlessly, exactly the way we planned.</>,
+  },
+];
+
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
 
@@ -269,6 +285,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const minDate = getMinBookingDate();
   const [calDate, setCalDate] = useState(new Date(minDate.getFullYear(), minDate.getMonth()));
   const [selectedDate, setSelectedDate] = useState(null);
+  // Mobile-only: the "every bride gets a private consultation" detail starts
+  // folded so the calendar isn't pushed below the fold. Desktop renders it open.
+  const [consultOpen, setConsultOpen] = useState(false);
   // Booksy-style stepped flow: date → form → success
   const [step, setStep] = useState('date');
   const [direction, setDirection] = useState('forward');
@@ -552,9 +571,28 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1">
 
+      {/* Compact identity strip — MOBILE ONLY.
+          The desktop treatment below (150px photo banner + a separate price row)
+          costs ~205px of vertical space, which on a phone is most of what stands
+          between a bride and the calendar. Same three facts (which package, the
+          price, the deposit) in one ~68px row. The sticky footer repeats the
+          price permanently, so this stays deliberately quiet. */}
+      <div className="sm:hidden flex items-center gap-3 px-4 py-2.5 border-b border-[#F2E6EC] flex-shrink-0" style={{ background: 'linear-gradient(180deg,#FFFFFF,#FDF9FA)' }}>
+        <img src="/IMG_9891.jpeg" alt="" aria-hidden="true" className="w-11 h-11 rounded-lg object-cover object-[center_30%] flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[0.48rem] font-bold tracking-[0.2em] uppercase text-[#CE9BAD] leading-none mb-1">You're booking</p>
+          <p className="font-serif text-[0.98rem] leading-tight text-[#2C1A14] truncate">{bridalTitle}</p>
+        </div>
+        <div className="text-right flex-shrink-0 leading-tight">
+          <p className="font-serif text-[0.95rem] text-[#111]">{bridalPrice}</p>
+          <p className="text-[0.55rem] text-[#b5a99a] uppercase tracking-[0.08em]">{bridalDeposit}</p>
+        </div>
+      </div>
+
       {/* Hero Banner — the package name is the headline here, so a bride can
-          never mistake which of the three bridal forms she's filling out. */}
-      <div className="relative h-[150px] sm:h-[160px] overflow-hidden flex-shrink-0">
+          never mistake which of the three bridal forms she's filling out.
+          Desktop only; mobile gets the compact strip above. */}
+      <div className="hidden sm:block relative h-[160px] overflow-hidden flex-shrink-0">
         <img src="/IMG_9891.jpeg" alt="Bridal" className="w-full h-full object-cover object-[center_30%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/55 to-black/35" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 text-white">
@@ -570,8 +608,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         </div>
       </div>
 
-      {/* Info strip */}
-      <div className="bg-gray-50 border-b border-gray-100 px-6 py-3 flex-shrink-0">
+      {/* Info strip — desktop only. On mobile its price/deposit pair is already
+          in the compact strip above AND pinned in the footer; showing it a third
+          time was pure noise. */}
+      <div className="hidden sm:block bg-gray-50 border-b border-gray-100 px-6 py-3 flex-shrink-0">
         {isFullDay ? (
           <div className="flex items-center justify-between flex-wrap gap-3 max-w-[680px] mx-auto">
             <div className="flex items-center gap-4">
@@ -620,53 +660,89 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
         {/* ───────── STEP 1: DATE ───────── */}
         {step === 'date' && (
-          <div className="w-full max-w-[600px] lg:max-w-[720px] mx-auto p-6 lg:p-7 flex flex-col gap-5 relative overflow-hidden">
+          <div className="w-full max-w-[600px] lg:max-w-[720px] mx-auto p-4 lg:p-7 flex flex-col gap-4 lg:gap-5 relative overflow-hidden">
 
             {/* Glow accents */}
             <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
             <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
-            {/* Calendar heading — the main event of step one, so it reads large. */}
-            <div className="flex items-center gap-3.5 relative z-10">
-              <div className="w-12 h-12 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-6 h-6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {/* Calendar heading — the main event of step one. Scaled back on
+                mobile (the 48px icon tile and 1.9rem serif were pushing the grid
+                itself below the fold). */}
+            <div className="flex items-center gap-3 lg:gap-3.5 relative z-10">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5 lg:w-6 lg:h-6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>
               <div>
-                <p className="text-[0.62rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
-                <h3 className="font-serif text-[1.9rem] lg:text-[2.25rem] leading-none text-[#111]">{dateNounCap} <em className="not-italic text-[#D4A0B0]">Date</em></h3>
+                <p className="text-[0.58rem] lg:text-[0.62rem] font-semibold tracking-[0.18em] uppercase text-[#D4A0B0] mb-0.5">Select Your</p>
+                <h3 className="font-serif text-[1.5rem] lg:text-[2.25rem] leading-none text-[#111]">{dateNounCap} <em className="not-italic text-[#D4A0B0]">Date</em></h3>
               </div>
             </div>
 
-            {/* Lead-time notice — sits right under the heading and shares its weight. */}
-            <div className="bg-white border-2 border-[#D4A0B0] rounded-xl px-4 py-3 relative z-10">
-              <p className="text-[0.85rem] leading-[1.55] text-[#777]">
-                Pick your {isTrial ? 'trial date' : 'wedding day'} below. Bridal must be booked at least <strong className="text-[#444]">2 weeks out</strong>. Earliest: <strong className="text-[#444]">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+            {/* Lead-time notice — a quiet rule-and-line instead of the old
+                heavy 2px-bordered box. Same information, roughly half the height,
+                and it no longer competes with the heading above it. */}
+            <div className="relative z-10 pl-3" style={{ borderLeft: '2px solid #E7C3D1' }}>
+              <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
+                Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest {isTrial ? 'trial' : 'wedding'} date: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
               </p>
             </div>
 
-            {/* How bridal works — the private consultation is a real, required step,
-                so make the two-part flow unmistakable right at the top: a planning
-                consultation about a month out, then the day-of glam. */}
+            {/* How bridal works — the private consultation is a real, required
+                step, so it has to be visible before she picks a date. On desktop
+                that's the full two-step card. On mobile it collapses to a single
+                tappable line: the promise still reads at a glance, and the ~130px
+                of detail only opens if she wants it. Two renders rather than one
+                stateful block so the desktop default stays open with no
+                client-only media query (and no hydration mismatch). */}
             {!isTrial && (
-              <div className="relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
-                <div className="flex items-center gap-2 px-3.5 pt-2.5 pb-2" style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)', borderBottom: '1px solid #F5E9EF' }}>
-                  <p className="text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD]">Every bride gets a private consultation</p>
-                </div>
-                <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white">
-                  <div className="flex items-start gap-2.5">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: '#CE9BAD' }}>1</span>
-                    <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">
-                      <strong className="text-[#3A2C26]">Private consultation</strong> about <strong className="text-[#C4849A]">1 month before</strong> your date. In person or over a call, we plan your entire bridal look together.
-                    </p>
+              <>
+                {/* Desktop: always open */}
+                <div className="hidden sm:block relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
+                  <div className="flex items-center gap-2 px-3.5 pt-2.5 pb-2" style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)', borderBottom: '1px solid #F5E9EF' }}>
+                    <p className="text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD]">Every bride gets a private consultation</p>
                   </div>
-                  <div className="flex items-start gap-2.5">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: '#E0BCC8' }}>2</span>
-                    <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">
-                      <strong className="text-[#3A2C26]">Your wedding day</strong>. I arrive and glam you flawlessly, exactly the way we planned.
-                    </p>
+                  <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white">
+                    {CONSULT_STEPS.map(({ n, dot, body }) => (
+                      <div key={n} className="flex items-start gap-2.5">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: dot }}>{n}</span>
+                        <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">{body}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+
+                {/* Mobile: collapsed by default */}
+                <div className="sm:hidden relative z-10 rounded-xl overflow-hidden" style={{ border: '1px solid #F2E6EC' }}>
+                  <button
+                    type="button"
+                    onClick={() => setConsultOpen(o => !o)}
+                    aria-expanded={consultOpen}
+                    className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left"
+                    style={{ background: 'linear-gradient(135deg,#FCF7F9,#FBF3F6)' }}
+                  >
+                    <span className="flex-1 text-[0.55rem] font-bold tracking-[0.15em] uppercase text-[#CE9BAD] leading-[1.4]">
+                      Every bride gets a private consultation
+                    </span>
+                    <svg
+                      viewBox="0 0 24 24" fill="none" stroke="#CE9BAD" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                      className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-300 ${consultOpen ? 'rotate-180' : ''}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  {consultOpen && (
+                    <div className="px-3.5 py-3 flex flex-col gap-2.5 bg-white" style={{ borderTop: '1px solid #F5E9EF' }}>
+                      {CONSULT_STEPS.map(({ n, dot, body }) => (
+                        <div key={n} className="flex items-start gap-2.5">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[0.62rem] font-bold text-white mt-px" style={{ background: dot }}>{n}</span>
+                          <p className="text-[0.74rem] leading-[1.55] text-[#6E6660]">{body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
             {/* Calendar */}

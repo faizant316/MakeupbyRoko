@@ -68,3 +68,35 @@ export function useScrollLock() {
     return () => unlockScroll();
   }, []);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Site nav hiding, for full-screen sheets.
+//
+// The public nav is fixed at z-9999, ABOVE the booking sheets (z-500), so the
+// sheets used to offset themselves by --nav-h and leave a black "MAKEUP BY ROKO"
+// bar sitting on top of the flow. Inside a sheet that already has its own back
+// and close buttons that bar does nothing but eat 52px of height, which on a
+// phone is roughly a whole calendar row. Hide it while a sheet is open.
+//
+// Ref-counted for the same reason the scroll lock is: sheets stack (a service
+// preview can open the booking sheet over itself), and the inner one closing
+// must not bring the nav back while the outer is still covering the screen.
+
+let navHideCount = 0;
+
+export function hideSiteNav() {
+  if (navHideCount === 0) document.body.classList.add('site-nav-hidden');
+  navHideCount += 1;
+}
+
+export function showSiteNav() {
+  navHideCount = Math.max(0, navHideCount - 1);
+  if (navHideCount === 0) document.body.classList.remove('site-nav-hidden');
+}
+
+export function useHideSiteNav() {
+  useEffect(() => {
+    hideSiteNav();
+    return () => showSiteNav();
+  }, []);
+}
