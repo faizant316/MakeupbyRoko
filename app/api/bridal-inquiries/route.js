@@ -38,7 +38,7 @@ export async function POST(req) {
       event_location, event_start_time, photographer, hairstylist, venue_access_time,
       num_people_glam, additional_details, how_heard, ready_by_time, makeup_ready_by_time,
       photographer_arrival_time,
-      out_of_state, preferred_date, preferred_time, status, service } = body;
+      out_of_state, destination_location, preferred_date, preferred_time, status, service } = body;
 
     if (!bride_name || !email) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     if (!EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
@@ -60,6 +60,7 @@ export async function POST(req) {
       additional_details: opt(additional_details), how_heard: opt(how_heard),
       ready_by_time: opt(ready_by_time), makeup_ready_by_time: opt(makeup_ready_by_time),
       photographer_arrival_time: opt(photographer_arrival_time),
+      destination_location: opt(destination_location),
       preferred_date: opt(preferred_date), preferred_time: opt(preferred_time),
       status: opt(status), service: opt(service),
     };

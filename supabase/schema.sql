@@ -61,6 +61,7 @@ create table if not exists bridal_inquiries (
   makeup_ready_by_time text,
   photographer_arrival_time text,
   out_of_state boolean,
+  destination_location text, -- 0016: which city, when out_of_state is true
   service text,
   preferred_date text,
   preferred_time text,

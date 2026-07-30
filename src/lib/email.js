@@ -525,7 +525,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
 // optional so a sparse admin-entered booking degrades to the short version.
 export function bridalConfirmationEmail({
   firstName, bridalTitle, bridalDateFormatted, bridalDeposit, bridalPrice, bridalRemaining,
-  uploadUrl, eventLocation, numPeopleGlam, outOfState, eventStartTime, venueAccessTime,
+  uploadUrl, eventLocation, numPeopleGlam, outOfState, destinationLocation, eventStartTime, venueAccessTime,
   hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist,
   additionalDetails, contractSection = '',
 }) {
@@ -551,6 +551,9 @@ export function bridalConfirmationEmail({
     outOfState !== undefined && outOfState !== null
       ? crow('Travel', outOfState ? 'Yes, out of state' : 'No, local (CA)')
       : '',
+    // Only ever set on an out-of-state inquiry, so it reads as a qualifier on the
+    // Travel row above it rather than a second location.
+    destinationLocation ? crow('Destination', destinationLocation) : '',
   ].filter(Boolean).join('');
 
   const timingRows = [
@@ -1130,7 +1133,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
   `);
 }
 
-export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
+export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
   // A trial is a studio appointment, so its one time field is the bride's
   // preferred time, not an "event start" — label it accordingly for Roko.
@@ -1150,7 +1153,11 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
     // trial is the TRIAL date, not the wedding — so label it honestly.
     weddingDate ? row(isTrialPkg ? 'Trial Date' : 'Wedding Date', `<strong>${longDate(weddingDate)}</strong>`) : '',
     eventLocation ? row('Location', eventLocation) : '',
-    outOfState !== undefined ? row('Out of State', outOfState ? 'Yes — out of state' : 'No, local (CA)', outOfState ? '#C4849A' : '#111111') : '',
+    outOfState !== undefined ? row('Out of State', outOfState ? 'Yes, out of state' : 'No, local (CA)', outOfState ? '#C4849A' : '#111111') : '',
+    // The city she'd be flying to. Accented like the flag above it because for a
+    // destination inquiry this is the line she acts on: nothing about the trip can
+    // be quoted without it.
+    destinationLocation ? row('Destination', destinationLocation, '#C4849A') : '',
     numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : '',
   ].filter(Boolean).join('');
 
