@@ -17,7 +17,6 @@ function useBookingCounts() {
 }
 import BridalInquiryForm from './BridalInquiryForm';
 import ServiceFAQ from './ServiceFAQ';
-import ZelleSuccessUpload from './ZelleSuccessUpload';
 import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
 import ContractSign from './ContractSign';
@@ -896,12 +895,10 @@ export default function BookingModal({ service: initialService, onClose }) {
                       </div>
                     </div>
 
-                    {/* Zelle upload */}
-                    {newBookingId && uploadToken && (
-                      <div className="done-step done-step-4">
-                        <ZelleSuccessUpload />
-                      </div>
-                    )}
+                    {/* No "upload instructions have been sent" block here. The Zelle
+                        card directly above already says the details are in her inbox,
+                        and saying it twice in a row read as two separate emails to go
+                        find. "What's Next" below carries the one instruction. */}
 
                     {/* What's next */}
                     <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4">

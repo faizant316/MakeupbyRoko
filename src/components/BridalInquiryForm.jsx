@@ -19,7 +19,6 @@ function useBookingCounts() {
 import { scrollModalTop } from '@/lib/modalLenis';
 import CustomSelect from './CustomSelect';
 import FullDayIncludes from './FullDayIncludes';
-import ZelleSuccessUpload from './ZelleSuccessUpload';
 import ServiceFAQ from './ServiceFAQ';
 import SubmissionRecap from './SubmissionRecap';
 import TimePicker from './TimePicker';
@@ -58,14 +57,28 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
     <div className="bg-white p-6 sm:p-8">
       <div className="max-w-[520px] mx-auto flex flex-col gap-4">
 
-        {/* Header */}
+        {/* Header.
+            Same self-drawing badge as the non-bridal confirmation (ring clockwise,
+            then the check strokes in) with the details cascading in behind it, so
+            every flow ends the same way. Bridal keeps its own warmer badge fill.
+            See .done-* in index.css. */}
         <div className="text-center py-2 flex flex-col items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-[#F7EEF2] flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-4 h-4">
-              <polyline points="20 6 9 17 4 12" />
+          <div className="done-badge relative w-11 h-11 rounded-full bg-[#F7EEF2] flex items-center justify-center">
+            {/* Rotated so the ring starts drawing from twelve o'clock. r=10 gives a
+                ~63 circumference, which is the dash length ringDraw counts down. */}
+            <svg viewBox="0 0 24 24" fill="none" className="absolute inset-0 w-full h-full -rotate-90">
+              <circle
+                className="done-ring"
+                cx="12" cy="12" r="10"
+                stroke="#C4849A" strokeWidth="1.3" strokeLinecap="round" opacity="0.5"
+                style={{ strokeDasharray: 63 }}
+              />
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative w-5 h-5">
+              <polyline className="done-check" points="20 6 9 17 4 12" style={{ strokeDasharray: 24 }} />
             </svg>
           </div>
-          <div>
+          <div className="done-step done-step-1">
             <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Bridal Inquiry Received</p>
             <h3 className="font-serif text-[1.9rem] font-light text-[#2C1A14] mb-1 leading-tight">
               Hey {firstName}, you're on <em className="italic text-[#C4849A]">the list!</em>
@@ -73,7 +86,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
             <p className="font-serif italic text-[#A0785A] text-[0.9rem]">I can't wait to be part of your big day.</p>
           </div>
           {email && (
-            <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
+            <div className="done-step done-step-2 flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
               </svg>
@@ -82,11 +95,17 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
           )}
         </div>
 
-        {/* View submission recap */}
-        <SubmissionRecap dateStr={recapDate} dateLabel={recapDateLabel} rows={recapRows || []} />
+        {/* View submission recap. Wrapped so it can join the cascade without
+            SubmissionRecap needing to take a className. */}
+        <div className="done-step done-step-3">
+          <SubmissionRecap dateStr={recapDate} dateLabel={recapDateLabel} rows={recapRows || []} />
+        </div>
 
+        {/* Everything from here down shares one final beat rather than continuing
+            the stagger. Most of it is below the fold on a phone, and a per-block
+            cascade this deep leaves a visible tail. */}
         {/* What's next */}
-        <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+        <div className="done-step done-step-4 bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
           <div className="px-5 pt-4 pb-1">
             <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">What's Next</p>
           </div>
@@ -104,7 +123,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
         </div>
 
         {/* Before consultation */}
-        <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+        <div className="done-step done-step-4 bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
           <div className="px-5 pt-4 pb-1">
             <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Before Your Consultation</p>
             <p className="text-[0.74rem] text-[#8A7F85] leading-[1.55] mt-1">Your consultation is about <strong className="text-[#C4849A]">1 month before</strong> your date. Have these ready:</p>
@@ -133,7 +152,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
         </div>
 
         {/* Send photos to */}
-        <div className="bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
+        <div className="done-step done-step-4 bg-white rounded-2xl border border-[#EDE6DF] overflow-hidden">
           <div className="px-5 pt-4 pb-1">
             <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">With & Without Makeup Photos</p>
           </div>
@@ -163,12 +182,12 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
         </div>
 
         {/* Sign off */}
-        <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
+        <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
           <p className="font-serif italic text-[#C4849A] text-[1.1rem] mb-1">With love, Roko</p>
           <p className="text-[0.7rem] text-[#999999]">roko@makeupbyroko.org · @makeupbyroko_</p>
         </div>
 
-        <div className="pb-4">
+        <div className="done-step done-step-4 pb-4">
           <button onClick={onClose}
             className="w-full py-3.5 rounded-xl border border-gray-200 text-[0.8rem] font-medium text-gray-500 hover:border-[#2C1A14] hover:text-[#2C1A14] transition-all">
             Close
