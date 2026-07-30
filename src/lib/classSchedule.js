@@ -56,8 +56,6 @@ export function isBookableWednesday(dateStr, from = new Date()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '')) return false;
   const d = new Date(dateStr + 'T00:00:00');
   if (Number.isNaN(d.getTime()) || d.getDay() !== WEDNESDAY) return false;
-  const today = new Date(from);
-  today.setHours(0, 0, 0, 0);
-  const diffDays = (d - today) / 86400000;
+  const diffDays = (d - studioToday(from)) / 86400000;
   return diffDays >= MIN_LEAD_DAYS && diffDays <= MAX_HORIZON_DAYS;
 }

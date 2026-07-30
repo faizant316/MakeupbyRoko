@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PLUM } from './classTheme';
+import { studioToday } from '@/lib/studio';
 
 // Calendar Wednesday picker. Any Wednesday at least two weeks out is open and
 // tappable, EXCEPT ones already taken (one client per Wednesday) or blocked by
@@ -13,7 +14,9 @@ const WEDNESDAY = 3;
 const OPEN = '#4FB477'; // muted green — "available"
 
 export default function ClassWednesdayPicker({ selectedDate, onSelectDate, firstOpenKey, bookedSet = new Set(), blockedSet = new Set() }) {
-  const today = useMemo(() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }, []);
+  // The studio's day, not the visitor's — a client in a timezone ahead of
+  // Pacific shouldn't see a day struck out that Roko still calls today.
+  const today = useMemo(() => studioToday(), []);
 
   const firstOpen = firstOpenKey ? new Date(firstOpenKey + 'T00:00:00') : today;
   const [currentDate, setCurrentDate] = useState(new Date(firstOpen.getFullYear(), firstOpen.getMonth()));
