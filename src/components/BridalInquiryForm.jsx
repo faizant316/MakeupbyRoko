@@ -179,7 +179,7 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
   );
 }
 
-export default function BridalInquiryForm({ onClose, service: passedService, onStepChange, registerBack }) {
+export default function BridalInquiryForm({ onClose, service: passedService, onStepChange, onFocusChange, registerBack, onSwitchService }) {
   const { data: bridalService } = useQuery({
     queryKey: ['bridal-service'],
     queryFn: async () => {
@@ -187,6 +187,21 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       return services[0] || null;
     },
     enabled: !passedService,
+  });
+
+  // The Full Day row itself, for the over-an-hour nudge under the travel fee. It
+  // supplies the real price (rather than a hardcoded "$1,700" that goes stale the
+  // moment Roko edits the service in Supabase) and the object handed back up when
+  // the bride taps switch. Skipped when the sheet already IS Full Day or a trial,
+  // since neither one shows the nudge.
+  const { data: fullDayService } = useQuery({
+    queryKey: ['bridal-service-full-day'],
+    queryFn: async () => {
+      const services = await api.entities.Service.filter({ category: 'bridal', is_active: true }, 'sort_order', 20);
+      return services.find(s => /full.?day/i.test(s.title || '')) || null;
+    },
+    enabled: !/full.?day|trial/i.test(passedService?.title || ''),
+    staleTime: 60000,
   });
 
   const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => api.entities.BlockedDate.list(), initialData: [] });
@@ -246,6 +261,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     setCalFocus(f => !f);
     requestAnimationFrame(() => scrollModalTop(document.querySelector('[data-modal-scroll]')));
   };
+  // Read by the back handler, which is registered once and would otherwise close
+  // over calFocus as it was on first render.
+  const calFocusRef = useRef(false);
+  useEffect(() => { calFocusRef.current = calFocus; }, [calFocus]);
+  // The modal header labels its back arrow from this — while focused, that arrow
+  // un-focuses rather than closing.
+  useEffect(() => { onFocusChange?.(calFocus); }, [calFocus, onFocusChange]);
   // Booksy-style stepped flow: date → form → success
   const [step, setStep] = useState('date');
   const [direction, setDirection] = useState('forward');
@@ -258,11 +280,25 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     instagram_handle: '', wedding_date: '', event_location: '', ready_location_type: undefined,
     event_start_time: '', photographer: '', hairstylist: '',
     bridal_party_glam: undefined, num_people_glam: '', additional_details: '', how_heard: '',
-    ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined
+    ready_by_time: '', makeup_ready_by_time: '', photographer_arrival_time: '', out_of_state: undefined,
+    destination_location: ''
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const contractOverrides = useContractOverrides();
+
+  // Switching packages mid-form, in place. The sheet's service lives in
+  // BookingModal, so the swap goes up through onSwitchService and comes back down
+  // as a new `service` prop — this component never unmounts, so every answer she
+  // has already typed survives. `switchedToFullDay` is what tells her it happened:
+  // the price nearly triples, and a silent change to the sticky footer is not an
+  // acceptable way to find that out.
+  const [switchedToFullDay, setSwitchedToFullDay] = useState(false);
+  const switchToFullDay = () => {
+    if (!fullDayService || !onSwitchService) return;
+    onSwitchService(fullDayService);
+    setSwitchedToFullDay(true);
+  };
 
   // Party add-ons need a month. Derived from the date the bride actually picked,
   // so it re-evaluates if she goes back and moves her date.
@@ -293,11 +329,18 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // Keep the modal header's step indicator + back arrow in sync with our step.
   useEffect(() => { onStepChange?.(step); }, [step, onStepChange]);
   useEffect(() => { if (submitted) onStepChange?.('done'); }, [submitted, onStepChange]);
-  // Let the modal header's back arrow step us back: sign → form → date.
+  // Let the modal header's back arrow walk back out of the flow: focus mode →
+  // sign → form → date. Returns whether it consumed the press, so the modal knows
+  // when there is nothing left to back out of and it should close instead.
   useEffect(() => {
     registerBack?.(() => {
-      if (stepRef.current === 'sign') goStep('form', 'back');
-      else goStep('date', 'back');
+      // Focus mode is a view state, not a step. Backing out of it has to give the
+      // full step-one page back rather than close the sheet, which is the whole
+      // point of the collapse button being reversible.
+      if (calFocusRef.current) { toggleCalFocus(); return true; }
+      if (stepRef.current === 'sign') { goStep('form', 'back'); return true; }
+      if (stepRef.current === 'form') { goStep('date', 'back'); return true; }
+      return false;
     });
   }, [registerBack]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -353,6 +396,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     // party window it isn't, so demanding an answer would dead-end the form.
     if (partyAllowed && form.bridal_party_glam == null) { alert('Please let Roko know if your bridal party needs glam too.'); return; }
     if (form.out_of_state == null) { alert('Please let Roko know if this is an out-of-state event.'); return; }
+    // Destination travel is quoted per trip, and the quote starts with the city,
+    // so this is the one out-of-state answer worth blocking on. Only asked (and
+    // only required) when she said yes.
+    if (form.out_of_state === true && !form.destination_location.trim()) {
+      alert('Please let Roko know where the wedding is.'); return;
+    }
     goStep('sign');
   };
 
@@ -465,6 +514,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         hairstylist: form.hairstylist,
         numPeopleGlam: glamSummary,
         outOfState: form.out_of_state,
+        destinationLocation: form.out_of_state ? form.destination_location : '',
         weddingDate: selectedDate,
         additionalDetails: form.additional_details,
         howHeard: form.how_heard,
@@ -501,6 +551,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Photographer', value: form.photographer },
       { label: 'Hairstylist', value: form.hairstylist },
       { label: 'Out-of-state event', value: form.out_of_state == null ? '' : form.out_of_state ? 'Yes' : 'No' },
+      { label: 'Wedding destination', value: form.out_of_state ? form.destination_location : '' },
       { label: 'How heard', value: form.how_heard },
       { label: 'Makeup vision & details', value: form.additional_details },
     ];
@@ -901,6 +952,18 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 "about you" questions sit together, above the vendor arrival times. */}
             {isFullDay ? (
               <div>
+                {/* She arrived here by tapping the over-an-hour nudge on the Luxury
+                    form, so the package under her just changed and the price nearly
+                    tripled without the sheet reloading. Say so, plainly and where
+                    she tapped, instead of leaving it to be noticed in the footer. */}
+                {switchedToFullDay && (
+                  <div className="mb-4 rounded-xl px-3.5 py-3" style={{ background: 'rgba(196,132,154,0.08)', border: '1px solid #EBC4D2', animation: 'fadeSlideDown 0.2s ease-out' }}>
+                    <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: '#B06883' }}>Package switched</p>
+                    <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#4A423E' }}>
+                      You're now booking the <strong>{bridalTitle}</strong>{activeService?.price ? <>, <strong>{activeService.price}</strong></> : null}, with travel included. Everything you'd already filled in has been kept.
+                    </p>
+                  </div>
+                )}
                 <label className={labelClass}>Where would you like to get ready? *</label>
                 <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Hotel, home, or venue. Roko travels to you for full days.</p>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
@@ -947,13 +1010,50 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <div className="mt-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
                     <label className={labelClass}>Where will you be getting ready? *</label>
                     <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
-                    <div className="mt-3 relative pl-3.5">
-                      <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                      <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
-                      <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                        <strong style={{ color: '#4A423E' }}>$200</strong> within about an hour of Mountain House. Added to your balance, in cash on the day.
-                      </p>
-                    </div>
+                    {/* Out of state is quoted per trip (flights, hotel, add-on person),
+                        so neither the local $200 nor the over-an-hour Full Day rule
+                        applies. Leaving the $200 note up for a destination bride quotes
+                        her a number that was never hers. */}
+                    {form.out_of_state === true ? (
+                      <div className="mt-3 relative pl-3.5">
+                        <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                        <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Destination event</p>
+                        <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                          The local <strong style={{ color: '#4A423E' }}>$200</strong> travel fee doesn't apply out of state. Roko quotes destination travel per trip, see the requirements further down.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 relative pl-3.5">
+                        <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                        <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
+                        <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                          <strong style={{ color: '#4A423E' }}>$200</strong> within about an hour of Mountain House. Added to your balance, in cash on the day.
+                        </p>
+                        {/* Past an hour isn't a bigger travel fee, it's a different
+                            service: Full Day is already required for venues over an
+                            hour out (see ServiceFAQ + FullDayIncludes). That rule
+                            existed everywhere except the one screen where it matters,
+                            right after she types a far-away address, so a Sacramento
+                            or LA bride could book the wrong package and only find out
+                            when Roko called her. */}
+                        {fullDayService && onSwitchService && (
+                          <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(196,132,154,0.2)' }}>
+                            <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                              Getting ready more than an hour away? That's the <strong style={{ color: '#4A423E' }}>Full Day Service</strong> instead, travel included.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={switchToFullDay}
+                              className="mt-2.5 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[0.8rem] font-medium text-white transition-all active:scale-[0.97] touch-manipulation"
+                              style={{ background: '#111' }}
+                            >
+                              Switch to Full Day{fullDayService.price ? ` · ${fullDayService.price}` : ''}
+                              <span aria-hidden="true">→</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1114,6 +1214,28 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   </button>
                 ))}
               </div>
+
+              {/* The destination, asked the moment she says yes and before the cost
+                  breakdown, because it's the fact every line of that breakdown is
+                  priced from. It used to have nowhere to go: brides who mentioned it
+                  buried it in the makeup-vision box, and the rest left Roko emailing
+                  to ask where she'd be flying. Free text, not the Places
+                  autocomplete: at inquiry time the venue is often still "somewhere
+                  outside Austin". */}
+              {form.out_of_state === true && (
+                <div className="mt-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
+                  <label className={labelClass}>Where's the wedding? *</label>
+                  <input
+                    value={form.destination_location}
+                    onChange={e => set('destination_location', e.target.value)}
+                    placeholder="City & state, e.g. Austin, Texas"
+                    className={inputClass}
+                  />
+                  <p className="text-[0.75rem] text-gray-400 mt-1.5 leading-[1.6]">
+                    Where Roko would be travelling to. It's what she prices the trip from.
+                  </p>
+                </div>
+              )}
 
               {form.out_of_state === true && (
                 <div className="mt-3 bg-white border border-[#E2C4D2] rounded-xl p-4 flex flex-col gap-2">

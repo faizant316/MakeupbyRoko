@@ -41,6 +41,9 @@ export default function BookingModal({ service: initialService, onClose }) {
   // Bridal manages its own steps internally; it reports them up so the shared
   // modal header can show "Step X of 2" and drive its back arrow.
   const [bridalStep, setBridalStep] = useState('date');
+  // Bridal's calendar focus mode lives inside BridalInquiryForm; mirrored here so
+  // the header can label its back arrow honestly (while focused it un-focuses).
+  const [bridalFocused, setBridalFocused] = useState(false);
   const bridalBackRef = useRef(null);
 
   // Stable for the life of the sheet — a fresh Date every render would make the
@@ -109,12 +112,20 @@ export default function BookingModal({ service: initialService, onClose }) {
   // ── Step navigation ──
   const goStep = (next, dir = 'forward') => { setDirection(dir); setStep(next); };
   const handleContinue = () => { if (!selectedDate) return; goStep('form'); };
+  // The back arrow walks back out of whatever the visitor is currently inside,
+  // one layer at a time, and only closes the sheet once there is nothing left.
+  // Calendar focus mode counts as a layer: collapsing the page down to just the
+  // calendar is something you should be able to back out of, not a state the back
+  // arrow silently abandons the whole booking from.
   const handleHeaderBack = () => {
+    // Bridal owns its own steps AND its own focus state, so it decides. A truthy
+    // return means it consumed the press.
     if (isBridal) {
-      if ((bridalStep === 'form' || bridalStep === 'sign') && bridalBackRef.current) { bridalBackRef.current(); return; }
+      if (bridalBackRef.current?.()) return;
       onClose();
       return;
     }
+    if (calFocus) { toggleCalFocus(); return; }
     if (step === 'sign') { goStep('form', 'back'); return; }
     if (step === 'form') { goStep('date', 'back'); return; }
     onClose();
@@ -309,7 +320,10 @@ export default function BookingModal({ service: initialService, onClose }) {
               : (step === 'sign' ? 'Step 3 of 3 · Review & sign'
                 : step === 'form' ? 'Step 2 of 3 · Your details'
                 : `Step 1 of 3 · Choose date${service.duration ? ' · ' + service.duration : ''}`);
-          const canBack = isBridal ? (bridalStep === 'form' || bridalStep === 'sign') : (step === 'form' || step === 'sign');
+          // Anything the back arrow can walk out of, including focus mode.
+          const focused = isBridal ? bridalFocused : calFocus;
+          const canBack = focused
+            || (isBridal ? (bridalStep === 'form' || bridalStep === 'sign') : (step === 'form' || step === 'sign'));
           return (
         <div
           className="flex-shrink-0 backdrop-blur-sm z-10 flex items-center px-3 sm:px-6 py-2 sm:py-2.5 gap-3 relative"
@@ -373,7 +387,14 @@ export default function BookingModal({ service: initialService, onClose }) {
             <BridalInquiryForm
               onClose={onClose}
               service={service}
+              // Lets the bridal form move her between bridal packages without the
+              // sheet reopening: the over-an-hour note under the travel fee swaps a
+              // Luxury booking to Full Day. Swapping the service here (rather than
+              // reopening from the parent) is what keeps the form mounted, so the
+              // answers she's already typed survive the switch.
+              onSwitchService={setService}
               onStepChange={setBridalStep}
+              onFocusChange={setBridalFocused}
               registerBack={(fn) => { bridalBackRef.current = fn; }}
             />
           ) : (
@@ -729,14 +750,29 @@ export default function BookingModal({ service: initialService, onClose }) {
                 <div className="bg-white p-6 sm:p-8">
                   <div className="max-w-[520px] mx-auto flex flex-col gap-4">
 
-                    {/* Header */}
+                    {/* Header.
+                        The badge draws itself (ring clockwise, then the check) and
+                        the details cascade in behind it. Sequencing walks the eye
+                        down the confirmation in the order that matters instead of
+                        dumping the whole screen at once. See .done-* in index.css. */}
                     <div className="text-center py-2 flex flex-col items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-[#FDF0F5] flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" className="w-5 h-5">
-                          <polyline points="20 6 9 17 4 12" />
+                      <div className="done-badge relative w-11 h-11 rounded-full bg-[#FDF0F5] flex items-center justify-center">
+                        {/* Rotated so the ring starts drawing from twelve o'clock.
+                            r=10 gives a ~63 circumference, which is the dash
+                            length ringDraw counts down from. */}
+                        <svg viewBox="0 0 24 24" fill="none" className="absolute inset-0 w-full h-full -rotate-90">
+                          <circle
+                            className="done-ring"
+                            cx="12" cy="12" r="10"
+                            stroke="#C4849A" strokeWidth="1.3" strokeLinecap="round" opacity="0.5"
+                            style={{ strokeDasharray: 63 }}
+                          />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative w-5 h-5">
+                          <polyline className="done-check" points="20 6 9 17 4 12" style={{ strokeDasharray: 24 }} />
                         </svg>
                       </div>
-                      <div>
+                      <div className="done-step done-step-1">
                         <p className="text-[0.58rem] font-semibold tracking-[0.2em] uppercase text-[#C4849A] mb-2">Booking Request Received</p>
                         <h3 className="font-serif text-[1.9rem] font-light text-[#111111] mb-1 leading-tight">
                           Hey {formData.fname}, <em className="italic text-[#C4849A]">Request Received!</em>
@@ -744,7 +780,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                         <p className="font-serif italic text-[#888888] text-[0.9rem]">Can't wait to glam you up ✦</p>
                       </div>
                       {formData.email && (
-                        <div className="flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
+                        <div className="done-step done-step-2 flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
                           </svg>
@@ -753,7 +789,9 @@ export default function BookingModal({ service: initialService, onClose }) {
                       )}
                     </div>
 
-                    {/* View submission recap */}
+                    {/* View submission recap. Wrapped so it can join the cascade
+                        without SubmissionRecap needing to take a className. */}
+                    <div className="done-step done-step-3">
                     <SubmissionRecap
                       dateStr={selectedDate}
                       dateLabel="Requested Date"
@@ -768,9 +806,13 @@ export default function BookingModal({ service: initialService, onClose }) {
                         { label: 'Notes', value: formData.notes },
                       ]}
                     />
+                    </div>
 
+                    {/* Everything from here down shares one final beat rather than
+                        continuing the stagger. Most of it is below the fold, and a
+                        per-block cascade this deep leaves a visible tail. */}
                     {/* Booking summary */}
-                    <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
+                    <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
                       <div className="px-5 pt-4 pb-1">
                         <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">Booking Summary</p>
                       </div>
@@ -820,7 +862,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
 
                     {/* Zelle deposit */}
-                    <div className="bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
+                    <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
                       <div className="px-5 pt-4 pb-3 border-b border-[#F5E8EF]">
                         <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-0.5">Send Your Zelle Deposit</p>
                         <p className="text-[0.72rem] text-[#888888]">Send your deposit to lock in your date</p>
@@ -856,11 +898,13 @@ export default function BookingModal({ service: initialService, onClose }) {
 
                     {/* Zelle upload */}
                     {newBookingId && uploadToken && (
-                      <ZelleSuccessUpload />
+                      <div className="done-step done-step-4">
+                        <ZelleSuccessUpload />
+                      </div>
                     )}
 
                     {/* What's next */}
-                    <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4">
+                    <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4">
                       <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-2">What's Next</p>
                       <p className="text-[0.82rem] text-[#444444] leading-[1.75]">
                         Send your Zelle deposit to secure your date. Roko will reach out within <strong className="text-[#111111]">24–48 hours</strong> to confirm your appointment time.
@@ -868,12 +912,12 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
 
                     {/* Sign off */}
-                    <div className="bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
+                    <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] px-5 py-5 text-center">
                       <p className="font-serif italic text-[#C4849A] text-[1.1rem] mb-1">With love, Roko</p>
                       <p className="text-[0.7rem] text-[#999999]">roko@makeupbyroko.org · @makeupbyroko_</p>
                     </div>
 
-                    <div className="flex justify-center pb-2">
+                    <div className="done-step done-step-4 flex justify-center pb-2">
                       <button onClick={onClose}
                         className="px-8 py-3 rounded-xl border border-[#F0E0E9] text-[0.8rem] font-medium text-[#888888] hover:border-[#111111] hover:text-[#111111] transition-all">
                         Close

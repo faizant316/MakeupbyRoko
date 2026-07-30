@@ -2601,6 +2601,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <BField dm={dm} label="Bride" value={biBrideName} />
                 <BField dm={dm} label="People Needing Glam" value={bridalInquiry.num_people_glam} />
                 <BField dm={dm} label="Out of State" value={biOosLabel} accent={biOos} />
+                {/* Only an out-of-state inquiry has one, so it sits right after the
+                    flag it qualifies and disappears for every local bride. */}
+                <BField dm={dm} label="Destination" value={bridalInquiry.destination_location} accent={biOos} />
                 <BField dm={dm} label="Instagram / TikTok" value={bridalInquiry.instagram_handle}
                   href={bridalInquiry.instagram_handle ? `https://instagram.com/${bridalInquiry.instagram_handle.replace('@','')}` : undefined} />
                 <BField dm={dm} label="How They Heard" value={bridalInquiry.how_heard} />

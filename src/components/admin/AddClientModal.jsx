@@ -100,7 +100,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
     event_start_time: '', venue_access_time: '', ready_by_time: '', makeup_ready_by_time: '',
     photographer_arrival_time: '', bridal_party_glam: null, num_people_glam: '',
     event_location: '', photographer: '', hairstylist: '', instagram_handle: '',
-    how_heard: '', out_of_state: null, additional_details: '',
+    how_heard: '', out_of_state: null, destination_location: '', additional_details: '',
   });
   const [cls, setCls] = useState({ format: '', classKey: '', slot: '', amount_paid: '', zoom_link: '', meeting_id: '' });
   const [genZoom, setGenZoom] = useState(false);
@@ -226,7 +226,8 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           eventLocation: bridal.event_location, eventStartTime: bridal.event_start_time, venueAccessTime: bridal.venue_access_time,
           readyByTime: bridal.ready_by_time, makeupReadyByTime: bridal.makeup_ready_by_time, photographerArrival: bridal.photographer_arrival_time,
           photographer: bridal.photographer, hairstylist: bridal.hairstylist, numPeopleGlam: glamSummary,
-          outOfState: bridal.out_of_state, weddingDate: form.date, additionalDetails: bridal.additional_details, howHeard: bridal.how_heard,
+          outOfState: bridal.out_of_state, destinationLocation: bridal.out_of_state === true ? bridal.destination_location : '',
+          weddingDate: form.date, additionalDetails: bridal.additional_details, howHeard: bridal.how_heard,
         }
       : {
           bookingType: 'nonbridal', to: form.email.trim(), firstName: form.first_name.trim(), lastName: form.last_name.trim(),
@@ -332,6 +333,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
             additional_details: bridal.additional_details,
             how_heard: bridal.how_heard,
             out_of_state: bridal.out_of_state,
+            destination_location: bridal.out_of_state === true ? bridal.destination_location : '',
             preferred_date: form.date || '',
             upload_token: booking.upload_token, status: 'new',
           }),
@@ -636,6 +638,16 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
               <div>
                 <label style={labelStyle}>Out-of-state event?</label>
                 <YesNo value={bridal.out_of_state} onChange={v => setBr('out_of_state', v)} dm={dm} yes="Yes, out of state" no="No, local" />
+                {/* Mirrors the public form, which asks the same follow-up the moment
+                    a bride says yes. Without it, a client Roko adds by hand is the
+                    one destination booking with no destination on file. */}
+                {bridal.out_of_state === true && (
+                  <div className="mt-2.5">
+                    <label style={labelStyle}>Where's the wedding?</label>
+                    <input value={bridal.destination_location} onChange={e => setBr('destination_location', e.target.value)}
+                      placeholder="City & state, e.g. Austin, Texas" className={inputClass} style={inputStyle} />
+                  </div>
+                )}
               </div>
 
               <div>

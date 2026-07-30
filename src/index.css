@@ -307,6 +307,42 @@
   100% { transform: translateX(400%); opacity: 0; }
 }
 
+/* ── Confirmation ─────────────────────────────────────────────────────────────
+   The ring draws itself clockwise, the check strokes in behind it, then the
+   details arrive top to bottom. The sequencing is the point: it walks the eye
+   down the confirmation in the order that matters (what, when, what's next)
+   instead of dumping the whole screen at once.
+
+   No confetti here on purpose. It reads as a different brand from everything
+   around it, and this screen is the last thing a bride sees. */
+@keyframes ringDraw {
+  from { stroke-dashoffset: 63; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes checkDraw {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes doneBadgeIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.done-badge { animation: doneBadgeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.done-ring  { animation: ringDraw 0.44s var(--ease) 0.1s both; }
+.done-check { animation: checkDraw 0.28s var(--ease) 0.5s both; }
+
+/* Details cascade in behind the badge. Steps are ~90ms apart, which is enough to
+   read as a sequence without the last row feeling late. */
+.done-step   { animation: fadeRiseIn 0.44s var(--ease) both; }
+.done-step-1 { animation-delay: 0.60s; }
+.done-step-2 { animation-delay: 0.69s; }
+.done-step-3 { animation-delay: 0.78s; }
+.done-step-4 { animation-delay: 0.87s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .done-badge, .done-ring, .done-check, .done-step { animation: none; }
+}
+
 /* ── Gallery reveal ───────────────────────────────────────────────────────────
    On a makeup artist's site the photographs ARE the product, so they get the one
    piece of motion that is purely aesthetic: each transformation develops in as it

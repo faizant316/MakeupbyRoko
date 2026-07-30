@@ -1,0 +1,12 @@
+-- 0016: Where the destination wedding actually is.
+--
+-- The bridal form asks "is this an out-of-state event?" and stores a bare
+-- boolean, then shows a card explaining that the bride covers flights, hotel and
+-- the add-on person. But it never asked WHERE. The one fact needed to price any
+-- of that had nowhere to go, so brides who volunteered it typed it into the
+-- free-text "makeup vision & additional details" box, where it sat mixed in with
+-- inspo notes, or they left it out entirely and Roko had to email and ask.
+--
+-- Its own column so the admin card and the admin email can show the destination
+-- as a field, next to the Out of State flag it qualifies.
+alter table bridal_inquiries add column if not exists destination_location text;
