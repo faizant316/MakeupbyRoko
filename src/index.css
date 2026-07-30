@@ -307,6 +307,37 @@
   100% { transform: translateX(400%); opacity: 0; }
 }
 
+/* ── Gallery reveal ───────────────────────────────────────────────────────────
+   On a makeup artist's site the photographs ARE the product, so they get the one
+   piece of motion that is purely aesthetic: each transformation develops in as it
+   crosses into view, blurred and very slightly oversized settling to sharp.
+
+   Only filter and transform animate (both compositor-friendly), and .gal-in
+   drops will-change so a scrolled-past grid isn't holding a dozen layers, the
+   same problem .reveal.visible fixes for sections. */
+.gal-img {
+  opacity: 0;
+  filter: blur(14px);
+  transform: scale(1.05);
+  will-change: filter, transform, opacity;
+  transition:
+    opacity 0.65s var(--ease),
+    filter 0.85s var(--ease),
+    transform 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gal-in {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+  will-change: auto;
+}
+/* Without motion the photo still has to arrive, it just does it plainly: no blur
+   to resolve and no scale to settle. */
+@media (prefers-reduced-motion: reduce) {
+  .gal-img { transition: opacity 0.3s linear; filter: none; transform: none; }
+  .gal-in { filter: none; transform: none; }
+}
+
 /* ── Calendar assemble ────────────────────────────────────────────────────────
    The month grid builds itself once, the first time the calendar mounts: weekday
    header, then day cells rising row by row, then the availability dots. Watching

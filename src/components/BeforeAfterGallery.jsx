@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import MediaModal from './MediaModal';
 
 const TRANSFORMATIONS = [
@@ -78,6 +78,57 @@ const IconInstagram = () => (
   </svg>
 );
 
+// Each transformation develops in as it enters view: blurred and a touch
+// oversized, settling to sharp (see .gal-img in index.css).
+//
+// Gated on intersection AND decode, not just intersection. These are lazy-loaded
+// remote images, so revealing on visibility alone would resolve the blur on an
+// empty box and then pop the photo in afterwards.
+//
+// The reveal sits on a wrapper rather than the <img> so the image keeps its own
+// hover transform and 500ms transition untouched; putting both on one element
+// would have the reveal's longer transition swallow the hover.
+function GalleryImage({ src, alt }) {
+  const wrapRef = useRef(null);
+  const imgRef = useRef(null);
+  const [seen, setSeen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return; }
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setSeen(true); io.disconnect(); } },
+      // Start a little before the edge so the develop is already underway by the
+      // time the photo is properly on screen.
+      { rootMargin: '80px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // A cached image can finish decoding before onLoad is ever attached, in which
+  // case the event never fires and the photo would stay blurred forever.
+  useEffect(() => {
+    if (imgRef.current?.complete) setLoaded(true);
+  }, []);
+
+  return (
+    <span ref={wrapRef} className={`block w-full h-full gal-img ${seen && loaded ? 'gal-in' : ''}`}>
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+      />
+    </span>
+  );
+}
+
 export default function BeforeAfterGallery() {
   const [filter, setFilter] = useState('all');
   const [idx, setIdx] = useState(null);
@@ -148,13 +199,7 @@ export default function BeforeAfterGallery() {
                   className={`group relative overflow-hidden rounded-[var(--radius-lg)] bg-[#eee] cursor-pointer text-left ${isWide ? 'col-span-2' : 'col-span-1'}`}
                 >
                   <div className={`relative overflow-hidden ${isWide ? 'aspect-[4/3] sm:aspect-[16/10]' : 'aspect-[3/4]'}`}>
-                    <img
-                      src={t.image}
-                      alt={t.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                    />
+                    <GalleryImage src={t.image} alt={t.title} />
                     {/* Hover overlay — title + view cue */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end"
                       style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 45%, transparent 70%)' }}>
