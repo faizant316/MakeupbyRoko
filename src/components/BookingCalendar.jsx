@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CalendarNavSelect from './CalendarNavSelect';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
+import { studioToday } from '@/lib/studio';
 
 // One calendar for every public booking flow.
 //
@@ -68,7 +69,7 @@ function buildMonthGrid(year, month) {
 // colour, dot colour, whether the button is disabled) and the month summary
 // counts read from this, so a cell can never disagree with the tally above it.
 function dayState({ day, year, month, minDate, blockedSet, bookedDateMap, maxPerDay, allowClosedDays }) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const today = studioToday(); // the studio's day, same one the lead time counts from
   const key = dateKey(year, month, day.d);
 
   // Lead time is checked FIRST and wins over everything else: a date you cannot
