@@ -10,6 +10,8 @@
 // and the class picker), which is how they were free to disagree. One source
 // now, shared by the pickers and the API routes that accept the submission.
 
+import { studioToday } from './studio';
+
 // A bride booking herself. Unchanged at two weeks.
 export const BRIDAL_LEAD_DAYS = 14;
 
@@ -28,10 +30,14 @@ export const LEAD_LABEL = {
   [NON_BRIDAL_LEAD_DAYS]: '1 month',
 };
 
-/** Midnight, `days` from `from`. The earliest date that satisfies the window. */
+/**
+ * Midnight, `days` from `from`. The earliest date that satisfies the window.
+ * Counted from the studio's day, not the runtime's — the browser is on Pacific
+ * time and the server is on UTC, and after 5 PM Pacific those are two different
+ * dates. See studioToday().
+ */
 export function leadDate(days, from = new Date()) {
-  const d = new Date(from);
-  d.setHours(0, 0, 0, 0);
+  const d = studioToday(from);
   d.setDate(d.getDate() + days);
   return d;
 }
@@ -61,7 +67,5 @@ export function daysUntil(dateKey, from = new Date()) {
   if (!dateKey) return null;
   const picked = new Date(`${dateKey}T00:00:00`);
   if (Number.isNaN(picked.getTime())) return null;
-  const today = new Date(from);
-  today.setHours(0, 0, 0, 0);
-  return Math.round((picked - today) / 86400000);
+  return Math.round((picked - studioToday(from)) / 86400000);
 }
