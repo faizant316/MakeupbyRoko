@@ -1041,10 +1041,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                             <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                               Getting ready more than an hour away? That's the <strong style={{ color: '#4A423E' }}>Full Day Service</strong> instead, travel included.
                             </p>
+                            {/* Deliberately small, and never full-width. This is an
+                                offer, not the form's next step: at w-full on a phone a
+                                black bar this size reads as the primary CTA and pulls
+                                brides who are ten minutes away into a $1,700 package.
+                                Sized to the label on every screen so it stays a link
+                                you take if the hour applies to you. */}
                             <button
                               type="button"
                               onClick={switchToFullDay}
-                              className="mt-2.5 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[0.8rem] font-medium text-white transition-all active:scale-[0.97] touch-manipulation"
+                              className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.72rem] font-medium text-white transition-all active:scale-[0.97] touch-manipulation"
                               style={{ background: '#111' }}
                             >
                               Switch to Full Day{fullDayService.price ? ` · ${fullDayService.price}` : ''}

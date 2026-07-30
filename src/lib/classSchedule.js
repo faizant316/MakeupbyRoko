@@ -4,6 +4,8 @@
 // Wednesday. Shared by the public picker and the server-side validation in
 // create-class-checkout.
 
+import { studioToday } from './studio';
+
 // Minimum lead time: the earliest bookable Wednesday is the first one that is
 // at least this many days from today. (Two weeks.)
 export const MIN_LEAD_DAYS = 14;
@@ -17,10 +19,10 @@ const WEDNESDAY = 3;
 
 // 'YYYY-MM-DD' of the earliest bookable Wednesday: the first Wednesday that is
 // at least MIN_LEAD_DAYS out. Everything from here forward is open (unless a
-// specific date is booked/blocked).
+// specific date is booked/blocked). Counted from the studio's day so the
+// picker and the server agree (see studioToday()).
 export function firstBookableWednesday(from = new Date()) {
-  const d = new Date(from);
-  d.setHours(0, 0, 0, 0);
+  const d = studioToday(from);
   d.setDate(d.getDate() + MIN_LEAD_DAYS); // earliest allowed calendar day
   // step forward to the first Wednesday on/after that day
   d.setDate(d.getDate() + ((WEDNESDAY - d.getDay() + 7) % 7));
