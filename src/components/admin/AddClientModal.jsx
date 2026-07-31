@@ -144,13 +144,15 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
   }, [cls.classKey, cls.format]);
 
   useEffect(() => {
-    const sbw = window.innerWidth - document.documentElement.clientWidth;
-    if (sbw > 0) document.body.style.paddingRight = `${sbw}px`;
+    // No padding-right compensation here any more. `scrollbar-gutter: stable`
+    // on <html> (see index.css) keeps the scrollbar's strip reserved whether or
+    // not a scrollbar is painted, so hiding overflow no longer changes the page
+    // width. Re-adding the old padding would now SHIFT the page by a scrollbar
+    // width rather than hold it still.
     document.body.style.overflow = 'hidden';
     lenisStop();
     return () => {
       document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
       lenisStart();
     };
   }, []);

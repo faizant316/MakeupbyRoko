@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { api } from '@/api/apiClient';
 import { lenisStop, lenisStart, lenisResize, lenisScrollTo, scrollToTarget } from '@/lib/lenis';
-import { freezeScrollEffects, unfreezeScrollEffects } from '@/lib/useScrollLock';
+import { freezeScrollEffects, unfreezeScrollEffects, isScrollLocked } from '@/lib/useScrollLock';
 
 // Height of the fixed nav bar plus a little breathing room, so a section never
 // lands tucked underneath it after a jump.
@@ -24,8 +24,26 @@ export default function Navigation({ onCloseModal }) {
     api.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
   }, []);
 
+  // THE BLACK FLASH.
+  //
+  // This bar has two looks: white once you've scrolled, near-black
+  // (rgba(12,10,9,0.85)) while it's sitting over the hero. Every overlay on the
+  // site — this menu, a service card, a booking sheet — pins the body with
+  // position:fixed, and a pinned body genuinely reports window.scrollY as 0. So
+  // opening any of them flipped this bar back to its over-hero black, behind the
+  // overlay where you couldn't see it. Then the overlay faded out, the black bar
+  // was revealed at the top of the page, and the restore flipped it back to white
+  // through a 500ms transition. That slow dark smear on the way out of a service
+  // card (and out of this menu) was never the hero at all — it was this bar
+  // playing its hero state and easing back out of it.
+  //
+  // While the page is pinned the answer to "have we scrolled" is simply "the same
+  // as before it was pinned", so hold the last real value.
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      if (isScrollLocked()) return;
+      setScrolled(window.scrollY > 20);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -156,10 +174,14 @@ export default function Navigation({ onCloseModal }) {
     }
   };
 
+  // Same order the page itself is in: the services grid is the first thing in
+  // the white panel and About follows it (moved there in the mobile conversion
+  // pass). The nav had never been updated to match, so it listed About first and
+  // read as a different running order than the one you actually scroll through.
   const navItems = [
     { label: 'Home', href: '#', sub: 'Back to top' },
-    { label: 'About', href: '#about', sub: "Roko's story" },
     { label: 'Services', href: '#services-grid', sub: 'Browse offerings' },
+    { label: 'About', href: '#about', sub: "Roko's story" },
     { label: 'Transformations', href: '#before-after', sub: 'Before & after' },
     { label: 'Reviews', href: '#reviews', sub: 'Client love' },
   ];
