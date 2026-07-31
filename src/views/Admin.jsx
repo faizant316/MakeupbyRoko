@@ -13,6 +13,7 @@ import ServicesList from '../components/admin/ServicesList';
 import ContractSettings from '../components/admin/ContractSettings';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
+import { MonthNav, dayKey } from '../components/admin/MonthCalendar';
 import TodayAgenda from '../components/admin/TodayAgenda';
 import ClassSignupsCard from '../components/admin/ClassSignupsCard';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
@@ -35,6 +36,10 @@ export default function Admin() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Calendar tab's month + open day. Held here, not inside the tab, because the
+  // month arrows render up in the page header next to the title.
+  const [availMonth, setAvailMonth] = useState(() => new Date());
+  const [availDay, setAvailDay] = useState(null);
   const [userName, setUserName] = useState('');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -489,8 +494,10 @@ export default function Admin() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Page title */}
-          <div className="flex items-end justify-between gap-4 mt-8 sm:mt-10 mb-6">
+          {/* Page title. On the Calendar tab the month arrows ride along here,
+              at the top of the screen, instead of sitting in a small row
+              halfway down the page. */}
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 mt-8 sm:mt-10 mb-5 sm:mb-6">
             <div>
               <h1
                 className="font-serif text-[2rem] sm:text-[2.25rem] leading-none tracking-[-0.01em]"
@@ -502,6 +509,15 @@ export default function Admin() {
                 Welcome back, <span className="text-[#D4A0B0]">Roqia</span> ✦
               </p>
             </div>
+            {activeTab === 'availability' && !selectedBooking && !selectedClassReg && (
+              <MonthNav
+                month={availMonth}
+                onStep={(n) => setAvailMonth(m => new Date(m.getFullYear(), m.getMonth() + n, 1))}
+                onToday={() => { const t = new Date(); setAvailMonth(t); setAvailDay(dayKey(t)); }}
+                dm={dm}
+                className="w-full sm:w-auto justify-between sm:justify-end"
+              />
+            )}
           </div>
 
         {/* Keyed so every navigation (open/close a card, switch tabs) replays
@@ -625,6 +641,10 @@ export default function Admin() {
             bookings={bookings}
             classRegs={classRegs}
             darkMode={dm}
+            month={availMonth}
+            setMonth={setAvailMonth}
+            selectedDate={availDay}
+            setSelectedDate={setAvailDay}
             onSelect={setSelectedBooking}
             onSelectClassReg={setSelectedClassReg}
           />

@@ -23,6 +23,53 @@ const DOUBLE_TAP_MS = 340;
 
 export const startTime = (t) => (t ? String(t).split(/[–-]/)[0].trim() : '');
 
+export const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+function Chevron({ dir }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+      strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <polyline points={dir === 'left' ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} />
+    </svg>
+  );
+}
+
+// The month stepper. It renders up in the page header on the Calendar tab —
+// arrows belong at the top of the screen where you look first, not tucked in a
+// small row halfway down beside the grid.
+export function MonthNav({ month, onStep, onToday, dm, className = '' }) {
+  const label = month.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const btn = 'w-9 h-9 rounded-xl flex items-center justify-center transition-colors flex-shrink-0 active:scale-90';
+  const btnStyle = {
+    background: dm ? '#26262e' : '#fff',
+    border: `1px solid ${dm ? '#34343d' : '#E9E9F0'}`,
+    color: dm ? '#a1a1aa' : '#77777f',
+  };
+  const hoverIn = (e) => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#A0607A'; };
+  const hoverOut = (e) => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#E9E9F0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#77777f'; };
+  return (
+    <div className={`flex items-center gap-1.5 sm:gap-2 ${className}`}>
+      <button type="button" onClick={() => onStep(-1)} className={btn} style={btnStyle}
+        onMouseEnter={hoverIn} onMouseLeave={hoverOut} aria-label="Previous month">
+        <Chevron dir="left" />
+      </button>
+      <span className="font-serif text-center tabular-nums text-[1rem] sm:text-[1.12rem] flex-1 sm:flex-none min-w-[126px] sm:min-w-[152px]"
+        style={{ color: dm ? '#e4e4e7' : '#111' }}>
+        {label}
+      </span>
+      <button type="button" onClick={() => onStep(1)} className={btn} style={btnStyle}
+        onMouseEnter={hoverIn} onMouseLeave={hoverOut} aria-label="Next month">
+        <Chevron dir="right" />
+      </button>
+      <button type="button" onClick={onToday}
+        className="h-9 px-3 sm:px-3.5 ml-0.5 sm:ml-1 rounded-xl text-[0.64rem] font-semibold tracking-[0.1em] uppercase transition-all flex-shrink-0 active:scale-95"
+        style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F6EEF2', color: dm ? '#d8b4c2' : '#A0607A' }}>
+        Today
+      </button>
+    </div>
+  );
+}
+
 export const dotOf = (ev, dm) =>
   ev.kind === 'consult' ? CONSULT_INK[dm ? 'dark' : 'light']
   : ev.kind === 'class' ? CLASS_PINK
@@ -104,8 +151,10 @@ export default function MonthCalendar({
     selectMode ? onToggleDay?.(key) : onOpenDay?.(key);
   };
 
-  const cellPad = dense ? 'p-1.5 sm:p-2' : 'p-1 sm:p-1.5';
-  const cellMinH = dense ? 'min-h-[56px] sm:min-h-[92px]' : 'min-h-[62px] sm:min-h-[104px]';
+  const cellPad = dense ? 'p-1.5 sm:p-2' : 'p-1.5 sm:p-2';
+  // The Calendar tab now spends its vertical budget on the grid instead of on
+  // blurb and stat cards, so the cells get to breathe.
+  const cellMinH = dense ? 'min-h-[56px] sm:min-h-[92px]' : 'min-h-[70px] sm:min-h-[114px] xl:min-h-[126px]';
 
   return (
     <>
