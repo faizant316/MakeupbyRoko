@@ -4,6 +4,7 @@ import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { scrollToTarget } from '@/lib/lenis';
+import { isScrollLocked } from '@/lib/useScrollLock';
 
 import Navigation from '../components/Navigation';
 import BookingModal from '../components/BookingModal';
@@ -32,16 +33,39 @@ function useHeroParallax() {
     const el = ref.current;
     if (!el) return;
     let raf = 0;
+    let hidden = null;
     const apply = () => {
       raf = 0;
-      const p = Math.min(1, Math.max(0, window.scrollY / window.innerHeight));
+      // Frozen while an overlay has the body pinned: the document really is at
+      // scroll 0 then, and recomputing from that would fade the hero back in
+      // behind the sheet (and un-hide it, restarting the video). See
+      // isScrollLocked in useScrollLock.
+      if (isScrollLocked()) return;
+      const y = window.scrollY;
+      const p = Math.min(1, Math.max(0, y / window.innerHeight));
       el.style.setProperty('--hero-scale', (1 - p * 0.06).toFixed(4));
       el.style.setProperty('--hero-opacity', (1 - p * 0.6).toFixed(4));
+
+      // Past a full viewport the white content panel covers the hero edge to
+      // edge, so it is a full-screen composited layer (with a playing video in
+      // it) that nobody can see. Taking it out of the paint tree entirely gives
+      // the rest of the page back its frame budget for the whole scroll down.
+      const out = y > window.innerHeight + 8;
+      if (out !== hidden) {
+        hidden = out;
+        el.style.visibility = out ? 'hidden' : 'visible';
+        window.dispatchEvent(new CustomEvent('roko:heroVisible', { detail: !out }));
+      }
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply); };
     apply(); // set the initial values before first paint
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
   return ref;
 }
@@ -236,7 +260,11 @@ export default function ServicesPage() {
           transform: 'scale(var(--hero-scale, 1))',
           opacity: 'var(--hero-opacity, 1)',
           transformOrigin: 'center center',
-          transition: 'transform 0.05s linear, opacity 0.05s linear',
+          // No transition on purpose. Both values are already rewritten every
+          // frame by useHeroParallax, so a 50ms transition was restarting a
+          // fresh animation on top of them on every single scroll tick — two
+          // engines driving the same two properties, which is what put the
+          // micro-stutter in the first screen of the scroll.
           willChange: 'transform, opacity',
         }}
       >

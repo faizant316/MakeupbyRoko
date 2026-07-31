@@ -27,6 +27,9 @@ import { NON_BRIDAL_LEAD_DAYS } from '@/lib/bookingLeadTime';
 import { cityFromLocation } from '@/lib/location';
 import LocationAutocomplete from './LocationAutocomplete';
 
+// Stable stand-in for "counts haven't arrived yet" — see where it's used below.
+const NO_COUNTS = {};
+
 // Sized to match the bridal form's fields so non-bridal (photoshoot / other
 // services) inquiries feel just as substantial on desktop, not shrunken.
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
@@ -84,7 +87,11 @@ export default function BookingModal({ service: initialService, onClose }) {
   const blockedSet = useMemo(() => new Set(blockedDates.map(b => b.date)), [blockedDates]);
 
   const rawCounts = useBookingCounts();
-  const bookedDateMap = rawCounts ?? {};
+  // NO_COUNTS, not a fresh `{}`. BookingCalendar keys three months of day-state
+  // work off this object's identity, and a new literal every render invalidated
+  // all of it on every keystroke, every query settling, every re-render — which
+  // is a large part of why the calendar felt heavy while it was loading.
+  const bookedDateMap = rawCounts ?? NO_COUNTS;
 
   // Fetch dynamic capacity setting
   const { data: capacitySettings = [] } = useQuery({

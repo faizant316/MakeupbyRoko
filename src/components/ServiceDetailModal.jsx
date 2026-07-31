@@ -1,6 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
+
+// Same hook, no SSR warning. The lock/unlock and the opening FLIP both have to
+// land before the browser paints.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 function dedupeText(text, phrases) {
   if (!text) return text;
@@ -117,7 +121,12 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
 
   useEffect(() => { setPhotoIdx(0); }, [svc?.key]);
 
-  useEffect(() => {
+  // Layout effect, not effect. On close, a passive cleanup runs after React has
+  // already committed the removal of this modal, so the browser could paint one
+  // frame with the overlay gone but the page not yet handed back — and that
+  // frame showed the near-black hero. Restoring in the layout phase closes the
+  // gap: the page is back in place in the same commit that removes the sheet.
+  useIsoLayoutEffect(() => {
     // Shared, reference-counted page lock. Using the same lock the booking/class
     // sheets use means that when this preview hands off to one of those sheets
     // (both mounted for a beat during the cross-fade), the page scroller stays

@@ -93,6 +93,11 @@ function GalleryImage({ src, alt }) {
   const imgRef = useRef(null);
   const [seen, setSeen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Compositor layer for the develop, held ONLY between "about to reveal" and
+  // "finished revealing". See .gal-arm in index.css for why it can't just live
+  // on .gal-img: six blurred full-size layers from first paint is a real cost
+  // on the way down the page, paid before a single photo is even in view.
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -114,8 +119,24 @@ function GalleryImage({ src, alt }) {
     if (imgRef.current?.complete) setLoaded(true);
   }, []);
 
+  const revealed = seen && loaded;
+
+  // Drop the layer once the develop has finished. A timer rather than
+  // transitionend because under prefers-reduced-motion there is no filter
+  // transition to end, and the layer would then be held for the life of the
+  // page — the exact thing this is here to avoid. 1100ms clears the longest leg
+  // (the 0.95s transform) with slack.
+  useEffect(() => {
+    if (!revealed) return;
+    const t = setTimeout(() => setSettled(true), 1100);
+    return () => clearTimeout(t);
+  }, [revealed]);
+
   return (
-    <span ref={wrapRef} className={`block w-full h-full gal-img ${seen && loaded ? 'gal-in' : ''}`}>
+    <span
+      ref={wrapRef}
+      className={`block w-full h-full gal-img ${seen && !settled ? 'gal-arm' : ''} ${revealed ? 'gal-in' : ''}`}
+    >
       <img
         ref={imgRef}
         src={src}

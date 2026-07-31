@@ -43,6 +43,14 @@
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Always reserve the scrollbar's strip, whether or not one is showing.
+       Every modal on the site pins the body with position:fixed, which collapses
+       the page height and takes the scrollbar away with it — the viewport got
+       ~15px wider for as long as the overlay was open and the whole page slid
+       sideways on open and back on close. Reserving the gutter permanently means
+       the layout width never changes, so opening and closing an overlay is
+       perfectly still. No effect on phones, where scrollbars are overlays. */
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -240,14 +248,17 @@
 }
 
 /* ── Full-screen sheet backdrops ──────────────────────────────────────────────
-   On a phone these sheets are w-full and 100dvh, so they cover the backdrop
-   completely: the tinted gradients and the blur behind them are never seen. But a
-   full-viewport backdrop-filter still re-samples and re-blurs whenever anything
-   above it moves, which is what made swiping the calendar inside the sheet
-   stutter. Mobile therefore gets a flat scrim, and the frosted treatment is
-   scoped to the widths where the sheet is inset and the backdrop is actually
-   visible. Kept as two classes because the booking and class sheets have their
-   own tints, and neither needed changing. */
+   These sheets are w-full and 100dvh at EVERY width, so they cover their own
+   backdrop completely. The only moment any of it is on screen is the 0.42s
+   slideUpSheet entrance, which is exactly the moment that has to be smooth.
+   A backdrop-filter here cost the entire viewport a fresh blur pass on every
+   frame of that entrance — and, because the page behind it is a fixed hero with
+   a playing video, it kept re-blurring for the whole time the sheet was open.
+   That was the "the booking calendar loads up choppy" stutter.
+
+   So: gradients only, no blur. The tint still reads during the slide-up, and the
+   entrance now has the frame to itself. Two classes because the booking and class
+   sheets carry their own tints. */
 .sheet-backdrop,
 .sheet-backdrop--class {
   background: rgba(0, 0, 0, 0.58);
@@ -259,16 +270,12 @@
       radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.38) 0%, transparent 45%),
       radial-gradient(ellipse at 50% 0%, rgba(212,160,176,0.25) 0%, transparent 50%),
       rgba(0, 0, 0, 0.58);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
   }
   .sheet-backdrop--class {
     background:
       radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.4) 0%, transparent 45%),
       radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.33) 0%, transparent 45%),
       rgba(0, 0, 0, 0.55);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
   }
 }
 
@@ -348,24 +355,31 @@
    piece of motion that is purely aesthetic: each transformation develops in as it
    crosses into view, blurred and very slightly oversized settling to sharp.
 
-   Only filter and transform animate (both compositor-friendly), and .gal-in
-   drops will-change so a scrolled-past grid isn't holding a dozen layers, the
-   same problem .reveal.visible fixes for sections. */
+   Only filter and transform animate (both compositor-friendly).
+
+   will-change is DELIBERATELY not on .gal-img. It used to be, and the cost was
+   paid at page load rather than at reveal time: a promise to keep a layer is
+   honoured for as long as the declaration applies, so all six photographs held a
+   full-size blurred compositor layer from first paint, before a single one had
+   scrolled into view. That is what made scrolling down the page hitch. The layer
+   is now armed by .gal-arm only once a photo is about to reveal, and dropped
+   again the moment its transition finishes (see GalleryImage). */
 .gal-img {
   opacity: 0;
   filter: blur(14px);
   transform: scale(1.05);
-  will-change: filter, transform, opacity;
   transition:
     opacity 0.65s var(--ease),
     filter 0.85s var(--ease),
     transform 0.95s cubic-bezier(0.22, 1, 0.36, 1);
 }
+.gal-img.gal-arm {
+  will-change: filter, transform, opacity;
+}
 .gal-in {
   opacity: 1;
   filter: blur(0);
   transform: scale(1);
-  will-change: auto;
 }
 /* Without motion the photo still has to arrive, it just does it plainly: no blur
    to resolve and no scale to settle. */
@@ -628,11 +642,19 @@ body.site-nav-hidden #nav {
 .thin-scrollbar::-webkit-scrollbar-thumb { background: var(--accent-light); border-radius: 4px; }
 .thin-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-/* Bridal aura glow */
-@keyframes aura-rotate {
-  0% { filter: blur(22px) brightness(1); }
-  50% { filter: blur(30px) brightness(1.3); }
-  100% { filter: blur(22px) brightness(1); }
+/* Bridal aura glow.
+   The breathe is on OPACITY, not on the blur radius. It used to animate
+   `filter: blur(22px) → blur(30px) brightness(1.3)` on an infinite 4s loop,
+   which meant two large conic gradients were being re-rasterised and re-blurred
+   from scratch on every frame, for the entire life of the page, whether or not
+   the cards were even on screen. That was the single biggest source of the
+   frame drops while scrolling the services page on a laptop.
+
+   A fixed blur is rasterised once and cached; opacity is a compositor-only
+   property. Same slow pulsing glow, effectively free. */
+@keyframes aura-breathe {
+  0%, 100% { opacity: var(--aura-min); }
+  50%      { opacity: var(--aura-max); }
 }
 
 .bridal-aura {
@@ -653,17 +675,21 @@ body.site-nav-hidden #nav {
     rgba(200, 170, 210, 0.6),
     rgba(212, 160, 176, 0.72)
   );
-  filter: blur(22px);
+  filter: blur(24px);
   z-index: -1;
-  animation: aura-rotate 4s ease-in-out infinite;
-  opacity: 0.85;
+  --aura-min: 0.72;
+  --aura-max: 0.95;
+  opacity: var(--aura-min);
+  animation: aura-breathe 4s ease-in-out infinite;
+  will-change: opacity;
 }
 
 @media (max-width: 768px) {
   .bridal-aura::before {
     inset: -3px;
-    filter: blur(14px);
-    opacity: 0.7;
+    filter: blur(15px);
+    --aura-min: 0.6;
+    --aura-max: 0.8;
   }
 }
 
@@ -686,17 +712,21 @@ body.site-nav-hidden #nav {
     rgba(190, 50, 40, 0.55),
     rgba(180, 40, 40, 0.68)
   );
-  filter: blur(22px);
+  filter: blur(24px);
   z-index: -1;
-  animation: aura-rotate 4s ease-in-out infinite;
-  opacity: 0.35;
+  --aura-min: 0.3;
+  --aura-max: 0.42;
+  opacity: var(--aura-min);
+  animation: aura-breathe 4s ease-in-out infinite;
+  will-change: opacity;
 }
 
 @media (max-width: 768px) {
   .fullday-aura::before {
     inset: -3px;
-    filter: blur(14px);
-    opacity: 0.3;
+    filter: blur(15px);
+    --aura-min: 0.26;
+    --aura-max: 0.36;
   }
 }
 

@@ -42,6 +42,9 @@ const CONSULT_STEPS = [
   },
 ];
 
+// Stable stand-in for "counts haven't arrived yet" — see where it's used below.
+const NO_COUNTS = {};
+
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
 
@@ -225,7 +228,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
   const { data: blockedDates = [] } = useQuery({ queryKey: ['blocked-dates'], queryFn: () => api.entities.BlockedDate.list(), initialData: [] });
   const rawCounts = useBookingCounts();
-  const bookedDateMap = rawCounts ?? {};
+  // NO_COUNTS, not a fresh `{}`: a new literal every render invalidates all
+  // three months of the calendar's day-state work (see BookingCalendar).
+  const bookedDateMap = rawCounts ?? NO_COUNTS;
   const { data: capacitySettings = [] } = useQuery({ queryKey: ['booking-capacity'], queryFn: () => api.entities.AppSettings.filter({ key: 'max_bookings_per_day' }), staleTime: 30000 });
   const { data: dayCapacities = [] } = useQuery({ queryKey: ['day-capacities'], queryFn: () => api.entities.DayCapacity.list('-date', 200), staleTime: 30000 });
 

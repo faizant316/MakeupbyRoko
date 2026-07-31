@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CalendarNavSelect from './CalendarNavSelect';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
 import { studioToday } from '@/lib/studio';
@@ -31,13 +31,22 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
 // One-time mount assemble (see .cal-head-in / calCellIn in index.css).
-// Cells step 11ms apart but the total is capped, so a 6-row month doesn't take
+// Cells step 9ms apart but the total is capped, so a 6-row month doesn't take
 // noticeably longer to build than a 5-row one.
-const CELL_STEP_MS = 11;
-const ASSEMBLE_CELLS_MS = 430;
+const CELL_STEP_MS = 9;
+const ASSEMBLE_CELLS_MS = 340;
+// Every public use of this calendar sits inside a sheet that slides up for
+// 0.42s, and the assemble used to start in the same frame as that slide. Two
+// dozen cells all promoting their own compositor layer while a full-screen sheet
+// is mid-animation is what made the calendar arrive in a stutter. Holding the
+// grid back until the sheet has all but landed (its ease-out covers most of the
+// distance in the first ~170ms) gives each animation the frame to itself, and
+// reads as the calendar assembling once the sheet settles rather than fighting
+// it on the way in.
+const ASSEMBLE_START_MS = 220;
 // Long enough to cover the last cell's delay plus its own 320ms, after which the
 // inline animation is dropped from every cell for good.
-const ASSEMBLE_MS = ASSEMBLE_CELLS_MS + 420;
+const ASSEMBLE_MS = ASSEMBLE_START_MS + ASSEMBLE_CELLS_MS + 420;
 
 // The swipe track holds three months side by side (previous · current · next)
 // and is three viewports wide, so "one viewport" is 33.3333% of the track.
@@ -68,8 +77,10 @@ function buildMonthGrid(year, month) {
 // The single source of truth for what one day means. Every visual decision (text
 // colour, dot colour, whether the button is disabled) and the month summary
 // counts read from this, so a cell can never disagree with the tally above it.
-function dayState({ day, year, month, minDate, blockedSet, bookedDateMap, maxPerDay, allowClosedDays }) {
-  const today = studioToday(); // the studio's day, same one the lead time counts from
+// `today` is passed in rather than read here: studioToday() runs an
+// Intl.DateTimeFormat and two Date constructions, and this function is called
+// once per cell across three months. One call per grid build is plenty.
+function dayState({ day, year, month, today, minDate, blockedSet, bookedDateMap, maxPerDay, allowClosedDays }) {
   const key = dateKey(year, month, day.d);
 
   // Lead time is checked FIRST and wins over everything else: a date you cannot
@@ -99,14 +110,23 @@ function dayState({ day, year, month, minDate, blockedSet, bookedDateMap, maxPer
 // `enterDelay` is a millisecond offset for the one-time mount assemble, or null
 // once it has played (see ASSEMBLE_MS in BookingCalendar). Null means no inline
 // animation at all, so nothing lingers on the cell during a swipe.
-function CalDay({ state, day, selectedDate, onPick, enterDelay = null }) {
-  const { key, isTooSoon, closedWeekday, isBlocked, isFull, isPartial, isToday, disabled, isOpen } = state;
-  const isSel = selectedDate === key;
+//
+// memo'd, and deliberately given only props that hold their identity: the
+// pre-built `state` object, the `day`, a plain `isSel` boolean, and a `onPick`
+// that never changes. Three months of cells live in the swipe track at once, so
+// without this every month step re-rendered ~126 buttons in the same frame that
+// the track snapped back to centre — a heavy frame landing exactly as the swipe
+// finished, which is what you felt as the swipe not quite settling cleanly.
+// Passing `isSel` rather than the whole selectedDate string matters for the same
+// reason: picking a date now re-renders the two cells that changed, not all of
+// them.
+const CalDay = memo(function CalDay({ state, day, panelKey, isSel, onPick, enterDelay = null }) {
+  const { isTooSoon, closedWeekday, isBlocked, isFull, isPartial, isToday, disabled, isOpen } = state;
   const assembling = enterDelay !== null;
   // Dots land after the grid has finished settling, so availability reads as a
   // second beat rather than arriving with the numbers.
   const dotStyle = assembling
-    ? { animation: `calDotIn 0.26s var(--ease) ${ASSEMBLE_CELLS_MS + 40}ms both` }
+    ? { animation: `calDotIn 0.26s var(--ease) ${ASSEMBLE_START_MS + ASSEMBLE_CELLS_MS + 40}ms both` }
     : undefined;
 
   const tone =
@@ -121,7 +141,7 @@ function CalDay({ state, day, selectedDate, onPick, enterDelay = null }) {
   return (
     <button
       type="button"
-      onClick={() => onPick(day)}
+      onClick={() => onPick(panelKey, day)}
       disabled={disabled}
       title={
         isBlocked ? 'Roko is away this day'
@@ -154,7 +174,7 @@ function CalDay({ state, day, selectedDate, onPick, enterDelay = null }) {
       )}
     </button>
   );
-}
+});
 
 /**
  * @param {Date}     value          the month currently shown (day component ignored)
@@ -203,34 +223,63 @@ export default function BookingCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Previous · current · next, all built up front so a swipe reveals a real
-  // month under the finger rather than empty space.
-  const panels = useMemo(() => {
-    const built = [-1, 0, 1].map(off => {
-      const d = new Date(year, month + off, 1);
-      const y = d.getFullYear();
-      const m = d.getMonth();
+  // Builds one month's grid and its day states, memoised per month.
+  //
+  // Stepping months slides the window by one, so two of the three panels are
+  // always ones we just built. Rebuilding all three from scratch on every step
+  // meant ~126 day-states (each a handful of Date comparisons and Set lookups)
+  // recomputed for the sake of the 42 that were genuinely new. The cache lives
+  // inside the memo, so ANY change to the inputs below throws the whole thing
+  // away and rebuilds — a newly blocked day can never be served stale.
+  //
+  // It also keeps object identity: the same month handed back the same `states`
+  // objects and the same `day` objects lets memo'd CalDay skip re-rendering.
+  const getPanel = useMemo(() => {
+    const cache = new Map();
+    const today = studioToday(); // the studio's day, same one the lead time counts from
+    return (y, m) => {
+      const cacheKey = `${y}-${m}`;
+      const hit = cache.get(cacheKey);
+      if (hit) return hit;
       const days = buildMonthGrid(y, m);
       const states = new Map();
       days.forEach(day => {
         if (!day) return;
         const key = dateKey(y, m, day.d);
         states.set(key, dayState({
-          day, year: y, month: m, minDate, blockedSet, bookedDateMap,
+          day, year: y, month: m, today, minDate, blockedSet, bookedDateMap,
           maxPerDay: getMaxForDay(key), allowClosedDays,
         }));
       });
-      return { y, m, key: `${y}-${m}`, days, states };
+      const panel = { y, m, key: cacheKey, days, states };
+      cache.set(cacheKey, panel);
+      return panel;
+    };
+  }, [minDate, blockedSet, bookedDateMap, getMaxForDay, allowClosedDays]);
+
+  // Previous · current · next, all built up front so a swipe reveals a real
+  // month under the finger rather than empty space.
+  const panels = useMemo(() => {
+    const built = [-1, 0, 1].map(off => {
+      const d = new Date(year, month + off, 1);
+      return getPanel(d.getFullYear(), d.getMonth());
     });
 
     // Pad all three to the same row count. Months are 5 or 6 rows deep, and a
     // track whose panels disagree would grow and shrink under the finger
     // mid-swipe. Padding only to the tallest of the three (rather than always
     // six) keeps the common 5-row case from carrying a permanent empty row.
+    //
+    // Padding produces a COPY rather than pushing into the cached panel: how
+    // many trailing blanks a month needs depends on the two months either side
+    // of it, so it isn't a property of the month and must not be baked into the
+    // cache entry. The day objects and the states map are shared by reference,
+    // so the copy costs nothing that matters.
     const rows = Math.max(...built.map(p => Math.ceil(p.days.length / 7)));
-    built.forEach(p => { while (p.days.length < rows * 7) p.days.push(null); });
-    return built;
-  }, [year, month, minDate, blockedSet, bookedDateMap, getMaxForDay, allowClosedDays]);
+    return built.map(p => p.days.length === rows * 7
+      ? p
+      : { ...p, days: [...p.days, ...Array(rows * 7 - p.days.length).fill(null)] });
+  }, [year, month, getPanel]);
 
   const current = panels[1];
 
@@ -385,7 +434,11 @@ export default function BookingCalendar({
       drag.lastX = t.clientX;
       drag.lastT = e.timeStamp;
 
-      track.style.transform = `translate3d(calc(-33.3333% + ${shift}px),0,0)`;
+      // Plain pixels, not calc() against a percentage. -33.3333% of a track that
+      // is 300% wide is exactly one viewport, so this is the same position — but
+      // the browser doesn't have to resolve a percentage against a freshly
+      // measured box on every touchmove to get there.
+      track.style.transform = `translate3d(${(shift - w).toFixed(2)}px,0,0)`;
     };
 
     const onEnd = () => {
@@ -415,12 +468,20 @@ export default function BookingCalendar({
     };
   }, [settle]);
 
-  const pick = useCallback((panel, day) => {
+  // Stable across renders, on purpose: an inline `d => pick(p, d)` per cell
+  // would hand every memo'd CalDay a fresh prop on every render and defeat the
+  // memo entirely. The live values are read through a ref instead, so the
+  // callback identity never changes while the behaviour is always current.
+  const pickRef = useRef(null);
+  pickRef.current = (panelKey, day) => {
+    const panel = panels.find(p => p.key === panelKey);
+    if (!panel) return;
     const key = dateKey(panel.y, panel.m, day.d);
     const s = panel.states.get(key);
     if (!s || s.disabled) return;
     onSelectDate(selectedDate === key ? null : key); // tap again to clear
-  }, [selectedDate, onSelectDate]);
+  };
+  const pick = useCallback((panelKey, day) => pickRef.current(panelKey, day), []);
 
   return (
     <div className="relative z-10">
@@ -513,7 +574,12 @@ export default function BookingCalendar({
         </div>
       )}
 
-      <div className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3 ${assembling ? 'cal-head-in' : ''}`}>
+      <div
+        className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3 ${assembling ? 'cal-head-in' : ''}`}
+        // Same hold-back as the cells, so the header leads the grid in by a
+        // beat instead of arriving while the sheet is still sliding.
+        style={assembling ? { animationDelay: `${ASSEMBLE_START_MS}ms` } : undefined}
+      >
         {WEEKDAYS.map(d => (
           <div key={d} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
         ))}
@@ -544,14 +610,15 @@ export default function BookingCalendar({
                     <CalDay
                       key={dateKey(p.y, p.m, day.d)}
                       day={day}
+                      panelKey={p.key}
                       state={p.states.get(dateKey(p.y, p.m, day.d))}
-                      selectedDate={selectedDate}
-                      onPick={(d) => pick(p, d)}
+                      isSel={selectedDate === dateKey(p.y, p.m, day.d)}
+                      onPick={pick}
                       // Centre panel only. The neighbours are off-screen, and
                       // animating them too would put three months of cells on the
                       // animation path for the track's own transform.
                       enterDelay={assembling && i === 1
-                        ? Math.min(idx * CELL_STEP_MS, ASSEMBLE_CELLS_MS)
+                        ? ASSEMBLE_START_MS + Math.min(idx * CELL_STEP_MS, ASSEMBLE_CELLS_MS)
                         : null}
                     />
                   )

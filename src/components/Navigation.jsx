@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { api } from '@/api/apiClient';
 import { lenisStop, lenisStart, lenisResize, lenisScrollTo, scrollToTarget } from '@/lib/lenis';
+import { freezeScrollEffects, unfreezeScrollEffects } from '@/lib/useScrollLock';
 
 // Height of the fixed nav bar plus a little breathing room, so a section never
 // lands tucked underneath it after a jump.
@@ -46,6 +47,11 @@ export default function Navigation({ onCloseModal }) {
     savedScrollRef.current = y;
     restoreRef.current = null;
     lenisStop();
+    // Freeze scroll-driven effects for as long as the body is pinned. The
+    // document reads as scroll 0 while it is, so without this the hero's
+    // parallax would fade itself back in (and restart its video) behind the
+    // menu, then have to undo it all on close.
+    freezeScrollEffects();
     const b = document.body.style;
     b.position = 'fixed';
     b.top = `-${y}px`;
@@ -84,6 +90,9 @@ export default function Navigation({ onCloseModal }) {
       html.style.scrollBehavior = 'auto';
       window.scrollTo(0, dest);
       lenisScrollTo(dest, { immediate: true });
+      // Only now: the page is back where it belongs, so the next scroll event
+      // that reaches the hero reports the real position, not 0.
+      unfreezeScrollEffects();
       requestAnimationFrame(() => { html.style.scrollBehavior = prevBehavior; });
     };
   }, [mobileOpen]);
