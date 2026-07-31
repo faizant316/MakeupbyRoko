@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
@@ -85,10 +85,13 @@ function Stepper({ value, onChange, min = 1, max = 20, dm }) {
   );
 }
 
-export default function AvailabilityTab({ bookings = [], classRegs = [], darkMode: dm, onSelect, onSelectClassReg }) {
+// `month` and `selectedDate` live up in Admin so the month arrows can sit in
+// the page header alongside the "Calendar" title.
+export default function AvailabilityTab({
+  bookings = [], classRegs = [], darkMode: dm, onSelect, onSelectClassReg,
+  month, setMonth, selectedDate, setSelectedDate,
+}) {
   const qc = useQueryClient();
-  const [month, setMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
   const [editCap, setEditCap] = useState(DEFAULT_CAP);
   const [defaultEdit, setDefaultEdit] = useState(DEFAULT_CAP);
   const [defaultSaved, setDefaultSaved] = useState(false);
@@ -305,18 +308,15 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
   const card = { background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` };
   const spotsLeft = effForSelected - selBooked;
 
-  // ── Glance stats ──
+  // ── Glance stats ── one slim line, not four cards: they're context for the
+  // grid, not the headline.
   const stats = [
     { label: 'Spots / day', value: defaultCap, tone: 'neutral' },
-    { label: 'Booked out · 30d', value: fullyBookedSoon, tone: fullyBookedSoon > 0 ? 'warn' : 'neutral' },
+    { label: 'Booked out 30d', value: fullyBookedSoon, tone: fullyBookedSoon > 0 ? 'warn' : 'neutral' },
     { label: 'Custom days', value: upcomingOverrides.length, tone: 'accent' },
     { label: 'Days off', value: upcomingBlocked.length, tone: upcomingBlocked.length > 0 ? 'danger' : 'neutral' },
   ];
   const toneColor = (t) => t === 'warn' ? '#E0795B' : t === 'danger' ? OFF_RED : t === 'accent' ? '#A0607A' : (dm ? '#e4e4e7' : '#1a1a1a');
-
-  const monthLabel = month.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const navBtn = 'w-8 h-8 rounded-lg flex items-center justify-center text-base font-medium transition-all flex-shrink-0';
-  const navStyle = { background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#777' };
 
   const LEGEND = [
     { c: STATUS_COLORS.pending, label: 'Pending' },
@@ -338,35 +338,22 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
 
   return (
     <div className="pb-4">
-      <p className="text-[0.8rem] leading-relaxed mb-5 max-w-2xl" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
-        Everything on your calendar, and everything you're closed for, in one place. Tap a day to see it, or double-tap it to close it off.
-        To take a whole trip off, hit <span className="font-semibold" style={{ color: dm ? '#d4d4d8' : '#55555d' }}>Select days</span>, tap the days, then close them together.
-        Mondays and Thursdays are always closed, so you never need to block those.
-      </p>
-
-      {/* Glance stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-        {stats.map(s => (
-          <div key={s.label} className="rounded-xl px-3.5 py-3" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}` }}>
-            <p className="text-[1.5rem] font-serif leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</p>
-            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-2 truncate" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4 xl:gap-5 items-start">
         {/* ── Calendar ── */}
-        <div className="rounded-xl p-4 sm:p-5 min-w-0" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className={navBtn} style={navStyle} aria-label="Previous month">‹</button>
-              <span className="text-[0.9rem] sm:text-[0.95rem] font-semibold tracking-tight text-center min-w-[130px] sm:min-w-[150px]" style={{ color: dm ? '#e4e4e7' : '#111' }}>{monthLabel}</span>
-              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className={navBtn} style={navStyle} aria-label="Next month">›</button>
-              <button onClick={() => { setMonth(new Date()); setSelectedDate(tk); }}
-                className="ml-1 text-[0.68rem] font-semibold tracking-[0.1em] uppercase px-3 py-1.5 rounded-lg transition-all flex-shrink-0"
-                style={{ background: dm ? 'rgba(113,113,122,0.14)' : '#EFEFF6', color: dm ? '#a1a1aa' : '#52525b' }}>
-                Today
-              </button>
+        <div className="rounded-xl p-3 sm:p-4 min-w-0" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
+          {/* Glance numbers and Select days share one line, so the grid starts
+              near the top of the card instead of a third of the way down. */}
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap min-w-0">
+              {stats.map((s, i) => (
+                <Fragment key={s.label}>
+                  {i > 0 && <span className="hidden sm:block w-px h-3" style={{ background: dm ? '#3a3a48' : '#E8E8EF' }} />}
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="text-[0.88rem] font-semibold tabular-nums leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</span>
+                    <span className="text-[0.56rem] font-semibold tracking-[0.11em] uppercase whitespace-nowrap" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{s.label}</span>
+                  </span>
+                </Fragment>
+              ))}
             </div>
 
             {/* Select — the whole point: pick days by tapping them */}
@@ -592,8 +579,13 @@ export default function AvailabilityTab({ bookings = [], classRegs = [], darkMod
                 </svg>
               </div>
               <p className="text-[0.85rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Pick a day</p>
+              {/* The how-to that used to be a paragraph above the calendar. It
+                  lives here now, in space that was empty anyway. */}
               <p className="text-[0.72rem] mt-1.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
                 Tap any date to see what's on it, set its booking limit, or close it off.
+              </p>
+              <p className="text-[0.68rem] mt-2.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#5d5d66' : '#adadb6' }}>
+                Double-tap closes a day straight off. For a whole trip, hit <span className="font-semibold" style={{ color: dm ? '#8b8b95' : '#83838d' }}>Select days</span>.
               </p>
             </div>
           )}
