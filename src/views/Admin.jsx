@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '@/api/apiClient';
 import { cityFromLocation } from '@/lib/location';
+import { isScrollLocked } from '@/lib/useScrollLock';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import AdminCalendar from '../components/admin/AdminCalendar';
@@ -56,7 +57,13 @@ export default function Admin() {
   // a little past the header, and keep it there so it's always within reach.
   // Only tucked away right at the top, where the header already sits.
   useEffect(() => {
-    const onScroll = () => setShowNavFab(window.scrollY > 40);
+    const onScroll = () => {
+      // A pinned body (the nav drawer, any admin modal) reports scrollY as 0, so
+      // without this the button hid itself the moment one opened and popped back
+      // when it closed. Hold the last real answer while the page is locked.
+      if (isScrollLocked()) return;
+      setShowNavFab(window.scrollY > 40);
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { freezeScrollEffects, unfreezeScrollEffects } from '@/lib/useScrollLock';
 
 export const ADMIN_TABS = [
   { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments', icon: 'home'     },
@@ -159,9 +160,14 @@ export default function AdminSidebar({
   // site's menu uses (pin the body with position:fixed and restore the exact
   // scroll position on close). Plain overflow:hidden lets the page lurch on
   // mobile; this keeps the open/close buttery smooth with no shift.
+  // Freeze scroll-driven effects alongside the pin: a position:fixed body reports
+  // window.scrollY as 0, so opening this drawer used to read as "jumped back to
+  // the top" and made the floating nav button vanish, then pop back in on close.
+  // Same freeze the public site uses. See isScrollLocked in useScrollLock.
   useEffect(() => {
     if (!mobileOpen) return;
     const scrollY = window.scrollY;
+    freezeScrollEffects();
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.left = '0';
@@ -174,6 +180,7 @@ export default function AdminSidebar({
       document.body.style.right = '';
       document.body.style.overflow = '';
       window.scrollTo(0, scrollY);
+      unfreezeScrollEffects();
     };
   }, [mobileOpen]);
 
