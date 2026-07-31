@@ -1,6 +1,10 @@
 "use client";
-import { useEffect } from "react";
-import { lenisStop, lenisStart, lenisResize } from "@/lib/lenis";
+import { useEffect, useLayoutEffect } from "react";
+import { lenisStop, lenisStart, lenisResize, lenisScrollTo } from "@/lib/lenis";
+
+// useLayoutEffect is the right hook for "put the page back before the browser
+// paints", but React warns about it during SSR. Same hook, no warning.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Reliably locks the page behind a modal so the background never scrolls, then
 // restores the exact scroll position (and Lenis state) when the last overlay
@@ -21,6 +25,27 @@ import { lenisStop, lenisStart, lenisResize } from "@/lib/lenis";
 
 let lockCount = 0;
 let savedScrollY = 0;
+
+// Is the page currently pinned behind an overlay?
+//
+// Anything that reads window.scrollY on a scroll event has to know this. While
+// the body is position:fixed the document is genuinely scrolled to 0, so the
+// browser fires a scroll event reporting 0 — and every scroll-driven effect on
+// the page (the hero's parallax fade, most of all) recomputes itself as though
+// the visitor had jumped back to the top. The hero would go back to full opacity
+// behind the overlay, and closing it flashed that near-black hero for a frame
+// before the restore landed. Scroll-driven work simply freezes while locked.
+export function isScrollLocked() { return lockCount > 0 || freezeCount > 0; }
+
+// The mobile menu pins the body itself rather than through lockScroll (it has
+// its own restore, which has to land on a nav target rather than the saved
+// position). It still needs scroll-driven effects frozen for exactly the same
+// reason, so it flags that separately. Kept out of lockCount on purpose: that
+// counter decides whether the body is pinned, and a menu that pins it its own
+// way must not make the next real lockScroll() think the work is already done.
+let freezeCount = 0;
+export function freezeScrollEffects() { freezeCount += 1; }
+export function unfreezeScrollEffects() { freezeCount = Math.max(0, freezeCount - 1); }
 
 export function lockScroll() {
   if (lockCount === 0) {
@@ -59,11 +84,23 @@ export function unlockScroll() {
   // scrollable limit is ~0 (measured while the body was pinned) and clamps the
   // next scroll to the hero.
   lenisResize();
+  // ...and hand Lenis the position THROUGH Lenis, not just to the window. While
+  // the body was pinned the document really was at 0, so Lenis's own internal
+  // offset tracked to 0 as well. Restarting it with a stale 0 meant its very next
+  // frame wrote the page back to the top, the hero appeared, and the native
+  // scroll event then yanked it back down — a single black frame on the way out
+  // of a service card. This is the same pairing the mobile menu already does.
+  lenisScrollTo(savedScrollY, { immediate: true });
   requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = ''; });
 }
 
+// Layout effect, not effect: on close, React runs passive cleanup AFTER the
+// browser has had a chance to paint the frame in which the overlay is already
+// gone. Restoring in the layout phase means the page is back where it belongs in
+// the same commit that removes the overlay, so there is never a frame showing
+// the unlocked-but-not-yet-restored page.
 export function useScrollLock() {
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     lockScroll();
     return () => unlockScroll();
   }, []);
@@ -95,7 +132,7 @@ export function showSiteNav() {
 }
 
 export function useHideSiteNav() {
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     hideSiteNav();
     return () => showSiteNav();
   }, []);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { scrollToTarget } from '@/lib/lenis';
+import { isScrollLocked } from '@/lib/useScrollLock';
 
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
@@ -25,8 +26,23 @@ const LQIP = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD//gAQTGF2YzYyLjI
 //     session, because a video that was happily playing can still be paused
 //     by the browser later; kicking an already-playing video is a no-op.
 // `getVideo` returns the video element that should currently be playing.
-function useReliableAutoplay(getVideo) {
+// Whether the hero is currently on screen at all. Services.jsx already works
+// this out to decide when to drop the fixed hero out of the paint tree, and
+// announces it; we just listen. Anything that isn't visible shouldn't be
+// decoding video.
+function useHeroOnScreen() {
+  const [onScreen, setOnScreen] = useState(true);
   useEffect(() => {
+    const onChange = (e) => setOnScreen(e.detail !== false);
+    window.addEventListener('roko:heroVisible', onChange);
+    return () => window.removeEventListener('roko:heroVisible', onChange);
+  }, []);
+  return onScreen;
+}
+
+function useReliableAutoplay(getVideo, active = true) {
+  useEffect(() => {
+    if (!active) return;
     const gestureEvents = ['touchstart', 'pointerdown', 'click', 'scroll', 'keydown', 'wheel'];
     const kick = () => {
       const v = getVideo();
@@ -57,7 +73,7 @@ function useReliableAutoplay(getVideo) {
       document.removeEventListener('visibilitychange', onVis);
       gestureEvents.forEach((e) => window.removeEventListener(e, kick));
     };
-  }, [getVideo]);
+  }, [getVideo, active]);
 }
 
 // Mobile hero parallax (video scale + text fade) driven by two CSS variables on
@@ -72,6 +88,10 @@ function useMobileHeroParallax() {
     let raf = 0;
     const apply = () => {
       raf = 0;
+      // Same freeze as the page hero: while a sheet has the body pinned the
+      // document reads as scroll 0, and recomputing from that would snap the
+      // hero back to its un-scrolled state behind the overlay.
+      if (isScrollLocked()) return;
       const p = Math.min(1, Math.max(0, window.scrollY / window.innerHeight));
       el.style.setProperty('--mh-scale', (1 - p * 0.15).toFixed(4));
       el.style.setProperty('--mh-op', (1 - p * 0.4).toFixed(4));
@@ -105,7 +125,7 @@ function useViewportHeight() {
 // loop-point flicker. Only copy A preloads up front (single stream = fastest);
 // copy B warms up once A is playing. If a loop swap comes due before B is
 // buffered, we just re-loop A rather than stall.
-function MobileVideoLoop({ src, poster, lqip, videoStyle, onError }) {
+function MobileVideoLoop({ src, poster, lqip, videoStyle, onError, active = true }) {
   const refA = useRef(null);
   const refB = useRef(null);
   const activeRef = useRef('A');
@@ -120,7 +140,20 @@ function MobileVideoLoop({ src, poster, lqip, videoStyle, onError }) {
     () => (activeRef.current === 'A' ? refA.current : refB.current),
     [],
   );
-  useReliableAutoplay(getFrontVideo);
+  useReliableAutoplay(getFrontVideo, active);
+
+  // Stop decoding once the hero is off screen (scrolled past, or covered by a
+  // full-screen booking sheet). Two 1080p streams with a saturate/brightness
+  // filter over them were still running frame-for-frame behind the entire rest
+  // of the page. Playback resumes from where it left off on the way back up.
+  useEffect(() => {
+    const vA = refA.current;
+    const vB = refB.current;
+    if (!vA || !vB) return;
+    if (!active) { vA.pause(); vB.pause(); return; }
+    const front = activeRef.current === 'A' ? vA : vB;
+    front.play().catch(() => {});
+  }, [active]);
 
   useEffect(() => {
     const HANDOFF = 1.5;
@@ -220,10 +253,19 @@ export default function ServicesHero() {
   const [desktopReady, setDesktopReady] = useState(false);
   const mobileHeroRef = useMobileHeroParallax();
   const vh = useViewportHeight();
+  const onScreen = useHeroOnScreen();
 
   // Same resilient autoplay coverage for the desktop split-panel video.
   const getDesktopVideo = useCallback(() => desktopVideoRef.current, []);
-  useReliableAutoplay(getDesktopVideo);
+  useReliableAutoplay(getDesktopVideo, onScreen);
+
+  // Desktop half of the same idea: don't decode a hero nobody can see.
+  useEffect(() => {
+    const v = desktopVideoRef.current;
+    if (!v) return;
+    if (onScreen) v.play().catch(() => {});
+    else v.pause();
+  }, [onScreen]);
 
   // Reveal the desktop video (crossfade off its poster) only once it is truly
   // playing and advancing frames.
@@ -271,6 +313,7 @@ export default function ServicesHero() {
                 src={VIDEO_URL}
                 poster={POSTER_URL}
                 lqip={LQIP}
+                active={onScreen}
                 videoStyle={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }}
                 onError={() => setMobileVideoFailed(true)}
               />
