@@ -183,49 +183,49 @@ alter table app_settings enable row level security;
 
 -- ---- services: public read (active only), authenticated write ----
 create policy "services_public_read" on services for select using (true);
-create policy "services_auth_insert" on services for insert with check (auth.role() = 'authenticated');
-create policy "services_auth_update" on services for update using (auth.role() = 'authenticated');
-create policy "services_auth_delete" on services for delete using (auth.role() = 'authenticated');
+create policy "services_auth_insert" on services for insert with check ((select auth.role()) = 'authenticated');
+create policy "services_auth_update" on services for update using ((select auth.role()) = 'authenticated');
+create policy "services_auth_delete" on services for delete using ((select auth.role()) = 'authenticated');
 
 -- ---- reviews: public read (approved), public insert, authenticated manage ----
-create policy "reviews_public_read" on reviews for select using (status = 'approved' or auth.role() = 'authenticated');
+create policy "reviews_public_read" on reviews for select using (status = 'approved' or (select auth.role()) = 'authenticated');
 create policy "reviews_public_insert" on reviews for insert with check (true);
-create policy "reviews_auth_update" on reviews for update using (auth.role() = 'authenticated');
-create policy "reviews_auth_delete" on reviews for delete using (auth.role() = 'authenticated');
+create policy "reviews_auth_update" on reviews for update using ((select auth.role()) = 'authenticated');
+create policy "reviews_auth_delete" on reviews for delete using ((select auth.role()) = 'authenticated');
 
 -- ---- day_capacities: public read, authenticated write ----
 create policy "day_capacities_public_read" on day_capacities for select using (true);
-create policy "day_capacities_auth_insert" on day_capacities for insert with check (auth.role() = 'authenticated');
-create policy "day_capacities_auth_update" on day_capacities for update using (auth.role() = 'authenticated');
-create policy "day_capacities_auth_delete" on day_capacities for delete using (auth.role() = 'authenticated');
+create policy "day_capacities_auth_insert" on day_capacities for insert with check ((select auth.role()) = 'authenticated');
+create policy "day_capacities_auth_update" on day_capacities for update using ((select auth.role()) = 'authenticated');
+create policy "day_capacities_auth_delete" on day_capacities for delete using ((select auth.role()) = 'authenticated');
 
 -- ---- blocked_dates: public read, authenticated write ----
 create policy "blocked_dates_public_read" on blocked_dates for select using (true);
-create policy "blocked_dates_auth_insert" on blocked_dates for insert with check (auth.role() = 'authenticated');
-create policy "blocked_dates_auth_delete" on blocked_dates for delete using (auth.role() = 'authenticated');
+create policy "blocked_dates_auth_insert" on blocked_dates for insert with check ((select auth.role()) = 'authenticated');
+create policy "blocked_dates_auth_delete" on blocked_dates for delete using ((select auth.role()) = 'authenticated');
 
 -- ---- app_settings: public read, authenticated write ----
 create policy "app_settings_public_read" on app_settings for select using (true);
-create policy "app_settings_auth_upsert" on app_settings for insert with check (auth.role() = 'authenticated');
-create policy "app_settings_auth_update" on app_settings for update using (auth.role() = 'authenticated');
+create policy "app_settings_auth_upsert" on app_settings for insert with check ((select auth.role()) = 'authenticated');
+create policy "app_settings_auth_update" on app_settings for update using ((select auth.role()) = 'authenticated');
 
 -- ---- bookings: public insert, authenticated read/update/delete ----
 create policy "bookings_public_insert" on bookings for insert with check (true);
-create policy "bookings_auth_select" on bookings for select using (auth.role() = 'authenticated');
-create policy "bookings_auth_update" on bookings for update using (auth.role() = 'authenticated');
-create policy "bookings_auth_delete" on bookings for delete using (auth.role() = 'authenticated');
+create policy "bookings_auth_select" on bookings for select using ((select auth.role()) = 'authenticated');
+create policy "bookings_auth_update" on bookings for update using ((select auth.role()) = 'authenticated');
+create policy "bookings_auth_delete" on bookings for delete using ((select auth.role()) = 'authenticated');
 
 -- ---- bridal_inquiries: public insert, authenticated read/update/delete ----
 create policy "bridal_public_insert" on bridal_inquiries for insert with check (true);
-create policy "bridal_auth_select" on bridal_inquiries for select using (auth.role() = 'authenticated');
-create policy "bridal_auth_update" on bridal_inquiries for update using (auth.role() = 'authenticated');
-create policy "bridal_auth_delete" on bridal_inquiries for delete using (auth.role() = 'authenticated');
+create policy "bridal_auth_select" on bridal_inquiries for select using ((select auth.role()) = 'authenticated');
+create policy "bridal_auth_update" on bridal_inquiries for update using ((select auth.role()) = 'authenticated');
+create policy "bridal_auth_delete" on bridal_inquiries for delete using ((select auth.role()) = 'authenticated');
 
 -- ---- class_registrations: public insert, authenticated read/manage ----
 create policy "class_reg_public_insert" on class_registrations for insert with check (true);
-create policy "class_reg_auth_select" on class_registrations for select using (auth.role() = 'authenticated');
-create policy "class_reg_auth_update" on class_registrations for update using (auth.role() = 'authenticated');
-create policy "class_reg_auth_delete" on class_registrations for delete using (auth.role() = 'authenticated');
+create policy "class_reg_auth_select" on class_registrations for select using ((select auth.role()) = 'authenticated');
+create policy "class_reg_auth_update" on class_registrations for update using ((select auth.role()) = 'authenticated');
+create policy "class_reg_auth_delete" on class_registrations for delete using ((select auth.role()) = 'authenticated');
 
 -- ============================================================
 -- STORAGE BUCKETS
