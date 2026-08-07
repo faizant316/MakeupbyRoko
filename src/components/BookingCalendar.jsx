@@ -486,17 +486,20 @@ export default function BookingCalendar({
   return (
     <div className="relative z-10">
       {/* Month nav.
-          The ‹ › steppers are DESKTOP ONLY. On a phone this strip was carrying
-          six separate chevrons within about 40px of each other, which is what
-          made the calendar read as busy; phones swipe instead. */}
+          The ‹ › steppers run on phones too, at the same size and the same quiet
+          grey as desktop — swiping still works, but it isn't discoverable on its
+          own, and a stepper you can see is worth more than a strip with one less
+          chevron in it. Phones get an active state instead of a hover one. */}
       <div className="flex items-center gap-1 pb-3 border-b border-gray-100">
         <button
           type="button"
           onClick={() => stepMonth('prev')}
           disabled={!canGoPrev}
           aria-label="Previous month"
-          className={`hidden sm:flex w-9 h-9 items-center justify-center transition-colors text-xl flex-shrink-0 ${
-            canGoPrev ? 'text-gray-300 hover:text-[#D4A0B0]' : 'text-gray-100 cursor-not-allowed'
+          className={`flex w-9 h-9 items-center justify-center transition-all text-xl flex-shrink-0 ${
+            canGoPrev
+              ? 'text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90'
+              : 'text-gray-100 cursor-not-allowed'
           }`}
         >
           ‹
@@ -526,7 +529,7 @@ export default function BookingCalendar({
           type="button"
           onClick={() => stepMonth('next')}
           aria-label="Next month"
-          className="hidden sm:flex w-9 h-9 items-center justify-center text-gray-300 hover:text-[#D4A0B0] transition-colors text-xl flex-shrink-0"
+          className="flex w-9 h-9 items-center justify-center text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90 transition-all text-xl flex-shrink-0"
         >
           ›
         </button>
