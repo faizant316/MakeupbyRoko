@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import BookingRow from './BookingRow';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
-import { groupByTime, timeToMinutes } from './timeline';
+import { groupByTime, timeToMinutes, scheduledDate } from './timeline';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -294,9 +294,10 @@ export default function BookingsList({
   // A booking earns a spot on the appointments list only if it's an actual
   // appointment or consultation. Booksy-imported CRM contacts (no date and no
   // consultation) live in the Clients tab, not here, so they never clutter the
-  // list or the Completed Archive. `ed` = the date a booking is scheduled by:
-  // its appointment date, or its consultation date when it's consult-only.
-  const ed = (b) => b.date || b.consultation_date || '';
+  // list or the Completed Archive. `ed` is shared with Admin's auto-complete
+  // now, so the rule that puts a row in Past Due is the same one that takes it
+  // back out — see scheduledDate().
+  const ed = scheduledDate;
   const listable = (bookings || []).filter(b => b.date || b.consultation_date);
 
   // Apply the month filter (appointments list only), then sort chronologically

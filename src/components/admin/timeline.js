@@ -8,6 +8,18 @@ export function daysUntil(dateStr) {
   return Math.round((new Date(dateStr + 'T00:00:00') - today) / 86400000);
 }
 
+// The date a booking is scheduled by: its appointment date, or its consultation
+// date when it's consult-only. The appointment date always wins, and that
+// ordering is the whole point — a bride whose consultation was last week but
+// whose wedding is in March is scheduled for March, not overdue.
+//
+// Anything that decides whether a booking is past due has to date it THIS way.
+// Past Due already did; auto-complete didn't, and read b.date alone, so a
+// Booksy consultation with no appointment date sat in Past Due forever.
+export function scheduledDate(b) {
+  return b.date || b.consultation_date || '';
+}
+
 // Human, relative label: Today / Tomorrow / Sat, Jun 27.
 export function relativeDate(dateStr) {
   if (!dateStr) return { label: 'No date', tone: 'muted' };
