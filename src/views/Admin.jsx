@@ -23,7 +23,7 @@ import AddClientModal from '../components/admin/AddClientModal';
 import BulkImportModal from '../components/admin/BulkImportModal';
 import ClientsTab from '../components/admin/ClientsTab';
 import ResizableColumns from '../components/admin/ResizableColumns';
-import { daysUntil } from '../components/admin/timeline';
+import { daysUntil, scheduledDate } from '../components/admin/timeline';
 import { isAdminEmail } from '@/lib/adminAllowlist';
 
 const DEFAULT_CAP = 3;
@@ -135,12 +135,19 @@ export default function Admin() {
   // own, and the calendar dot updates to match. Pending past-due is left alone —
   // it never got confirmed, so it still needs Roko's attention. Runs on load;
   // the ref keeps it from re-firing the same update before the refetch lands.
+  //
+  // Dates the row through scheduledDate, not b.date. A consultation carries its
+  // date in consultation_date and often has no b.date at all — every imported
+  // Booksy consult is one — so reading b.date alone meant Past Due could file a
+  // row that auto-complete then couldn't see, and it stayed there for good.
   const autoCompletedRef = useRef(new Set());
   useEffect(() => {
     if (!bookings || bookings.length === 0) return;
-    const stale = bookings.filter(
-      b => b.status === 'confirmed' && b.date && daysUntil(b.date) < 0 && !autoCompletedRef.current.has(b.id)
-    );
+    const stale = bookings.filter(b => {
+      if (b.status !== 'confirmed' || autoCompletedRef.current.has(b.id)) return false;
+      const when = scheduledDate(b);
+      return when && daysUntil(when) < 0;
+    });
     if (stale.length === 0) return;
     stale.forEach(b => autoCompletedRef.current.add(b.id));
     Promise.all(stale.map(b => api.entities.Booking.update(b.id, { status: 'completed' })))
