@@ -1,6 +1,6 @@
 # Makeup by Roko — Portfolio Case Study Handoff
 
-This file is a complete brief for the portfolio Claude Code session. Read it in full before touching any portfolio code. All facts here come directly from the live codebase.
+This file is a complete brief for the portfolio build. Read it in full before touching any portfolio code. All facts here come directly from the live codebase.
 
 ---
 

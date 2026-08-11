@@ -39,6 +39,7 @@ out/
 # Local agent/tooling folders (never commit)
 .agents/
 .codex/
+.claude/
 
 # Booksy capture holds live session cookies/tokens, never commit it
 booksy-capture*.json
