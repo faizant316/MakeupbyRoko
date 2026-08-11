@@ -14,6 +14,10 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Set when Google refuses the lookup rather than merely finding nothing.
+  // Without this the two are indistinguishable on screen, which is how a
+  // billing lapse once passed for "no matches" and went unnoticed.
+  const [failed, setFailed] = useState(false);
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -29,7 +33,7 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
   }, []);
 
   const fetchSuggestions = async (q) => {
-    if (q.length < 2) { setSuggestions([]); setOpen(false); return; }
+    if (q.length < 2) { setSuggestions([]); setOpen(false); setFailed(false); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/places-autocomplete', {
@@ -40,9 +44,12 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
       const data = await res.json();
       const predictions = data.predictions || [];
       setSuggestions(predictions);
-      setOpen(predictions.length > 0);
+      setFailed(Boolean(data.error));
+      setOpen(predictions.length > 0 || Boolean(data.error));
     } catch {
       setSuggestions([]);
+      setFailed(true);
+      setOpen(true);
     } finally {
       setLoading(false);
     }
@@ -76,7 +83,7 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
         <input
           value={query}
           onChange={handleInput}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onFocus={() => (suggestions.length > 0 || failed) && setOpen(true)}
           placeholder={placeholder}
           className={`flex-1 py-3 border-0 text-base sm:text-[0.95rem] outline-none bg-transparent ${dm ? 'placeholder:text-[#787885]' : 'placeholder:text-gray-300'}`}
           style={{ color: dm ? '#ECEDF1' : '#111' }}
@@ -89,7 +96,7 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
         )}
       </div>
 
-      {open && suggestions.length > 0 && (
+      {open && (suggestions.length > 0 || failed) && (
         <div
           className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl overflow-hidden"
           style={{
@@ -102,6 +109,12 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
           }}
           onMouseDown={e => e.preventDefault()}
         >
+          {failed && suggestions.length === 0 && (
+            <p className="px-4 py-3 text-[0.75rem] leading-relaxed" style={{ color: dm ? '#8b8b95' : '#999' }}>
+              Address suggestions aren't loading right now — type the full address
+              and it'll save just fine.
+            </p>
+          )}
           {suggestions.map((place, i) => {
             const main = place.structured_formatting?.main_text || place.description || '';
             const sub = place.structured_formatting?.secondary_text || '';
