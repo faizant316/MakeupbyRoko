@@ -302,7 +302,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
             <span className="text-red-400 text-base">🚫</span>
             <div>
-              <p className="text-[0.75rem] font-semibold text-red-500">This day is blocked — clients can't book</p>
+              <p className="text-[0.75rem] font-semibold text-red-500">This day is blocked · clients can't book</p>
               {blockedMap[key]?.reason && <p className="text-[0.7rem] text-[#999] mt-0.5">{blockedMap[key].reason}</p>}
             </div>
           </div>

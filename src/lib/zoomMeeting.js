@@ -49,7 +49,7 @@ export async function createZoomMeeting({ topic, duration = 30, date, time }) {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      topic: topic || 'Makeup by Roko — Consultation',
+      topic: topic || 'Makeup by Roko · Consultation',
       type: 2, // scheduled meeting
       duration,
       ...(start_time ? { start_time, timezone: 'America/Los_Angeles' } : {}),

@@ -111,50 +111,6 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
 </body></html>`;
 }
 
-// Standalone copy of the signed service agreement, emailed to both the client
-// and Roko so each has a record in their inbox. Renders the full agreement text
-// plus the signature block. Same builder as the on-site sign step, so the words
-// always match exactly what was signed.
-export function contractCopyEmail({ clientName, serviceName, dateFormatted, time = '', depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent, forAdmin = false }) {
-  const c = buildContract({ clientName, serviceName, dateFormatted, time, depositAmount, priceAmount, locationType, kind, overrides });
-  const signedAtLabel = signedAt
-    ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
-    : '';
-  const sectionsHtml = c.sections.map((s, i) => `
-    <p style="font-size:13px;font-weight:700;color:#16110F;margin:14px 0 4px;">${i + 1}. ${s.heading}</p>
-    <p style="font-size:12px;line-height:1.65;color:#6b6169;margin:0;">${s.body}</p>
-  `).join('');
-  // Same at-a-glance rows as the on-site sign step, so the standalone record
-  // answers "what do I pay, and when?" before any clause is read.
-  const summaryHtml = c.summary?.length
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 0;background:#FBF5F8;border-radius:10px;"><tr><td style="padding:12px 14px;">
-        ${c.summary.map((r, i) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-          <td style="padding:6px 0;${i ? 'border-top:1px solid #F2E4EB;' : ''}font-size:12px;color:#9A8E94;">${r.label}</td>
-          <td align="right" style="padding:6px 0;${i ? 'border-top:1px solid #F2E4EB;' : ''}font-size:${r.strong ? '14px' : '12px'};${r.strong ? 'font-weight:700;' : ''}color:#16110F;">${r.value}${r.note ? `<span style="display:block;font-size:10px;font-weight:400;color:#B3A7AD;">${r.note}</span>` : ''}</td>
-        </tr></table>`).join('')}
-      </td></tr></table>`
-    : '';
-  const content = `
-    <tr><td style="padding:26px 28px 6px;">
-      <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 8px;">${forAdmin ? 'Signed Agreement — Copy' : 'Your Signed Service Agreement'}</p>
-      <p style="font-size:13px;line-height:1.6;color:#4b434a;margin:0;">${c.intro}</p>
-      ${summaryHtml}
-    </td></tr>
-    <tr><td style="padding:0 28px;">${sectionsHtml}</td></tr>
-    <tr><td style="padding:18px 28px 26px;">
-      <div style="background:#F7F1F4;border-radius:12px;padding:16px;">
-        <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Signature</p>
-        <p style="font-family:${EMAIL_FONT};font-style:italic;font-size:19px;color:#16110F;margin:0 0 6px;">${signedName || clientName || ''}</p>
-        <p style="font-size:12px;color:#6b6169;margin:0;">Signed electronically${signedAtLabel ? ` on ${signedAtLabel}` : ''} · Agreement ${c.version}</p>
-        <p style="font-size:12px;color:#6b6169;margin:6px 0 0;">Photo permission: <strong style="color:#16110F;">${photoConsent ? 'Yes, may post' : 'No, keep private'}</strong></p>
-      </div>
-    </td></tr>
-  `;
-  return clientShell({ preheader: 'Signed service agreement — Makeup by Roko', content });
-}
-
-// Full signed agreement rendered as a panel to fold into the client's ONE
-// confirmation email (so they get their copy without a second email).
 export function contractClientPanel({ clientName, serviceName, dateFormatted, time = '', depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent }) {
   const c = buildContract({ clientName, serviceName, dateFormatted, time, depositAmount, priceAmount, locationType, kind, overrides });
   const signedAtLabel = signedAt
@@ -777,32 +733,7 @@ export function adminBridalCancelRequestEmail({ name, service, date, reason, ema
   `);
 }
 
-export function depositReminderEmail({ name, service, date, uploadUrl }) {
-  return clientShell({
-    preheader: `Friendly reminder: send your deposit to secure ${service}.`,
-    content: `
-      ${clientHero({ emoji: '⏰', eyebrow: 'Deposit Reminder', title: 'Secure your', titleAccent: 'date' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${name}</strong>, just a friendly reminder to send your Zelle deposit to secure your <strong style="color:#16110F;">${service}</strong> appointment on <strong style="color:#16110F;">${date}</strong>.`)}
-      ${cmoneyBox({ amount: 'Your deposit', dateFormatted: date, uploadUrl })}
-    `,
-  });
-}
 
-export function feedbackRequestEmail({ name, service }) {
-  return clientShell({
-    preheader: `How did your ${service} go? Leave Roko a quick review ✨`,
-    content: `
-      ${clientHero({ emoji: '✨', eyebrow: "We'd Love Your Feedback", title: 'How did it', titleAccent: 'go?' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${name}</strong>! I hope you loved your <strong style="color:#16110F;">${service}</strong>. I'd love to hear how it went. Would you mind leaving a quick review?`)}
-      <tr><td style="padding:8px 24px 18px;text-align:center;">${clientButton(`${SITE_URL}/#reviews`, 'Leave a Review ✦')}</td></tr>
-    `,
-  });
-}
-
-// The single class confirmation email. Since the client picks their Wednesday
-// and time window at checkout, this is the full booking confirmation:
-// online classes get their Zoom link right here, in-person classes get the
-// Mountain House studio address.
 export function classPaymentEmail({ firstName, classes = [], totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink, cancelUrl = '' }) {
   const isOnline = format === 'online';
   const isInPerson = format === 'in_person';
@@ -843,7 +774,7 @@ export function classPaymentEmail({ firstName, classes = [], totalPaid, format, 
       ];
 
   return clientShell({
-    preheader: dateFormatted ? `You're booked for ${dateFormatted}${classTime ? `, ${classTime}` : ''}.` : `Payment received — you're officially booked!`,
+    preheader: dateFormatted ? `You're booked for ${dateFormatted}${classTime ? `, ${classTime}` : ''}.` : `Payment received. You're officially booked!`,
     content: `
       ${clientHero({ emoji: '✓', eyebrow: 'Payment Confirmed', title: "You're officially", titleAccent: 'booked!' })}
       ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received and your class is scheduled${dateFormatted ? ` for <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}${classTime ? `, <strong style="color:#16110F;">${classTime}</strong>` : ''}. Everything you need is below.`)}
@@ -990,28 +921,6 @@ export function enrolledLessonEmail({ firstName, className, lessonDate, lessonTi
   });
 }
 
-export function lessonScheduledEmail({ firstName, className, lessonDate, lessonTime, meetingType, zoomLink, notes }) {
-  const fmt = meetingType === 'Phone' ? 'Phone / FaceTime' : meetingType;
-  return clientShell({
-    preheader: `Your ${className} is scheduled.`,
-    content: `
-      ${clientHero({ emoji: '💄', eyebrow: 'Lesson Scheduled', title: 'Your lesson is', titleAccent: 'set!', subtitle: 'So excited to teach you ✦' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your <strong style="color:#16110F;">${className}</strong> has been scheduled. Here are your details:`)}
-      ${cpanel(`${ctitle('Lesson Details')}${crows(
-        crow('Date', `<strong>${lessonDate}</strong>`) +
-        crow('Time', `<strong>${lessonTime}</strong>`) +
-        crow('Format', `<strong>${fmt}</strong>`) +
-        (notes ? crow('Notes', notes) : '')
-      )}${zoomLink ? cZoom(zoomLink) : ''}`)}
-      ${cstepsPanel('To Prepare', [
-        ['1', 'Come with a clean face', 'No makeup, or light moisturizer only. We start fresh!'],
-        ['2', 'Bring your current makeup bag', "We'll build from what you already have"],
-        ['3', 'Have your inspiration ready', 'Save looks you love so we can break them down together'],
-        ['4', 'Come with questions', 'No question is too basic. This lesson is all about you!'],
-      ])}
-    `,
-  });
-}
 
 // ─── Admin Templates (kept simple & info-dense) ────────────────────────────────
 
@@ -1060,7 +969,7 @@ export function adminClassPaymentEmail({ reg, classes = [], totalPaid, formatLab
       <table style="width:100%;border-collapse:collapse;">
         ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
         ${row('Signed by', reg.contract_signed_name || reg.full_name)}
-        ${row('Photo permission', reg.contract_photo_consent ? 'Yes — may post' : 'No — keep private', reg.contract_photo_consent ? '#111111' : '#C4849A')}
+        ${row('Photo permission', reg.contract_photo_consent ? 'Yes, may post' : 'No, keep private', reg.contract_photo_consent ? '#111111' : '#C4849A')}
       </table>
     `) : ''}
     ${card(`
@@ -1080,7 +989,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
     row('Requested Date', `<strong>${date}</strong>`),
     readyByTime ? row('Ready by (preference)', readyByTime) : '',
     row('Location', hasTravelFee ? '✈️ Travel to client' : "Roko's studio", hasTravelFee ? '#C4849A' : '#111111'),
-    row('Done before 7 AM?', isEarlyArrival ? 'Yes — early arrival' : 'No', isEarlyArrival ? '#C4849A' : '#111111'),
+    row('Done before 7 AM?', isEarlyArrival ? 'Yes, early arrival' : 'No', isEarlyArrival ? '#C4849A' : '#111111'),
   ].filter(Boolean).join('');
 
   const pricingRows = [
@@ -1120,7 +1029,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
       <table style="width:100%;border-collapse:collapse;">
         ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
         ${row('Signed by', contractSignedName)}
-        ${row('Photo permission', contractPhotoConsent ? 'Yes — may post' : 'No — keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
+        ${row('Photo permission', contractPhotoConsent ? 'Yes, may post' : 'No, keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
       </table>
       <p style="font-size:12px;color:#888888;margin:10px 0 0;">Full signed agreement is on the booking in your dashboard.</p>
     `) : ''}
@@ -1199,7 +1108,7 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
       <table style="width:100%;border-collapse:collapse;">
         ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
         ${row('Signed by', contractSignedName)}
-        ${row('Photo permission', contractPhotoConsent ? 'Yes — may post' : 'No — keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
+        ${row('Photo permission', contractPhotoConsent ? 'Yes, may post' : 'No, keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
       </table>
       <p style="font-size:12px;color:#888888;margin:10px 0 0;">Full signed agreement is on the booking in your dashboard.</p>
     `) : ''}

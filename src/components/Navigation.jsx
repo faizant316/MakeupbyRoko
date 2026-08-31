@@ -247,7 +247,7 @@ export default function Navigation({ onCloseModal }) {
 
             {/* Hamburger — animated to X */}
             <button
-              className="md:hidden relative w-8 h-8 flex items-center justify-center rounded-full active:scale-90 transition-transform duration-200 z-[10001]"
+              className="md:hidden relative w-8 h-8 flex items-center justify-center rounded-full active:scale-90 transition-transform duration-200 z-[10001] before:absolute before:content-[''] before:-inset-1.5"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Menu"
             >
@@ -287,7 +287,7 @@ export default function Navigation({ onCloseModal }) {
           </span>
           <button
             onClick={() => setMobileOpen(false)}
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#f0ebe6] active:scale-90 transition-all"
+            className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#f0ebe6] active:scale-90 transition-all before:absolute before:content-[''] before:-inset-1"
             aria-label="Close menu"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.8" className="w-[18px] h-[18px]">

@@ -1,13 +1,25 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
 import { raiseAlert, keysOf } from '../../../src/lib/alerts';
+import { requireAdmin } from '../../../src/lib/requireAdmin';
 
 export async function GET(req) {
   try {
-    const supabase = createClient();
     const { searchParams } = new URL(req.url);
-    let query = supabase.from('reviews').select('*').order('created_at', { ascending: false });
     const status = searchParams.get('status');
+
+    // Approved reviews are the ones on the public wall, so that one query stays
+    // open to everyone. Anything else is moderation state: a review sits at
+    // 'pending' precisely because Roko has not decided whether it should be
+    // seen, and this route runs on the service-role key, so an unfiltered GET
+    // was handing every unvetted submission to anyone who asked for it.
+    if (status !== 'approved') {
+      const { authError } = await requireAdmin();
+      if (authError) return authError;
+    }
+
+    const supabase = createClient();
+    let query = supabase.from('reviews').select('*').order('created_at', { ascending: false });
     if (status) query = query.eq('status', status);
     const { data, error } = await query;
     if (error) throw error;

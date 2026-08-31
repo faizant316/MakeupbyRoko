@@ -45,12 +45,6 @@ export const metadata = {
   alternates: {
     canonical: '/',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   openGraph: {
     title: 'Makeup by Roko | Bay Area Bridal & Luxury Makeup Artist',
     description: DESCRIPTION,
@@ -72,6 +66,20 @@ export const metadata = {
     description: DESCRIPTION,
     images: ['/roko_pic.png'],
   },
+};
+
+// Its own export, not a `viewport` key on `metadata` — Next 14 moved it, and
+// the old shape is ignored with a build warning.
+//
+// maximumScale/userScalable are deliberately absent. They used to be set to 1
+// and false, which switches off pinch-to-zoom: on a site whose visitors are
+// almost entirely on phones, that takes away the one gesture someone with low
+// vision has for reading a price or a date. It fails WCAG 1.4.4, and the thing
+// it is usually pasted in to prevent (iOS zooming a focused input) is already
+// handled properly here by giving form fields a 16px font size.
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }) {

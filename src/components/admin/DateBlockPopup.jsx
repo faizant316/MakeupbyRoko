@@ -61,7 +61,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
                 </div>
               )}
               <p className="text-[0.8rem] text-[#999] leading-relaxed mb-5">
-                This date is currently blocked — clients cannot book appointments on this day. You can unblock it anytime.
+                This date is currently blocked, so clients cannot book appointments on this day. You can unblock it anytime.
               </p>
               <div className="flex gap-2.5">
                 <button onClick={onUnblock}
@@ -77,7 +77,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
           ) : (
             <>
               <p className="text-[0.8rem] text-[#999] leading-relaxed mb-4">
-                Blocking this date will mark it as unavailable. Clients won't be able to book appointments on this day. Just tap Block — a reason is optional.
+                Blocking this date will mark it as unavailable. Clients won't be able to book appointments on this day. Just tap Block. A reason is optional.
               </p>
               <div className="mb-5">
                 <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#52525b] mb-1.5">

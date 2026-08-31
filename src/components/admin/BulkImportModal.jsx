@@ -262,7 +262,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
                 {skipCount > 0 && <> · {skipCount} skipped (missing name or contact info)</>}
               </p>
               <p className="text-[0.72rem] max-w-[380px]" style={{ color: textMuted }}>
-                Imported clients are tagged with a <strong style={{ color: '#0E8F98' }}>Booksy</strong> chip. Open any client to add bridal or class detail — no emails were sent.
+                Imported clients are tagged with a <strong style={{ color: '#0E8F98' }}>Booksy</strong> chip. Open any client to add bridal or class detail. No emails were sent.
               </p>
             </div>
           ) : step === 'input' ? (

@@ -477,10 +477,14 @@ export default function ServicesHero() {
             style={{
               pointerEvents: 'auto',
               alignSelf: 'center',
-              marginTop: '1.35rem',
               background: 'none',
               border: 'none',
-              padding: '6px',
+              // 12px, not 6: the chevron itself is 20px, and 6px of padding put
+              // the whole target at 32px, under the 44px a thumb expects. The
+              // extra padding is invisible (no background) and the arrow does
+              // not move, since marginTop absorbs it below.
+              padding: '12px',
+              marginTop: '0.95rem',
               lineHeight: 0,
               cursor: 'pointer',
               animation: 'scrollCueBob 2.1s ease-in-out infinite',

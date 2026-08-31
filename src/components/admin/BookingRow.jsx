@@ -182,7 +182,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       <div className={`${selectable ? 'hidden' : 'hidden md:flex'} items-center gap-1 flex-shrink-0 w-[60px] justify-end opacity-0 group-hover:opacity-100 transition-opacity`}>
         {booking.email && (
           <a
-            href={`mailto:${booking.email}?subject=Appointment%20with%20Roko%20—%20${encodeURIComponent(booking.service || '')}`}
+            href={`mailto:${booking.email}?subject=Appointment%20with%20Roko%20%C2%B7%20${encodeURIComponent(booking.service || '')}`}
             onClick={e => e.stopPropagation()}
             aria-label="Email client"
             className={iconBtn}

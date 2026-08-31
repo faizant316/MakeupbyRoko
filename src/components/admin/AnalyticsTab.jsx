@@ -26,8 +26,8 @@ const TRAFFIC_METRICS = {
 const CHANNEL_MAP = {
   'Organic Search':   { label: 'Google Search',    dot: '#4285F4', letter: 'G', desc: 'People who Googled "makeup artist" or your name and found you' },
   'Organic Social':   { label: 'Instagram / TikTok', dot: '#E1306C', letter: '◈', desc: 'Clicks from your social posts, reels, or bio link' },
-  'Direct':           { label: 'Direct',           dot: '#8B5CF6', letter: '↗', desc: 'Typed your URL directly or used a bookmark — usually loyal repeat clients' },
-  'Referral':         { label: 'Referral Links',   dot: '#3B82F6', letter: '⋯', desc: 'Someone else\'s website linked to yours — wedding blogs, vendor lists, directories' },
+  'Direct':           { label: 'Direct',           dot: '#8B5CF6', letter: '↗', desc: 'Typed your URL directly or used a bookmark, usually loyal repeat clients' },
+  'Referral':         { label: 'Referral Links',   dot: '#3B82F6', letter: '⋯', desc: 'Someone else\'s website linked to yours: wedding blogs, vendor lists, directories' },
   'Email':            { label: 'Email',            dot: '#F59E0B', letter: '@', desc: 'Clicked a link from one of your emails or booking confirmations' },
   'Paid Search':      { label: 'Paid Ads',         dot: '#EF4444', letter: '$', desc: 'Traffic from Google Ads (if you\'re running any)' },
   'Organic Shopping': { label: 'Google Shopping',  dot: '#34A853', letter: 'S', desc: 'People browsing beauty services on Google Shopping' },

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
-import { regHoldsDate, regDateOf } from '../../../src/lib/classSchedule';
+import { regHoldsDate, regDateOf, DATE_HOLD_COLUMNS } from '../../../src/lib/classSchedule';
+import { studioDayKey } from '../../../src/lib/studio';
 
 // Must never be statically optimized — the picker needs live availability.
 export const dynamic = 'force-dynamic';
@@ -12,13 +13,14 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = createClient();
-    const today = new Date().toISOString().split('T')[0];
+    // The studio's day, not the runtime's. Vercel runs on UTC, so from 5 PM
+    // Pacific onward toISOString() already says tomorrow and a Wednesday that
+    // is booked *today* would drop out of the list. See studioDayKey().
+    const today = studioDayKey();
 
-    // select('*') on purpose: naming preferred_date would 400 on a live DB
-    // that hasn't run migration 0003/0004 yet. Nothing but dates is returned.
     const { data, error } = await supabase
       .from('class_registrations')
-      .select('*')
+      .select(DATE_HOLD_COLUMNS)
       .neq('status', 'cancelled')
       .neq('status', 'declined');
 

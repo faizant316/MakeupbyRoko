@@ -111,7 +111,7 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
         >
           {failed && suggestions.length === 0 && (
             <p className="px-4 py-3 text-[0.75rem] leading-relaxed" style={{ color: dm ? '#8b8b95' : '#999' }}>
-              Address suggestions aren't loading right now — type the full address
+              Address suggestions aren't loading right now. Type the full address
               and it'll save just fine.
             </p>
           )}

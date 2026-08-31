@@ -4,7 +4,7 @@ import { createClient } from '../../../src/lib/supabase/server';
 import { raiseAlert } from '../../../src/lib/alerts';
 
 import { CLASS_CATALOG, CLASS_FORMATS, classMeta, startWindows } from '../../../src/lib/classCatalog';
-import { isBookableWednesday, regHoldsDate, regDateOf } from '../../../src/lib/classSchedule';
+import { isBookableWednesday, regHoldsDate, regDateOf, DATE_HOLD_COLUMNS } from '../../../src/lib/classSchedule';
 
 export async function POST(req) {
   try {
@@ -38,13 +38,15 @@ export async function POST(req) {
     }
 
     // One client per Wednesday: if any active registration already holds this
-    // date, the seat is gone. (select('*') keeps this working before
-    // migration 0003/0004 adds preferred_date; nothing is returned to the client.)
+    // date, the seat is gone. Only rows that could possibly hold THIS date are
+    // fetched — regDateOf() reads appointment_date first and falls back to
+    // preferred_date, so a row qualifies if either column matches.
     const { data: existing, error: existErr } = await supabase
       .from('class_registrations')
-      .select('*')
+      .select(DATE_HOLD_COLUMNS)
       .neq('status', 'cancelled')
-      .neq('status', 'declined');
+      .neq('status', 'declined')
+      .or(`appointment_date.eq.${preferred_date},preferred_date.eq.${preferred_date}`);
     if (existErr) throw existErr;
     const dateTaken = (existing || []).some(r => regDateOf(r) === preferred_date && regHoldsDate(r));
     if (dateTaken) {
@@ -99,7 +101,7 @@ export async function POST(req) {
       success_url: `${success_url}?session_id={CHECKOUT_SESSION_ID}&reg_id=${reg.id}`,
       cancel_url: `${cancel_url}?cancelled=true`,
       payment_intent_data: {
-        description: `Makeup class (${formatLabel}) — ${full_name}`,
+        description: `Makeup class (${formatLabel}) · ${full_name}`,
       },
     });
 

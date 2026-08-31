@@ -14,6 +14,12 @@ export async function POST(req) {
     if (!input) return NextResponse.json({ predictions: [] });
 
     const key = process.env.GOOGLE_MAPS_SERVER_KEY;
+    if (!key) {
+      // Without this the key rides along as the literal string "undefined" and
+      // Google answers REQUEST_DENIED, which reads exactly like lapsed billing.
+      console.error('places-autocomplete: GOOGLE_MAPS_SERVER_KEY is not set');
+      return NextResponse.json({ predictions: [], error: 'NOT_CONFIGURED' });
+    }
     const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json');
     url.searchParams.set('input', input);
     url.searchParams.set('key', key);

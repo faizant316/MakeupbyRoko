@@ -354,7 +354,7 @@ export function contractToPlainText(contract, { signedName, signedAt, photoConse
     lines.push('');
   });
   if (photoConsent !== undefined && photoConsent !== null) {
-    lines.push(`Photo consent: ${photoConsent ? 'YES — permission granted to post photos online.' : 'NO — do not post photos online.'}`);
+    lines.push(`Photo consent: ${photoConsent ? 'YES, permission granted to post photos online.' : 'NO, do not post photos online.'}`);
     lines.push('');
   }
   if (signedName) {

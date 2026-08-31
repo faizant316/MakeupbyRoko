@@ -40,11 +40,13 @@ export default function ServicesFooter() {
             </div>
             <div className="flex items-center gap-5">
               <a href="https://www.instagram.com/makeupbyroko_/" target="_blank" rel="noopener noreferrer"
-                className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
+                aria-label="Makeup by Roko on Instagram"
+                className="relative text-white/35 hover:text-[#D4A0B0] transition-colors duration-200 before:absolute before:content-[''] before:-inset-3">
                 <SocialIg />
               </a>
               <a href="https://www.tiktok.com/@makeupbyroko_" target="_blank" rel="noopener noreferrer"
-                className="text-white/35 hover:text-[#D4A0B0] transition-colors duration-200">
+                aria-label="Makeup by Roko on TikTok"
+                className="relative text-white/35 hover:text-[#D4A0B0] transition-colors duration-200 before:absolute before:content-[''] before:-inset-3">
                 <SocialTt />
               </a>
             </div>
