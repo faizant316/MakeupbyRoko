@@ -6,7 +6,7 @@ const GENERAL_FAQ = [
   { q: "How do I pay the remaining balance?", a: "The remaining balance must be paid in CASH. Please bring it in an envelope labeled with your name and the payment amount." },
   { q: "When is my appointment confirmed?", a: "Appointments are first come, first serve and are NOT confirmed until: the deposit is sent, a screenshot is received, and you receive a confirmation text/email." },
   { q: "What is the cancellation policy?", a: "Deposits are non-refundable and non-transferable. If you cancel, the deposit will not be refunded. If Roko cancels due to an emergency, you will be refunded." },
-  { q: "How should I prepare for my appointment?", a: "Arrive with clean, moisturized skin — no heavy foundation or skincare treatments the night before. Come with dry, styled hair. Bring any inspiration photos and let me know about allergies or sensitivities in advance." },
+  { q: "How should I prepare for my appointment?", a: "Arrive with clean, moisturized skin: no heavy foundation or skincare treatments the night before. Come with dry, styled hair. Bring any inspiration photos and let me know about allergies or sensitivities in advance." },
   { q: "What happens during the consultation?", a: "A 30-minute Zoom consultation is scheduled once your appointment is confirmed. Please have ready: inspiration photos, photos of your outfit(s)/gown(s), a photo with makeup, and a photo without makeup. All photos are kept completely confidential." },
 ];
 

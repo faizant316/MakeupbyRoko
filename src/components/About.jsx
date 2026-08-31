@@ -2,6 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 
 const WORDS = ['stunning', 'beautiful', 'flawless'];
 
+// Lives here rather than inside TypewriterWord, which renders inside the <h2>.
+// A <style> element is a child node like any other, so its CSS was part of the
+// heading's text content: assistive tech and crawlers both read the h2 as
+// "Making every woman feel truly @keyframes tw-blink { 0%, 100% ...".
+const TYPEWRITER_CSS = `
+  @keyframes tw-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .tw-cursor {
+    display: inline-block;
+    width: 1.5px;
+    height: 0.82em;
+    background: #D4A0B0;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: tw-blink 0.9s step-end infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .tw-cursor { animation: none; } }
+`;
+
 function TypewriterWord({ started }) {
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState('');
@@ -28,31 +46,19 @@ function TypewriterWord({ started }) {
   }, [text, deleting, idx, started]);
 
   return (
-    <>
-      <style>{`
-        @keyframes tw-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        .tw-cursor {
-          display: inline-block;
-          width: 1.5px;
-          height: 0.82em;
-          background: #D4A0B0;
-          margin-left: 2px;
-          margin-right: 1px;
-          vertical-align: text-bottom;
-          animation: tw-blink 0.9s step-end infinite;
-        }
-      `}</style>
-      <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
-        {/* Ghost reserves the full width of the word so the phrase wraps as one
-            unit and never leaks the first couple letters onto the line above */}
-        <em aria-hidden="true" style={{ fontStyle: 'italic', visibility: 'hidden' }}>{WORDS[idx]}</em>
-        <span style={{ position: 'absolute', left: 0, top: 0, whiteSpace: 'nowrap' }}>
-          <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>{text}</em>
-          <span className="tw-cursor" />
-          <span style={{ color: '#D4A0B0' }}>.</span>
-        </span>
+    <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+      {/* Ghost reserves the full width of the word so the phrase wraps as one
+          unit and never leaks the first couple letters onto the line above */}
+      <em aria-hidden="true" style={{ fontStyle: 'italic', visibility: 'hidden' }}>{WORDS[idx]}</em>
+      <span style={{ position: 'absolute', left: 0, top: 0, whiteSpace: 'nowrap' }}>
+        {/* The full stop belongs to the word, so it sits against it. Putting the
+            caret between them left a permanent ~5px gap ("stunning ."), which
+            read as a typo every time the caret blinked out. */}
+        <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>{text}</em>
+        <span style={{ color: '#D4A0B0' }}>.</span>
+        <span className="tw-cursor" />
       </span>
-    </>
+    </span>
   );
 }
 
@@ -82,6 +88,7 @@ export default function About() {
       ref={sectionRef}
       className="border-t border-[#f0ebe6] px-[clamp(1.25rem,5vw,3rem)] py-[clamp(3rem,6vw,5rem)]"
     >
+      <style>{TYPEWRITER_CSS}</style>
       <div className="max-w-[1200px] mx-auto">
 
         {/* Section label */}

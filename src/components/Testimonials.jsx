@@ -108,14 +108,14 @@ export default function Testimonials() {
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-4">
               {/* Left arrow */}
-              <button onClick={prev} className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0">
+              <button onClick={prev} aria-label="Previous review" className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0 w-11 h-11">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
               <div className="relative" style={{ width: '280px' }}>
                 <TestimonialPhone images={allImages} activeIndex={activeIndex} onNext={next} onPrev={prev} />
               </div>
               {/* Right arrow */}
-              <button onClick={next} className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0">
+              <button onClick={next} aria-label="Next review" className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0 w-11 h-11">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
@@ -144,7 +144,9 @@ export default function Testimonials() {
                 <button
                   key={i}
                   onClick={() => goTo(i)}
-                  className={`rounded-full transition-all duration-300 ${
+                  aria-label={`Go to review ${i + 1}`}
+                  aria-current={activeIndex === i}
+                  className={`relative rounded-full transition-all duration-300 before:absolute before:content-[''] before:-inset-y-[21px] before:-inset-x-2 ${
                     activeIndex === i ? 'w-6 h-2 bg-[#D4A0B0]' : 'w-2 h-2 bg-[#e8e2dc] hover:bg-[#d5cdc5]'
                   }`}
                 />
@@ -176,13 +178,13 @@ export default function Testimonials() {
           {/* Phone with crossfade */}
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-3">
-              <button onClick={prev} className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0">
+              <button onClick={prev} aria-label="Previous review" className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0 w-11 h-11">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
               <div className="relative" style={{ width: '260px' }}>
                 <TestimonialPhone images={allImages} activeIndex={activeIndex} onNext={next} onPrev={prev} />
               </div>
-              <button onClick={next} className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0">
+              <button onClick={next} aria-label="Next review" className="flex items-center justify-center text-[#ccc] hover:text-[#D4A0B0] transition-all flex-shrink-0 w-11 h-11">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
@@ -210,7 +212,9 @@ export default function Testimonials() {
                 <button
                   key={i}
                   onClick={() => goTo(i)}
-                  className={`rounded-full transition-all duration-300 ${
+                  aria-label={`Go to review ${i + 1}`}
+                  aria-current={activeIndex === i}
+                  className={`relative rounded-full transition-all duration-300 before:absolute before:content-[''] before:-inset-y-[21px] before:-inset-x-2 ${
                     activeIndex === i ? 'w-5 h-1.5 bg-[#D4A0B0]' : 'w-1.5 h-1.5 bg-[#e8e2dc]'
                   }`}
                 />

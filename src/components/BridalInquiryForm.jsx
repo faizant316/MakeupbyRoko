@@ -3,6 +3,7 @@ import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import ContractSign from './ContractSign';
 import { formatPhone } from '@/lib/phone';
+import { newUploadToken } from '@/lib/uploadToken';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
 
@@ -436,7 +437,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
     setSubmitting(true);
     try {
-    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const token = newUploadToken();
 
     // Create bridal inquiry record (carries all the wedding details shown in admin)
     const inquiryRes = await fetch('/api/bridal-inquiries', {

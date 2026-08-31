@@ -86,9 +86,9 @@ export default function ClassWednesdayPicker({ selectedDate, onSelectDate, first
               onClick={() => isOpen && onSelectDate(isSel ? null : key)}
               disabled={!isOpen}
               title={
-                isBooked ? 'Booked — this Wednesday is taken'
+                isBooked ? 'Booked. This Wednesday is taken'
                 : isBlocked ? 'Unavailable'
-                : tooSoon ? 'Too soon — classes book at least two weeks out'
+                : tooSoon ? 'Too soon. Classes book at least two weeks out'
                 : isOpen ? 'Available' : undefined
               }
               className="w-10 h-11 flex flex-col items-center justify-center text-[0.9rem] transition-all relative rounded-xl"

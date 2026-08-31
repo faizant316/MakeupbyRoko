@@ -49,6 +49,16 @@ export function regDateOf(reg) {
   return reg?.appointment_date || reg?.preferred_date || null;
 }
 
+// Exactly the columns regHoldsDate() and regDateOf() read, and nothing else.
+//
+// Both callers used to ask for `select('*')` so that naming preferred_date
+// could not 400 on a database that had not yet run migrations 0003/0004. Those
+// ran on 2026-07-07, so the guard now only costs: /api/class-booked-dates is
+// public and fires on every load of the Wednesday picker, and it was pulling
+// every class client's name, email, phone and notes into memory to work out a
+// list of dates. Ask for the five fields the answer actually depends on.
+export const DATE_HOLD_COLUMNS = 'status,payment_status,created_at,appointment_date,preferred_date';
+
 // Server-side sanity check for a client-submitted class date: must be a real
 // Wednesday, at least two weeks out, within the booking horizon. (Whether the
 // specific date is already taken is checked separately in create-class-checkout.)

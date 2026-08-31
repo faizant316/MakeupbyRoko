@@ -72,7 +72,7 @@ export async function POST(req) {
     // Notify Roko — never block the client's success on this.
     sendEmail({
       to: ADMIN_EMAIL,
-      subject: `Agreement re-signed — ${booking.name || 'Client'} · ${booking.time || 'new time'}`,
+      subject: `Agreement re-signed · ${booking.name || 'Client'} · ${booking.time || 'new time'}`,
       html: adminContractResignedEmail({
         name: booking.name,
         service: booking.service,

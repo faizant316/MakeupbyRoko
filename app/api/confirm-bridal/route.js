@@ -87,8 +87,8 @@ export async function POST(req) {
     sendEmail({
       to: adminEmail,
       subject: confirmOnly
-        ? `✅ Bridal Confirmed — ${clientName || clientEmail} · consultation still to schedule`
-        : `✅ Bridal Confirmed + Consultation — ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
+        ? `✅ Bridal Confirmed · ${clientName || clientEmail} · consultation still to schedule`
+        : `✅ Bridal Confirmed + Consultation · ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
       html: confirmOnly
         ? adminBridalConfirmedEmail({ clientName, clientEmail, serviceName, dateFormatted, time })
         : adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),

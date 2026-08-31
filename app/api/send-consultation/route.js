@@ -53,7 +53,7 @@ export async function POST(req) {
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
       to: adminEmail,
-      subject: `📋 Consultation Scheduled — ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
+      subject: `📋 Consultation Scheduled · ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
       html: adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
     }).catch(err => console.error('admin consultation email error:', err));
 

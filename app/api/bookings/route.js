@@ -35,12 +35,33 @@ export async function POST(req) {
 
     const { name, email, phone, service, date, time, notes, status, reference_photos, deposit_received, source } = body;
     if (!name || !service) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+
+    // Resolved once and reused below. Everything in this route that bends a
+    // client-facing rule (skipping lead time, importing without an email,
+    // setting a status other than pending, marking a deposit as already in)
+    // is a thing only Roko may do, and this is the single check behind all of
+    // them.
+    const isAdmin = await isAdminRequest();
+
     // Site bookings must carry an email. Imported clients (Booksy CSV) often
     // only have a phone number, so imports may omit it — but never fake it.
-    const isImport = source === 'booksy';
+    // The import path is admin-only: `source` arrives in the request body, so
+    // without this an anonymous POST could claim to be a Booksy import and
+    // help itself to the exemptions that come with it.
+    const isImport = source === 'booksy' && isAdmin;
     if (!email && !isImport) return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     if (email && !EMAIL_RE.test(email)) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     if (!email && !phone) return NextResponse.json({ error: 'Need an email or phone' }, { status: 400 });
+
+    // A booking made from the public site is ALWAYS a request, never a decision.
+    // `status` and `deposit_received` both arrive in the body, and the forms
+    // send 'pending' — but a hand-rolled POST could send 'confirmed' with the
+    // deposit already flagged, which would put a booking Roko never agreed to
+    // on her calendar, dressed up as paid for, and burn a slot in the per-day
+    // capacity count (/api/booking-counts counts confirmed rows). Only her own
+    // admin session gets to say otherwise.
+    const safeStatus = isAdmin ? status : 'pending';
+    const safeDepositReceived = isAdmin ? deposit_received : undefined;
 
     // ── Lead time ───────────────────────────────────────────────────────────
     // The calendar already greys out dates that are too soon, but that is only
@@ -48,7 +69,7 @@ export async function POST(req) {
     // hand-rolled POST would all sail past it. Roko is exempt (she books
     // walk-ins from admin), and so are Booksy imports of appointments that
     // already happened.
-    if (date && !isImport && !(await isAdminRequest())) {
+    if (date && !isImport && !isAdmin) {
       // Bridal keeps the shorter window, so the rule turns on what was actually
       // booked. Read from the service's category rather than its title: the
       // titles get edited live in Supabase, categories don't.
@@ -65,8 +86,8 @@ export async function POST(req) {
     }
 
     const upload_token = body.upload_token || uuidv4();
-    const insert = { name, email: email || null, phone, service, date, time, notes, status, reference_photos, upload_token };
-    if (deposit_received !== undefined) insert.deposit_received = deposit_received;
+    const insert = { name, email: email || null, phone, service, date, time, notes, status: safeStatus, reference_photos, upload_token };
+    if (safeDepositReceived !== undefined) insert.deposit_received = safeDepositReceived;
     if (source) insert.source = source;
     // Travel bookings only (0015). Derive the city here rather than trusting a
     // client-sent one, so the chip in the admin list always matches the address

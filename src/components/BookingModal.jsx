@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { formatPhone } from '@/lib/phone';
+import { newUploadToken } from '@/lib/uploadToken';
 import { useScrollLock, useHideSiteNav } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { useQuery } from '@tanstack/react-query';
@@ -155,9 +156,9 @@ export default function BookingModal({ service: initialService, onClose }) {
     setSubmitting(true);
     const earlySurcharge = isEarlyArrival ? ' | ⏰ Early arrival surcharge: +$100 (before 7 AM)' : '';
     const readyByNote = formData.ready_by_time ? ` | Ready by: ${formData.ready_by_time}` : '';
-    const travelNote = hasTravelFee ? ' | ✈️ Travel requested — bridal pricing ($750+) applies' : '';
+    const travelNote = hasTravelFee ? ' | ✈️ Travel requested · bridal pricing ($750+) applies' : '';
     const signedContractNote = ` | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`;
-    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const token = newUploadToken();
     let newBooking;
     try {
       newBooking = await api.entities.Booking.create({

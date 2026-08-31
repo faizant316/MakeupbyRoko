@@ -132,7 +132,7 @@ export async function finalizeClassRegistration(supabase, { registrationId, sess
     },
     {
       to: ADMIN_EMAIL,
-      subject: `New Class Booking — ${reg.full_name} · ${formatLabel || 'Class'} ($${totalPaid.toLocaleString()})`,
+      subject: `New Class Booking · ${reg.full_name} · ${formatLabel || 'Class'} ($${totalPaid.toLocaleString()})`,
       html: adminClassPaymentEmail({ reg, classes, totalPaid, formatLabel, dateFormatted, classTime, zoomLink, sessionId }),
     },
   ]);

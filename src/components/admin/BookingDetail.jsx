@@ -567,7 +567,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: `Makeup by Roko — Consultation with ${booking.name || 'Client'}`,
+          topic: `Makeup by Roko · Consultation with ${booking.name || 'Client'}`,
           duration: 30,
           date: form.date || undefined,
           time: form.time || undefined,
@@ -765,7 +765,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               </div>
               <div>
                 <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
-                  Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>— 30 min meeting</span>
+                  Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>· 30 min meeting</span>
                 </label>
                 <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIME_SLOTS} dm={dm} accent={CONSULT_COLOR} />
               </div>
@@ -837,7 +837,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             {/* Notes */}
             <div>
               <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
-                Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>— optional</span>
+                Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
@@ -1678,7 +1678,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     });
     const esc = (s) => String(s ?? '').replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     const sections = c.sections.map((s, i) => `<h3 style="font-size:13px;margin:16px 0 4px;">${i + 1}. ${esc(s.heading)}</h3><p style="font-size:12px;line-height:1.6;color:#333;margin:0;">${esc(s.body)}</p>`).join('');
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Service Agreement — ${esc(booking.name)}</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Service Agreement · ${esc(booking.name)}</title>
       <style>body{font-family:Georgia,'Times New Roman',serif;max-width:680px;margin:40px auto;padding:0 24px;color:#111;}h1{font-size:22px;} .sig{margin-top:24px;padding:16px;border:1px solid #ddd;border-radius:8px;background:#faf6f8;} .sig p{margin:4px 0;font-size:12px;} .name{font-style:italic;font-size:18px;} @media print{body{margin:0;}}</style></head>
       <body onload="window.print()">
         <h1>Service Agreement</h1>
@@ -1995,7 +1995,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <span>
                   <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
                   <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                    For a service, location, or price change — adds a Review &amp; Sign link so their agreement matches. (Date or time changes re-sign from the Appointment panel above.)
+                    For a service, location, or price change. Adds a Review &amp; Sign link so their agreement matches. (Date or time changes re-sign from the Appointment panel above.)
                   </span>
                 </span>
               </button>
@@ -2259,7 +2259,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {/* Date — quiet by default; most reschedules are time-only */}
                 <div className="mb-4">
                   <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
-                    Date {pendingDate && pendingDate !== booking.date && <span className="tabular-nums" style={{ textTransform: 'none', letterSpacing: 0, color: '#C4849A' }}>— moving to {fmtShort(pendingDate)}</span>}
+                    Date {pendingDate && pendingDate !== booking.date && <span className="tabular-nums" style={{ textTransform: 'none', letterSpacing: 0, color: '#C4849A' }}>· moving to {fmtShort(pendingDate)}</span>}
                   </label>
                   <AdminDatePicker value={pendingDate} onChange={onPickDate} dm={dm} accent="#C4849A" />
                 </div>
@@ -2277,9 +2277,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     <span className="min-w-0">
                       <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Email {firstName} about this change</span>
                       <span className="block text-[0.64rem] mt-0.5" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>
-                        {!booking.email ? 'No email on file — it just updates quietly.'
+                        {!booking.email ? 'No email on file, so it just updates quietly.'
                           : notifyClient ? 'They get your note below with the new date & time.'
-                          : 'Off — it updates quietly, no email.'}
+                          : 'Off. It updates quietly, no email.'}
                       </span>
                     </span>
                     <span className="w-10 h-6 rounded-full flex-shrink-0 relative transition-all"
@@ -2298,7 +2298,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       </div>
                       <div>
                         <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
-                          Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>— written for you, edit freely</span>
+                          Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>(written for you, edit freely)</span>
                         </label>
                         <textarea value={panelBody} onChange={e => { setPanelBody(e.target.value); setPanelEdited(true); }} rows={6}
                           className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
@@ -2314,7 +2314,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                         <span>
                           <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
                           <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                            They review &amp; sign with the new date &amp; time — everything stays confirmed.
+                            They review &amp; sign with the new date &amp; time, and everything stays confirmed.
                           </span>
                         </span>
                       </button>
@@ -2506,7 +2506,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {notesEditing ? (
                   <div>
                     <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} autoFocus
-                      placeholder="Jot anything just for you — allergies, skin notes, reminders…"
+                      placeholder="Jot anything just for you: allergies, skin notes, reminders…"
                       className="w-full px-3.5 py-3 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                       style={{ fontSize: '15px', minHeight: '84px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                     <div className="flex gap-2 mt-2">
@@ -2701,7 +2701,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     <BField dm={dm} label={hasResignHistory ? 'Re-signed On' : 'Signed On'} value={contractSignedAt} />
                     <BField dm={dm} label="Covers" value={booking.contract_signed_for} />
                     <BField dm={dm} label="Photo Permission"
-                      value={booking.contract_photo_consent === true ? 'Yes — may post' : booking.contract_photo_consent === false ? 'No — keep private' : null}
+                      value={booking.contract_photo_consent === true ? 'Yes, may post' : booking.contract_photo_consent === false ? 'No, keep private' : null}
                       accent={booking.contract_photo_consent === false} />
                   </div>
                   <button onClick={printAgreement}

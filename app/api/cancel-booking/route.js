@@ -67,13 +67,13 @@ export async function POST(req) {
         if (booking.email) {
           await sendEmail({
             to: booking.email,
-            subject: `We've received your request — ${booking.service}`,
+            subject: `We've received your request · ${booking.service}`,
             html: bridalCancelRequestEmail({ name: firstName, service: booking.service, date: dateFmt }),
           });
         }
         sendEmail({
           to: ADMIN_EMAIL,
-          subject: `⚠️ Bridal cancellation REQUESTED — ${booking.name || booking.email} · call her`,
+          subject: `⚠️ Bridal cancellation REQUESTED · ${booking.name || booking.email} · call her`,
           html: adminBridalCancelRequestEmail({ name: booking.name, service: booking.service, date: dateFmt, reason, email: booking.email, phone: booking.phone }),
         }).catch((e) => console.error('admin bridal-request email:', e));
 
@@ -99,7 +99,7 @@ export async function POST(req) {
       }
       sendEmail({
         to: ADMIN_EMAIL,
-        subject: `Client cancelled — ${booking.name || booking.email} · ${booking.service}`,
+        subject: `Client cancelled · ${booking.name || booking.email} · ${booking.service}`,
         html: adminClientCancelledEmail({ name: booking.name, service: booking.service, date: dateFmt, reason, kind: 'appointment', email: booking.email, phone: booking.phone }),
       }).catch((e) => console.error('admin cancel email:', e));
 
@@ -136,7 +136,7 @@ export async function POST(req) {
       }
       sendEmail({
         to: ADMIN_EMAIL,
-        subject: `Client cancelled a class — ${reg.full_name || reg.email}`,
+        subject: `Client cancelled a class · ${reg.full_name || reg.email}`,
         html: adminClientCancelledEmail({ name: reg.full_name, service: 'Makeup Class', date: dateFmt, reason, kind: 'class', email: reg.email, phone: reg.phone }),
       }).catch((e) => console.error('admin class-cancel email:', e));
 
