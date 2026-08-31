@@ -4,6 +4,26 @@ import { isScrollLocked } from '@/lib/useScrollLock';
 
 const STATS = [['17+', 'Years'], ['1000+', 'Clients']];
 
+// Hero CTA look, shared by the mobile and desktop heroes so there is only ever
+// one button to restyle. Outlined rather than filled: a pink rule around a
+// faintly pink-tinted pane, which warms into a soft glow on hover. A solid pink
+// block read as the loudest thing in an otherwise near-black hero.
+const CTA_REST = {
+  background: 'rgba(212,160,176,0.10)',
+  borderColor: 'rgba(212,160,176,0.55)',
+  color: '#EDC6D3',
+  boxShadow: '0 2px 16px rgba(212,160,176,0.06)',
+};
+const CTA_HOVER = {
+  background: 'rgba(212,160,176,0.20)',
+  borderColor: 'rgba(212,160,176,0.95)',
+  color: '#FAE7EE',
+  boxShadow: '0 0 26px rgba(212,160,176,0.30), inset 0 0 18px rgba(212,160,176,0.10)',
+};
+// Written straight to the node: no state, so hovering the hero CTA never
+// re-renders a component that also drives the hero video.
+const paintCta = (el, look) => Object.assign(el.style, look);
+
 const VIDEO_URL = '/hero.mp4';          // full-quality 1080p, used on both desktop and mobile
 const POSTER_URL = '/hero-poster.jpg';  // crisp still shown instantly; video fades in once ready
 
@@ -399,11 +419,10 @@ export default function ServicesHero() {
             Every service is crafted for you, from your everyday glow to your wedding day.
           </p>
 
-          {/* CTA — solid so it still reads as a real button, but sized to its own
-              words rather than the full column. Full-width + a wide pink glow made
-              it the loudest thing on a phone screen; this keeps the same colour and
-              weight at roughly half the footprint, still well over the 44px tap
-              minimum. */}
+          {/* CTA — outlined, sized to its own words rather than the full column.
+              Full-width solid pink made it the loudest thing on a phone screen;
+              this keeps the same colour and weight at roughly half the footprint,
+              still well over the 44px tap minimum. */}
           <a
             href="#services-grid"
             onClick={(e) => { e.preventDefault(); scrollToTarget('#services-grid', { offset: -60 }); }}
@@ -415,9 +434,9 @@ export default function ServicesHero() {
               gap: '0.5rem',
               marginBottom: '1.5rem',
               padding: '0.8rem 1.4rem',
-              background: '#D4A0B0',
-              border: '1px solid #D4A0B0',
-              color: '#1A1416',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              ...CTA_REST,
               borderRadius: '2px',
               fontSize: '0.72rem',
               fontFamily: 'var(--font-sans)',
@@ -426,9 +445,12 @@ export default function ServicesHero() {
               textTransform: 'uppercase',
               textDecoration: 'none',
               width: 'fit-content',
-              boxShadow: '0 4px 14px rgba(212,160,176,0.16)',
-              transition: 'background-color 0.25s, box-shadow 0.25s',
+              transition: 'background-color 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s',
             }}
+            onMouseEnter={(e) => paintCta(e.currentTarget, CTA_HOVER)}
+            onMouseLeave={(e) => paintCta(e.currentTarget, CTA_REST)}
+            onFocus={(e) => paintCta(e.currentTarget, CTA_HOVER)}
+            onBlur={(e) => paintCta(e.currentTarget, CTA_REST)}
           >
             Book a Service
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '13px', height: '13px' }}>
@@ -532,7 +554,7 @@ export default function ServicesHero() {
             Every service is crafted for you, from your everyday glow to your wedding day. Roqia works with a limited number of clients to ensure the highest level of care.
           </p>
 
-          {/* Solid to match mobile — same button, same weight, both breakpoints. */}
+          {/* Same outlined look as mobile: one button, both breakpoints. */}
           <a
             href="#services-grid"
             className="group"
@@ -541,15 +563,16 @@ export default function ServicesHero() {
               display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
               fontSize: '0.8rem', letterSpacing: '0.12em', textTransform: 'uppercase',
               fontWeight: 600,
-              color: '#1A1416', background: '#D4A0B0', border: '1px solid #D4A0B0',
+              borderWidth: '1px', borderStyle: 'solid', ...CTA_REST,
               padding: '1rem 2rem', width: 'fit-content',
-              transition: 'background-color 0.25s, border-color 0.25s, box-shadow 0.25s',
+              transition: 'background-color 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s',
               borderRadius: '2px',
-              boxShadow: '0 10px 30px rgba(212,160,176,0.22)',
               textDecoration: 'none',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#E0B4C2'; e.currentTarget.style.borderColor = '#E0B4C2'; e.currentTarget.style.boxShadow = '0 14px 38px rgba(212,160,176,0.34)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#D4A0B0'; e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(212,160,176,0.22)'; }}
+            onMouseEnter={(e) => paintCta(e.currentTarget, CTA_HOVER)}
+            onMouseLeave={(e) => paintCta(e.currentTarget, CTA_REST)}
+            onFocus={(e) => paintCta(e.currentTarget, CTA_HOVER)}
+            onBlur={(e) => paintCta(e.currentTarget, CTA_REST)}
           >
             Book a Service
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '14px', height: '14px' }}>
