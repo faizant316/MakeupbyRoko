@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CONTRACT_PLACEHOLDERS } from '@/lib/contract';
+import { Check } from './Glyphs';
 
 // Full-contract editor. Roko opens this from the Services tab to rewrite the
 // entire client agreement: title, intro, every section (heading + body),
@@ -416,7 +417,9 @@ export default function ContractEditorModal({
               disabled={saving}
               className="px-5 py-2 rounded-full text-[0.74rem] font-semibold transition-all bg-[#111] text-white hover:bg-[#222] shadow-sm disabled:opacity-60 active:scale-[0.98]"
             >
-              {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Contract'}
+              {saving ? 'Saving…'
+                : saved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>
+                : 'Save Contract'}
             </button>
           </div>
         </div>

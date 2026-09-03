@@ -388,7 +388,7 @@ export default function ClassContactForm({ form, setForm, selectedClass, format,
                 : 'Choose your Wednesday to continue'}
           </button>
           <p className="text-[0.65rem] text-center mt-2" style={{ color: PLUM.gray }}>
-            Next: review &amp; sign, then secure checkout <span style={{ color: PLUM.pink }}>✦</span>
+            Next: review &amp; sign, then secure checkout
           </p>
         </div>
       </div>

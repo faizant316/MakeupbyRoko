@@ -77,7 +77,10 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
       <span className={`text-[0.6rem] font-semibold tracking-[0.08em] ${isSel ? 'text-white/70' : isToday ? (dm ? 'text-indigo-400' : 'text-indigo-500') : 'text-[#aaa]'}`}>{dayName}</span>
       <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-slate-400' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
       {isBlocked ? (
-        <span className={`text-[0.65rem] ${dm ? 'text-red-400/70' : 'text-red-400'}`}>✕</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+          className={`w-2 h-2 ${dm ? 'text-red-400/70' : 'text-red-400'}`}>
+          <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+        </svg>
       ) : isFull ? (
         <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
       ) : (
@@ -293,14 +296,22 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
                 ? 'text-red-500 border-red-200 hover:bg-red-50'
                 : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
             }`}>
-            {isBlocked ? '✕ Unblock' : '+ Block Day'}
+            <span className="inline-flex items-center gap-1.5">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5">
+                {isBlocked ? <><line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" /></>
+                           : <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>}
+              </svg>
+              {isBlocked ? 'Unblock' : 'Block Day'}
+            </span>
           </button>
           <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
         </div>
 
         {isBlocked && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
-            <span className="text-red-400 text-base">🚫</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4 flex-shrink-0">
+              <circle cx="12" cy="12" r="9" /><line x1="6" y1="18" x2="18" y2="6" />
+            </svg>
             <div>
               <p className="text-[0.75rem] font-semibold text-red-500">This day is blocked · clients can't book</p>
               {blockedMap[key]?.reason && <p className="text-[0.7rem] text-[#999] mt-0.5">{blockedMap[key].reason}</p>}
@@ -323,7 +334,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
   return (
     <>
-      <div className="rounded-xl p-5" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
+      <div className="rounded-xl p-4 sm:p-6" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
         {/* View switcher + hint — minimal text tabs, soft tint when active */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1">
@@ -342,7 +353,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
               );
             })}
           </div>
-          <span className="text-[0.6rem] tracking-wide hidden sm:block italic" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
+          <span className="text-[0.62rem] tracking-wide hidden sm:block" style={{ color: dm ? '#5f5f69' : '#a8a8b2' }}>
             {view === 'month' ? 'Tap a day to filter · double-tap to close it off' : 'Double-click to block a date'}
           </span>
         </div>
@@ -353,7 +364,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
         {/* Legend (month/week only — the day schedule carries its own) */}
         {view !== 'day' && (
-        <div className="flex items-center gap-4 mt-5 pt-3 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
+        <div className="flex items-center gap-x-4 gap-y-2 mt-6 pt-4 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
             <span className="w-3 h-3 rounded-md bg-indigo-50 border-2 border-indigo-300 inline-block" /> Today
           </span>
@@ -372,7 +383,11 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           {/* Days off share the red cell but carry an ✕, so they get their own
               key rather than being lumped in with "fully booked". */}
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
-            <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-flex items-center justify-center text-[0.5rem] leading-none">✕</span> Day off
+            <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="3.5" strokeLinecap="round" className="w-1.5 h-1.5">
+                <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+              </svg>
+            </span> Day off
           </span>
           {Object.entries(STATUS_COLORS).filter(([s]) => s !== 'cancelled').map(([s, color]) => (
             <span key={s} className="flex items-center gap-1.5 text-[0.6rem] font-medium capitalize" style={{ color: dm ? '#71717a' : '#999' }}>

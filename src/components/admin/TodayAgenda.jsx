@@ -4,6 +4,7 @@ import { api } from '@/api/apiClient';
 import { openZoomRoom, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { timeToMinutes } from './timeline';
+import { Cross } from './Glyphs';
 
 // Local calendar date "YYYY-MM-DD" (NOT UTC). toISOString() would roll to
 // tomorrow after ~5pm Pacific and make "Today" disagree with the calendar's
@@ -98,10 +99,11 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
           </span>
         )}
         {offToday && (
-          <span className="text-[0.58rem] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+          <span className="inline-flex items-center gap-1.5 text-[0.58rem] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
             style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1', color: dm ? '#fca5a5' : '#C0392B' }}
             title={offToday.reason || 'Closed to new bookings'}>
-            ✕ Day off
+            <Cross className="w-2 h-2" strokeWidth={3.5} />
+            Day off
           </span>
         )}
       </div>

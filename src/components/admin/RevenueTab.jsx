@@ -4,7 +4,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { DollarSign, TrendingUp, Users, BookOpen, CheckCircle, Star, Calendar, Sparkles } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, BookOpen, CheckCircle, Star, Calendar } from 'lucide-react';
 
 // ─── Ranges ──────────────────────────────────────────────────────────────────
 
@@ -196,7 +196,10 @@ export default function RevenueTab({ darkMode: dm }) {
           style={{ background: dm ? '#1a1118' : '#fff9fb', border: '1px solid rgba(212,160,176,0.25)' }}>
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'rgba(212,160,176,0.14)', border: '1px solid rgba(212,160,176,0.22)' }}>
-            <Sparkles size={17} color="#D4A0B0" strokeWidth={1.5} />
+            {/* A rising line, not a sparkle. The panel is about money that
+                has not arrived yet; a sparkle says nothing about that and is
+                the one icon that reads as generated on sight. */}
+            <TrendingUp size={17} color="#D4A0B0" strokeWidth={1.5} />
           </div>
           <div className="min-w-0">
             <p className="text-[0.9rem] font-semibold mb-1" style={{ color: tx }}>Your revenue starts here</p>

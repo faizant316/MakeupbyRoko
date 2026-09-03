@@ -6,6 +6,7 @@ import { isScrollLocked } from '@/lib/useScrollLock';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import AdminCalendar from '../components/admin/AdminCalendar';
+import { Lock, Star4 } from '../components/admin/Glyphs';
 import BookingsList from '../components/admin/BookingsList';
 import BookingDetail from '../components/admin/BookingDetail';
 import ReviewsList from '../components/admin/ReviewsList';
@@ -269,7 +270,7 @@ export default function Admin() {
         <div className="relative flex flex-col items-center gap-8 px-8 text-center max-w-[380px]">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
             style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <span className="text-red-400 text-2xl">🔐</span>
+            <Lock className="w-6 h-6 text-red-400" strokeWidth={1.5} />
           </div>
           <div>
             <h1 className="font-serif text-[1.6rem] tracking-[0.18em] uppercase text-white/90 font-light mb-2">
@@ -317,7 +318,7 @@ export default function Admin() {
           <div className="flex flex-col items-center gap-3">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-1"
               style={{ background: 'rgba(212,160,176,0.12)', border: '1px solid rgba(212,160,176,0.2)' }}>
-              <span className="text-[#D4A0B0] text-2xl">✦</span>
+              <Star4 className="w-6 h-6 text-[#D4A0B0]" />
             </div>
             <h1 className="font-serif text-[1.6rem] tracking-[0.18em] uppercase text-white/90 font-light">
               Roqia Moshref
@@ -513,7 +514,7 @@ export default function Admin() {
                 {activeTabLabel}
               </h1>
               <p className="text-[0.78rem] mt-2 tracking-wide" style={{ color: dm ? '#71717a' : '#bbb' }}>
-                Welcome back, <span className="text-[#D4A0B0]">Roqia</span> ✦
+                Welcome back, <span className="text-[#D4A0B0]">Roqia</span>
               </p>
             </div>
             {activeTab === 'availability' && !selectedBooking && !selectedClassReg && (

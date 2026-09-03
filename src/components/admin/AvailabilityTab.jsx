@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
 import MonthCalendar, { OFF_RED, CLASS_PINK, startTime, dotOf } from './MonthCalendar';
 import BlockDaysSheet from './BlockDaysSheet';
+import { Check, Cross } from './Glyphs';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { STATUS_COLORS, CONSULT_INK } from './statusColors';
 
@@ -425,7 +426,9 @@ export default function AvailabilityTab({
           )}
 
           {bulkDone && (
-            <p className="text-[0.72rem] font-medium mt-3 text-center" style={{ color: '#A0607A' }}>✓ {bulkDone}</p>
+            <p className="flex items-center justify-center gap-1.5 text-[0.72rem] font-medium mt-3" style={{ color: '#A0607A' }}>
+              <Check className="w-3 h-3" strokeWidth={3} />{bulkDone}
+            </p>
           )}
           {blockMany.isError && (
             <p className="text-[0.72rem] mt-3 text-center" style={{ color: '#E05549' }}>Couldn't save that. Check your connection and try again.</p>
@@ -446,7 +449,7 @@ export default function AvailabilityTab({
                     <button key={d} onClick={() => togglePick(d)}
                       className="text-[0.62rem] font-medium px-2 py-1 rounded-lg transition-all"
                       style={{ background: dm ? 'rgba(224,85,73,0.16)' : '#FFF4F2', color: '#C0392B', border: '1px solid rgba(224,85,73,0.35)' }}>
-                      {fmtDay(d)} ✕
+                      {fmtDay(d)} <Cross className="w-2 h-2 inline-block align-middle" strokeWidth={3.5} />
                     </button>
                   ))}
                 </div>
@@ -533,7 +536,9 @@ export default function AvailabilityTab({
                       style={editCap === effForSelected
                         ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#52525b' : '#bcae9e', cursor: 'not-allowed' }
                         : { background: '#D4A0B0', color: '#fff', boxShadow: '0 1px 3px rgba(160,96,122,0.25)' }}>
-                      {saveOverride.isPending ? 'Saving…' : daySaved ? '✓ Saved' : 'Set limit'}
+                      {saveOverride.isPending ? 'Saving…'
+                        : daySaved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>
+                        : 'Set limit'}
                     </button>
                   </div>
                   {selHasOverride && (
@@ -609,7 +614,7 @@ export default function AvailabilityTab({
                       className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all"
                       style={{ background: isSel ? (dm ? '#2e1e1e' : '#FEF2F2') : (dm ? '#1e1e24' : '#FdF8F7'), border: `1px solid ${isSel ? 'rgba(239,68,68,0.5)' : (dm ? '#3a3a48' : '#f3e6e2')}` }}>
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[0.7rem] flex-shrink-0" style={{ color: OFF_RED }}>✕</span>
+                        <Cross className="w-2.5 h-2.5 flex-shrink-0" strokeWidth={3} style={{ color: OFF_RED }} />
                         <div className="min-w-0">
                           <p className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>
                             {many ? `${fmtDay(run.start)} to ${fmtDay(run.end)}` : fmtDay(run.start)}
@@ -659,7 +664,9 @@ export default function AvailabilityTab({
                 style={defaultEdit === defaultCap
                   ? { background: dm ? '#2e2e38' : '#f3f4f6', color: dm ? '#52525b' : '#9ca3af', cursor: 'not-allowed' }
                   : { background: '#111', color: '#fff' }}>
-                {saveDefault.isPending ? 'Saving…' : defaultSaved ? '✓ Saved' : 'Save'}
+                {saveDefault.isPending ? 'Saving…'
+                  : defaultSaved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>
+                  : 'Save'}
               </button>
             </div>
           </div>

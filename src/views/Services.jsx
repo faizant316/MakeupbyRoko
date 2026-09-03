@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { scrollToTarget } from '@/lib/lenis';
 import { isScrollLocked } from '@/lib/useScrollLock';
 
@@ -73,12 +72,16 @@ function useHeroParallax() {
   return ref;
 }
 
+// No `icon` field. Each entry used to carry one (a ring, a sparkle, a camera,
+// a lipstick) that nothing has ever rendered -- the tabs are and always were
+// set in type. Emoji category icons are exactly the tell they read as, and
+// leaving them in the source invites the next person to start rendering them.
 const CATEGORIES = [
-  { key: 'all', label: 'All Services', icon: '✦' },
-  { key: 'bridal', label: 'Bridal', icon: '💍', hasSubcategories: true },
-  { key: 'event', label: 'Non-Bridal Makeup', icon: '✨' },
-  { key: 'creative', label: 'Photoshoot Makeup', icon: '📸' },
-  { key: 'lessons', label: 'Makeup Courses', icon: '💄' },
+  { key: 'all', label: 'All Services' },
+  { key: 'bridal', label: 'Bridal', hasSubcategories: true },
+  { key: 'event', label: 'Non-Bridal Makeup' },
+  { key: 'creative', label: 'Photoshoot Makeup' },
+  { key: 'lessons', label: 'Makeup Courses' },
 ];
 
 // Position + "there's more sideways" cue for the mobile carousels. The dots
@@ -188,7 +191,6 @@ export default function ServicesPage() {
     },
     staleTime: 30000,
     retry: 2,
-    onError: () => toast.error('Failed to load services. Please refresh the page.'),
   });
 
   const SERVICE_DATA = serviceEntities.map(mapService);
@@ -486,7 +488,7 @@ export default function ServicesPage() {
           {!servicesLoading && !servicesError && serviceEntities.length === 0 && (
             <div className="text-center py-16">
               <p className="font-serif text-[1.2rem] text-gray-400">Services coming soon</p>
-              <p className="text-[0.78rem] text-gray-300 mt-2">Check back shortly ✦</p>
+              <p className="text-[0.78rem] text-gray-300 mt-2">Check back shortly.</p>
             </div>
           )}
 

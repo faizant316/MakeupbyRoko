@@ -26,7 +26,7 @@ export default function AdminInvite() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send invitation');
-      setMessage(`✓ Invitation sent to ${email}`);
+      setMessage(`Invitation sent to ${email}`);
       setEmail('');
     } catch (err) {
       setError(err.message || 'Failed to send invitation');

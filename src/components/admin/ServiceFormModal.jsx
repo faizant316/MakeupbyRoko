@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { lenisStop, lenisStart } from '@/lib/lenis';
 import ServicePreview from './ServicePreview';
+import { Cross, Star4 } from './Glyphs';
 
 const CATEGORIES = [
   { value: 'bridal', label: 'Bridal' },
@@ -178,7 +179,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
           style={{ borderColor, paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#F2F2F7' }}>
-              <span className="text-[#D4A0B0] text-base">✦</span>
+              <Star4 className="w-4 h-4 text-[#D4A0B0]" />
             </div>
             <div>
               <h3 className="font-serif text-[1.25rem] leading-none" style={{ color: textPrimary }}>
@@ -431,7 +432,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
                     <img src={photo} alt={`Before & After ${i + 1}`} className="w-full h-full object-cover" />
                     <button type="button" onClick={() => removePhoto(i)}
                       className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity text-lg">
-                      ✕
+                      <Cross className="w-3 h-3" strokeWidth={3} />
                     </button>
                   </div>
                 ))}

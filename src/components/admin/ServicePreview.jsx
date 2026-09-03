@@ -32,7 +32,7 @@ export default function ServicePreview({ form }) {
                 <ul className="flex flex-col gap-1 mb-3">
                   {form.includes.map((item, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-[0.75rem] text-[#999]">
-                      <span className="text-[#D4A0B0] mt-px text-[0.6rem]">✦</span>{item}
+                      <span className="w-1 h-1 rounded-full flex-shrink-0 mt-[6px]" style={{ background: '#D4A0B0' }} />{item}
                     </li>
                   ))}
                 </ul>

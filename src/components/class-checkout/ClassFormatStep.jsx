@@ -165,7 +165,7 @@ export default function ClassFormatStep({ format, onFormat, onClose, onNext }) {
             {format ? `Continue with ${CLASS_FORMATS[format].label} →` : 'Choose online or in person'}
           </button>
           <p className="text-[0.65rem] text-center mt-2" style={{ color: PLUM.gray }}>
-            Next: pick your class <span style={{ color: PLUM.pink }}>✦</span>
+            Next: pick your class
           </p>
         </div>
       </div>

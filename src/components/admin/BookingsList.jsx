@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import BookingRow from './BookingRow';
+import { Archive } from './Glyphs';
 import StatusBadge from './StatusBadge';
 import Collapse from './Collapse';
 import { groupByTime, timeToMinutes, scheduledDate } from './timeline';
@@ -1267,7 +1268,7 @@ export default function BookingsList({
                 style={flatCompleted ? { cursor: 'default' } : undefined}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[1rem]">🗂️</span>
+                  <Archive className="w-4 h-4" style={{ color: dm ? '#52525b' : '#b4b4bd' }} />
                   <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#52525b' : '#999' }}>Completed Archive</h3>
                 </div>
                 <span className="text-[0.65rem] text-[#bbb]">({visibleCompleted.length})</span>

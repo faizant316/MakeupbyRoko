@@ -176,7 +176,7 @@ export default function ClassSelector({ classKeys, format, selected, onSelect, o
           </button>
           {selectedClass && (
             <p className="text-[0.65rem] text-center mt-2" style={{ color: PLUM.gray }}>
-              Next: pick your Wednesday, time &amp; your details <span style={{ color: PLUM.pink }}>✦</span>
+              Next: pick your Wednesday, time &amp; your details
             </p>
           )}
         </div>

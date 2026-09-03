@@ -286,7 +286,10 @@ export default function AdminSidebar({
           {/* Dark / light mode */}
           <button
             onClick={onDarkModeToggle}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors active:scale-[0.99]"
+            style={{ background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2b2b34' : '#F4F4F8'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F0F0F5' }}>
@@ -309,7 +312,10 @@ export default function AdminSidebar({
           {/* Back to site */}
           <button
             onClick={onBackToSite}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors active:scale-[0.99]"
+            style={{ background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2b2b34' : '#F4F4F8'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
@@ -322,7 +328,10 @@ export default function AdminSidebar({
           {/* Log out */}
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-opacity hover:opacity-70 active:opacity-50"
+            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors active:scale-[0.99]"
+            style={{ background: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2b2b34' : '#F4F4F8'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
