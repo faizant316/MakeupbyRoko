@@ -56,7 +56,7 @@ export default function ServicesList({ darkMode: dm }) {
   const cardBg = dm ? '#26262e' : '#fff';
   const cardBorder = dm ? '#3a3a48' : '#E2E4EA';
   const titleColor = dm ? '#e4e4e7' : '#111';
-  const mutedColor = dm ? '#71717a' : '#999';
+  const mutedColor = dm ? '#8e8e99' : '#999';
   const tagBg = dm ? '#1e1e24' : '#FAFAFB';
   const tagColor = dm ? '#a1a1aa' : '#888';
   const actionBorder = dm ? '#3a3a48' : '#E2E4EA';
@@ -116,7 +116,7 @@ export default function ServicesList({ darkMode: dm }) {
                   {CATEGORY_LABELS[svc.category] || svc.category}
                 </span>
                 <span className="whitespace-nowrap">{svc.price}</span>
-                <span style={{ color: dm ? '#52525b' : '#ddd' }}>·</span>
+                <span style={{ color: dm ? '#7a7a84' : '#ddd' }}>·</span>
                 <span className="whitespace-nowrap">{svc.duration}</span>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function ServicesList({ darkMode: dm }) {
                 <button onClick={e => { e.stopPropagation(); setDeleteConfirm(svc.id); }}
                   aria-label="Delete service"
                   className="w-8 h-8 rounded-lg flex items-center justify-center transition-all sm:opacity-0 sm:group-hover:opacity-100"
-                  style={{ color: dm ? '#52525b' : '#ccc' }}
+                  style={{ color: dm ? '#7a7a84' : '#ccc' }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = dm ? '#3a3a48' : '#fef2f2'; }}
                   onMouseLeave={e => { e.currentTarget.style.color = dm ? '#52525b' : '#ccc'; e.currentTarget.style.background = 'transparent'; }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -150,7 +150,7 @@ export default function ServicesList({ darkMode: dm }) {
               {/* Chevron — affordance that the row opens */}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
-                style={{ color: dm ? '#52525b' : '#C7C7CF' }}>
+                style={{ color: dm ? '#7a7a84' : '#C7C7CF' }}>
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
             </div>

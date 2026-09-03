@@ -419,7 +419,7 @@ export default function AdminSidebar({
                   </span>
                   <span
                     className="text-[0.6rem] tracking-[0.12em] uppercase mt-0.5"
-                    style={{ color: dm ? '#52525b' : '#bbb' }}
+                    style={{ color: dm ? '#7a7a84' : '#bbb' }}
                   >
                     {tab.sub}
                   </span>

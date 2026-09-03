@@ -60,7 +60,7 @@ function parseNotes(raw) {
 function WindowGrid({ windows, value, onChange, dm }) {
   const border = dm ? '#3a3a48' : '#e5e5e5';
   const inputBg = dm ? '#1c1c28' : '#fafafa';
-  const muted = dm ? '#71717a' : '#999';
+  const muted = dm ? '#8e8e99' : '#999';
   if (!windows.length) {
     return (
       <p className="text-[0.72rem] italic leading-relaxed" style={{ color: muted }}>
@@ -119,7 +119,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
   const border = dm ? '#3a3a48' : '#e5e5e5';
   const inputBg = dm ? '#1c1c28' : '#fafafa';
   const inputColor = dm ? '#e4e4e7' : '#111';
-  const textMuted = dm ? '#71717a' : '#999';
+  const textMuted = dm ? '#8e8e99' : '#999';
   const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
 
   const showForm = expanded || !scheduled;
@@ -287,7 +287,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
             {scheduled && (
               <button onClick={() => setExpanded(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full transition-all"
-                style={{ background: dm ? '#3f3f46' : '#ECECF0', color: dm ? '#71717a' : '#888' }}>
+                style={{ background: dm ? '#3f3f46' : '#ECECF0', color: dm ? '#8e8e99' : '#888' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             )}
@@ -333,7 +333,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 {/* Notes */}
                 <div>
                   <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                    Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                    Notes <span style={{ color: dm ? '#7a7a84' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
                   </label>
                   <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
                     placeholder="Any extra info for the client…"
@@ -388,7 +388,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                 {/* Notes */}
                 <div>
                   <label className="block text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: textMuted }}>
-                    Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                    Notes <span style={{ color: dm ? '#7a7a84' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
                   </label>
                   <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
                     placeholder="Any extra info for the client…"
@@ -401,7 +401,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                   style={{
                     minHeight: '50px', fontSize: '14px',
                     ...(!time
-                      ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                      ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
                       : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                   }}>
                   {saving
@@ -485,17 +485,17 @@ function ClassContactComposer({ reg, dm, onClose, onSent }) {
 
       <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
         <div>
-          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Subject</label>
+          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Subject</label>
           <input value={subject} onChange={e => setSubject(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30" style={fieldStyle} />
         </div>
         <div>
-          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Message</label>
+          <label className="block text-[0.55rem] font-semibold tracking-[0.12em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Message</label>
           <textarea value={body} onChange={e => setBody(e.target.value)} rows={7}
             placeholder="Write your message…"
             className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
             style={{ ...fieldStyle, minHeight: '150px', lineHeight: 1.6 }} />
-          <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
+          <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#7a7a84' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
         </div>
         <div className="flex items-center gap-2 pt-1">
           <button type="button" onClick={onClose}
@@ -554,7 +554,7 @@ function ConfirmModal({ modal, onCancel, onConfirm, dm }) {
             : <Check className="w-4 h-4" strokeWidth={3} style={{ color: modal.color }} />}
         </div>
         <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>{modal.title}</p>
-        <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>{modal.body}</p>
+        <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#8e8e99' : '#999' }}>{modal.body}</p>
         <div className="flex gap-3 justify-center">
           <button onClick={onCancel}
             className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
@@ -584,7 +584,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   const cardBg    = dm ? '#26262e' : '#fff';
   const cardBorder = dm ? '#3a3a48' : '#e5e5e5';
   const textMain  = dm ? '#e4e4e7' : '#111';
-  const textMuted = dm ? '#71717a' : '#999';
+  const textMuted = dm ? '#8e8e99' : '#999';
   const sectionBg = dm ? '#1e1e24' : '#fafafa';
 
   const updateMutation = useMutation({
@@ -735,15 +735,15 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
           }}>
           <div className="px-4 min-w-0">
-            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Start</p>
+            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroWin.start || (reg.class_format === 'in_person' ? 'In studio' : 'Not set')}
             </p>
-            {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroWin.end}</p>}
+            {heroWin.end && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>until {heroWin.end}</p>}
           </div>
           <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#EAEAF0' }} />
           <div className="px-4 min-w-0">
-            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Date</p>
+            <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Date</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
           </div>
         </div>
@@ -816,7 +816,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
                 </p>
               </>
             ) : (
-              <p className="text-[0.82rem] italic" style={{ color: dm ? '#52525b' : '#ccc' }}>Not scheduled yet</p>
+              <p className="text-[0.82rem] italic" style={{ color: dm ? '#7a7a84' : '#ccc' }}>Not scheduled yet</p>
             )}
           </div>
           <div>

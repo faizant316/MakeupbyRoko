@@ -34,7 +34,7 @@ export default function ReportsTab({ darkMode: dm }) {
   const trackBg = dm ? '#26262e' : '#F0F0F5';
   const activeBg = dm ? '#1e1e24' : '#fff';
   const tx     = dm ? '#e4e4e7' : '#111';
-  const mu     = dm ? '#71717a' : '#999';
+  const mu     = dm ? '#8e8e99' : '#999';
   const active = VIEWS.find(v => v.key === view);
 
   return (
@@ -75,7 +75,7 @@ export default function ReportsTab({ darkMode: dm }) {
         </div>
         <p className="text-[0.72rem] mt-3 ml-1" style={{ color: mu }}>
           {active?.sub}
-          <span style={{ color: dm ? '#52525b' : '#C2C2C9' }}> · live data, updated in real time</span>
+          <span style={{ color: dm ? '#7a7a84' : '#C2C2C9' }}> · live data, updated in real time</span>
         </p>
       </div>
 

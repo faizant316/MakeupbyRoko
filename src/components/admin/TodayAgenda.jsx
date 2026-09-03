@@ -91,7 +91,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
       <div className="flex items-center gap-2.5 mb-4">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasItems ? 'animate-pulse' : ''}`} style={{ background: hasItems ? '#D4A0B0' : (dm ? '#52525b' : '#D0D0D8') }} />
         <h2 className="font-serif text-[1.2rem] leading-none" style={{ color: dm ? '#e4e4e7' : '#111' }}>Today</h2>
-        <span className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{todayLabel}</span>
+        <span className="text-[0.78rem]" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{todayLabel}</span>
         {hasItems && (
           <span className="text-[0.62rem] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
             style={{ background: 'rgba(212,160,176,0.16)', color: '#A0607A' }}>
@@ -124,11 +124,11 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
               >
                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.color }} />
                 <span className="text-[0.6rem] font-bold tracking-[0.12em] uppercase" style={{ color: group.color }}>{group.label}</span>
-                <span className="text-[0.6rem] font-semibold" style={{ color: dm ? '#52525b' : '#b8b8c0' }}>{group.items.length}</span>
+                <span className="text-[0.6rem] font-semibold" style={{ color: dm ? '#7a7a84' : '#b8b8c0' }}>{group.items.length}</span>
                 <svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   className={`w-3.5 h-3.5 ml-auto transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
-                  style={{ color: dm ? '#52525b' : '#c2c2ca' }}
+                  style={{ color: dm ? '#7a7a84' : '#c2c2ca' }}
                 >
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -155,7 +155,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: meta.bg }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{item.name}</p>
-                      <p className="text-[0.7rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{item.label}</p>
+                      <p className="text-[0.7rem] truncate mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{item.label}</p>
                       {item.location && (
                         <p className="flex items-center gap-1 text-[0.68rem] truncate mt-0.5" style={{ color: dm ? '#8fb3d9' : '#6a7f99' }}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-2.5 h-2.5 flex-shrink-0">
@@ -193,7 +193,7 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
           <svg viewBox="0 0 24 24" fill="none" stroke={offToday ? '#EF4444' : (dm ? '#52525b' : '#C0C0C9')} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0">
             {offToday ? <><circle cx="12" cy="12" r="9" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></> : <path d="M20 6 9 17l-5-5" />}
           </svg>
-          <p className="text-[0.8rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+          <p className="text-[0.8rem]" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
             {offToday
               ? `You're off today. Clients can't book this day.${offToday.reason ? ` (${offToday.reason})` : ''}`
               : "Nothing scheduled today. You're all clear."}

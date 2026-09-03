@@ -403,7 +403,7 @@ export default function BookingsList({
           <h2 className="font-serif text-[1.85rem] sm:text-[2.1rem] font-light leading-none tracking-[-0.01em]"
             style={{ color: dm ? '#e4e4e7' : '#111' }}>Appointments</h2>
           <p className="text-[0.72rem] font-medium tracking-[0.04em] mt-1.5"
-            style={{ color: dm ? '#71717a' : '#bbb' }}>
+            style={{ color: dm ? '#8e8e99' : '#bbb' }}>
             {selectedDate
               ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
               : currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -547,9 +547,9 @@ export default function BookingsList({
 
                   <span className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
                     <span className="text-[0.875rem] font-medium truncate max-w-full" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</span>
-                    <span className="text-[0.72rem] truncate max-w-full" style={{ color: dm ? '#71717a' : '#8791a6' }}>
+                    <span className="text-[0.72rem] truncate max-w-full" style={{ color: dm ? '#8e8e99' : '#8791a6' }}>
                       {b.service}
-                      {b.date && <span style={{ color: dm ? '#52525b' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                      {b.date && <span style={{ color: dm ? '#7a7a84' : '#a6b2cc' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                     </span>
                     {b.zelle_uploaded_at && (
                       <span className="text-[0.7rem] font-semibold flex items-center gap-1.5" style={{ color: tone.fg }}>
@@ -705,9 +705,9 @@ export default function BookingsList({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
+                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#8e8e99' : '#a3a3ad' }}>
                         {b.service}
-                        {b.date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        {b.date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -720,7 +720,7 @@ export default function BookingsList({
                 ))
               }
               {recentSearch && recentBookings.filter(b => [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase()))).length === 0 && (
-                <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>No results for "{recentSearch}"</div>
+                <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>No results for "{recentSearch}"</div>
               )}
             </div>
           </div>
@@ -852,7 +852,7 @@ export default function BookingsList({
               </svg>
             </span>
             <div className="min-w-0">
-              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#71717a' : '#b6b6bf' }}>Showing</p>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#b6b6bf' }}>Showing</p>
               <p className="text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
@@ -919,7 +919,7 @@ export default function BookingsList({
                   <p className="text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                     {b.name || 'Client'}
                   </p>
-                  <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                  <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#8e8e99' : '#999' }}>
                     {b.consultation_type || 'Zoom'} · {b.consultation_time || ''} · {b.service}
                   </p>
                 </div>
@@ -1013,7 +1013,7 @@ export default function BookingsList({
                   <p className="text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                     {r.full_name || 'Client'}
                   </p>
-                  <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                  <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#8e8e99' : '#999' }}>
                     {isPhone ? 'Phone / FaceTime' : r.consultation_type === 'In-Person' ? 'In Person · Studio' : (r.consultation_type || 'Zoom')} · {r.appointment_time || ''} · {classLabel}
                   </p>
                 </div>
@@ -1081,11 +1081,11 @@ export default function BookingsList({
                       <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                         {r.full_name || 'Client'}
                       </p>
-                      <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                      <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#8e8e99' : '#999' }}>
                         {classLabel}
-                        {r.appointment_date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(r.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                        {r.appointment_time && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{r.appointment_time}</span>}
-                        {r.consultation_type && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{r.consultation_type}</span>}
+                        {r.appointment_date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{new Date(r.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {r.appointment_time && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{r.appointment_time}</span>}
+                        {r.consultation_type && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{r.consultation_type}</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1147,11 +1147,11 @@ export default function BookingsList({
                       <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>
                         {b.name || 'Client'}
                       </p>
-                      <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#999' }}>
+                      <p className="text-[0.72rem] mt-0.5 truncate" style={{ color: dm ? '#8e8e99' : '#999' }}>
                         {b.service}
-                        {b.consultation_date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{new Date(b.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                        {b.consultation_time && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{b.consultation_time}</span>}
-                        {b.consultation_type && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{' · '}{b.consultation_type}</span>}
+                        {b.consultation_date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{new Date(b.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {b.consultation_time && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{b.consultation_time}</span>}
+                        {b.consultation_type && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{b.consultation_type}</span>}
                       </p>
                     </div>
                     {zoomRoomUrl(join, meetingId) && (
@@ -1268,8 +1268,8 @@ export default function BookingsList({
                 style={flatCompleted ? { cursor: 'default' } : undefined}
               >
                 <div className="flex items-center gap-2">
-                  <Archive className="w-4 h-4" style={{ color: dm ? '#52525b' : '#b4b4bd' }} />
-                  <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#52525b' : '#999' }}>Completed Archive</h3>
+                  <Archive className="w-4 h-4" style={{ color: dm ? '#7a7a84' : '#b4b4bd' }} />
+                  <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#7a7a84' : '#999' }}>Completed Archive</h3>
                 </div>
                 <span className="text-[0.65rem] text-[#bbb]">({visibleCompleted.length})</span>
                 {!flatCompleted && (
@@ -1309,7 +1309,7 @@ export default function BookingsList({
           >
             {/* Count + select-all + done */}
             <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${dm ? '#33333d' : '#F0F0F4'}` }}>
-              <span className="text-[0.85rem] font-semibold" style={{ color: selectedCount ? (dm ? '#e4e4e7' : '#111') : (dm ? '#71717a' : '#9c9ca4') }}>
+              <span className="text-[0.85rem] font-semibold" style={{ color: selectedCount ? (dm ? '#e4e4e7' : '#111') : (dm ? '#8e8e99' : '#9c9ca4') }}>
                 {selectedCount > 0 ? `${selectedCount} selected` : 'Tap appointments to select'}
               </span>
               <div className="flex items-center gap-3">

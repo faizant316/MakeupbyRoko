@@ -80,7 +80,7 @@ export default function DateBlockPopup({ date, isBlocked, existingReason = '', o
                 Blocking this date will mark it as unavailable. Clients won't be able to book appointments on this day. Just tap Block. A reason is optional.
               </p>
               <div className="mb-5">
-                <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#52525b] mb-1.5">
+                <label className="block text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#7a7a84] mb-1.5">
                   Reason <span className="text-[#ccc] font-normal normal-case tracking-normal">(optional)</span>
                 </label>
                 <input

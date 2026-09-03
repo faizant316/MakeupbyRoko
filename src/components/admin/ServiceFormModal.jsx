@@ -139,10 +139,10 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
   const modalBg = dm ? '#27272a' : '#ffffff';
   const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
-  const textMuted = dm ? '#71717a' : '#999999';
+  const textMuted = dm ? '#8e8e99' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
   const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
-  const sectionLabelColor = dm ? '#71717a' : '#a3a3ad';
+  const sectionLabelColor = dm ? '#8e8e99' : '#a3a3ad';
   const tagBg = dm ? '#18181b' : '#FAFAFB';
   const tagColor = dm ? '#a1a1aa' : '#666';
   const addBtnBg = dm ? '#3f3f46' : '#111111';

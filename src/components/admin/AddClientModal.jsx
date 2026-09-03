@@ -41,7 +41,7 @@ function StyledDropdown({ value, onChange, options, placeholder, dm }) {
   const border = dm ? '#3f3f46' : '#E2E4EA';
   const bg = dm ? '#18181b' : '#ffffff';
   const text = dm ? '#f4f4f5' : '#111';
-  const muted = dm ? '#71717a' : '#999';
+  const muted = dm ? '#8e8e99' : '#999';
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(o => !o)}
@@ -73,7 +73,7 @@ function StyledDropdown({ value, onChange, options, placeholder, dm }) {
 
 function YesNo({ value, onChange, dm, yes = 'Yes', no = 'No' }) {
   const border = dm ? '#3f3f46' : '#E2E4EA';
-  const idle = { background: dm ? '#1e1e24' : '#fafafa', color: dm ? '#71717a' : '#999', border: `1px solid ${border}` };
+  const idle = { background: dm ? '#1e1e24' : '#fafafa', color: dm ? '#8e8e99' : '#999', border: `1px solid ${border}` };
   return (
     <div className="flex gap-2">
       <button type="button" onClick={() => onChange(true)} className="flex-1 py-2.5 rounded-xl text-[0.74rem] font-semibold transition-all"
@@ -355,10 +355,10 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
   const modalBg = dm ? '#27272a' : '#ffffff';
   const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
-  const textMuted = dm ? '#71717a' : '#999999';
+  const textMuted = dm ? '#8e8e99' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
   const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
-  const sectionLabelColor = dm ? '#71717a' : '#a3a3ad';
+  const sectionLabelColor = dm ? '#8e8e99' : '#a3a3ad';
   const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
 
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
