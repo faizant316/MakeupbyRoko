@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { scrollToTarget } from '@/lib/lenis';
 
 const WORDS = ['stunning', 'beautiful', 'flawless'];
 
@@ -159,7 +160,22 @@ export default function About() {
               My goal has never been to change who you are, but to enhance what already makes you beautiful. On your special day, you're trusting me with one of life's biggest moments, and I don't take that responsibility lightly. Every face matters to me, and every client leaves my chair representing the standard I've proudly built for over 17 years.
             </p>
 
-            {/* Instagram CTA */}
+            {/* Book + Instagram. Her story is the most persuasive thing on the
+                page and it used to end with a link OFF the site as its only
+                action; booking now comes first. */}
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-7">
+            <button
+              type="button"
+              onClick={() => requestAnimationFrame(() => scrollToTarget('#services-grid', { offset: -60 }))}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-[#111] text-white active:scale-[0.98] hover:bg-[#222] transition-all"
+              style={{ fontFamily: 'var(--font-sans)', fontSize: '0.74rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', border: 'none' }}
+            >
+              Book a service
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+
             <a
               href="https://www.instagram.com/makeupbyroko_/"
               target="_blank"
@@ -191,6 +207,7 @@ export default function About() {
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
               </svg>
             </a>
+            </div>
 
           </div>
         </div>

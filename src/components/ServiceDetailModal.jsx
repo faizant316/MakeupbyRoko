@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
+import { bestFor, ctaLabel, earliestDateLabel, leadLabelFor, showsEarliestDate } from '@/lib/serviceCopy';
 
 // Same hook, no SSR warning. The lock/unlock and the opening FLIP both have to
 // land before the browser paints.
@@ -261,8 +262,9 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   if (!svc) return null;
 
   const isLessons   = svc.category === 'lessons';
-  const isBridal    = svc.category === 'bridal';
-  const buttonLabel = isBridal ? 'Inquire About Bridal' : isLessons ? 'View Available Classes' : 'Select & Book';
+  // One verb across the whole site: the cards, this sheet and the booking
+  // header all say Book, because every path opens the same calendar next.
+  const buttonLabel = ctaLabel(svc);
 
   const handleAction = () => {
     // Mount the next sheet immediately — it sits at a lower z-index and slides
@@ -292,6 +294,17 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           Required for: bridal switch, location over <strong>1 hr from studio</strong>, or start time <strong>before 7 AM</strong>
         </div>
       )}
+      {/* Non-bridal timing, moved off the card. The card used to carry
+          "must be booked within 1 month of the event", which read as the exact
+          opposite of the calendar's "bookable at least 1 month out". The
+          calendar rule is the one the picker enforces, so it leads here and the
+          pricing note follows it as fine print. */}
+      {svc.category === 'event' && (
+        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055] mb-4">
+          Book at least <strong>{leadLabelFor(svc)} ahead</strong>. Roko keeps the next few weeks open for brides.
+          <span className="block mt-1 text-[#8C6070]">Booked far in advance? Bridal pricing may apply.</span>
+        </div>
+      )}
       {svc.title === 'Bridal Trial' && (
         <div className="flex flex-col gap-2 mb-4">
           <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
@@ -308,11 +321,17 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const content = (
     <>
       <h3 className="font-serif text-[1.6rem] font-normal text-[#111] leading-tight mb-2">{svc.title}</h3>
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <span className="font-serif text-xl text-[#111]">{svc.price}</span>
         {svc.duration && <><span className="text-[#ddd]">·</span><span className="text-[0.84rem] text-[#888]">{svc.duration}</span></>}
         {svc.deposit  && <><span className="text-[#ddd]">·</span><span className="text-[0.78rem] text-[#aaa]">{svc.deposit}</span></>}
       </div>
+      {bestFor(svc) && <p className="text-[0.84rem] text-[#8a7f79] leading-[1.55] mb-3">{bestFor(svc)}</p>}
+      {showsEarliestDate(svc) && (
+        <p className="text-[0.78rem] text-[#a89f99] mb-4">
+          Earliest date available <span className="text-[#6d6460]">{earliestDateLabel(svc)}</span>
+        </p>
+      )}
       {badges}
       {descToShow   && <p className="text-[0.93rem] text-[#666] leading-[1.78] mb-5">{descToShow}</p>}
       {expectToShow && (

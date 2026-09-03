@@ -14,12 +14,15 @@ import BeforeAfterGallery from '../components/BeforeAfterGallery';
 import Testimonials from '../components/Testimonials';
 import FAQSection from '../components/FAQSection';
 import BridalCard from '../components/BridalCard';
+import BridalHeroCard from '../components/BridalHeroCard';
 import NonBridalCard from '../components/NonBridalCard';
 import BridalComparison from '../components/BridalComparison';
 import About from '../components/About';
 import MakeupClassModal from '../components/MakeupClassModal';
 import CoursesFeature from '../components/CoursesFeature';
 import ServiceDetailModal from '../components/ServiceDetailModal';
+import ServiceChooser from '../components/ServiceChooser';
+import BookingCTA from '../components/BookingCTA';
 
 // Drive the hero's scale/opacity straight from scroll into two CSS variables on
 // the hero element, batched through requestAnimationFrame. This deliberately
@@ -77,6 +80,25 @@ const CATEGORIES = [
   { key: 'creative', label: 'Photoshoot Makeup', icon: '📸' },
   { key: 'lessons', label: 'Makeup Courses', icon: '💄' },
 ];
+
+// Position + "there's more sideways" cue for the mobile carousels. The dots
+// under a carousel only report where you are once you've already swiped; this
+// says there is something to swipe before you do, which is the whole reason
+// people were missing the services past the first card.
+function SwipeHint({ idx, count, className = '' }) {
+  if (!count || count < 2) return null;
+  return (
+    <span className={`flex items-center gap-2 flex-shrink-0 ${className}`}>
+      <span className="text-[0.6rem] tracking-[0.1em] uppercase text-[#b3a9a3]">{idx + 1} / {count}</span>
+      <span className="flex items-center gap-1 text-[0.6rem] tracking-[0.14em] uppercase text-[#D4A0B0]">
+        Swipe
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+          <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+        </svg>
+      </span>
+    </span>
+  );
+}
 
 // Local cover photos that always override whatever is set in the DB.
 const PHOTO_OVERRIDES = {
@@ -307,9 +329,24 @@ export default function ServicesPage() {
               <h2 className="font-serif" style={{ fontSize: 'clamp(2.4rem, 5.5vw, 3.8rem)', fontWeight: 300, color: '#111', lineHeight: 1.0, letterSpacing: '-0.015em', marginBottom: '0.65rem' }}>
                 What I <em style={{ fontStyle: 'italic', color: '#D4A0B0' }}>Offer</em>
               </h2>
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.82rem', color: '#7a7068', lineHeight: 1.75, maxWidth: '400px', margin: '0 0 1.25rem' }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.82rem', color: '#7a7068', lineHeight: 1.75, maxWidth: '400px', margin: '0 0 1.1rem' }}>
                 Each service is tailored to you, from everyday glam to your wedding day. Limited bookings taken each month.
               </p>
+
+              {/* The same reassurance the booking band carries, said once at the
+                  top of the grid where people are still deciding whether to
+                  look. Numbers only, no new claims. */}
+              <div className="flex items-center gap-5 mb-6">
+                {[['17+', 'Years'], ['1000+', 'Clients']].map(([n, l], i) => (
+                  <span key={l} className="flex items-center gap-5">
+                    {i > 0 && <span className="w-px h-4 bg-[#efe9e4]" />}
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="font-serif text-[1.2rem] text-[#111]" style={{ fontWeight: 300 }}>{n}</span>
+                      <span className="text-[0.62rem] uppercase tracking-[0.14em] text-[#b3a9a3]">{l}</span>
+                    </span>
+                  </span>
+                ))}
+              </div>
 
               {/* Filter — editorial underline tabs (scrollable on mobile).
                   Sleek static chevrons fade in at whichever edge has more to scroll:
@@ -380,6 +417,15 @@ export default function ServicesPage() {
                 </div>
               </div>
             </div>
+
+            {/* Two taps to the right service, for anyone who doesn't already know */}
+            <ServiceChooser
+              services={SERVICE_DATA}
+              onSelect={setSelectedService}
+              onViewDetail={handleViewDetail}
+              onOpenClassModal={() => setShowClassModal(true)}
+              onFilter={setActiveCategory}
+            />
 
           </div>
 
@@ -465,13 +511,24 @@ export default function ServicesPage() {
                 <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#D4A0B0]">Bridal Services</span>
                 <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
+                <SwipeHint idx={bridalIdx} count={bridalServices.length} className="lg:hidden" />
               </div>
 
-              {/* Mobile: horizontal snap scroll — Desktop: grid */}
-              <div className="hidden lg:grid gap-5" style={{ gridTemplateColumns: bridalServices.length >= 3 ? 'repeat(3, 1fr)' : bridalServices.length === 2 ? 'repeat(2, 1fr)' : '1fr' }}>
-                {bridalServices.map((svc, idx) => (
-                  <BridalCard key={svc.key} svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
-                ))}
+              {/* Desktop: the flagship gets a full-width split card and the rest
+                  sit two to a row beneath it. An equal 3-up gave the $750 and
+                  $1,700 packages narrower cards than the $400 non-bridal rows
+                  further down the page, which read as the wrong hierarchy. The
+                  mobile carousel below is unchanged — all three still run
+                  through BridalCard there. */}
+              <div className="hidden lg:flex flex-col gap-5">
+                <BridalHeroCard svc={bridalServices[0]} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
+                {bridalServices.length > 1 && (
+                  <div className="grid gap-5" style={{ gridTemplateColumns: bridalServices.length > 2 ? 'repeat(2, 1fr)' : '1fr' }}>
+                    {bridalServices.slice(1).map((svc, i) => (
+                      <BridalCard key={svc.key} svc={svc} idx={i + 1} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
@@ -541,6 +598,7 @@ export default function ServicesPage() {
                 <div className="w-[3px] h-[14px] rounded-full bg-[#555] flex-shrink-0" />
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#555]">Other Services</span>
                 <span className="flex-1 h-px bg-gradient-to-r from-[#bbb]/40 to-transparent" />
+                <SwipeHint idx={otherIdx} count={otherServices.length} className="sm:hidden" />
               </div>
 
               {/* Desktop: vertical stacked cards */}
@@ -650,11 +708,24 @@ export default function ServicesPage() {
           and the offer. */}
       <About />
 
+      {/* Booking band. Her story is the other place intent peaks, and from here
+          to the reviews band was a long stretch of page with nothing to tap. */}
+      <BookingCTA
+        eyebrow="Work with Roko"
+        title="Reserve your"
+        emphasis="date"
+        sub="Bridal, events, photoshoots and private courses. Pick your service and Roko takes it from there."
+      />
+
       {/* Before & After */}
       <BeforeAfterGallery />
 
       {/* Testimonials */}
       <Testimonials />
+
+      {/* Booking band — reviews are where intent peaks, and until now the only
+          way to act on it was to scroll all the way back up to the grid. */}
+      <BookingCTA />
 
       {/* FAQ */}
       <FAQSection />

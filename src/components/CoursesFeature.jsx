@@ -1,5 +1,6 @@
 import { PLUM } from './class-checkout/classTheme';
 import { CLASS_CATALOG } from '@/lib/classCatalog';
+import { bestFor, ctaLabel } from '@/lib/serviceCopy';
 
 // Featured block for Roko's makeup courses on the services page. Courses are a
 // big part of her work, so this stands apart from the plain cards, but stays in
@@ -35,6 +36,10 @@ export default function CoursesFeature({ svc, onOpenClassModal, onViewDetail }) 
           {svc.title || 'Makeup Courses'}
         </h3>
 
+        {bestFor(svc) && (
+          <p className="text-[0.8rem] leading-[1.5] mb-3" style={{ color: PLUM.grayLt }}>{bestFor(svc)}</p>
+        )}
+
         {svc.desc && (
           <p className="text-[0.86rem] leading-[1.65] max-w-[460px] mb-5" style={{ color: PLUM.gray }}>
             {svc.desc}
@@ -65,13 +70,25 @@ export default function CoursesFeature({ svc, onOpenClassModal, onViewDetail }) 
           <span>Wednesdays only · online via Zoom or in person at the Mountain House studio · <strong className="text-[#111] font-medium">pay in full to reserve</strong></span>
         </div>
 
-        <button
-          onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
-          type="button"
-          className="mt-auto w-full sm:w-auto sm:self-start px-8 py-3.5 bg-[#111] text-white text-[0.8rem] font-medium tracking-[0.06em] uppercase rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
-        >
-          View Available Classes →
-        </button>
+        {/* Details vs Book — the same pair every service card carries, so one
+            tap target never means two different things. */}
+        <div className="mt-auto flex items-stretch gap-2 w-full sm:w-auto sm:self-start">
+          <button
+            onClick={(e) => { e.stopPropagation(); onViewDetail && onViewDetail(svc, e); }}
+            type="button"
+            className="flex-shrink-0 px-5 py-3.5 text-[0.78rem] font-medium bg-white rounded-xl transition-all active:scale-[0.98]"
+            style={{ color: PLUM.gray, border: `1px solid ${PLUM.border}` }}
+          >
+            Details
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
+            type="button"
+            className="flex-1 sm:flex-none px-8 py-3.5 bg-[#111] text-white text-[0.8rem] font-medium tracking-[0.06em] uppercase rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
+          >
+            {ctaLabel(svc)} →
+          </button>
+        </div>
       </div>
 
       {/* Photo side */}
