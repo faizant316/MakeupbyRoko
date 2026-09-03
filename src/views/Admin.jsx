@@ -513,7 +513,7 @@ export default function Admin() {
               >
                 {activeTabLabel}
               </h1>
-              <p className="text-[0.78rem] mt-2 tracking-wide" style={{ color: dm ? '#71717a' : '#bbb' }}>
+              <p className="text-[0.78rem] mt-2 tracking-wide" style={{ color: dm ? '#8e8e99' : '#bbb' }}>
                 Welcome back, <span className="text-[#D4A0B0]">Roqia</span>
               </p>
             </div>

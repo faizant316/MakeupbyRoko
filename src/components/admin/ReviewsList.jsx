@@ -57,7 +57,7 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
             style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }}>
             <StarOutline className="w-5 h-5 text-[#D4A0B0]" />
           </div>
-          <p className="text-[0.85rem]" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
+          <p className="text-[0.85rem]" style={{ color: dm ? '#8e8e99' : '#a3a3ad' }}>
             {filter === 'all' ? 'No reviews yet' : `No ${filter} reviews`}
           </p>
         </div>
@@ -80,7 +80,7 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
   const bg      = dm ? '#26262e' : '#fff';
   const bd      = dm ? '#3a3a48' : '#E2E4EA';
   const tx      = dm ? '#e4e4e7' : '#111';
-  const di      = dm ? '#52525b' : '#bcbcc4';
+  const di      = dm ? '#7a7a84' : '#bcbcc4';
   const divider = dm ? '#2e2e38' : '#ECEDF1';
   const star    = dm ? '#3a3a48' : '#E1E1E8';
 
@@ -93,7 +93,7 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
           <h4 className="font-serif text-[1.02rem] truncate" style={{ color: tx }}>{review.name}</h4>
           {review.service && <p className="text-[0.7rem] mt-0.5 truncate" style={{ color: '#D4A0B0' }}>{review.service}</p>}
           {review.location && (
-            <p className="flex items-center gap-1 text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+            <p className="flex items-center gap-1 text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-3 h-3 flex-shrink-0">
                 <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
               </svg>

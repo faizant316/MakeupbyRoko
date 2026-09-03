@@ -28,11 +28,10 @@ export default function CoursesFeature({ svc, onOpenClassModal, onViewDetail }) 
     >
       {/* Text side */}
       <div className="relative z-10 flex-1 p-6 sm:p-8 lg:p-10 flex flex-col">
-        <span className="inline-flex self-start items-center text-[0.58rem] font-bold tracking-[0.18em] uppercase px-3 py-1.5 rounded-full mb-4"
-          style={{ background: '#111', color: '#fff' }}>
-          Makeup Courses
-        </span>
-
+        {/* A black "Makeup Courses" pill used to sit here, directly above a
+            heading whose default text is also "Makeup Courses", inside a
+            section already introduced as "Learn With Roko". Three labels for
+            one thing. The heading keeps the job. */}
         <h3 className="font-serif leading-[1.05] mb-2.5 text-[#111]" style={{ fontSize: 'clamp(1.9rem, 4.5vw, 2.9rem)', fontWeight: 300 }}>
           {svc.title || 'Makeup Courses'}
         </h3>

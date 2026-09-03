@@ -41,7 +41,7 @@ function StatCard({ icon: Icon, label, sub, value, accent, delta, dm, selectable
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
+  const mu = dm ? '#8e8e99' : '#999';
   const pink = '#D4A0B0';
 
   // Selected headline cards get a pink ring + soft glow so the chart below
@@ -82,7 +82,7 @@ function StatCard({ icon: Icon, label, sub, value, accent, delta, dm, selectable
       </div>
       {selectable && (
         <span className="text-[0.58rem] font-semibold tracking-[0.06em] uppercase mt-0.5 transition-colors"
-          style={{ color: active ? pink : (dm ? '#52525b' : '#c7c7cf') }}>
+          style={{ color: active ? pink : (dm ? '#7a7a84' : '#c7c7cf') }}>
           {active ? '● Showing on chart' : 'Tap to chart'}
         </span>
       )}
@@ -94,7 +94,7 @@ function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
+  const mu = dm ? '#8e8e99' : '#999';
   return (
     <div className="rounded-2xl px-3.5 py-3.5 flex items-center gap-3" style={{ background: bg, border: `1px solid ${bd}` }}>
       <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${accent}15` }}>
@@ -103,7 +103,7 @@ function InsightCard({ icon: Icon, label, value, sub, accent, dm }) {
       <div className="min-w-0">
         <p className="text-[1rem] font-semibold leading-none" style={{ color: tx }}>{value}</p>
         <p className="text-[0.6rem] mt-0.5 leading-tight" style={{ color: mu }}>
-          {label}<br /><span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{sub}</span>
+          {label}<br /><span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{sub}</span>
         </p>
       </div>
     </div>
@@ -158,7 +158,7 @@ export default function RevenueTab({ darkMode: dm }) {
   const bg      = dm ? '#26262e' : '#fff';
   const bd      = dm ? '#3a3a48' : '#E2E4EA';
   const tx      = dm ? '#e4e4e7' : '#111';
-  const mu      = dm ? '#71717a' : '#999';
+  const mu      = dm ? '#8e8e99' : '#999';
   const grid    = dm ? '#2e2e38' : '#EEEEF3';
 
   if (initialLoad) {
@@ -358,7 +358,7 @@ export default function RevenueTab({ darkMode: dm }) {
                       <p className="text-[0.75rem] font-medium leading-tight" style={{ color: tx }}>{svc.name}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      <span className="text-[0.6rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{completePct}% done</span>
+                      <span className="text-[0.6rem]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{completePct}% done</span>
                       <span className="text-[0.68rem] font-semibold" style={{ color: mu }}>{svc.count}</span>
                     </div>
                   </div>

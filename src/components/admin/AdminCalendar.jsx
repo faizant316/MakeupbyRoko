@@ -65,7 +65,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
           ? dm ? '' : 'bg-amber-50 border border-amber-200 text-[#111] hover:bg-amber-100'
           : hasBookings
           ? dm ? '' : 'bg-[#F3F3F6] border border-[#E6E6EA] text-[#8a8a8a] hover:bg-[#EDEDF0]'
-          : dm ? 'text-[#71717a]' : 'text-[#777] hover:bg-[#F0F0F5] hover:text-[#111]'
+          : dm ? 'text-[#8e8e99]' : 'text-[#777] hover:bg-[#F0F0F5] hover:text-[#111]'
       }`}
       style={dm ? cellStyle : {}}
     >
@@ -97,7 +97,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
             <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
               style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
           )}
-          <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#52525b]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
+          <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#7a7a84]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
         </div>
       )}
     </button>
@@ -223,7 +223,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
               style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
           <button onClick={goToToday}
-            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0"
+            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#7a7a84] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0"
             style={{ background: dm ? 'rgba(113, 113, 122,0.14)' : '#EFEFF6' }}>
             Today
           </button>
@@ -267,7 +267,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             <span className="text-[0.8rem] font-semibold text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
             <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>›</button>
           </div>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
+          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#7a7a84] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
         </div>
         <div className="grid grid-cols-7 gap-1.5">
           {days.map(d => (
@@ -294,7 +294,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-lg border transition-all flex-shrink-0 ${
               isBlocked
                 ? 'text-red-500 border-red-200 hover:bg-red-50'
-                : dm ? 'text-[#71717a] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
+                : dm ? 'text-[#8e8e99] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
             }`}>
             <span className="inline-flex items-center gap-1.5">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5">
@@ -304,7 +304,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
               {isBlocked ? 'Unblock' : 'Block Day'}
             </span>
           </button>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#52525b] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
+          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#7a7a84] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
         </div>
 
         {isBlocked && (
@@ -365,14 +365,14 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
         {/* Legend (month/week only — the day schedule carries its own) */}
         {view !== 'day' && (
         <div className="flex items-center gap-x-4 gap-y-2 mt-6 pt-4 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
             <span className="w-3 h-3 rounded-md bg-indigo-50 border-2 border-indigo-300 inline-block" /> Today
           </span>
           {/* Week view still paints whole cells amber/red; the month grid says
               it in words on each day instead, so those keys would be noise. */}
           {view === 'week' && (
             <>
-              <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+              <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
                 <span className="w-3 h-3 rounded-md bg-amber-50 border border-amber-200 inline-block" /> Filling Up
               </span>
               <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
@@ -390,18 +390,18 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
             </span> Day off
           </span>
           {Object.entries(STATUS_COLORS).filter(([s]) => s !== 'cancelled').map(([s, color]) => (
-            <span key={s} className="flex items-center gap-1.5 text-[0.6rem] font-medium capitalize" style={{ color: dm ? '#71717a' : '#999' }}>
+            <span key={s} className="flex items-center gap-1.5 text-[0.6rem] font-medium capitalize" style={{ color: dm ? '#8e8e99' : '#999' }}>
               <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: color }} /> {s}
             </span>
           ))}
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: view === 'month' ? CONSULT_INK[dm ? 'dark' : 'light'] : EVENT_COLORS.consult }} /> Consultation
           </span>
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: view === 'month' ? CLASS_PINK : '#D4A0B0' }} /> Makeup Class
           </span>
           {view === 'week' && (
-            <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+            <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
               <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#A0607A' }} /> Custom limit
             </span>
           )}

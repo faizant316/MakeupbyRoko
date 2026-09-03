@@ -165,7 +165,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
         <div className="min-w-0">
           <h2 className="font-serif text-[1.6rem] leading-tight truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.name}</h2>
           {memberSince && (
-            <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>Client since {memberSince}</p>
+            <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>Client since {memberSince}</p>
           )}
         </div>
       </div>
@@ -199,18 +199,18 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
       <div className="rounded-2xl px-4 py-3.5 mb-6 flex flex-col gap-2" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
         {client.phone && (
           <div className="flex items-center justify-between gap-3 min-w-0">
-            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>Phone</span>
+            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>Phone</span>
             <span className="text-[0.82rem] font-medium truncate tabular-nums" style={{ color: dm ? '#e4e4e7' : '#111' }}>{formatPhone(client.phone)}</span>
           </div>
         )}
         {client.email && (
           <div className="flex items-center justify-between gap-3 min-w-0">
-            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>Email</span>
+            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>Email</span>
             <span className="text-[0.82rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.email}</span>
           </div>
         )}
         {!client.phone && !client.email && (
-          <p className="text-[0.78rem]" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>No contact info on file</p>
+          <p className="text-[0.78rem]" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>No contact info on file</p>
         )}
       </div>
 
@@ -223,7 +223,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
         ].map(s => (
           <div key={s.label} className="rounded-2xl py-3.5 text-center" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
             <div className="font-serif text-[1.4rem] leading-none" style={{ color: dm ? '#ECEDF1' : '#111' }}>{s.value}</div>
-            <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5" style={{ color: dm ? '#71717a' : '#A89098' }}>{s.label}</div>
+            <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5" style={{ color: dm ? '#8e8e99' : '#A89098' }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -243,7 +243,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
                   style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
                   <div className="flex-1 min-w-0">
                     <p className="text-[0.84rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.service || 'Appointment'}</p>
-                    <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                    <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                       {rel.label}{b.time ? ` · ${b.time}` : ''}
                       {isBridalService(b.service) ? ' · Bridal' : ''}
                       {b.source === 'booksy' && <span style={{ color: dm ? '#5EEAD4' : '#0E8F98', fontWeight: 600 }}> · Booksy</span>}
@@ -269,7 +269,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
                 style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-[0.84rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{classLabelOf(r)}</p>
-                  <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                  <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                     {r.appointment_date ? relativeDate(r.appointment_date).label : 'No date set'}
                     {r.appointment_time ? ` · ${r.appointment_time}` : ''}
                   </p>
@@ -287,7 +287,7 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
 
       {apptRows.length === 0 && classRows.length === 0 && (
         <div className="rounded-2xl py-10 text-center" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
-          <p className="text-[0.82rem]" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>No bookings on file yet</p>
+          <p className="text-[0.82rem]" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>No bookings on file yet</p>
         </div>
       )}
       </div> {/* /right column */}
@@ -332,7 +332,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
   const selectedClient = selectedKey ? clients.find(c => c.key === selectedKey) : null;
 
   const line = dm ? '#2e2e38' : '#EAEAF0';
-  const muted = dm ? '#71717a' : '#a8a8b1';
+  const muted = dm ? '#8e8e99' : '#a8a8b1';
 
   if (selectedClient) {
     return (
@@ -436,7 +436,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
 
           {visible.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-[0.85rem]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
+              <p className="text-[0.85rem]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>
                 {q ? `No clients match "${search}"` : 'No clients in this group yet'}
               </p>
             </div>

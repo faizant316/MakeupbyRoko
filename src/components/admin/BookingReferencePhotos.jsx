@@ -84,8 +84,8 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm })
             <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           </div>
           <div>
-            <p className="text-[0.78rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>Upload reference photos or mood board</p>
-            <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#52525b' : '#ccc' }}>Client with/without makeup photos also show here, grouped.</p>
+            <p className="text-[0.78rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>Upload reference photos or mood board</p>
+            <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#7a7a84' : '#ccc' }}>Client with/without makeup photos also show here, grouped.</p>
           </div>
           <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>

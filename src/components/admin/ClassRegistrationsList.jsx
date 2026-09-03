@@ -76,7 +76,7 @@ function ClassRow({ reg, onSelect, dm, recent = false }) {
   const isNew = reg.created_date && (Date.now() - new Date(reg.created_date).getTime()) < 24 * 60 * 60 * 1000;
   const rel = relativeDate(effectiveDate(reg));
   const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
-  const mutedColor = dm ? '#71717a' : '#9c9ca4';
+  const mutedColor = dm ? '#8e8e99' : '#9c9ca4';
   const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#83838d');
 
   const iconBtn = 'flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105';
@@ -114,8 +114,8 @@ function ClassRow({ reg, onSelect, dm, recent = false }) {
           )}
           <span className="truncate">
             {classLabel}
-            {totalPrice > 0 && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
-            {recent && reg.created_date && <span style={{ color: dm ? '#52525b' : '#bcbcc4' }}>{` · ${timeAgo(reg.created_date)}`}</span>}
+            {totalPrice > 0 && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
+            {recent && reg.created_date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{` · ${timeAgo(reg.created_date)}`}</span>}
           </span>
         </p>
       </div>
@@ -226,10 +226,10 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   if (registrations.length === 0) {
     return (
       <div className="text-center py-20">
-        <p className="font-serif text-[1.1rem] mb-2" style={{ color: dm ? '#71717a' : '#999' }}>
+        <p className="font-serif text-[1.1rem] mb-2" style={{ color: dm ? '#8e8e99' : '#999' }}>
           No class registrations yet
         </p>
-        <p className="text-[0.75rem]" style={{ color: dm ? '#52525b' : '#ccc' }}>
+        <p className="text-[0.75rem]" style={{ color: dm ? '#7a7a84' : '#ccc' }}>
           Registrations from the website will appear here
         </p>
       </div>
@@ -279,7 +279,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
           <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
             style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}` }}>
             <p className="text-[1.1rem] font-serif leading-none" style={{ color: s.accent ? '#A0607A' : (dm ? '#e4e4e7' : '#1a1a1a') }}>{s.value}</p>
-            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{s.label}</p>
+            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -298,7 +298,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.66rem] font-semibold tracking-[0.03em] transition-all"
               style={active
                 ? { background: dm ? '#34343d' : '#fff', color: f.meta?.color || (dm ? '#e4e4e7' : '#1a1a1a'), boxShadow: dm ? 'none' : '0 1px 4px rgba(30, 30, 40,0.12)' }
-                : { color: dm ? '#71717a' : '#9c9ca4' }}>
+                : { color: dm ? '#8e8e99' : '#9c9ca4' }}>
               {f.meta && <span className="w-1.5 h-1.5 rounded-full" style={{ background: f.meta.color }} />}
               {f.label}
             </button>
@@ -330,7 +330,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
       )}
 
       {active.length === 0 && closed.length === 0 && (
-        <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
+        <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>
           No {formatFilter === 'online' ? 'online' : 'in-person'} sign-ups yet
         </p>
       )}

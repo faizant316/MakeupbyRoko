@@ -86,17 +86,17 @@ export default function BlockDaysSheet({ dates = [], conflicts = [], busy, dm, o
                   </p>
                 ))}
                 {conflicts.length > 5 && (
-                  <p className="text-[0.68rem]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>+{conflicts.length - 5} more</p>
+                  <p className="text-[0.68rem]" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>+{conflicts.length - 5} more</p>
                 )}
               </div>
-              <p className="text-[0.66rem] mt-1.5 leading-relaxed" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+              <p className="text-[0.66rem] mt-1.5 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                 Closing won't cancel them. You'd need to reach out yourself.
               </p>
             </div>
           )}
 
           <label className="block">
-            <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>
+            <span className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
               Reason (optional)
             </span>
             <input
@@ -113,7 +113,7 @@ export default function BlockDaysSheet({ dates = [], conflicts = [], busy, dm, o
               }}
             />
           </label>
-          <p className="text-[0.66rem] mt-1.5 leading-relaxed" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+          <p className="text-[0.66rem] mt-1.5 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
             This shows on your calendar so you remember why the day is closed. Clients never see it.
           </p>
 

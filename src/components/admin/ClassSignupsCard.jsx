@@ -62,14 +62,14 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[1.25rem] font-serif leading-tight" style={{ color: dm ? '#e4e4e7' : '#111' }}>Class Sign-Ups</p>
-          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
             {classRegs.length} {classRegs.length === 1 ? 'registration' : 'registrations'}
           </p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[0.7rem] font-semibold transition-colors group-hover:text-[#A0607A]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>View all</span>
+          <span className="text-[0.7rem] font-semibold transition-colors group-hover:text-[#A0607A]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>View all</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            className="w-3.5 h-3.5 transition-all group-hover:translate-x-0.5 group-hover:stroke-[#A0607A]" style={{ color: dm ? '#52525b' : '#bcbcc4' }}>
+            className="w-3.5 h-3.5 transition-all group-hover:translate-x-0.5 group-hover:stroke-[#A0607A]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>
             <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
           </svg>
         </div>
@@ -82,8 +82,8 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
           return (
             <div key={k} className="flex items-baseline gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full self-center flex-shrink-0" style={{ background: m.color }} />
-              <span className="text-[1.2rem] font-serif leading-none" style={{ color: counts[k] > 0 ? (dm ? '#e4e4e7' : '#1a1a1a') : (dm ? '#52525b' : '#C0C0C9') }}>{counts[k]}</span>
-              <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{m.label}</span>
+              <span className="text-[1.2rem] font-serif leading-none" style={{ color: counts[k] > 0 ? (dm ? '#e4e4e7' : '#1a1a1a') : (dm ? '#7a7a84' : '#C0C0C9') }}>{counts[k]}</span>
+              <span className="text-[0.55rem] font-semibold tracking-[0.1em] uppercase" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{m.label}</span>
             </div>
           );
         })}
@@ -117,14 +117,14 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[0.78rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{r.full_name || 'Unknown'}</p>
-                    <p className="text-[0.65rem] truncate mt-0.5" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                    <p className="text-[0.65rem] truncate mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                       {classLabelOf(r)} · {timeAgo(r.created_date)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="text-[0.65rem] font-semibold whitespace-nowrap" style={{ color: dateColor }}>
                       {rel.label}
-                      {r.appointment_time && <span className="font-normal" style={{ color: dm ? '#71717a' : '#9c9ca4' }}> · {r.appointment_time}</span>}
+                      {r.appointment_time && <span className="font-normal" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}> · {r.appointment_time}</span>}
                     </span>
                     <span className="text-[0.5rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
                       style={{ background: `${m.color}1a`, color: m.color }}>{m.label}</span>

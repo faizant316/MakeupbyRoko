@@ -62,7 +62,7 @@ function Skel({ dm, h = 16, className = '' }) {
 
 function SectionHead({ label, desc, dm }) {
   const tx = dm ? '#e4e4e7' : '#1a1a1a';
-  const mu = dm ? '#71717a' : '#999';
+  const mu = dm ? '#8e8e99' : '#999';
   return (
     <div className="mb-3.5">
       <p className="text-[0.98rem] font-bold tracking-[-0.01em] leading-tight" style={{ color: tx }}>
@@ -77,7 +77,7 @@ function SectionHead({ label, desc, dm }) {
 // gathering its first real visitors, so a blank box never reads as "broken".
 function EmptyState({ icon: Icon, text, dm, compact }) {
   const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
+  const mu = dm ? '#8e8e99' : '#999';
   return (
     <div className={`flex flex-col items-center text-center gap-1.5 ${compact ? 'py-6' : 'py-8'}`}>
       <Icon size={compact ? 18 : 22} strokeWidth={1.3} style={{ color: dm ? '#3a3a48' : '#D9D9DF' }} />
@@ -92,7 +92,7 @@ function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm, select
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
+  const mu = dm ? '#8e8e99' : '#999';
   const pink = '#D4A0B0';
 
   const border = active ? pink : bd;
@@ -125,7 +125,7 @@ function MetricCard({ icon: Icon, accent, label, value, sub, loading, dm, select
       </div>
       {selectable && (
         <span className="text-[0.56rem] font-semibold tracking-[0.06em] uppercase transition-colors"
-          style={{ color: active ? pink : (dm ? '#52525b' : '#c7c7cf') }}>
+          style={{ color: active ? pink : (dm ? '#7a7a84' : '#c7c7cf') }}>
           {active ? '● Showing on chart' : 'Tap to chart'}
         </span>
       )}
@@ -139,7 +139,7 @@ function TrafficTrend({ metric, daily, loading, dm }) {
   const bg = dm ? '#26262e' : '#fff';
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
+  const mu = dm ? '#8e8e99' : '#999';
   const grid = dm ? '#2e2e38' : '#EEEEF3';
   const m = TRAFFIC_METRICS[metric] || TRAFFIC_METRICS.visitors;
 
@@ -212,8 +212,8 @@ export default function AnalyticsTab({ darkMode: dm }) {
   const bd = dm ? '#3a3a48' : '#E2E4EA';
   const sb = dm ? '#1e1e24' : '#FAFAFB';
   const tx = dm ? '#e4e4e7' : '#111';
-  const mu = dm ? '#71717a' : '#999';
-  const di = dm ? '#52525b' : '#bcbcc4';
+  const mu = dm ? '#8e8e99' : '#999';
+  const di = dm ? '#7a7a84' : '#bcbcc4';
 
   if (!loading && data?.notConfigured) {
     return (

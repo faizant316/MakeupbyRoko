@@ -59,7 +59,7 @@ function CapacityRing({ booked, capacity, blocked, dm }) {
         ) : (
           <>
             <span className="font-serif leading-none" style={{ fontSize: '1.5rem', color: dm ? '#e4e4e7' : '#1a1a1a' }}>{booked}</span>
-            <span className="text-[0.55rem] font-medium mt-1 tracking-wide" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>of {capacity}</span>
+            <span className="text-[0.55rem] font-medium mt-1 tracking-wide" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>of {capacity}</span>
           </>
         )}
       </div>
@@ -351,7 +351,7 @@ export default function AvailabilityTab({
                   {i > 0 && <span className="hidden sm:block w-px h-3" style={{ background: dm ? '#3a3a48' : '#E8E8EF' }} />}
                   <span className="flex items-baseline gap-1.5">
                     <span className="text-[0.88rem] font-semibold tabular-nums leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</span>
-                    <span className="text-[0.56rem] font-semibold tracking-[0.11em] uppercase whitespace-nowrap" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>{s.label}</span>
+                    <span className="text-[0.56rem] font-semibold tracking-[0.11em] uppercase whitespace-nowrap" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{s.label}</span>
                   </span>
                 </Fragment>
               ))}
@@ -409,7 +409,7 @@ export default function AvailabilityTab({
                   disabled={!toClose.length || blockMany.isPending}
                   className="px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-95"
                   style={!toClose.length
-                    ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#52525b' : '#b4b4bd', cursor: 'not-allowed' }
+                    ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#7a7a84' : '#b4b4bd', cursor: 'not-allowed' }
                     : { background: '#E05549', color: '#fff', boxShadow: '0 1px 3px rgba(224,85,73,0.25)' }}>
                   {blockMany.isPending ? 'Closing…' : toClose.length ? `Close ${toClose.length} day${toClose.length === 1 ? '' : 's'} off` : 'Close days off'}
                 </button>
@@ -418,7 +418,7 @@ export default function AvailabilityTab({
           ) : (
             <div className="flex items-center gap-3.5 flex-wrap mt-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
               {LEGEND.map(l => (
-                <span key={l.label} className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#71717a' : '#999' }}>
+                <span key={l.label} className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
                   <span className="w-2 h-2 rounded-full inline-block" style={{ background: l.c }} /> {l.label}
                 </span>
               ))}
@@ -497,7 +497,7 @@ export default function AvailabilityTab({
                   doesn't try to count them. */}
               {selEvents.length > 0 && (
                 <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-                  <p className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>
+                  <p className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
                     On this day · {selEvents.length}
                   </p>
                   <div className="flex flex-col gap-1.5">
@@ -514,7 +514,7 @@ export default function AvailabilityTab({
                           </span>
                           <span className="flex-1 min-w-0">
                             <span className="block text-[0.76rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{ev.name}</span>
-                            <span className="block text-[0.65rem] truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>{ev.detail}</span>
+                            <span className="block text-[0.65rem] truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{ev.detail}</span>
                           </span>
                         </button>
                       );
@@ -528,13 +528,13 @@ export default function AvailabilityTab({
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#555' }}>Limit:</span>
                     <Stepper value={editCap} onChange={setEditCap} dm={dm} />
-                    <span className="text-[0.7rem]" style={{ color: dm ? '#71717a' : '#999' }}>spots</span>
+                    <span className="text-[0.7rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>spots</span>
                     <button
                       onClick={() => saveOverride.mutate({ date: selectedDate, capacity: editCap })}
                       disabled={editCap === effForSelected || saveOverride.isPending}
                       className="ml-auto px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
                       style={editCap === effForSelected
-                        ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#52525b' : '#bcae9e', cursor: 'not-allowed' }
+                        ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#7a7a84' : '#bcae9e', cursor: 'not-allowed' }
                         : { background: '#D4A0B0', color: '#fff', boxShadow: '0 1px 3px rgba(160,96,122,0.25)' }}>
                       {saveOverride.isPending ? 'Saving…'
                         : daySaved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>
@@ -545,7 +545,7 @@ export default function AvailabilityTab({
                     <button
                       onClick={() => removeOverride.mutate(selectedDate)}
                       className="mt-3 text-[0.68rem] font-medium transition-colors hover:opacity-70"
-                      style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                      style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                       ↺ Reset to default ({defaultCap} spots)
                     </button>
                   )}
@@ -586,7 +586,7 @@ export default function AvailabilityTab({
               <p className="text-[0.85rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Pick a day</p>
               {/* The how-to that used to be a paragraph above the calendar. It
                   lives here now, in space that was empty anyway. */}
-              <p className="text-[0.72rem] mt-1.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+              <p className="text-[0.72rem] mt-1.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                 Tap any date to see what's on it, set its booking limit, or close it off.
               </p>
               <p className="text-[0.68rem] mt-2.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#5d5d66' : '#adadb6' }}>
@@ -598,7 +598,7 @@ export default function AvailabilityTab({
           {/* Days off — consecutive days collapse into one trip */}
           {blockedRuns.length > 0 && (
             <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#71717a' : '#A6A6AF' }}>
+              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
                 Days off · {upcomingBlocked.length} coming up
               </p>
               {/* No inner scrollbar. Page-level Lenis owns the wheel, so a
@@ -620,7 +620,7 @@ export default function AvailabilityTab({
                             {many ? `${fmtDay(run.start)} to ${fmtDay(run.end)}` : fmtDay(run.start)}
                           </p>
                           {(many || run.reason) && (
-                            <p className="text-[0.63rem] truncate" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+                            <p className="text-[0.63rem] truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
                               {many ? `${run.items.length} days` : ''}{many && run.reason ? ' · ' : ''}{run.reason}
                             </p>
                           )}
@@ -651,18 +651,18 @@ export default function AvailabilityTab({
           {/* Default capacity */}
           <div className="rounded-xl p-5" style={card}>
             <h3 className="text-[0.78rem] font-semibold mb-1.5" style={{ color: dm ? '#ECEDF1' : '#111' }}>Default capacity</h3>
-            <p className="text-[0.7rem] mb-4 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+            <p className="text-[0.7rem] mb-4 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
               How many bookings you'll take on a day without its own limit.
             </p>
             <div className="flex items-center gap-3 flex-wrap">
               <Stepper value={defaultEdit} onChange={setDefaultEdit} dm={dm} />
-              <span className="text-[0.7rem]" style={{ color: dm ? '#71717a' : '#999' }}>spots / day</span>
+              <span className="text-[0.7rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>spots / day</span>
               <button
                 onClick={() => saveDefault.mutate(defaultEdit)}
                 disabled={defaultEdit === defaultCap || saveDefault.isPending}
                 className="ml-auto px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
                 style={defaultEdit === defaultCap
-                  ? { background: dm ? '#2e2e38' : '#f3f4f6', color: dm ? '#52525b' : '#9ca3af', cursor: 'not-allowed' }
+                  ? { background: dm ? '#2e2e38' : '#f3f4f6', color: dm ? '#7a7a84' : '#9ca3af', cursor: 'not-allowed' }
                   : { background: '#111', color: '#fff' }}>
                 {saveDefault.isPending ? 'Saving…'
                   : defaultSaved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>

@@ -98,10 +98,10 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
   const modalBg = dm ? '#27272a' : '#ffffff';
   const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
-  const textMuted = dm ? '#71717a' : '#999999';
+  const textMuted = dm ? '#8e8e99' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
   const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
-  const sectionLabelColor = dm ? '#71717a' : '#a3a3ad';
+  const sectionLabelColor = dm ? '#8e8e99' : '#a3a3ad';
   const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
 
   const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
@@ -221,7 +221,7 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
           <Section>Client Location</Section>
           <div>
             <LocationAutocomplete value={form.location} onChange={v => set('location', v)} placeholder="Address or venue (leave blank for studio)" dm={dm} />
-            <p className="text-[0.72rem] mt-2" style={{ color: dm ? '#71717a' : '#9c9ca4' }}>
+            <p className="text-[0.72rem] mt-2" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
               Shows on the appointment list so you can see where you're going without opening the card.
             </p>
           </div>

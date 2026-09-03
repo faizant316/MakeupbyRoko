@@ -112,7 +112,7 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
       {expanded && (
         <div className="p-3 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
           {hasProof && loadingUrl && (
-            <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#71717a' : '#aaa' }}>Loading…</p>
+            <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#8e8e99' : '#aaa' }}>Loading…</p>
           )}
           {hasProof && signedUrl && (
             <div>
@@ -123,7 +123,7 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
                 onClick={() => window.open(signedUrl, '_blank')}
                 title="Click to open full size"
               />
-              <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#52525b' : '#bbb' }}>Click image to open full size</p>
+              <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#7a7a84' : '#bbb' }}>Click image to open full size</p>
             </div>
           )}
 
@@ -149,7 +149,7 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
                 {hasProof ? 'Mark received after all' : 'Paid another way? Mark received'}
               </button>
             )}
-            <span className="text-[0.68rem]" style={{ color: dm ? '#52525b' : '#b0b0b8' }}>
+            <span className="text-[0.68rem]" style={{ color: dm ? '#7a7a84' : '#b0b0b8' }}>
               {isIn ? 'Only if the screenshot turned out to be wrong.' : 'For cash, Venmo, or anything paid outside the site.'}
             </span>
           </div>
@@ -195,7 +195,7 @@ function CopyableAddress({ address, dm }) {
           address was effectively invisible. #71717a is the muted token the rest
           of this file already uses. */}
       <span className="text-[0.62rem] mt-0.5 inline-flex items-center gap-1 transition-colors"
-        style={{ color: copied ? '#22c55e' : dm ? '#71717a' : '#bbb' }}>
+        style={{ color: copied ? '#22c55e' : dm ? '#8e8e99' : '#bbb' }}>
         {copied ? (
           <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!</>
         ) : (
@@ -311,7 +311,7 @@ function SignatureChain({ chain, dm, fmt, superseded = false }) {
               <p className="text-[0.72rem] font-medium leading-snug" style={{ color: dm ? '#e4e4e7' : '#1E1E27' }}>
                 {fmt(sig.signed_at)}
                 <span className="ml-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.06em]"
-                  style={{ color: current ? (dm ? '#86efac' : '#16a34a') : (dm ? '#71717a' : '#A89098') }}>
+                  style={{ color: current ? (dm ? '#86efac' : '#16a34a') : (dm ? '#8e8e99' : '#A89098') }}>
                   {label}
                 </span>
               </p>
@@ -338,7 +338,7 @@ function StepDot({ n, state, dm, color = '#C4849A' }) {
     done: { background: '#22c55e', color: '#fff' },
     active: { background: color, color: '#fff' },
     warn: { background: '#D97706', color: '#fff' },
-    todo: { background: 'transparent', color: dm ? '#71717a' : '#b6aeb2', border: `1.5px solid ${dm ? '#3f3f46' : '#D4D4DD'}` },
+    todo: { background: 'transparent', color: dm ? '#8e8e99' : '#b6aeb2', border: `1.5px solid ${dm ? '#3f3f46' : '#D4D4DD'}` },
   }[state] || {};
   return (
     <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[0.62rem] font-bold" style={styles}>
@@ -647,7 +647,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
   const border = dm ? '#3a3a48' : '#e5e5e5';
   const inputBg = dm ? '#1c1c28' : '#fafafa';
   const inputColor = dm ? '#e4e4e7' : '#111';
-  const textMuted = dm ? '#71717a' : '#999';
+  const textMuted = dm ? '#8e8e99' : '#999';
   const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
 
   return (
@@ -668,7 +668,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               <p className="text-[0.78rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>
                 {booking.consultation_type} · {booking.consultation_time}
               </p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#999' }}>
+              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#999' }}>
                 {booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </p>
               {(meetingId || parsed.meetingId) ? (
@@ -684,12 +684,12 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
                   className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
-                  style={{ color: dm ? '#71717a' : '#999' }}>
+                  style={{ color: dm ? '#8e8e99' : '#999' }}>
                   {parsed.link}
                 </a>
               ) : null}
               {parsed.notes && (
-                <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#52525b' : '#bbb' }}>{parsed.notes}</p>
+                <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#7a7a84' : '#bbb' }}>{parsed.notes}</p>
               )}
             </div>
           </div>
@@ -766,7 +766,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               </div>
               <div>
                 <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
-                  Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>· 30 min meeting</span>
+                  Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#7a7a84' : '#c4b8bf' }}>· 30 min meeting</span>
                 </label>
                 <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIME_SLOTS} dm={dm} accent={CONSULT_COLOR} />
               </div>
@@ -781,7 +781,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                     className="flex-1 py-3 rounded-[6px] text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all touch-manipulation"
                     style={form.type === key
                       ? { background: '#111', color: '#fff', border: '1px solid #111' }
-                      : { background: inputBg, color: dm ? '#71717a' : '#888', border: `1px solid ${border}` }
+                      : { background: inputBg, color: dm ? '#8e8e99' : '#888', border: `1px solid ${border}` }
                     }>
                     {key}
                   </button>
@@ -807,7 +807,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 {!meetLink ? (
                   <button type="button" onClick={generateZoomLink} disabled={generatingLink}
                     className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
-                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#EDEDF3') : CONSULT_COLOR, color: generatingLink ? (dm ? '#52525b' : '#bbb') : '#fff', border: 'none', boxShadow: 'none' }}>
+                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#EDEDF3') : CONSULT_COLOR, color: generatingLink ? (dm ? '#7a7a84' : '#bbb') : '#fff', border: 'none', boxShadow: 'none' }}>
                     {generatingLink ? (
                       <><div className="w-4 h-4 rounded-full animate-spin border-2" style={{ borderColor: `${CONSULT_COLOR}30`, borderTopColor: CONSULT_COLOR }} /> Generating…</>
                     ) : (
@@ -838,7 +838,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             {/* Notes */}
             <div>
               <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
-                Notes <span style={{ color: dm ? '#52525b' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                Notes <span style={{ color: dm ? '#7a7a84' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
@@ -853,7 +853,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 style={{
                   minHeight: '50px', fontSize: '14px',
                   ...(!form.date
-                    ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                    ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
                     : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                 }}>
                 {migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : consultOnly ? 'Schedule & Notify Client' : 'Confirm & Notify Client'}
@@ -864,15 +864,15 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                   <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{migrated ? 'Send Welcome Email?' : hasConsult ? 'Send Updated Time?' : consultOnly ? 'Send Consultation Details?' : 'Confirm & Send Email?'}</p>
                   <div className="flex flex-col gap-1.5 mb-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Date</span>
+                      <span className="text-[0.72rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Date</span>
                       <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.date ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : '—'}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Time</span>
+                      <span className="text-[0.72rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Time</span>
                       <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.time}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[0.72rem]" style={{ color: dm ? '#71717a' : '#999' }}>Type</span>
+                      <span className="text-[0.72rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Type</span>
                       <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.type}</span>
                     </div>
                   </div>
@@ -898,7 +898,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                       : ['The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])];
                     return (
                       <div className="mb-4">
-                        <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
+                        <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>
                           One email to <span style={{ color: dm ? CONSULT_DM : CONSULT_COLOR, textTransform: 'none', letterSpacing: 0 }}>{booking.email}</span> with:
                         </p>
                         <div className="flex flex-col gap-1.5">
@@ -915,7 +915,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                   <div className="flex gap-2">
                     <button onClick={() => setShowConfirmSend(false)}
                       className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
-                      style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                      style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#8e8e99' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
                       Cancel
                     </button>
                     <button onClick={() => { setShowConfirmSend(false); handleSend(); }} disabled={saving}
@@ -955,7 +955,7 @@ function ApptRow({ b, isCurrent, last, dm }) {
             <span className="truncate">{b.service || 'Appointment'}</span>
             {isCurrent && <span className="flex-shrink-0 text-[0.68rem] font-medium tracking-[0.06em] uppercase px-1.5 py-0.5 rounded" style={{ background: 'rgba(196,132,154,0.15)', color: '#C4849A' }}>This one</span>}
           </p>
-          <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
+          <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#aaa' }}>
             {b.date ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'No date set'}
             {b.time ? ` · ${b.time}` : ''}
           </p>
@@ -1820,16 +1820,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
           }}>
           <div className="px-4 min-w-0">
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Start</p>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>
             <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroStart || 'Set time'}
             </p>
-            {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#71717a' : '#a8a8b1' }}>until {heroEnd}</p>}
+            {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>until {heroEnd}</p>}
           </div>
           <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#EAEAF0' }} />
           <div className="px-4 min-w-0 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#71717a' : '#A2A2AA' }}>Date</p>
+              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Date</p>
               <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
             </div>
             <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1869,7 +1869,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#5b5560' : '#c9bcc3'} strokeWidth="2.4" className="w-3.5 h-3.5 flex-shrink-0 transition-transform group-active:translate-x-0.5"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               {booking.phone && (
-                <p className="text-[0.8rem] mt-0.5 truncate tabular-nums" style={{ color: dm ? '#71717a' : '#999' }}>
+                <p className="text-[0.8rem] mt-0.5 truncate tabular-nums" style={{ color: dm ? '#8e8e99' : '#999' }}>
                   {formatPhone(booking.phone)}
                 </p>
               )}
@@ -1887,7 +1887,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <div>
             <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-1">Contact</p>
             {booking.email && <a href={`mailto:${booking.email}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block" style={{ color: dm ? '#e4e4e7' : '#111' }}>{booking.email}</a>}
-            {booking.phone && <a href={`sms:${phoneHref(booking.phone)}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5 tabular-nums" style={{ color: dm ? '#71717a' : '#999' }}>{formatPhone(booking.phone)}</a>}
+            {booking.phone && <a href={`sms:${phoneHref(booking.phone)}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5 tabular-nums" style={{ color: dm ? '#8e8e99' : '#999' }}>{formatPhone(booking.phone)}</a>}
             {booking.email && !showCompose && (
               <button
                 type="button"
@@ -1918,7 +1918,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
                   Client Location
                   {booking.travel_fee != null && (
-                    <span className="ml-2 normal-case tracking-normal" style={{ color: dm ? '#71717a' : '#b0a4aa' }}>
+                    <span className="ml-2 normal-case tracking-normal" style={{ color: dm ? '#8e8e99' : '#b0a4aa' }}>
                       travel fee ${Number(booking.travel_fee).toLocaleString()}
                     </span>
                   )}
@@ -1969,19 +1969,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               </button>
 
               <div>
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Subject</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Subject</label>
                 <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                   style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
               </div>
 
               <div>
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Message</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Message</label>
                 <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
                   placeholder="Write your message…"
                   className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                   style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
-                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#52525b' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
+                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#7a7a84' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
               </div>
 
               {/* Attach updated agreement — for scope changes that aren't date or
@@ -2116,7 +2116,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {showSteps && (
                     <div className="flex items-center gap-2 mt-3.5 pt-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
                       <StepDot n={2} state="todo" dm={dm} />
-                      <span className="text-[0.68rem]" style={{ color: dm ? '#71717a' : '#b6aeb2' }}>
+                      <span className="text-[0.68rem]" style={{ color: dm ? '#8e8e99' : '#b6aeb2' }}>
                         {isBridal ? <>Then: confirm &amp; schedule the consultation</> : <>Then: confirm &amp; notify {firstName}</>}
                       </span>
                     </div>
@@ -2153,7 +2153,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       </div>
                       <div className="sm:text-right pt-3 sm:pt-0 border-t sm:border-t-0" style={{ borderColor: dm ? '#2e2e38' : '#EDEDF3' }}>
                         <p className="text-[1.05rem] font-semibold leading-tight tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>Ready by {notes.readyBy}</p>
-                        <p className="text-[0.62rem] mt-0.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>what {firstName} asked for</p>
+                        <p className="text-[0.62rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>what {firstName} asked for</p>
                       </div>
                     </div>
                     {runsPastReady && (
@@ -2171,7 +2171,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     </span>
                     <div className="min-w-0">
                       <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment</p>
-                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#1E1E27') : (dm ? '#71717a' : '#b6aeb2') }}>
+                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#1E1E27') : (dm ? '#8e8e99' : '#b6aeb2') }}>
                         {booking.time || 'Not set yet'}
                       </p>
                     </div>
@@ -2259,13 +2259,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
                 {/* Date — quiet by default; most reschedules are time-only */}
                 <div className="mb-4">
-                  <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
+                  <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>
                     Date {pendingDate && pendingDate !== booking.date && <span className="tabular-nums" style={{ textTransform: 'none', letterSpacing: 0, color: '#C4849A' }}>· moving to {fmtShort(pendingDate)}</span>}
                   </label>
                   <AdminDatePicker value={pendingDate} onChange={onPickDate} dm={dm} accent="#C4849A" />
                 </div>
 
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Time</label>
+                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Time</label>
                 <TimeWindowPicker value={pendingWindow} onChange={onPickWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
 
                 {/* Notify the client — hidden on the "yes, that works" path (nothing
@@ -2292,14 +2292,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {notifyClient && booking.email && (
                     <div className="px-3.5 py-3.5 flex flex-col gap-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0e8ec'}`, background: dm ? '#1e1e24' : '#fff' }}>
                       <div>
-                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>Subject</label>
+                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Subject</label>
                         <input value={panelSubject} onChange={e => { setPanelSubject(e.target.value); setPanelEdited(true); }}
                           className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
                           style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
                       </div>
                       <div>
-                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#71717a' : '#9A9AA3' }}>
-                          Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#52525b' : '#c4b8bf' }}>(written for you, edit freely)</span>
+                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>
+                          Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#7a7a84' : '#c4b8bf' }}>(written for you, edit freely)</span>
                         </label>
                         <textarea value={panelBody} onChange={e => { setPanelBody(e.target.value); setPanelEdited(true); }} rows={6}
                           className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
@@ -2331,7 +2331,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   className="w-full mt-4 py-3.5 rounded-[8px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation flex items-center justify-center gap-2"
                   style={pendingStart
                     ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: panelSending ? 0.7 : 1 }
-                    : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', cursor: 'not-allowed' }
+                    : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
                   }
                 >
                   {panelSending
@@ -2397,13 +2397,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     {!consultExpanded && confirmLaterOpen && (
                       <div className="mt-3 rounded-xl px-4 py-4" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}`, background: dm ? '#1c1c28' : '#FBF9F7' }}>
                         <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#ECEDF1' : '#111' }}>Confirm without a consultation time?</p>
-                        <p className="text-[0.7rem] leading-relaxed mb-3.5" style={{ color: dm ? '#71717a' : '#888' }}>
+                        <p className="text-[0.7rem] leading-relaxed mb-3.5" style={{ color: dm ? '#8e8e99' : '#888' }}>
                           One email goes to <span style={{ color: '#C4849A' }}>{booking.email}</span> right now with the confirmation and photo upload link. This card will keep reminding you to schedule the consultation.
                         </p>
                         <div className="flex gap-2">
                           <button type="button" onClick={() => setConfirmLaterOpen(false)}
                             className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
-                            style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#71717a' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                            style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#8e8e99' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
                             Cancel
                           </button>
                           <button type="button" onClick={confirmNowScheduleLater} disabled={confirmLaterSending}
@@ -2453,7 +2453,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </div>
                 <div className="min-w-0">
                   <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Booking updated</p>
-                  <p className="text-[0.65rem]" style={{ color: dm ? '#71717a' : '#999' }}>Review &amp; send {firstName} the update to re-sign</p>
+                  <p className="text-[0.65rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Review &amp; send {firstName} the update to re-sign</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-3 flex-shrink-0">
@@ -2466,7 +2466,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <button
                   onClick={() => setShowReconfirmBanner(false)}
                   className="w-6 h-6 flex items-center justify-center rounded-lg"
-                  style={{ background: 'rgba(0,0,0,0.06)', color: dm ? '#71717a' : '#aaa' }}>
+                  style={{ background: 'rgba(0,0,0,0.06)', color: dm ? '#8e8e99' : '#aaa' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
@@ -2493,7 +2493,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-                    My Notes <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400, color: dm ? '#52525b' : '#c4b8bf' }}>· private, only you</span>
+                    My Notes <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400, color: dm ? '#7a7a84' : '#c4b8bf' }}>· private, only you</span>
                   </p>
                   {!notesEditing && (
                     <button type="button" onClick={() => setNotesEditing(true)}
@@ -2532,7 +2532,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 ) : (
                   <button type="button" onClick={() => setNotesEditing(true)}
                     className="w-full flex items-center gap-2 px-4 py-3 rounded-[10px] transition-all hover:opacity-90"
-                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px dashed ${dm ? '#3a3a48' : '#D2D2D9'}`, color: dm ? '#71717a' : '#A1A1A9' }}>
+                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px dashed ${dm ? '#3a3a48' : '#D2D2D9'}`, color: dm ? '#8e8e99' : '#A1A1A9' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-3.5 h-3.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     <span className="text-[0.78rem] font-medium">Add a private note…</span>
                   </button>
@@ -2690,7 +2690,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#60A5FA' : '#15803d' }}>{hasResignHistory ? 'Re-signed' : 'Signed'}</span>
-                    <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#71717a' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
+                    <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#8e8e99' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
                   </div>
                   {hasResignHistory && (
                     <p className="text-[0.72rem] leading-[1.6] mb-3" style={{ color: dm ? '#93b4f5' : '#2563EB' }}>
@@ -2776,7 +2776,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   className="py-2.5 px-3 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90 truncate"
                   style={isActive
                     ? { background: STATUS_COLORS[s], color: '#fff' }
-                    : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#52525b' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
+                    : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
                   }
                 >{s}</button>
               );
@@ -2800,17 +2800,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           )}
 
           {isBridal && !schedulerInHub && booking.status !== 'confirmed' && !booking.consultation_date && (
-            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
               Tap <span className="font-semibold" style={{ color: '#2563EB' }}>Confirmed</span> or schedule below. One email goes out with their confirmation, consultation details &amp; upload link.
             </p>
           )}
           {isBridal && schedulerInHub && booking.status === 'pending' && (
-            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
               Confirming lives in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. One email goes out with the confirmation, consultation details &amp; upload link.
             </p>
           )}
           {confirmInHub && (
-            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#71717a' : '#999' }}>
+            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
               Step 2 is waiting in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. These pills do the same thing, for when you need to jump straight to completed or cancelled.
             </p>
           )}
@@ -2842,7 +2842,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <span className="text-[0.75rem] text-red-400">Are you sure?</span>
               <button onClick={onDelete} className="px-4 py-2 text-[0.68rem] font-medium uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Yes, Delete</button>
               <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-[0.68rem] font-medium uppercase rounded-lg transition-all"
-                style={{ color: dm ? '#71717a' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>Cancel</button>
+                style={{ color: dm ? '#8e8e99' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>Cancel</button>
             </div>
           )}
         </div>
@@ -2860,7 +2860,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
                   <div>
                     <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>{b.service}</p>
-                    <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#71717a' : '#aaa' }}>
+                    <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#aaa' }}>
                       {b.date
                         ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : 'No date set'}
@@ -2902,7 +2902,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div className="min-w-0">
                 <h2 className="font-serif text-[1.7rem] leading-tight" style={{ color: dm ? '#f4f4f5' : '#111' }}>{booking.name || 'Client'}</h2>
                 {booking.phone && <p className="text-[0.85rem] mt-1 tabular-nums" style={{ color: dm ? '#a1a1aa' : '#8a8a92' }}>{formatPhone(booking.phone)}</p>}
-                {booking.email && <p className="text-[0.8rem] mt-0.5 break-all" style={{ color: dm ? '#71717a' : '#a0969c' }}>{booking.email}</p>}
+                {booking.email && <p className="text-[0.8rem] mt-0.5 break-all" style={{ color: dm ? '#8e8e99' : '#a0969c' }}>{booking.email}</p>}
               </div>
             </div>
 
@@ -3150,7 +3150,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                           <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
                             REASON FOR THE CLIENT
                           </p>
-                          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#71717a' : '#b3a6ab' }}>
+                          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
                             {includeReason ? 'Optional. On, added to their email.' : 'Optional. Off, no reason sent.'}
                           </p>
                         </div>
@@ -3180,7 +3180,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                               transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
                             }}
                           />
-                          <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#71717a' : '#b3a6ab' }}>
+                          <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
                             This appears in their email. Edit it, or leave it as is.
                           </p>
                         </>

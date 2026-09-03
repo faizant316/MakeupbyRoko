@@ -25,7 +25,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
     : rel.tone === 'past'
       ? '#E0795B'
       : (dm ? '#a1a1aa' : '#83838d');
-  const mutedColor = dm ? '#71717a' : '#9c9ca4';
+  const mutedColor = dm ? '#8e8e99' : '#9c9ca4';
 
   // Travel bookings carry an address (0015); brides who filled in the site form
   // carry a get-ready location on their inquiry, passed down as `location` by

@@ -167,7 +167,7 @@ export default function MonthCalendar({
       <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-1.5 sm:mb-2">
         {DAYS.map((d, i) => (
           <div key={d} className="text-center text-[0.55rem] sm:text-[0.62rem] font-semibold py-1 uppercase tracking-widest"
-            style={{ color: dm ? '#71717a' : '#bbb' }}>
+            style={{ color: dm ? '#8e8e99' : '#bbb' }}>
             <span className="hidden sm:inline">{d}</span>
             <span className="sm:hidden">{DAYS_SHORT[i]}</span>
           </div>
@@ -326,7 +326,7 @@ export default function MonthCalendar({
                   );
                 })}
                 {events.length > maxChips && (
-                  <span className={`${dense ? 'text-[0.66rem] pl-2' : 'text-[0.58rem] pl-1.5'} font-semibold`} style={{ color: dm ? '#71717a' : '#9a9aa6' }}>
+                  <span className={`${dense ? 'text-[0.66rem] pl-2' : 'text-[0.58rem] pl-1.5'} font-semibold`} style={{ color: dm ? '#8e8e99' : '#9a9aa6' }}>
                     +{events.length - maxChips} more
                   </span>
                 )}
@@ -339,7 +339,7 @@ export default function MonthCalendar({
                   what made that grid look busy. */}
               {cap != null && !off && (!dense || booked > 0) && (
                 <span className={`mt-auto pl-0.5 ${dense ? 'text-[0.58rem] sm:text-[0.62rem]' : 'text-[0.5rem] sm:text-[0.56rem]'} font-semibold tabular-nums tracking-wide whitespace-nowrap`}
-                  style={{ color: full ? '#E0795B' : booked > 0 ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#52525b' : '#c2c2cb') }}>
+                  style={{ color: full ? '#E0795B' : booked > 0 ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#7a7a84' : '#c2c2cb') }}>
                   {full ? <><span className="hidden sm:inline">Fully booked</span><span className="sm:hidden">Full</span></>
                         : <>{booked}/{cap}<span className="hidden sm:inline"> booked</span></>}
                 </span>

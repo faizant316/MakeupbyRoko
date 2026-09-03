@@ -106,7 +106,7 @@ export default function BulkImportModal({ onClose, onDone, darkMode: dm }) {
   const modalBg = dm ? '#27272a' : '#ffffff';
   const borderColor = dm ? '#3f3f46' : '#E8E9EE';
   const textPrimary = dm ? '#f4f4f5' : '#111111';
-  const textMuted = dm ? '#71717a' : '#999999';
+  const textMuted = dm ? '#8e8e99' : '#999999';
   const inputBg = dm ? '#18181b' : '#ffffff';
   const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
   const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
