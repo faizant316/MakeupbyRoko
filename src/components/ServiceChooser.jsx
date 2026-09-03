@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { bestFor, ctaLabel } from '@/lib/serviceCopy';
+import CtaArrow from './CtaArrow';
 
 // "Not sure which one?" — two taps to the right service.
 //
@@ -152,9 +153,10 @@ export default function ServiceChooser({ services = [], onSelect, onViewDetail, 
                 <button
                   type="button"
                   onClick={() => book(pick)}
-                  className="flex-1 sm:flex-none sm:px-14 py-3 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.08em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] transition-all"
+                  className="flex-1 sm:flex-none sm:px-14 inline-flex items-center justify-center gap-2 py-4 sm:py-3 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.08em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] transition-all"
                 >
                   {ctaLabel(pick)}
+                  <CtaArrow />
                 </button>
               </div>
             </div>

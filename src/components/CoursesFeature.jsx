@@ -1,6 +1,7 @@
 import { PLUM } from './class-checkout/classTheme';
 import { CLASS_CATALOG } from '@/lib/classCatalog';
 import { bestFor, ctaLabel } from '@/lib/serviceCopy';
+import CtaArrow from './CtaArrow';
 
 // Featured block for Roko's makeup courses on the services page. Courses are a
 // big part of her work, so this stands apart from the plain cards, but stays in
@@ -76,7 +77,7 @@ export default function CoursesFeature({ svc, onOpenClassModal, onViewDetail }) 
           <button
             onClick={(e) => { e.stopPropagation(); onViewDetail && onViewDetail(svc, e); }}
             type="button"
-            className="flex-shrink-0 px-5 py-3.5 text-[0.78rem] font-medium bg-white rounded-xl transition-all active:scale-[0.98]"
+            className="flex-shrink-0 px-5 py-4 sm:py-3.5 text-[0.78rem] font-medium bg-white rounded-xl transition-all active:scale-[0.98]"
             style={{ color: PLUM.gray, border: `1px solid ${PLUM.border}` }}
           >
             Details
@@ -84,9 +85,10 @@ export default function CoursesFeature({ svc, onOpenClassModal, onViewDetail }) 
           <button
             onClick={(e) => { e.stopPropagation(); onOpenClassModal(); }}
             type="button"
-            className="flex-1 sm:flex-none px-8 py-3.5 bg-[#111] text-white text-[0.8rem] font-medium tracking-[0.06em] uppercase rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-8 py-4 sm:py-3.5 bg-[#111] text-white text-[0.8rem] font-medium tracking-[0.06em] uppercase rounded-xl hover:bg-[#222] active:scale-[0.98] transition-all"
           >
-            {ctaLabel(svc)} →
+            {ctaLabel(svc)}
+            <CtaArrow />
           </button>
         </div>
       </div>

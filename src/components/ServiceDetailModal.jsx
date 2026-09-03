@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { bestFor, ctaLabel, earliestDateLabel, leadLabelFor, showsEarliestDate } from '@/lib/serviceCopy';
+import CtaArrow from './CtaArrow';
 
 // Same hook, no SSR warning. The lock/unlock and the opening FLIP both have to
 // land before the browser paints.
@@ -383,10 +384,11 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   const ctaButton = (
     <button
       onClick={handleAction}
-      className="w-full py-3.5 bg-[#111] text-white text-[0.85rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] active:bg-[#333] transition-all"
+      className="w-full inline-flex items-center justify-center gap-2 py-4 bg-[#111] text-white text-[0.85rem] font-medium tracking-[0.06em] rounded-xl hover:bg-[#222] active:scale-[0.98] active:bg-[#333] transition-all"
       style={{ touchAction: 'manipulation' }}
     >
-      {buttonLabel} →
+      {buttonLabel}
+      <CtaArrow className="h-3.5 w-3.5" />
     </button>
   );
 

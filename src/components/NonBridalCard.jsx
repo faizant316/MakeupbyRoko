@@ -1,4 +1,5 @@
 import { bestFor, ctaLabel } from '@/lib/serviceCopy';
+import CtaArrow from './CtaArrow';
 
 const PhotoBadge = ({ count }) => (
   <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
@@ -84,7 +85,7 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <button
             onClick={(e) => { e.stopPropagation(); onViewDetail && onViewDetail(svc, e); }}
             type="button"
-            className="flex-shrink-0 px-5 py-3 text-[0.78rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[3px] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
+            className="flex-shrink-0 px-5 py-4 sm:py-3 text-[0.78rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[3px] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
             style={{ touchAction: 'manipulation' }}
           >
             Details
@@ -92,10 +93,11 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
           <button
             onClick={action}
             type="button"
-            className="flex-1 sm:flex-none sm:px-14 py-3 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.08em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
+            className="flex-1 sm:flex-none sm:px-14 inline-flex items-center justify-center gap-2 py-4 sm:py-3 bg-[#111] text-white text-[0.78rem] font-medium tracking-[0.08em] uppercase rounded-[3px] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
             style={{ touchAction: 'manipulation' }}
           >
             {ctaLabel(svc)}
+            <CtaArrow />
           </button>
         </div>
       </div>
