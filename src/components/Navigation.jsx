@@ -203,6 +203,7 @@ export default function Navigation({ onCloseModal }) {
     handleNavClick('#services-grid');
   };
 
+
   return (
     <>
       <nav
