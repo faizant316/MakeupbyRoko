@@ -1813,26 +1813,26 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             openTimePicker();
             setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 60);
           }}
-          className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-10 grid grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3.5 text-left transition-all active:scale-[0.995]"
+          className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-10 grid grid-cols-[minmax(0,0.82fr)_auto_minmax(0,1.18fr)] sm:grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3.5 text-left transition-all active:scale-[0.995]"
           style={{
             background: dm ? '#27272a' : '#fff',
             border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
             boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
           }}>
-          <div className="px-4 min-w-0">
+          <div className="px-3 sm:px-4 min-w-0">
             <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>
-            <p className="text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
+            <p className="text-[0.98rem] sm:text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
               {heroStart || 'Set time'}
             </p>
             {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>until {heroEnd}</p>}
           </div>
           <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#EAEAF0' }} />
-          <div className="px-4 min-w-0 flex items-center justify-between gap-2">
+          <div className="px-3 sm:px-4 min-w-0 flex items-center justify-between gap-1.5 sm:gap-2">
             <div className="min-w-0">
               <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Date</p>
-              <p className="text-[1.05rem] font-semibold mt-0.5 truncate" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
+              <p className="text-[0.98rem] sm:text-[1.05rem] font-semibold mt-0.5 truncate whitespace-nowrap" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
             </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#7a7a84' : '#bcbcc4'} strokeWidth="2" className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </button>
       </div>

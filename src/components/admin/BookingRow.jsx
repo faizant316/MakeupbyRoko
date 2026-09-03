@@ -43,18 +43,27 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
   const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
 
-  // Every row is the same card. Bridal used to get a tinted fill, a tinted
-  // border AND a 3px colour bar down its left edge — three decorations all
-  // saying the one thing the BRIDAL chip and the plum avatar already say in
-  // words. Stacked tints like that are what makes a list read as decorated
-  // rather than designed, and they cost the real signals (deposit, location,
-  // status) the contrast they need. One card, one hairline, one soft lift.
-  const skin = {
-    bg: dm ? '#26262d' : '#fff',
-    border: dm ? '#34343d' : '#E7E7EE',
-    shadow: dm ? 'none' : '0 1px 2px rgba(30,30,40,0.05), 0 2px 5px rgba(30,30,40,0.04)',
-    hoverBg: dm ? '#2e2e37' : '#FBFAFC',
-  };
+  // Bridal rows carry a rose wash so the list sorts itself at a glance: in a
+  // month that is almost entirely weddings, the one Makeup trial should be the
+  // row that stands out, and it does because it is the only white card.
+  //
+  // What is deliberately NOT here is the 3px colour bar that used to run down
+  // the left edge on top of this. The fill is the signal; the bar was a second
+  // copy of it welded to one corner, fighting the card's own radius. Tint the
+  // surface or mark the edge, not both.
+  const skin = bridal
+    ? {
+        bg: dm ? 'rgba(154,84,116,0.13)' : '#FCF4F8',
+        border: dm ? 'rgba(196,122,146,0.28)' : '#EEDAE4',
+        shadow: dm ? 'none' : '0 1px 2px rgba(107,64,85,0.05), 0 2px 5px rgba(107,64,85,0.04)',
+        hoverBg: dm ? 'rgba(154,84,116,0.19)' : '#F9EBF2',
+      }
+    : {
+        bg: dm ? '#26262d' : '#fff',
+        border: dm ? '#34343d' : '#E7E7EE',
+        shadow: dm ? 'none' : '0 1px 2px rgba(30,30,40,0.05), 0 2px 5px rgba(30,30,40,0.04)',
+        hoverBg: dm ? '#2e2e37' : '#FBFAFC',
+      };
 
   const selectedBg = dm ? 'rgba(37,99,235,0.16)' : 'rgba(37,99,235,0.07)';
   const selectedBorder = '#2563EB';
@@ -71,7 +80,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         boxShadow: selected ? `0 0 0 1px ${selectedBorder}` : skin.shadow,
         opacity: dimmed ? 0.62 : 1,
       }}
-      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = dm ? '#4a4a58' : '#D6D6E0'; e.currentTarget.style.background = skin.hoverBg; } }}
+      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = bridal ? (dm ? 'rgba(196,122,146,0.5)' : '#E2C3D2') : (dm ? '#4a4a58' : '#D6D6E0'); e.currentTarget.style.background = skin.hoverBg; } }}
       onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = skin.border; e.currentTarget.style.background = skin.bg; } }}
     >
       {/* iOS-style selection circle — empty ring fills blue with a check when picked */}

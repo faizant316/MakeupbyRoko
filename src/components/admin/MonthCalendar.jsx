@@ -226,14 +226,16 @@ export default function MonthCalendar({
               <div className="flex items-center justify-between gap-0.5 sm:gap-1 px-0.5">
                 <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
                   {selectMode && <Checkbox on={picked} dm={dm} />}
-                  <span className={`${dense ? 'text-[0.85rem] sm:text-[0.98rem]' : 'text-[0.68rem] sm:text-[0.72rem]'} font-semibold tabular-nums leading-none`}
+                  <span className={`${dense ? 'text-[0.85rem] sm:text-[0.98rem]' : 'text-[0.68rem] sm:text-[0.72rem]'} font-semibold tabular-nums leading-none flex-shrink-0`}
                     style={{ color: isToday ? '#A0607A' : off ? OFF_RED : dense ? (dm ? '#c4c4cc' : '#6b6b76') : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
                 </span>
                 {/* Counts EVERY item on the day, so it never disagrees with the
-                    booking line below. Hidden on the wide Home grid, where the
-                    chip and its "+N more" already say the same thing. */}
-                {events.length > 0 && (
-                  <span className={`text-[0.52rem] sm:text-[0.58rem] font-semibold tabular-nums px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0 ${dense ? 'sm:hidden' : ''}`}
+                    booking line below. Not on the Home grid at any width: the
+                    chip and its "+N more" say it there on a laptop, the dots
+                    say it on a phone, and on a phone it was also stealing the
+                    line the date needs. */}
+                {events.length > 0 && !dense && (
+                  <span className="text-[0.52rem] sm:text-[0.58rem] font-semibold tabular-nums px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0"
                     style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{events.length}</span>
                 )}
               </div>
