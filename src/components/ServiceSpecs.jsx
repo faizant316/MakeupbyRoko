@@ -8,8 +8,12 @@
 //
 // So: no fill and no box, just the page's own hairline rules above and below.
 // Price is the largest figure, the three values sit on one baseline regardless
-// of size, and the deposit carries a "to book" suffix so it reads as the amount
-// due now rather than another number on the card.
+// of size, and the deposit carries a "to book" suffix (desktop only, see below)
+// so it reads as the amount due now rather than another number on the card.
+//
+// One row at every width. A two-column phone layout was tried and dropped: it
+// never broke mid-row, but it made the deposit its own line and every bridal
+// card that much taller.
 //
 // Purely presentational: the same three values, from the same service record.
 
@@ -31,20 +35,12 @@ export default function ServiceSpecs({ svc, size = 'sm' }) {
 
   return (
     <div
-      className={
-        big
-          // Featured card: one row spread across the rules, rather than the
-          // three figures bunched into the left third with a stranded rule
-          // beside them.
-          ? 'flex flex-wrap items-end justify-between gap-x-8 gap-y-4 py-5'
-          // Card width on a phone is about 250px, and "Up to 4 hours" alone is
-          // a third of that, so three figures cannot share a row at a size
-          // worth reading. A fixed two-column grid instead of letting flex-wrap
-          // decide: every card breaks in the same place (only Full Day was wide
-          // enough to wrap on its own, so the three cards stopped matching),
-          // and the deposit gets a line to itself.
-          : 'grid grid-cols-2 items-end gap-x-6 gap-y-3.5 py-4'
-      }
+      className={`flex flex-wrap items-end justify-between gap-y-3.5 ${
+        // justify-between distributes the free space, so gap-x is only a floor
+        // here. Keeping the phone floor small costs nothing at 360px and up and
+        // is what keeps Full Day ("Up to 4 hours") on one row at 320px.
+        big ? 'gap-x-8 py-5' : 'gap-x-2 py-4'
+      }`}
       style={{ borderTop: '1px solid #f0ebe6', borderBottom: '1px solid #f0ebe6' }}
     >
       {cells.map(({ label, value, suffix, lead }) => (
@@ -67,7 +63,11 @@ export default function ServiceSpecs({ svc, size = 'sm' }) {
             >
               {value}
             </span>
-            {suffix && (
+            {/* Desktop only. On a phone this one phrase was the difference
+                between three figures sharing a row and the deposit dropping to
+                a line of its own, which made every bridal card taller for two
+                words the DEPOSIT label underneath already covers. */}
+            {suffix && big && (
               <span
                 className="text-[#a89f99]"
                 style={{ fontFamily: 'var(--font-sans)', fontSize: '0.72rem', lineHeight: 1.5 }}
@@ -82,7 +82,7 @@ export default function ServiceSpecs({ svc, size = 'sm' }) {
               fontFamily: 'var(--font-sans)',
               fontSize: '0.58rem',
               fontWeight: 600,
-              letterSpacing: '0.16em',
+              letterSpacing: big ? '0.16em' : '0.12em',
               textTransform: 'uppercase',
               color: '#a89f99',
             }}

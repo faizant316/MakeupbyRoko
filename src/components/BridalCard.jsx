@@ -1,5 +1,6 @@
 import { bestFor, ctaLabel } from '@/lib/serviceCopy';
 import ServiceSpecs from './ServiceSpecs';
+import CtaArrow from './CtaArrow';
 
 const AURA_CLASSES = ['bridal-aura', 'fullday-aura', ''];
 const LABELS = ['Featured Service', 'Premium Package', 'Trial Package'];
@@ -90,7 +91,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetail && onViewDetail(svc, e); }}
               type="button"
-              className="flex-shrink-0 px-5 py-3.5 text-[0.79rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[var(--radius)] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
+              className="flex-shrink-0 px-5 py-4 lg:py-3.5 text-[0.79rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[var(--radius)] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
               style={{ touchAction: 'manipulation' }}
             >
               Details
@@ -98,10 +99,11 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
             <button
               onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
               type="button"
-              className="flex-1 py-3.5 bg-[#111] text-white text-[0.79rem] font-medium tracking-[0.08em] uppercase rounded-[var(--radius)] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
+              className="flex-1 inline-flex items-center justify-center gap-2 py-4 lg:py-3.5 bg-[#111] text-white text-[0.79rem] font-medium tracking-[0.08em] uppercase rounded-[var(--radius)] hover:bg-[#222] active:scale-[0.97] active:bg-[#333] transition-all"
               style={{ touchAction: 'manipulation' }}
             >
               {ctaLabel(svc)}
+              <CtaArrow />
             </button>
           </div>
         </div>

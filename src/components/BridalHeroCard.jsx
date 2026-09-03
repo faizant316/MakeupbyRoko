@@ -1,5 +1,6 @@
 import { bestFor, ctaLabel } from '@/lib/serviceCopy';
 import ServiceSpecs from './ServiceSpecs';
+import CtaArrow from './CtaArrow';
 
 // The wedding-day service, at the size it earns.
 //
@@ -73,10 +74,11 @@ export default function BridalHeroCard({ svc, onSelect, onViewDetail }) {
             <button
               onClick={(e) => { e.stopPropagation(); onSelect(svc); }}
               type="button"
-              className="flex-1 rounded-[var(--radius)] bg-[#111] py-4 text-[0.8rem] font-medium uppercase tracking-[0.08em] text-white transition-all hover:bg-[#222] active:scale-[0.97] active:bg-[#333]"
+              className="flex-1 inline-flex items-center justify-center gap-2.5 rounded-[var(--radius)] bg-[#111] py-4 text-[0.8rem] font-medium uppercase tracking-[0.08em] text-white transition-all hover:bg-[#222] active:scale-[0.97] active:bg-[#333]"
               style={{ touchAction: 'manipulation' }}
             >
               {ctaLabel(svc)}
+              <CtaArrow className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
