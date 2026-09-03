@@ -716,7 +716,6 @@ export default function UploadZelle() {
   }
 
   // ── FIRST-TIME WIZARD ──
-  const noise = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
   const primaryDisabled = submitting || !zelleFile || (isLast && isBridal && !photosComplete);
   const primaryLabel = isLast
     ? (submitting ? 'Submitting…' : (isBridal ? 'Submit & reserve my date' : 'Reserve my date'))
@@ -729,12 +728,13 @@ export default function UploadZelle() {
       {Nav}
 
       <div className="flex-1 flex items-start sm:items-center justify-center px-4 py-7 sm:py-12 relative">
-        {/* Soft textured backdrop so the centered card has depth on desktop. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-28 -left-24 w-[22rem] h-[22rem] rounded-full" style={{ background: 'radial-gradient(circle, rgba(196,132,154,0.16), transparent 70%)' }} />
-          <div className="absolute -bottom-28 -right-16 w-[26rem] h-[26rem] rounded-full" style={{ background: 'radial-gradient(circle, rgba(196,132,154,0.11), transparent 70%)' }} />
-          <div className="absolute inset-0" style={{ backgroundImage: noise, opacity: 0.035 }} />
-        </div>
+        {/* This used to be two rose gradient blobs with a procedural noise
+            layer washed over the top. That combination is decoration standing
+            in for hierarchy: the card is already a white panel with a real
+            shadow on a tinted page, so it reads as raised without help, and
+            the grain only ever showed up as a faint dirtiness on a screen a
+            client is trying to read a payment instruction on. The page tint
+            below carries the warmth on its own. */}
 
         <div className="uz-card relative w-full max-w-[480px]">
           <div className="bg-white" style={{ borderRadius: 22, border: `1px solid ${CARD_BORDER}`, boxShadow: '0 22px 70px rgba(108,64,85,0.12)' }}>

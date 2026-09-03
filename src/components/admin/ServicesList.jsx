@@ -2,6 +2,7 @@
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ServiceFormModal from './ServiceFormModal';
+import { Photo } from './Glyphs';
 
 const CATEGORY_LABELS = { bridal: 'Bridal', event: 'Event Glam', creative: 'Creative', lessons: 'Lessons' };
 
@@ -96,7 +97,7 @@ export default function ServicesList({ darkMode: dm }) {
               </div>
             ) : (
               <div className="w-[58px] h-[58px] sm:w-16 sm:h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: tagBg }}>
-                <span className="text-[#D4A0B0] text-lg">✦</span>
+                <Photo className="w-5 h-5 text-[#D4A0B0]" />
               </div>
             )}
 

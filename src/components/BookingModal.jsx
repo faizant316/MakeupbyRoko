@@ -553,8 +553,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                   <button
                     type="button"
                     onClick={() => goStep('date', 'back')}
-                    className="w-full text-left bg-gradient-to-r from-[#D4A0B0]/8 to-[#B8A0D4]/8 border border-[#D4A0B0]/15 rounded-xl px-4 py-3.5 mb-6 flex items-center gap-3 transition-all hover:border-[#D4A0B0]/35"
-                    style={{ boxShadow: '0 0 20px rgba(212,160,176,0.08)' }}
+                    className="w-full text-left bg-[#D4A0B0]/[0.07] border border-[#D4A0B0]/20 rounded-xl px-4 py-3.5 mb-6 flex items-center gap-3 transition-colors hover:bg-[#D4A0B0]/[0.11] hover:border-[#D4A0B0]/35"
                   >
                     <div className="w-9 h-9 rounded-xl bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4">

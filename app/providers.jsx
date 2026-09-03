@@ -2,9 +2,6 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
-const Toaster = dynamic(() => import('../src/components/ui/toaster').then(m => ({ default: m.Toaster })), { ssr: false });
 
 export default function Providers({ children }) {
   useEffect(() => {
@@ -23,7 +20,6 @@ export default function Providers({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster />
     </QueryClientProvider>
   );
 }

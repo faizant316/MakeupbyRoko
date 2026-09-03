@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
+import { Check, Cross, Undo } from './Glyphs';
 import { FORMAT_META } from './ClassRegistrationsList';
 import { parseRange } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -204,14 +205,14 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
       confirmFn({
         title: 'Confirm In-Studio Class?',
         body: `This will confirm ${reg.full_name || 'the client'} for their Wednesday and email the studio address and directions.`,
-        color: '#8A63A8', icon: '✓', confirmLabel: 'Yes, Confirm',
+        color: '#8A63A8', icon: 'check', confirmLabel: 'Yes, Confirm',
         onConfirm: () => doSend(finalTime, 'In-Person'),
       });
     } else {
       confirmFn({
         title: 'Confirm & Notify Client?',
         body: `This will enroll ${reg.full_name || 'the client'} and send their lesson time and Zoom link.`,
-        color: LESSON_COLOR, icon: '✓', confirmLabel: 'Yes, Send',
+        color: LESSON_COLOR, icon: 'check', confirmLabel: 'Yes, Send',
         onConfirm: () => doSend(finalTime, 'Zoom'),
       });
     }
@@ -378,7 +379,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                       <span className="text-[0.73rem] font-medium truncate" style={{ color: '#2D8CFF' }}>{meetLink}</span>
                       <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
                         style={{ background: linkCopied ? '#3b82f6' : '#2D8CFF', color: '#fff' }}>
-                        {linkCopied ? '✓ Copied' : 'Copy'}
+                        {linkCopied ? <span className="inline-flex items-center gap-1"><Check className="w-2.5 h-2.5" strokeWidth={3.5} />Copied</span> : 'Copy'}
                       </span>
                     </button>
                   )}
@@ -548,7 +549,9 @@ function ConfirmModal({ modal, onCancel, onConfirm, dm }) {
       >
         <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
           style={{ background: modal.color + '22', border: `1.5px solid ${modal.color}44` }}>
-          <span style={{ color: modal.color, fontSize: '16px', fontWeight: 700 }}>{modal.icon || '✓'}</span>
+          {modal.icon === 'cross' ? <Cross className="w-4 h-4" strokeWidth={3} style={{ color: modal.color }} />
+            : modal.icon === 'undo' ? <Undo className="w-4 h-4" strokeWidth={2.2} style={{ color: modal.color }} />
+            : <Check className="w-4 h-4" strokeWidth={3} style={{ color: modal.color }} />}
         </div>
         <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>{modal.title}</p>
         <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#71717a' : '#999' }}>{modal.body}</p>
@@ -636,7 +639,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       title: `Mark as ${meta.label}?`,
       body: 'This will update their payment status.',
       color: meta.color,
-      icon: '✓',
+      icon: 'check',
       confirmLabel: 'Yes, Update',
       onConfirm: () => {
         updateMutation.mutate({ payment_status: newStatus });
@@ -652,7 +655,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
       body: isFull
         ? 'Sends the entire amount back to the client, card fee included. Use this when you had to cancel.'
         : 'Sends back the class fee minus the card processing fee. Use this when the client cancelled with 14 or more days notice.',
-      color: '#b91c1c', icon: '↩', confirmLabel: 'Yes, Refund',
+      color: '#b91c1c', icon: 'undo', confirmLabel: 'Yes, Refund',
       onConfirm: async () => {
         setRefunding(mode);
         try {
@@ -680,7 +683,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
     title: 'Delete this registration?',
     body: 'This cannot be undone.',
     color: '#EF4444',
-    icon: '✕',
+    icon: 'cross',
     confirmLabel: 'Yes, Delete',
     onConfirm: () => deleteMutation.mutate(),
   });
@@ -901,7 +904,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
           {reg.cancelled_by === 'client' && (
             <div className="mb-3 rounded-xl p-3.5" style={{ background: dm ? 'rgba(220,38,38,0.10)' : '#FDECEC', border: `1px solid ${dm ? 'rgba(220,38,38,0.30)' : '#F6D2D2'}` }}>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[0.8rem] font-bold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>✕</span>
+                <Cross className="w-3 h-3" strokeWidth={3} style={{ color: dm ? '#f28b82' : '#B91C1C' }} />
                 <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
                   Cancelled by client{reg.cancelled_at ? ` · ${new Date(reg.cancelled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
                 </span>

@@ -43,21 +43,18 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
   const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
 
-  // Non-bridal rows get their own quiet card presence so they lift off the
-  // page (same #fff / #1e1e24 as the background) without competing with bridal.
-  const skin = bridal
-    ? {
-        bg: dm ? 'rgba(154,84,116,0.12)' : '#FCF8FA',
-        border: dm ? 'rgba(196,122,146,0.26)' : '#ECDCE3',
-        shadow: dm ? 'inset 3px 0 0 0 #B06A85' : 'inset 3px 0 0 0 #9A5474, 0 1px 2px rgba(107,64,85,0.06), 0 2px 6px rgba(107,64,85,0.05)',
-        hoverBg: dm ? 'rgba(154,84,116,0.18)' : '#FAF3F7',
-      }
-    : {
-        bg: dm ? '#26262d' : '#FBF9F7',
-        border: dm ? '#34343d' : '#E4E4EC',
-        shadow: dm ? 'none' : '0 1px 2px rgba(30, 30, 40,0.05), 0 2px 5px rgba(30, 30, 40,0.04)',
-        hoverBg: dm ? '#2e2e37' : '#FFFDFB',
-      };
+  // Every row is the same card. Bridal used to get a tinted fill, a tinted
+  // border AND a 3px colour bar down its left edge — three decorations all
+  // saying the one thing the BRIDAL chip and the plum avatar already say in
+  // words. Stacked tints like that are what makes a list read as decorated
+  // rather than designed, and they cost the real signals (deposit, location,
+  // status) the contrast they need. One card, one hairline, one soft lift.
+  const skin = {
+    bg: dm ? '#26262d' : '#fff',
+    border: dm ? '#34343d' : '#E7E7EE',
+    shadow: dm ? 'none' : '0 1px 2px rgba(30,30,40,0.05), 0 2px 5px rgba(30,30,40,0.04)',
+    hoverBg: dm ? '#2e2e37' : '#FBFAFC',
+  };
 
   const selectedBg = dm ? 'rgba(37,99,235,0.16)' : 'rgba(37,99,235,0.07)';
   const selectedBorder = '#2563EB';
@@ -69,10 +66,12 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       style={{
         background: selected ? selectedBg : skin.bg,
         border: `1px solid ${selected ? selectedBorder : skin.border}`,
-        boxShadow: selected ? `inset 3px 0 0 0 ${selectedBorder}` : skin.shadow,
+        // Selection reads as the border thickening, not as a bar bolted to one
+        // edge — the ring hugs the same rounded corners the card already has.
+        boxShadow: selected ? `0 0 0 1px ${selectedBorder}` : skin.shadow,
         opacity: dimmed ? 0.62 : 1,
       }}
-      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = skin.hoverBg; } }}
+      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = dm ? '#4a4a58' : '#D6D6E0'; e.currentTarget.style.background = skin.hoverBg; } }}
       onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = skin.border; e.currentTarget.style.background = skin.bg; } }}
     >
       {/* iOS-style selection circle — empty ring fills blue with a check when picked */}

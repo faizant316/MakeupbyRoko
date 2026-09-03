@@ -5,7 +5,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 // remembered across visits. When there isn't room for two useful columns it
 // collapses to a plain stacked layout — dragging never applies there.
 const STORAGE_KEY = 'admin-home-split-w';
-const DEFAULT_LEFT = 520;
+// 520 divided seven ways left ~64px a day, which is narrower than the shortest
+// client name. 600 gives each cell ~80px: enough for a time and a first name
+// without truncating either, and still leaves the appointments column its full
+// working width on a 1280px laptop (the clamp below enforces that).
+const DEFAULT_LEFT = 600;
 const MIN_LEFT = 400;
 const MAX_LEFT = 720;
 // Below this the appointments column stops being able to show a row properly,

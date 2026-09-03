@@ -258,7 +258,15 @@
 
    So: gradients only, no blur. The tint still reads during the slide-up, and the
    entrance now has the frame to itself. Two classes because the booking and class
-   sheets carry their own tints. */
+   sheets carry their own tints.
+
+   Desktop used to layer three coloured ellipses over the scrim: rose on the
+   left, violet on the right, rose again across the top. Pink-into-purple wash
+   is the single most recognisable "generated" background there is, and it was
+   buying nothing here — the sheet covers its own backdrop entirely, so the
+   only moment any of it showed was the half second of the slide-up, where all
+   a backdrop has to do is push the page behind it back. One honest scrim, one
+   soft rose edge to keep the brand in the room. */
 .sheet-backdrop,
 .sheet-backdrop--class {
   background: rgba(0, 0, 0, 0.58);
@@ -266,16 +274,13 @@
 @media (min-width: 640px) {
   .sheet-backdrop {
     background:
-      radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.45) 0%, transparent 45%),
-      radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.38) 0%, transparent 45%),
-      radial-gradient(ellipse at 50% 0%, rgba(212,160,176,0.25) 0%, transparent 50%),
-      rgba(0, 0, 0, 0.58);
+      radial-gradient(ellipse at 50% 120%, rgba(212, 160, 176, 0.18) 0%, transparent 55%),
+      rgba(18, 14, 16, 0.62);
   }
   .sheet-backdrop--class {
     background:
-      radial-gradient(ellipse at 0% 50%, rgba(212,140,170,0.4) 0%, transparent 45%),
-      radial-gradient(ellipse at 100% 50%, rgba(180,140,220,0.33) 0%, transparent 45%),
-      rgba(0, 0, 0, 0.55);
+      radial-gradient(ellipse at 50% 120%, rgba(212, 160, 176, 0.14) 0%, transparent 55%),
+      rgba(18, 14, 16, 0.58);
   }
 }
 

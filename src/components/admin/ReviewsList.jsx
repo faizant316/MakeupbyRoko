@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { StarOutline } from './Glyphs';
 
 const FILTER_TONES = {
   all:      { dot: null,      light: { bg: 'rgba(160,96,122,0.10)', txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)', txt: '#e7c9d5' } },
@@ -54,7 +55,7 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
         <div className="text-center py-20">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
             style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }}>
-            <span className="text-[#D4A0B0] text-lg">✦</span>
+            <StarOutline className="w-5 h-5 text-[#D4A0B0]" />
           </div>
           <p className="text-[0.85rem]" style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
             {filter === 'all' ? 'No reviews yet' : `No ${filter} reviews`}

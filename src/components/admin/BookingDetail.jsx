@@ -11,6 +11,7 @@ import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
+import { Check, Cross } from './Glyphs';
 import ScheduleView from './ScheduleView';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -827,7 +828,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                     </span>
                     <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
                       style={{ background: linkCopied ? '#22c55e' : CONSULT_COLOR, color: '#fff' }}>
-                      {linkCopied ? '✓ Copied' : 'Copy'}
+                      {linkCopied ? <span className="inline-flex items-center gap-1"><Check className="w-2.5 h-2.5" strokeWidth={3.5} />Copied</span> : 'Copy'}
                     </span>
                   </button>
                 )}
@@ -2787,7 +2788,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           {booking.status === 'cancelled' && booking.cancelled_by === 'client' && (
             <div className="mt-3 rounded-[12px] p-3.5" style={{ background: dm ? 'rgba(220,38,38,0.10)' : '#FDECEC', border: `1px solid ${dm ? 'rgba(220,38,38,0.30)' : '#F6D2D2'}` }}>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[0.8rem] font-bold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>✕</span>
+                <Cross className="w-3 h-3" strokeWidth={3} style={{ color: dm ? '#f28b82' : '#B91C1C' }} />
                 <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
                   Cancelled by client{fmtCancelStamp(booking.cancelled_at)}
                 </span>
@@ -3129,7 +3130,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
                     style={{ background: accent + '1f', border: `1.5px solid ${accent}3d` }}>
                     <span style={{ color: accent, fontSize: '18px', fontWeight: 700, lineHeight: 1 }}>
-                      {statusKey === 'cancelled' ? '✕' : '✓'}
+                      {statusKey === 'cancelled' ? <Cross className="w-3 h-3" strokeWidth={3.2} /> : <Check className="w-3 h-3" strokeWidth={3.2} />}
                     </span>
                   </div>
                   <p className="text-[1.18rem] font-serif mb-2" style={{ color: dm ? '#ececf0' : '#1b1519' }}>

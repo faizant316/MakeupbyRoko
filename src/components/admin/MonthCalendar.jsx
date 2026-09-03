@@ -151,10 +151,16 @@ export default function MonthCalendar({
     selectMode ? onToggleDay?.(key) : onOpenDay?.(key);
   };
 
-  const cellPad = dense ? 'p-1.5 sm:p-2' : 'p-1.5 sm:p-2';
+  const cellPad = dense ? 'p-2 sm:p-2.5' : 'p-1.5 sm:p-2';
   // The Calendar tab now spends its vertical budget on the grid instead of on
   // blurb and stat cards, so the cells get to breathe.
-  const cellMinH = dense ? 'min-h-[56px] sm:min-h-[92px]' : 'min-h-[70px] sm:min-h-[114px] xl:min-h-[126px]';
+  //
+  // The Home grid used to be the tighter of the two (56/92px) on the theory
+  // that a side column should stay small. It read as cramped rather than
+  // compact: four lines of 10px type stacked in a 64px-wide box. It is the
+  // calendar Roko actually looks at every morning, so it now gets MORE room
+  // per cell than the full-page one and spends it on fewer, larger things.
+  const cellMinH = dense ? 'min-h-[72px] sm:min-h-[120px]' : 'min-h-[70px] sm:min-h-[114px] xl:min-h-[126px]';
 
   return (
     <>
@@ -220,7 +226,7 @@ export default function MonthCalendar({
               <div className="flex items-center justify-between gap-0.5 sm:gap-1 px-0.5">
                 <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
                   {selectMode && <Checkbox on={picked} dm={dm} />}
-                  <span className={`${dense ? 'text-[0.78rem] sm:text-[0.88rem]' : 'text-[0.68rem] sm:text-[0.72rem]'} font-semibold tabular-nums`}
+                  <span className={`${dense ? 'text-[0.85rem] sm:text-[0.98rem]' : 'text-[0.68rem] sm:text-[0.72rem]'} font-semibold tabular-nums leading-none`}
                     style={{ color: isToday ? '#A0607A' : off ? OFF_RED : dense ? (dm ? '#c4c4cc' : '#6b6b76') : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
                 </span>
                 {/* Counts EVERY item on the day, so it never disagrees with the
@@ -247,9 +253,9 @@ export default function MonthCalendar({
               {/* Phones: coloured dots. Names never fit a 7-column phone grid,
                   and tapping the day lists them all in full underneath. */}
               {events.length > 0 && (
-                <div className="flex sm:hidden flex-wrap gap-[3px] px-0.5">
+                <div className={`flex sm:hidden flex-wrap px-0.5 ${dense ? 'gap-1' : 'gap-[3px]'}`}>
                   {events.slice(0, 6).map(ev => (
-                    <span key={ev.id} className="w-[5px] h-[5px] rounded-full" style={{ background: dotOf(ev, dm) }} />
+                    <span key={ev.id} className={dense ? 'w-1.5 h-1.5 rounded-full' : 'w-[5px] h-[5px] rounded-full'} style={{ background: dotOf(ev, dm) }} />
                   ))}
                 </div>
               )}
@@ -269,36 +275,58 @@ export default function MonthCalendar({
                         if (!onEventClick || selectMode) return;
                         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onEventClick(ev); }
                       }}
-                      className={`w-full flex items-center gap-1.5 pr-1 rounded-md text-left transition-colors outline-none ${dense ? 'pl-2 py-1.5' : 'pl-1.5 py-1'}`}
+                      className={`w-full rounded-md text-left transition-colors outline-none ${dense ? 'px-2 py-1.5' : 'flex items-center gap-1.5 px-1.5 py-1'}`}
                       style={{
-                        background: dm ? '#2e2e38' : '#F7F7FB',
-                        borderLeft: `2.5px solid ${dot}`,
+                        // A dot, not a coloured bar welded to the left edge.
+                        // The bar was the same decoration the booking rows
+                        // carried, and it fought the chip's own rounded corner
+                        // every time. A dot states the status just as clearly
+                        // and lets the chip keep its shape.
+                        background: dm ? '#2e2e38' : '#F5F5F9',
                         opacity: cancelled ? 0.55 : 1,
                         cursor: onEventClick && !selectMode ? 'pointer' : 'inherit',
                       }}
-                      onMouseEnter={e => { if (onEventClick && !selectMode) e.currentTarget.style.background = dm ? '#3a3a44' : '#EFEFF5'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = dm ? '#2e2e38' : '#F7F7FB'; }}
+                      onMouseEnter={e => { if (onEventClick && !selectMode) e.currentTarget.style.background = dm ? '#3a3a44' : '#EBEBF3'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = dm ? '#2e2e38' : '#F5F5F9'; }}
                       title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
                     >
-                      {startTime(ev.time) && (
-                        <span className={`${dense ? 'text-[0.66rem]' : 'text-[0.62rem]'} font-semibold tabular-nums flex-shrink-0`} style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
-                          {startTime(ev.time)}
+                      {/* Home stacks time over name. One line could only ever
+                          fit the time plus a mystery badge in a 64px column --
+                          the name, the one thing that makes a day
+                          recognisable, was always what got truncated away.
+                          Two lines fit both at a size worth reading. */}
+                      <div className={dense ? 'flex items-center gap-1.5 min-w-0' : 'contents'}>
+                        <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
+                        {startTime(ev.time) && (
+                          <span className={`${dense ? 'text-[0.68rem]' : 'text-[0.62rem]'} font-semibold tabular-nums flex-shrink-0`} style={{ color: dm ? '#8b8b95' : '#8e8e99' }}>
+                            {startTime(ev.time)}
+                          </span>
+                        )}
+                        {!dense && (
+                          <>
+                            <span className="text-[0.68rem] font-medium truncate flex-1 min-w-0"
+                              style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
+                              {ev.name}
+                              {ev.bridal && <span className="ml-1" style={{ color: '#A0607A' }} title="Bridal">·</span>}
+                            </span>
+                            {ev.source === 'booksy' && (
+                              <span className="text-[0.5rem] font-bold tracking-[0.06em] uppercase px-1 py-px rounded flex-shrink-0"
+                                style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}>B</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      {dense && (
+                        <span className="block text-[0.76rem] font-medium truncate mt-0.5"
+                          style={{ color: dm ? '#e4e4e7' : '#2c2c34', textDecoration: cancelled ? 'line-through' : 'none' }}>
+                          {ev.name}
                         </span>
-                      )}
-                      <span className={`${dense ? 'text-[0.76rem]' : 'text-[0.68rem]'} font-medium truncate flex-1 min-w-0`}
-                        style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
-                        {ev.name}
-                        {ev.bridal && <span className="ml-1" style={{ color: '#A0607A' }} title="Bridal">·</span>}
-                      </span>
-                      {ev.source === 'booksy' && (
-                        <span className="text-[0.5rem] font-bold tracking-[0.06em] uppercase px-1 py-px rounded flex-shrink-0"
-                          style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}>B</span>
                       )}
                     </div>
                   );
                 })}
                 {events.length > maxChips && (
-                  <span className={`${dense ? 'text-[0.64rem] pl-2' : 'text-[0.58rem] pl-1.5'} font-semibold`} style={{ color: dm ? '#71717a' : '#a3a3ad' }}>
+                  <span className={`${dense ? 'text-[0.66rem] pl-2' : 'text-[0.58rem] pl-1.5'} font-semibold`} style={{ color: dm ? '#71717a' : '#9a9aa6' }}>
                     +{events.length - maxChips} more
                   </span>
                 )}

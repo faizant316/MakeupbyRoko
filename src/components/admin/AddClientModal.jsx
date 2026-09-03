@@ -172,7 +172,7 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
     if (isNonBridal) {
       if (nb.early_arrival === true) parts.push('⏰ Early arrival (before 7 AM) · +$100 surcharge');
       if (nb.ready_by_time) parts.push(`Ready by: ${nb.ready_by_time}`);
-      if (nb.travel_requested === true) parts.push('✈️ Travel requested · bridal pricing ($750+) applies');
+      if (nb.travel_requested === true) parts.push('Travel requested · bridal pricing ($750+) applies');
     }
     return parts.filter(Boolean).join(' | ');
   };
