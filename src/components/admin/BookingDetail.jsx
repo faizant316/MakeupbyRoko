@@ -260,6 +260,46 @@ function clockToMin(val) {
   return h * 60 + min;
 }
 
+// ── Undo store for appointment time changes ──────────────────────────────
+// The undo has to outlive a refresh: she changes a time, gets pulled away, comes
+// back an hour later and only then realises she picked the wrong hour. Kept on
+// her own machine (the previous time isn't a fact the booking row records) and
+// only offered while it still makes sense: within a day, and only if the
+// appointment still holds the values that change put there — if it moved again
+// somewhere else, "undo" would be putting back the wrong thing.
+const UNDO_KEY = 'admin-time-undo-v1';
+const UNDO_TTL = 24 * 60 * 60 * 1000;
+
+function readUndoStore() {
+  try { return JSON.parse(localStorage.getItem(UNDO_KEY) || '{}'); } catch { return {}; }
+}
+function writeUndoStore(store) {
+  try { localStorage.setItem(UNDO_KEY, JSON.stringify(store)); } catch { /* private mode */ }
+}
+function loadUndo(booking) {
+  if (typeof window === 'undefined' || !booking?.id) return null;
+  const rec = readUndoStore()[booking.id];
+  if (!rec) return null;
+  const fresh = Date.now() - (rec.at || 0) < UNDO_TTL;
+  const stillApplies = (booking.time || null) === (rec.newTime ?? null)
+    && (booking.date || null) === (rec.newDate ?? null);
+  return fresh && stillApplies ? rec : null;
+}
+function saveUndo(id, rec) {
+  const store = readUndoStore();
+  // Drop anyone else's expired entries while we're in here.
+  for (const [k, v] of Object.entries(store)) {
+    if (Date.now() - (v?.at || 0) > UNDO_TTL) delete store[k];
+  }
+  store[id] = rec;
+  writeUndoStore(store);
+}
+function clearUndo(id) {
+  const store = readUndoStore();
+  delete store[id];
+  writeUndoStore(store);
+}
+
 // "2026-09-23" → "Wednesday, September 23, 2026" / "Wed, Sep 23"
 function fmtLong(d) {
   return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
@@ -1006,6 +1046,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // mis-tap is one button away from being put back. Lives as long as she's on
   // this card: an undo that vanishes after two seconds is an undo you can't use.
   const [undoTime, setUndoTime] = useState(null);
+  // Only keyed on the booking id: re-reading it whenever booking.time changes
+  // would race the save (the prop still holds the old time for a beat) and wipe
+  // the undo we just created.
+  useEffect(() => { setUndoTime(loadUndo(booking)); }, [booking.id]);
   const [apptOut, setApptOut] = useState(false);
   useEffect(() => {
     const el = timeSectionRef.current;
@@ -1217,7 +1261,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     if (dateChanged) update.date = pendingDate;
     if (Object.keys(update).length) onUpdateBooking(update);
     const snapshot = changed
-      ? { time: booking.time || null, date: booking.date || null, changedTime: timeChanged, changedDate: dateChanged }
+      ? {
+          time: booking.time || null, date: booking.date || null,
+          newTime: timeChanged ? (pendingWindow || null) : (booking.time || null),
+          newDate: dateChanged ? (pendingDate || null) : (booking.date || null),
+          changedTime: timeChanged, changedDate: dateChanged, at: Date.now(),
+        }
       : null;
 
     // Wedding-day bridal: keep the inquiry's wedding date in step with the appt.
@@ -1229,7 +1278,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
     if (!willEmail) {
       setShowTimePicker(false);
-      if (snapshot) setUndoTime({ ...snapshot, emailed: false });
+      if (snapshot) { const rec = { ...snapshot, emailed: false }; setUndoTime(rec); saveUndo(booking.id, rec); }
       showToast(changed ? 'Appointment updated' : 'No changes made', '#888');
       if (changed && booking.status === 'confirmed' && booking.email) {
         // Quiet change on a confirmed booking — leave the reminder banner so the
@@ -1264,7 +1313,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setShowTimePicker(false);
       setShowReconfirmBanner(false);
       if (panelAttach) { setUpdateNoticeSent(true); setLastChange(null); }
-      if (snapshot) setUndoTime({ ...snapshot, emailed: true });
+      if (snapshot) { const rec = { ...snapshot, emailed: true }; setUndoTime(rec); saveUndo(booking.id, rec); }
       showToast(panelAttach ? `Update sent, awaiting re-sign` : `Update emailed to ${firstName}`, '#22c55e');
     } catch (err) {
       alert(`The change was saved, but the email didn't send (${err?.message || 'unknown error'}). You can message ${firstName} from the card.`);
@@ -1302,6 +1351,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setLastChange(null);
     }
     setUndoTime(null);
+    clearUndo(booking.id);
     showToast('Change undone', '#888');
   };
 
@@ -2152,6 +2202,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   className="flex-shrink-0 h-7 px-3 rounded-full text-[0.74rem] font-semibold transition-colors active:scale-95"
                   style={{ background: dm ? '#3a3a48' : '#fff', color: dm ? '#e4e4e7' : '#6B4055', border: `1px solid ${dm ? '#4a4a58' : '#e2cdd6'}` }}>
                   Undo
+                </button>
+                {/* Dismiss: she's happy with the change and doesn't want the row
+                    sitting there for the rest of the day. */}
+                <button type="button" onClick={() => { setUndoTime(null); clearUndo(booking.id); }} aria-label="Dismiss"
+                  className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full transition-colors active:scale-90"
+                  style={{ color: dm ? '#7a7480' : '#b3a8ae' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
             )}
