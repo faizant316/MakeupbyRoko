@@ -541,7 +541,7 @@ export default function Admin() {
             {/* Did anyone book? On a phone that's the first question and the
                 appointments list is three scrolls down, so the rail answers it
                 before the calendar does. Laptop keeps it inside the list. */}
-            <NewBookingsRail bookings={bookings} onSelect={setSelectedBooking} darkMode={dm} className="sm:hidden mb-6" />
+            <NewBookingsRail bookings={bookings} loading={loadingBookings} onSelect={setSelectedBooking} darkMode={dm} className="sm:hidden mb-6" />
             <ResizableColumns
               darkMode={dm}
               left={

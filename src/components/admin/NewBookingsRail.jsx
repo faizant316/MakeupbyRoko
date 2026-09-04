@@ -9,7 +9,7 @@ import StatusBadge from './StatusBadge';
 // calendar. On a phone the appointments list is three scrolls down, which meant
 // the one thing she opens the admin to check — did anyone book? — was the one
 // thing she had to go looking for.
-export default function NewBookingsRail({ bookings, onSelect, darkMode: dm, className = '' }) {
+export default function NewBookingsRail({ bookings, loading = false, onSelect, darkMode: dm, className = '' }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -19,6 +19,27 @@ export default function NewBookingsRail({ bookings, onSelect, darkMode: dm, clas
   const recent = (bookings || [])
     .filter(b => b.source !== 'booksy' && b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+  // While the bookings are still in flight there's nothing to show and no way
+  // to know whether there will be, so the rail holds its own space with a
+  // placeholder the same height. Otherwise the calendar paints first and then
+  // gets shoved down the moment the fetch lands, which is the jump she sees on
+  // every refresh. When the answer turns out to be "no new bookings" the
+  // placeholder folds away instead of snapping.
+  if (loading) {
+    return (
+      <div className={className} aria-hidden="true">
+        <div className="rounded-2xl px-3 py-2.5 flex items-center gap-2.5"
+          style={{ background: dm ? 'rgba(196,132,154,0.07)' : '#FBF6F8', border: `1px solid ${dm ? 'rgba(196,132,154,0.16)' : '#F2E6EC'}` }}>
+          <span className="w-8 h-8 rounded-xl flex-shrink-0" style={{ background: dm ? 'rgba(196,132,154,0.14)' : '#F6E9EF' }} />
+          <span className="min-w-0 flex-1">
+            <span className="block h-3 w-28 rounded-full" style={{ background: dm ? 'rgba(255,255,255,0.07)' : '#EFE4EA' }} />
+            <span className="block h-2.5 w-44 max-w-full rounded-full mt-2" style={{ background: dm ? 'rgba(255,255,255,0.05)' : '#F4ECF0' }} />
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (recent.length === 0) return null;
 
@@ -34,27 +55,38 @@ export default function NewBookingsRail({ bookings, onSelect, darkMode: dm, clas
 
   return (
     <div className={`relative ${className}`}>
+      {/* A standing card, not a bare row that only lights up under the cursor.
+          Something booked overnight should read as an event on the page before
+          you touch anything. Deliberately still flat: one tint, one border, one
+          dot. The version before this stacked a gradient card, a gradient icon
+          tile, a sparkle glyph and an infinite ping for what is usually one
+          booking, and that's the direction not to go back in. */}
       <button
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2.5 px-2 py-2 -mx-2 rounded-[12px] text-left transition-colors"
-        style={{ background: 'transparent' }}
-        onMouseEnter={e => e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.045)' : 'rgba(196,132,154,0.06)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left transition-colors"
+        style={{
+          background: dm ? 'rgba(196,132,154,0.11)' : '#FCF3F7',
+          border: `1px solid ${dm ? 'rgba(196,132,154,0.3)' : '#F0DCE6'}`,
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = dm ? 'rgba(196,132,154,0.17)' : '#F9EAF1'}
+        onMouseLeave={e => e.currentTarget.style.background = dm ? 'rgba(196,132,154,0.11)' : '#FCF3F7'}
       >
-        {/* The count is the whole signal. The old version stacked a gradient
-            card, a gradient icon tile, a sparkle glyph and an infinite ping
-            for what is usually one booking. */}
-        <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[0.8rem] font-semibold tabular-nums"
-          style={{ background: dm ? 'rgba(224,91,127,0.16)' : '#FBEEF3', color: '#C4849A' }}>
-          {recent.length}
+        {/* The count is the whole signal; the dot beside it is the "unread" mark. */}
+        <span className="relative flex-shrink-0">
+          <span className="w-8 h-8 rounded-xl flex items-center justify-center text-[0.86rem] font-semibold tabular-nums"
+            style={{ background: '#C4849A', color: '#fff' }}>
+            {recent.length}
+          </span>
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+            style={{ background: '#E0795B', border: `2px solid ${dm ? '#1a1a20' : '#fff'}` }} />
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block text-[0.86rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
+          <span className="block text-[0.86rem] font-semibold" style={{ color: dm ? '#f4e6ec' : '#6B4055' }}>
             {recent.length === 1 ? 'New booking' : 'New bookings'}
           </span>
-          <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
+          <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#c2a7b3' : '#9C7686' }}>
             {(recent[0].name || 'Someone').split(' ')[0]}
             {recent[0].service ? ` · ${recent[0].service}` : ''}
             {` · ${timeAgo(recent[0].created_date)}`}
@@ -62,10 +94,10 @@ export default function NewBookingsRail({ bookings, onSelect, darkMode: dm, clas
         </span>
 
         <span className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#8b8b95' : '#6a6a74' }}>
+          <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#c2a7b3' : '#8A5F71' }}>
             {open ? 'Hide' : 'View'}
           </span>
-          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8b8b95' : '#9c9ca6'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#c2a7b3' : '#8A5F71'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             className="w-3.5 h-3.5"
             style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             <polyline points="6 9 12 15 18 9"/>

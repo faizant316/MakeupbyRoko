@@ -614,7 +614,7 @@ export default function BookingsList({
       {/* Just Booked — laptop only. On a phone this same rail renders at the
           very top of the admin page instead, above the calendar, so a new
           booking is the first thing on screen rather than three scrolls down. */}
-      <NewBookingsRail bookings={allBookings} onSelect={onSelect} darkMode={dm} className="hidden sm:block mb-5" />
+      <NewBookingsRail bookings={allBookings} loading={loading} onSelect={onSelect} darkMode={dm} className="hidden sm:block mb-5" />
 
       {/* Search */}
       <div className={`relative mb-4 ${searchOpen || search ? '' : 'hidden sm:block'}`}>
@@ -665,13 +665,6 @@ export default function BookingsList({
           cancelled: { dot: '#EF4444', light: { bg: 'rgba(239,68,68,0.12)',   txt: '#DC2626' }, dark: { bg: 'rgba(239,68,68,0.18)',    txt: '#F87171' } },
         };
         const inAppointments = viewType === 'appointments';
-        const mutedTxt = dm ? '#8a8a93' : '#93939b';
-        const hoverTxt = dm ? '#cfcfd6' : '#62626B';
-        const hoverBg  = dm ? '#26262d' : '#F3F3F7';
-        const chipCls = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
-        const inactiveStyle = { background: 'transparent', color: mutedTxt };
-        const onEnter = (e, on) => { if (!on) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } };
-        const onLeave = (e, on) => { if (!on) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = mutedTxt; } };
 
         const courseTone = dm ? { bg: 'rgba(199,107,166,0.2)', txt: '#E7A9CE' } : { bg: 'rgba(199,107,166,0.14)', txt: '#A83E86' };
         const consultTone = dm ? { bg: 'rgba(168,85,247,0.22)', txt: '#C99BF5' } : { bg: 'rgba(168,85,247,0.12)', txt: '#9333EA' };
@@ -701,26 +694,12 @@ export default function BookingsList({
 
         return (
           <>
-            {/* Laptop: every filter visible at once */}
-            <div className="hidden sm:flex items-center gap-1 mb-5 overflow-x-auto no-scrollbar pb-0.5">
-              {options.map(o => (
-                <Fragment key={o.key}>
-                  {o.key === 'courses' && (
-                    <div className="w-px h-3.5 rounded-full flex-shrink-0 mx-1.5" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
-                  )}
-                  <button onClick={o.pick} className={chipCls}
-                    style={o.active ? { background: o.tone.bg, color: o.tone.txt } : inactiveStyle}
-                    onMouseEnter={e => onEnter(e, o.active)} onMouseLeave={e => onLeave(e, o.active)}>
-                    {o.dot && !o.active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: o.dot }} />}
-                    <span>{o.label}</span>
-                    <span style={{ opacity: 0.55 }}>{o.count}</span>
-                  </button>
-                </Fragment>
-              ))}
-            </div>
-
-            {/* Phone: what you're looking at, and one tap to change it */}
-            <div className="sm:hidden relative mb-4">
+            {/* What you're looking at, and one tap to change it. This replaced
+                a row of seven chips on every screen, not just phones: the row
+                showed each count at a glance, but a filter you have to read
+                left-to-right to find is a worse trade than a list that names
+                every option in one place. */}
+            <div className="relative mb-4">
               <button type="button" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen}
                 className="inline-flex items-center gap-2 pl-3.5 pr-3 py-2 rounded-full text-[0.8rem] font-semibold"
                 style={{ background: current.tone.bg, color: current.tone.txt }}>
@@ -1135,20 +1114,19 @@ export default function BookingsList({
             // buckets to hide them under, no collapse).
             <div className="flex flex-col gap-2">
               {visibleActive.map(b => (
-                <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)}
+                <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} hideDate
                   onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
                   selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} />
               ))}
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {/* Today leads, then tomorrow, then each named day. It used to be
-                  dropped here as redundant with the Home Today card, but once
-                  the list reads day by day, starting at Tomorrow just raises the
-                  question of where today went. The Today card stays the detailed
-                  view (it carries classes and consultations too); this is the
-                  same day's place in the run of the week. */}
-              {timeGroups.map(group => {
+              {/* Today is deliberately not here. The Today card up beside the
+                  calendar owns it, and it's the only place that shows today's
+                  consultations and classes alongside the appointments, with the
+                  Zoom link to join them. This list is the run of days after it:
+                  Tomorrow, then each named day. */}
+              {timeGroups.filter(g => g.key !== 'today').map(group => {
                 const open = !collapsedGroups[group.key];
                 return (
                   <div key={group.key}>
@@ -1179,7 +1157,7 @@ export default function BookingsList({
                     <Collapse open={open}>
                       <div className="flex flex-col gap-2 pb-1">
                         {group.items.map(b => (
-                          <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)}
+                          <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} hideDate={!!group.day}
                             onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
                             selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} />
                         ))}

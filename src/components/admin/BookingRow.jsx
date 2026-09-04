@@ -6,7 +6,7 @@ import { depositState, depositTone } from './depositState';
 // Compact one-line list item for the appointments list. The rich detail lives
 // in the modal opened on click, so the row only carries what helps you scan:
 // who, when, what, and status. Bridal rows are tagged and tinted.
-export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dimmed, selectable, selected }) {
+export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dimmed, selectable, selected, hideDate }) {
   // Consult-only bookings have no appointment date — show their consultation
   // date/time so they read as scheduled, not "No date".
   const consultOnly = !booking.date && !!booking.consultation_date;
@@ -173,14 +173,27 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         )}
       </div>
 
-      {/* Date + time + status. Date and time stack on their own lines so a full
-          window ("11:00 AM – 1:00 PM") never gets cut off on narrow screens. */}
+      {/* Time + status, with the date only when it adds something. Under a
+          "Monday, Sep 7" heading every row was repeating Mon, Sep 7 down the
+          whole group, three lines deep, and the one thing you actually wanted
+          from that corner — what time — was the smallest text in it. Under a
+          day heading the time takes the top line; the coarse groups (Later This
+          Month, Past Due) still carry the date, because there it's the answer. */}
       <div className="flex flex-col items-end gap-1 flex-shrink-0 text-right">
-        <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: consultOnly ? '#8B5CF6' : dateColor }}>
-          {rel.label}
-        </span>
+        {!hideDate && (
+          <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: consultOnly ? '#8B5CF6' : dateColor }}>
+            {rel.label}
+          </span>
+        )}
         {rowTime && (
-          <span className="text-[0.68rem] whitespace-nowrap tabular-nums -mt-0.5" style={{ color: mutedColor }}>{rowTime}</span>
+          <span
+            className={`whitespace-nowrap tabular-nums ${hideDate ? 'text-[0.78rem] font-semibold' : 'text-[0.68rem] -mt-0.5'}`}
+            style={{ color: hideDate ? (dm ? '#e4e4e7' : '#3a3a42') : mutedColor }}>
+            {rowTime}
+          </span>
+        )}
+        {hideDate && !rowTime && (
+          <span className="text-[0.7rem] whitespace-nowrap" style={{ color: mutedColor }}>No time set</span>
         )}
         <StatusBadge status={booking.status} />
       </div>
