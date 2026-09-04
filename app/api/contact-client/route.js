@@ -38,6 +38,7 @@ export async function POST(req) {
     }
 
     await sendEmail({
+      log: { bookingId, kind: includeContract ? 'message_with_agreement' : 'message_from_roko', audience: 'client' },
       to,
       subject,
       html: contactClientEmail({ firstName, message, serviceName, dateFormatted, time, resignUrl }),

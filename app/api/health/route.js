@@ -75,6 +75,73 @@ export async function GET(req) {
     });
   }
 
+  // ── Confirmations that never went out ─────────────────────────────────────
+  // The failure this exists for is the quiet one: a booking saves, the client
+  // card looks perfect, and no email was ever attempted. Nothing else can see
+  // it. system_alerts only records sends that FAILED, and a send that never
+  // happened fails nothing.
+  //
+  // `contract_signed` is the tell that a confirmation was owed: only the public
+  // forms set it (the client signs the agreement on site), so admin-entered
+  // clients with the Notify toggle off are correctly ignored, as are the Booksy
+  // imports, which have neither.
+  let unemailed = { checked: false, count: 0 };
+  try {
+    const supabase = createClient();
+
+    // Bookings from before email_log existed have no rows by definition, so the
+    // window starts when the migration ran rather than at an invented date.
+    const { data: mig } = await supabase
+      .from('applied_migrations')
+      .select('applied_at').eq('version', '0019_email_log.sql').maybeSingle();
+
+    if (mig?.applied_at) {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const from = mig.applied_at > weekAgo ? mig.applied_at : weekAgo;
+      // A grace period, so a booking made while this cron is mid-flight isn't
+      // reported as broken thirty seconds after it worked.
+      const until = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+      const { data: owed } = await supabase
+        .from('bookings')
+        .select('id, created_at')
+        .eq('contract_signed', true)
+        .not('email', 'is', null)
+        .gte('created_at', from).lte('created_at', until)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      const ids = (owed || []).map(b => b.id);
+      let emailed = new Set();
+      if (ids.length) {
+        const { data: logs } = await supabase
+          .from('email_log')
+          .select('booking_id')
+          .eq('audience', 'client')
+          .in('booking_id', ids);
+        emailed = new Set((logs || []).map(l => l.booking_id));
+      }
+      const missing = (owed || []).filter(b => !emailed.has(b.id));
+      unemailed = { checked: true, count: missing.length, bookingIds: missing.map(b => b.id) };
+
+      if (missing.length) {
+        await raiseAlert({
+          source: 'api/health', kind: 'confirmation_never_sent', severity: 'critical',
+          message: `${missing.length} booking(s) were taken through a public form but no client email was ever recorded for them. Those clients have no deposit instructions and no upload link, and nothing else would have reported it.`,
+          // Ids and timestamps only: enough to open each card in the dashboard,
+          // without copying names or addresses into the alert log.
+          context: {
+            booking_ids: missing.map(b => b.id).join(', '),
+            booked_at: missing.map(b => b.created_at).join(', '),
+          },
+        });
+      }
+    }
+  } catch (err) {
+    // A missing email_log table must not take the schema check down with it.
+    console.error('health: unemailed check failed:', err?.message || err);
+  }
+
   // A rolling 24h window rather than "unresolved": alerts are emailed, not
   // triaged in an app, so nothing ever marks one handled and an all-time list
   // would report the site as unhealthy forever after a single old blip.
@@ -92,10 +159,14 @@ export async function GET(req) {
   } catch { /* the alerts table not existing must not fail the schema check */ }
 
   return NextResponse.json({
-    ok: schema.ok && stripe.mode === 'live' && stripe.webhookSecret === 'set' && recentAlerts.length === 0,
+    ok: schema.ok && stripe.mode === 'live' && stripe.webhookSecret === 'set'
+      && unemailed.count === 0 && recentAlerts.length === 0,
     checkedAt,
     schema: { ok: schema.ok, problems: schema.problems, tables: schema.tables },
     stripe,
+    // Reported, not alerted on. Without it, delivery status stays at "Resend
+    // accepted it" and the admin card can never say "delivered" or "bounced".
+    email: { deliveryWebhook: process.env.RESEND_WEBHOOK_SECRET ? 'set' : 'missing', unemailed },
     alertsLast24h: recentAlerts,
   }, { status: 200 });
 }

@@ -11,8 +11,11 @@ export async function POST(req) {
   const { authError } = await requireAdmin();
   if (authError) return authError;
   try {
-    const { to, name, service, date, reason } = await req.json();
+    const { to, name, service, date, reason, bookingId } = await req.json();
     await sendEmail({
+      // Optional: older callers don't send it, and a cancellation notice with no
+      // booking attached is still worth logging as "we emailed this address".
+      log: { bookingId, kind: 'cancelled_by_admin', audience: 'client' },
       to,
       subject: `Your ${service} booking has been cancelled`,
       html: bookingCancelledEmail({ name, service, date, reason }),

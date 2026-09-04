@@ -32,7 +32,7 @@ const STATUS_RANK = {
  * Open a log row for an email that is about to be sent.
  * @returns {Promise<string|null>} the row id, or null if logging failed.
  */
-export async function beginEmail({ bookingId, registrationId, kind, audience = 'client', recipient, subject }) {
+export async function beginEmail({ bookingId, registrationId, kind, audience = 'client', recipient, subject, html }) {
   try {
     const { data, error } = await createClient()
       .from('email_log')
@@ -43,6 +43,9 @@ export async function beginEmail({ bookingId, registrationId, kind, audience = '
         audience,
         recipient: String(recipient || '').slice(0, 320),
         subject: subject ? String(subject).slice(0, 500) : null,
+        // Client copies only: the resend button replays these, and Roko's own
+        // admin copy is never worth a second send or the row size.
+        html: audience === 'client' ? (html || null) : null,
         status: 'queued',
       })
       .select('id').single();

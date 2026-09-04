@@ -66,12 +66,14 @@ export async function POST(req) {
 
         if (booking.email) {
           await sendEmail({
+            log: { bookingId: booking.id, kind: 'cancel_requested', audience: 'client' },
             to: booking.email,
             subject: `We've received your request · ${booking.service}`,
             html: bridalCancelRequestEmail({ name: firstName, service: booking.service, date: dateFmt }),
           });
         }
         sendEmail({
+          log: { bookingId: booking.id, kind: 'admin_cancel_requested', audience: 'admin' },
           to: ADMIN_EMAIL,
           subject: `⚠️ Bridal cancellation REQUESTED · ${booking.name || booking.email} · call her`,
           html: adminBridalCancelRequestEmail({ name: booking.name, service: booking.service, date: dateFmt, reason, email: booking.email, phone: booking.phone }),
@@ -92,12 +94,14 @@ export async function POST(req) {
 
       if (booking.email) {
         await sendEmail({
+          log: { bookingId: booking.id, kind: 'cancelled', audience: 'client' },
           to: booking.email,
           subject: `Your ${booking.service} appointment has been cancelled`,
           html: clientCancelledEmail({ name: firstName, service: booking.service, date: dateFmt, kind: 'appointment' }),
         });
       }
       sendEmail({
+        log: { bookingId: booking.id, kind: 'admin_cancelled', audience: 'admin' },
         to: ADMIN_EMAIL,
         subject: `Client cancelled · ${booking.name || booking.email} · ${booking.service}`,
         html: adminClientCancelledEmail({ name: booking.name, service: booking.service, date: dateFmt, reason, kind: 'appointment', email: booking.email, phone: booking.phone }),
@@ -129,12 +133,14 @@ export async function POST(req) {
 
       if (reg.email) {
         await sendEmail({
+          log: { registrationId: reg.id, kind: 'cancelled', audience: 'client' },
           to: reg.email,
           subject: `Your class has been cancelled`,
           html: clientCancelledEmail({ name: firstName, service: serviceLabel, date: dateFmt, kind: 'class' }),
         });
       }
       sendEmail({
+        log: { registrationId: reg.id, kind: 'admin_cancelled', audience: 'admin' },
         to: ADMIN_EMAIL,
         subject: `Client cancelled a class · ${reg.full_name || reg.email}`,
         html: adminClientCancelledEmail({ name: reg.full_name, service: 'Makeup Class', date: dateFmt, reason, kind: 'class', email: reg.email, phone: reg.phone }),

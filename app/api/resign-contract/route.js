@@ -71,6 +71,7 @@ export async function POST(req) {
 
     // Notify Roko — never block the client's success on this.
     sendEmail({
+      log: { bookingId: booking.id, kind: 'admin_agreement_resigned', audience: 'admin' },
       to: ADMIN_EMAIL,
       subject: `Agreement re-signed · ${booking.name || 'Client'} · ${booking.time || 'new time'}`,
       html: adminContractResignedEmail({
@@ -88,6 +89,7 @@ export async function POST(req) {
     // time/date. (Pending bookings wait for Roko to confirm, as before.)
     if (booking.status === 'confirmed' && booking.email) {
       sendEmail({
+        log: { bookingId: booking.id, kind: 'booking_confirmed', audience: 'client' },
         to: booking.email,
         subject: `You're confirmed for ${booking.service || 'your appointment'}${booking.time ? ` · ${booking.time}` : ''}`,
         html: bookingConfirmedEmail({

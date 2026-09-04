@@ -40,6 +40,7 @@ export async function POST(req) {
     const dateFormatted = new Date(lessonDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
     await sendEmail({
+      log: { registrationId, kind: 'class_lesson', audience: 'client' },
       to: clientEmail,
       subject: `You're enrolled! Your ${className} is scheduled`,
       html: enrolledLessonEmail({
@@ -56,6 +57,7 @@ export async function POST(req) {
 
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
+      log: { registrationId, kind: 'admin_class_lesson', audience: 'admin' },
       to: adminEmail,
       subject: `💄 Lesson Scheduled: ${clientName} · ${dateFormatted} at ${lessonTime}`,
       html: adminLessonEmail({
