@@ -1002,6 +1002,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // it while working a card. Track when it leaves the viewport so a floating
   // twin can keep the schedule one tap away from anywhere on the page.
   const timeSectionRef = useRef(null);
+  // What the appointment looked like before the last time/date change, so a
+  // mis-tap is one button away from being put back. Lives as long as she's on
+  // this card: an undo that vanishes after two seconds is an undo you can't use.
+  const [undoTime, setUndoTime] = useState(null);
   const [apptOut, setApptOut] = useState(false);
   useEffect(() => {
     const el = timeSectionRef.current;
@@ -1018,6 +1022,16 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     );
     setShowSchedule(true);
   };
+  // The same button opens and closes it. Having to travel to a small ✕ in the
+  // far corner to undo one tap is the kind of thing you only notice when you
+  // do it forty times a day.
+  const toggleSchedule = () => (showSchedule ? setShowSchedule(false) : openSchedule());
+  useEffect(() => {
+    if (!showSchedule) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowSchedule(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSchedule]);
   // Tapping an appointment inside the My Schedule drawer opens that client's
   // card. We resolve the id back to the real stored booking so a ghosted draft
   // block (dashed "new time" / "consultation" preview) never navigates to a
@@ -1202,6 +1216,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     if (timeChanged) update.time = pendingWindow;
     if (dateChanged) update.date = pendingDate;
     if (Object.keys(update).length) onUpdateBooking(update);
+    const snapshot = changed
+      ? { time: booking.time || null, date: booking.date || null, changedTime: timeChanged, changedDate: dateChanged }
+      : null;
 
     // Wedding-day bridal: keep the inquiry's wedding date in step with the appt.
     if (dateChanged && isWeddingDayService && bridalInquiry?.id) {
@@ -1212,6 +1229,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
     if (!willEmail) {
       setShowTimePicker(false);
+      if (snapshot) setUndoTime({ ...snapshot, emailed: false });
       showToast(changed ? 'Appointment updated' : 'No changes made', '#888');
       if (changed && booking.status === 'confirmed' && booking.email) {
         // Quiet change on a confirmed booking — leave the reminder banner so the
@@ -1246,6 +1264,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setShowTimePicker(false);
       setShowReconfirmBanner(false);
       if (panelAttach) { setUpdateNoticeSent(true); setLastChange(null); }
+      if (snapshot) setUndoTime({ ...snapshot, emailed: true });
       showToast(panelAttach ? `Update sent, awaiting re-sign` : `Update emailed to ${firstName}`, '#22c55e');
     } catch (err) {
       alert(`The change was saved, but the email didn't send (${err?.message || 'unknown error'}). You can message ${firstName} from the card.`);
@@ -1254,6 +1273,45 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setPanelSending(false);
     }
   };
+
+  // Put the appointment back the way it was. If the client was already emailed
+  // the new time, undoing leaves them holding the wrong details, so the standing
+  // "tell them" banner comes back rather than the change silently reverting.
+  const undoTimeChange = () => {
+    if (!undoTime) return;
+    const back = {};
+    if (undoTime.changedTime) back.time = undoTime.time;
+    if (undoTime.changedDate) back.date = undoTime.date;
+    if (Object.keys(back).length) onUpdateBooking(back);
+
+    if (undoTime.changedDate && isWeddingDayService && bridalInquiry?.id && undoTime.date) {
+      api.entities.BridalInquiry.update(bridalInquiry.id, { wedding_date: undoTime.date })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['bridal-inquiry'] }))
+        .catch(err => console.error('wedding_date sync:', err));
+    }
+
+    if (undoTime.emailed && booking.email) {
+      setUpdateNoticeSent(false);
+      setLastChange({ items: [
+        ...(undoTime.changedDate ? [{ key: 'date', label: 'Date', to: fmtLong(undoTime.date) }] : []),
+        ...(undoTime.changedTime ? [{ key: 'time', label: 'Appointment time', to: undoTime.time || 'not set' }] : []),
+      ] });
+      setShowReconfirmBanner(true);
+    } else {
+      setShowReconfirmBanner(false);
+      setLastChange(null);
+    }
+    setUndoTime(null);
+    showToast('Change undone', '#888');
+  };
+
+  // What the appointment was before that change, in one short phrase.
+  const undoWasLabel = (() => {
+    if (!undoTime) return '';
+    const t = undoTime.changedTime ? (undoTime.time || 'no time set') : null;
+    const d = undoTime.changedDate ? (fmtShort(undoTime.date) || 'no date') : null;
+    return [d, t].filter(Boolean).join(', ');
+  })();
 
   // ── In-admin Contact composer ────────────────────────────────────────────
   // Roko writes the client a personal email straight from the card (sent as
@@ -1767,8 +1825,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     ? new Date(booking.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
 
+  // No transition on the margin below: the card used to animate its own width
+  // for 300ms while the drawer slid in, re-laying out this whole card every
+  // frame, and that was the choppiness. The width change lands in one go now
+  // and only the drawer animates, on the compositor.
   return (
-    <div className="max-w-[1100px] mx-auto transition-[margin] duration-300"
+    <div className="max-w-[1100px] mx-auto"
       style={{ marginRight: showSchedule && docked ? scheduleW + 20 : undefined }}>
       {/* ── Booksy-style status hero ── */}
       <div className="relative mb-6">
@@ -2049,7 +2111,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {/* Her day, one tap from the time she's setting. It stays in
                     this same spot in every state of the box (deciding, picking,
                     already set) so it never moves out from under her. */}
-                <button type="button" onClick={openSchedule} aria-label="My Schedule" title="See your day side by side"
+                <button type="button" onClick={toggleSchedule} aria-label="My Schedule" aria-expanded={showSchedule} title="See your day side by side"
                   className="inline-flex items-center gap-1.5 h-9 sm:h-[30px] px-3 sm:px-2.5 rounded-full text-[0.78rem] font-medium whitespace-nowrap transition-colors flex-shrink-0"
                   style={{ background: dm ? '#2e2e38' : '#F4EFF1', color: dm ? '#d8c3cc' : '#8A5F71', border: `1px solid ${dm ? '#3a3a48' : '#EADCE2'}` }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2072,6 +2134,27 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 )}
               </div>
             </div>
+
+            {/* Undo. Sits directly under the header so it's part of the box she
+                just changed, not a toast that's already gone by the time she
+                realises she picked the wrong hour. */}
+            {undoTime && !showTimePicker && (
+              <div className="flex items-center gap-2.5 px-4 py-2.5"
+                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}`, background: dm ? '#232329' : '#FAF7F8' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8f8a93' : '#A89098'} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
+                  <polyline points="9 14 4 9 9 4" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                </svg>
+                <p className="text-[0.72rem] leading-snug flex-1 min-w-0" style={{ color: dm ? '#a8a2ab' : '#8b7f85' }}>
+                  Was {undoWasLabel}
+                  {undoTime.emailed && <span> · {firstName} was emailed the new time</span>}
+                </p>
+                <button type="button" onClick={undoTimeChange}
+                  className="flex-shrink-0 h-7 px-3 rounded-full text-[0.74rem] font-semibold transition-colors active:scale-95"
+                  style={{ background: dm ? '#3a3a48' : '#fff', color: dm ? '#e4e4e7' : '#6B4055', border: `1px solid ${dm ? '#4a4a58' : '#e2cdd6'}` }}>
+                  Undo
+                </button>
+              </div>
+            )}
 
             {!showTimePicker ? (
               readyByMin != null && !booking.time ? (
@@ -2972,7 +3055,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       {/* Floating twin of the Appointment box's My Schedule. Fades in the moment
           that box scrolls off, so her day is always one tap away no matter how
           far down the card she is. Stays out of the way while the drawer is open. */}
-      <button type="button" onClick={openSchedule} title="See your day side by side"
+      <button type="button" onClick={toggleSchedule} title="See your day side by side"
         aria-hidden={!(apptOut && !showSchedule)} tabIndex={apptOut && !showSchedule ? 0 : -1}
         className="fixed bottom-5 right-5 z-[9994] inline-flex items-center gap-2 h-12 px-5 rounded-full text-[0.82rem] font-semibold text-white transition-all duration-200 active:scale-95"
         style={{
@@ -2991,11 +3074,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           proposing a new time. On wide screens it sits beside the card (no
           backdrop); on smaller screens it's a dimmed sheet. The proposed window
           shows as a pending (dashed) block so she can see exactly where it lands. */}
-      {showSchedule && !docked && (
+      {!docked && (
         // Dim only, never a backdrop blur: the filter forces the whole page
         // behind it through a re-raster and text goes soft on ordinary laptop
         // displays. The dim alone reads as "the sheet is on top" just as well.
-        <div className="fixed inset-0 z-[9995]" style={{ background: 'rgba(0,0,0,0.4)' }}
+        // Always mounted so it can fade with the panel instead of appearing
+        // fully black on frame one.
+        <div className="fixed inset-0 z-[9995]"
+          style={{
+            background: 'rgba(0,0,0,0.4)',
+            opacity: showSchedule ? 1 : 0,
+            pointerEvents: showSchedule ? 'auto' : 'none',
+            transition: 'opacity 0.24s ease',
+          }}
           onClick={() => setShowSchedule(false)} aria-hidden="true" />
       )}
       <aside
@@ -3003,11 +3094,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         className="fixed inset-y-0 right-0 z-[9996] flex flex-col"
         style={{
           width: `min(${scheduleW}px, 92vw)`,
-          transform: showSchedule ? 'translateX(0)' : 'translateX(105%)',
-          transition: 'transform 0.32s cubic-bezier(0.4,0,0.2,1)',
+          transform: showSchedule ? 'translateX(0)' : 'translateX(calc(100% + 64px))',
+          // Quick and decisive, and on its own layer so the slide never asks the
+          // page behind it to repaint.
+          transition: 'transform 0.24s cubic-bezier(0.22,0.61,0.36,1)',
+          willChange: 'transform',
           background: dm ? '#141418' : '#fff',
           borderLeft: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}`,
-          boxShadow: showSchedule ? '-16px 0 40px rgba(30,20,25,0.16)' : 'none',
+          boxShadow: '-16px 0 40px rgba(30,20,25,0.16)',
           pointerEvents: showSchedule ? 'auto' : 'none',
         }}
       >

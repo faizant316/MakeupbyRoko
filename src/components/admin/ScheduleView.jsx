@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { EVENT_COLORS, isBridalService } from './statusColors';
 import { classesOfReg } from '@/lib/classCatalog';
+import CalendarHeader from './CalendarHeader';
 
 // Booksy-style schedule. Day is a real time grid, Week is a 7-column grid you
 // read as a shape (a busy day is visibly dense, a free day is visibly empty, no
@@ -22,7 +23,6 @@ import { classesOfReg } from '@/lib/classCatalog';
 const pad = (n) => String(n).padStart(2, '0');
 const keyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Short enough to keep the legend on one line at drawer width.
 const SHORT_LABELS = { bridal: 'Bridal', appt: 'Appt', class: 'Class', consult: 'Consult' };
@@ -77,8 +77,6 @@ export default function ScheduleView({
 }) {
   const [nowMin, setNowMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
   const [view, setView] = useState('day');
-  const [showJump, setShowJump] = useState(false);
-  const [jumpYear, setJumpYear] = useState(() => new Date(dateKey + 'T00:00:00').getFullYear());
 
   // Keep the "now" line moving while the schedule is open.
   useEffect(() => {
@@ -204,10 +202,9 @@ export default function ScheduleView({
     d.setDate(d.getDate() + dir * (activeView === 'week' ? 7 : 1));
     onChangeDate(keyOf(d));
   };
-  const jumpTo = (monthIdx) => {
-    const day = Math.min(date.getDate(), new Date(jumpYear, monthIdx + 1, 0).getDate());
-    onChangeDate(keyOf(new Date(jumpYear, monthIdx, day)));
-    setShowJump(false);
+  const jumpTo = (monthIdx, year) => {
+    const day = Math.min(date.getDate(), new Date(year, monthIdx + 1, 0).getDate());
+    onChangeDate(keyOf(new Date(year, monthIdx, day)));
   };
 
   // ── Palette ──
@@ -217,30 +214,21 @@ export default function ScheduleView({
   const ink = dm ? '#ECEDF1' : '#1a1a1f';
   const accent = '#C4849A';
   const surface = dm ? '#1a1a20' : '#fff';
-  const chipBg = dm ? '#26262e' : '#f6f2f4';
 
-  // The header names whatever the arrows move: the day in Day view, the week's
-  // span (or month) in Week, the month in Month.
+  // The header names whatever the arrows move — the day, the week's span, the
+  // month — and the year always rides underneath it as the small line, so the
+  // big line never has to carry four numbers.
   const stripFirst = weekDays[0], stripLast = weekDays[6];
-  const headerLabel = activeView === 'day'
-    ? date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-    : activeView === 'week' && stripFirst.getMonth() !== stripLast.getMonth()
-      ? `${stripFirst.toLocaleDateString('en-US', { month: 'short' })} – ${stripLast.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
-      : date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const headerTitle = activeView === 'day'
+    ? date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : activeView === 'week'
+      ? `${stripFirst.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${stripLast.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      : date.toLocaleDateString('en-US', { month: 'long' });
+  const headerYear = activeView === 'week' && stripFirst.getFullYear() !== stripLast.getFullYear()
+    ? `${stripFirst.getFullYear()} – ${stripLast.getFullYear()}`
+    : String(date.getFullYear());
 
   // ── Shared bits ──
-
-  const navBtn = (dir, label) => (
-    <button onClick={() => step(dir)} aria-label={label}
-      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
-      style={{ color: muted, background: 'transparent' }}
-      onMouseEnter={e => { e.currentTarget.style.background = chipBg; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-        {dir < 0 ? <polyline points="15 18 9 12 15 6" /> : <polyline points="9 18 15 12 9 6" />}
-      </svg>
-    </button>
-  );
 
   // Solid when confirmed, hollow + dashed when the time isn't locked in yet.
   const blockStyle = (ev) => {
@@ -552,82 +540,18 @@ export default function ScheduleView({
 
   return (
     <div className="relative">
-      {/* ── Header: arrows + tappable date, one nav for every view. Anything
-             the parent wants alongside it (Block day) rides in headerRight so
-             there's a single row of controls, not two stacked ones. ── */}
-      <div className="flex flex-wrap items-center gap-x-1 gap-y-2 mb-3">
-        {/* The date and its arrows hold together as one unit; on a phone the
-            buttons wrap to their own line rather than crushing the date. */}
-        <div className="flex items-center gap-1 min-w-0" style={{ flex: '1 1 200px' }}>
-          {navBtn(-1, `Previous ${stepUnit}`)}
-          <button onClick={() => { setJumpYear(date.getFullYear()); setShowJump(v => !v); }}
-            className="flex items-center gap-1.5 min-w-0 px-1 transition-opacity hover:opacity-70"
-            style={{ WebkitTapHighlightColor: 'transparent' }}>
-            <span className={`${activeView === 'day' ? 'text-[1.02rem] sm:text-[1.15rem]' : 'text-[1.25rem]'} font-medium leading-tight truncate`}
-              style={{ color: ink, letterSpacing: '-0.01em' }}>
-              {headerLabel}
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0"
-              style={{ transition: 'transform 200ms ease', transform: showJump ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-          {navBtn(1, `Next ${stepUnit}`)}
-        </div>
-        {(headerRight || !isToday) && (
-          <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
-            {headerRight}
-            {!isToday && (
-              <button onClick={() => onChangeDate(todayKey)}
-                className="flex-shrink-0 h-7 px-2.5 rounded-md text-[0.8rem] font-medium transition-colors"
-                style={{ background: chipBg, color: dm ? '#d4d4d8' : '#5c5c66' }}>
-                Today
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Month + year jumper ── */}
-      {showJump && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowJump(false)} aria-hidden="true" />
-          <div className="absolute left-0 right-0 z-50 rounded-xl p-3"
-            style={{
-              top: '2.4rem',
-              background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#eadfe4'}`,
-              boxShadow: dm ? '0 16px 40px rgba(0,0,0,0.5)' : '0 16px 40px rgba(60,30,45,0.14)',
-            }}>
-            <div className="flex items-center justify-between mb-2">
-              <button onClick={() => setJumpYear(y => y - 1)} aria-label="Previous year"
-                className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: muted }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <p className="text-[0.94rem] font-medium tabular-nums" style={{ color: ink }}>{jumpYear}</p>
-              <button onClick={() => setJumpYear(y => y + 1)} aria-label="Next year"
-                className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: muted }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
-            </div>
-            <div className="grid grid-cols-4 gap-1">
-              {MONTHS.map((m, i) => {
-                const isCur = jumpYear === date.getFullYear() && i === date.getMonth();
-                const isNow = jumpYear === new Date().getFullYear() && i === new Date().getMonth();
-                return (
-                  <button key={m} onClick={() => jumpTo(i)}
-                    className="py-1.5 rounded-md text-[0.8rem] transition-colors"
-                    style={isCur
-                      ? { background: dm ? '#ECEDF1' : '#1a1a1f', color: dm ? '#111' : '#fff', fontWeight: 500 }
-                      : { color: isNow ? accent : (dm ? '#d4d4d8' : '#4a4a52'), fontWeight: isNow ? 500 : 400 }}>
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
+      <CalendarHeader
+        title={headerTitle}
+        subtitle={headerYear}
+        onStep={step}
+        stepUnit={stepUnit}
+        jumpDate={date}
+        onJump={jumpTo}
+        right={headerRight}
+        onToday={() => onChangeDate(todayKey)}
+        isToday={isToday}
+        dm={dm}
+      />
 
       {/* ── Day / Week / Month switcher (drawer only) ── */}
       {withViews && (

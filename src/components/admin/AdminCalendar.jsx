@@ -3,7 +3,8 @@ import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DateBlockPopup from './DateBlockPopup';
 import ScheduleView from './ScheduleView';
-import MonthCalendar, { CLASS_PINK } from './MonthCalendar';
+import MonthCalendar, { CLASS_PINK, OFF_RED } from './MonthCalendar';
+import CalendarHeader from './CalendarHeader';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { STATUS_COLORS, STATUS_COLORS_DM, EVENT_COLORS, CONSULT_INK } from './statusColors';
 
@@ -16,6 +17,12 @@ function getWeekStart(date) {
   return d;
 }
 
+// A day in the Week strip. This used to be a stack of tiny 10px labels on a
+// block of flat colour (indigo today, amber filling up, red full) with a "0/4"
+// jammed in beside three dots, which at 50px wide read as noise rather than as
+// a week. Now it's a card like every other surface in the admin: one number you
+// can read at a glance, the day's kinds as dots under it, and the capacity as
+// plain small text that only takes on colour when the day is actually tight.
 function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
@@ -23,82 +30,82 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   const isToday = key === todayKey;
   const isSel = key === selectedDate;
   const isBlocked = blockedSet.has(key);
-  const statuses = dateMap[key] || [];
-  const activeStatuses = statuses.filter(s => s !== 'cancelled');
-  const hasBookings = activeStatuses.length > 0;
+  const activeStatuses = (dateMap[key] || []).filter(s => s !== 'cancelled');
   const hasConsultation = (consultationDateMap[key] || []).length > 0;
   const hasClassReg = (classRegDateMap[key] || []).length > 0;
-  const confirmedStatuses = confirmedDateMap[key] || [];
-  const count = confirmedStatuses.length;
+  const count = (confirmedDateMap[key] || []).length;
   const isFull = count >= effectiveCap;
   const isFillingUp = count > 0 && !isFull;
-  const dayName = DAYS[d.getDay()];
 
-  const cellStyle = isBlocked
-    ? { background: dm ? 'rgba(153,27,27,0.18)' : undefined, border: `1px solid ${dm ? 'rgba(153,27,27,0.4)' : undefined}` }
-    : isSel ? {}
-    : isToday
-    ? { background: dm ? 'rgba(99,102,241,0.15)' : undefined, border: dm ? '2px solid rgba(99,102,241,0.45)' : undefined }
-    : isFull
-    ? { background: dm ? 'rgba(153,27,27,0.18)' : undefined, border: `1px solid ${dm ? 'rgba(153,27,27,0.35)' : undefined}` }
-    : isFillingUp
-    ? { background: dm ? 'rgba(180,120,20,0.22)' : undefined, border: `1px solid ${dm ? 'rgba(200,145,30,0.55)' : undefined}` }
-    : hasBookings
-    ? { background: dm ? 'rgba(100,116,139,0.14)' : undefined, border: `1px solid ${dm ? 'rgba(100,116,139,0.32)' : undefined}` }
-    : {};
+  const ink = dm ? '#ECEDF1' : '#1a1a1f';
+  const muted = dm ? '#8b8b95' : '#9c9ca6';
+  const accent = '#C4849A';
+  const line = dm ? '#2e2e38' : '#EDE7EA';
+  const selBg = dm ? '#ECEDF1' : '#1a1a1f';
+
+  const bg = isSel ? selBg
+    : isBlocked ? (dm ? 'rgba(239,68,68,0.10)' : '#FEF3F3')
+    : isFull ? (dm ? 'rgba(239,68,68,0.07)' : '#FFF8F8')
+    : (dm ? '#1e1e24' : '#fff');
+  const border = isSel ? 'transparent'
+    : isBlocked || isFull ? (dm ? 'rgba(239,68,68,0.34)' : '#F6DCDC')
+    : isToday ? accent
+    : line;
+  const dayColor = isSel ? (dm ? '#6b6b75' : 'rgba(255,255,255,0.62)')
+    : isBlocked ? OFF_RED : isToday ? accent : muted;
+  const numColor = isSel ? (dm ? '#111' : '#fff') : isBlocked ? OFF_RED : ink;
+  const countColor = isSel ? (dm ? '#6b6b75' : 'rgba(255,255,255,0.62)')
+    : isFull ? OFF_RED : isFillingUp ? '#B8862F' : muted;
+
+  const dots = [
+    ...[...new Set(activeStatuses)].slice(0, 3).map(st => (dm ? STATUS_COLORS_DM : STATUS_COLORS)[st] || '#999'),
+    ...(hasConsultation ? [CONSULT_INK[dm ? 'dark' : 'light']] : []),
+    ...(hasClassReg ? [CLASS_PINK] : []),
+  ].slice(0, 4);
 
   return (
     <button
       onClick={() => { if (!isBlocked) onSingleClick(key); }}
       onDoubleClick={(e) => { e.preventDefault(); if (isBlocked) onUnblock(blockedMap[key]?.id); else onDoubleClick(key); }}
-      title={isBlocked ? 'Double-click to unblock' : isFull ? `Fully booked (${count})` : isFillingUp ? `${effectiveCap - count} spot(s) left` : 'Click to select · Double-click to block'}
-      className={`relative rounded-xl py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-1.5 transition-all select-none w-full ${
-        isBlocked
-          ? dm ? '' : 'bg-red-50 border border-red-200 hover:bg-red-100 text-red-400'
-          : isSel
-          ? 'bg-[#111] text-white shadow-md'
-          : isToday
-          ? dm ? '' : 'bg-indigo-50 border-2 border-indigo-300 text-indigo-700'
-          : isFull
-          ? dm ? '' : 'bg-red-50 border border-red-200 text-[#111] hover:bg-red-100'
-          : isFillingUp
-          ? dm ? '' : 'bg-amber-50 border border-amber-200 text-[#111] hover:bg-amber-100'
-          : hasBookings
-          ? dm ? '' : 'bg-[#F3F3F6] border border-[#E6E6EA] text-[#8a8a8a] hover:bg-[#EDEDF0]'
-          : dm ? 'text-[#8e8e99]' : 'text-[#777] hover:bg-[#F0F0F5] hover:text-[#111]'
-      }`}
-      style={dm ? cellStyle : {}}
+      title={isBlocked ? 'Day off · double-click to reopen' : isFull ? `Fully booked (${count})` : isFillingUp ? `${effectiveCap - count} spot(s) left` : 'Click to select · double-click to close the day'}
+      className="relative rounded-xl sm:rounded-2xl py-2.5 sm:py-4 px-0.5 sm:px-1 flex flex-col items-center gap-1 sm:gap-1.5 w-full select-none transition-all active:scale-[0.97]"
+      style={{ background: bg, border: `1px solid ${border}`, boxShadow: isToday && !isSel ? `0 0 0 1px ${accent}` : 'none' }}
+      onMouseEnter={e => { if (!isSel) e.currentTarget.style.borderColor = accent; }}
+      onMouseLeave={e => { if (!isSel) e.currentTarget.style.borderColor = border; }}
     >
-      {/* Custom-limit marker — a small rose dot in the corner (day has its own cap) */}
+      {/* Custom-limit marker — this day has its own cap, not the default */}
       {isCustom && !isBlocked && (
         <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-          style={{ background: isSel ? 'rgba(255,255,255,0.9)' : '#A0607A' }} title="Custom limit" />
+          style={{ background: isSel ? (dm ? '#8a8a94' : 'rgba(255,255,255,0.85)') : '#A0607A' }} title="Custom limit" />
       )}
-      <span className={`text-[0.6rem] font-semibold tracking-[0.08em] ${isSel ? 'text-white/70' : isToday ? (dm ? 'text-indigo-400' : 'text-indigo-500') : 'text-[#aaa]'}`}>{dayName}</span>
-      <span className={`text-[1.1rem] font-semibold ${isFillingUp && dm ? 'text-amber-100' : isFull && dm ? 'text-red-200' : hasBookings && dm ? 'text-slate-400' : dm ? 'text-zinc-300' : ''}`}>{d.getDate()}</span>
+
+      <span className="text-[0.55rem] sm:text-[0.58rem] font-semibold tracking-[0.1em] sm:tracking-[0.12em] uppercase" style={{ color: dayColor }}>
+        {DAYS[d.getDay()]}
+      </span>
+      <span className="text-[1.15rem] sm:text-[1.45rem] leading-none tabular-nums" style={{ color: numColor, fontWeight: isToday || isSel ? 600 : 400 }}>
+        {d.getDate()}
+      </span>
+
+      {/* What's on the day, one dot per kind. Height is reserved either way so
+          empty days don't sit a few pixels shorter than busy ones. */}
+      <span className="flex items-center gap-[3px] h-[5px]">
+        {dots.map((c, i) => (
+          <span key={i} className="w-[5px] h-[5px] rounded-full"
+            style={{ background: isSel ? (dm ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.85)') : c }} />
+        ))}
+      </span>
+
       {isBlocked ? (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
-          className={`w-2 h-2 ${dm ? 'text-red-400/70' : 'text-red-400'}`}>
-          <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
-        </svg>
-      ) : isFull ? (
-        <span className={`text-[0.5rem] font-bold ${isSel ? 'text-white/70' : dm ? 'text-red-400/70' : 'text-red-400'}`}>FULL</span>
+        <span className="inline-flex items-center gap-1 text-[0.6rem] font-semibold tracking-[0.08em] uppercase" style={{ color: OFF_RED }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="w-2 h-2">
+            <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+          </svg>
+          Off
+        </span>
       ) : (
-        <div className="flex gap-[3px] items-center">
-          {[...new Set(activeStatuses)].slice(0, 3).map((s, i) => (
-            <span key={i} className="w-[5px] h-[5px] rounded-full"
-              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : (dm ? STATUS_COLORS_DM[s] : STATUS_COLORS[s]) || '#999' }} />
-          ))}
-          {hasConsultation && (
-            <span className="w-[5px] h-[5px] rounded-full" title="Consultation"
-              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : EVENT_COLORS.consult }} />
-          )}
-          {hasClassReg && (
-            <span className="w-[5px] h-[5px] rounded-full" title="Makeup Class"
-              style={{ background: isSel ? 'rgba(255,255,255,0.8)' : '#D4A0B0' }} />
-          )}
-          <span className={`text-[0.62rem] font-semibold ${isSel ? 'text-white/70' : dm ? 'text-[#7a7a84]' : 'text-[#999]'}`}>{count}/{effectiveCap}</span>
-        </div>
+        <span className="text-[0.62rem] tabular-nums" style={{ color: countColor, fontWeight: isFull || isFillingUp ? 600 : 400 }}>
+          {count}/{effectiveCap}
+        </span>
       )}
     </button>
   );
@@ -208,26 +215,21 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   const renderMonth = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
 
     return (
       <>
-        <div className="flex items-center justify-between gap-2 mb-5 flex-wrap">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button onClick={() => setCurrentMonth(new Date(year, month - 1))}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0"
-              style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
-            <span className="text-[0.875rem] sm:text-[0.95rem] font-semibold tracking-tight text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{monthName}</span>
-            <button onClick={() => setCurrentMonth(new Date(year, month + 1))}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0"
-              style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>›</button>
-          </div>
-          <button onClick={goToToday}
-            className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#7a7a84] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0"
-            style={{ background: dm ? 'rgba(113, 113, 122,0.14)' : '#EFEFF6' }}>
-            Today
-          </button>
-        </div>
+        <CalendarHeader
+          title={currentMonth.toLocaleString('default', { month: 'long' })}
+          subtitle={String(year)}
+          onStep={(n) => setCurrentMonth(new Date(year, month + n, 1))}
+          stepUnit="month"
+          jumpDate={currentMonth}
+          onJump={(m, y) => setCurrentMonth(new Date(y, m, 1))}
+          onToday={goToToday}
+          isToday={year === today.getFullYear() && month === today.getMonth()}
+          dm={dm}
+          className="mb-4"
+        />
 
         {/* Same grid as the Calendar tab, just denser. One calendar look
             everywhere, and each day names what's on it instead of leaving
@@ -254,22 +256,30 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   const renderWeek = () => {
     const weekStart = getWeekStart(currentMonth);
     const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-    const label = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    const prevWeek = () => { const d = new Date(currentMonth); d.setDate(d.getDate() - 7); setCurrentMonth(d); };
-    const nextWeek = () => { const d = new Date(currentMonth); d.setDate(d.getDate() + 7); setCurrentMonth(d); };
+    const stepWeek = (n) => { const d = new Date(currentMonth); d.setDate(d.getDate() + n * 7); setCurrentMonth(d); };
     const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(d.getDate() + i); return d; });
+    const thisWeek = days.some(d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` === todayKey);
 
     return (
       <>
-        <div className="flex items-center gap-2 mb-5 flex-wrap">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button onClick={prevWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>‹</button>
-            <span className="text-[0.8rem] font-semibold text-center flex-1 truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
-            <button onClick={nextWeek} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-base font-medium flex-shrink-0" style={{ background: dm ? '#2a2a31' : '#F2F2F7', color: dm ? '#a1a1aa' : '#999' }}>›</button>
-          </div>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#7a7a84] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
-        </div>
-        <div className="grid grid-cols-7 gap-1.5">
+        <CalendarHeader
+          title={`${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          subtitle={weekStart.getFullYear() === weekEnd.getFullYear()
+            ? String(weekStart.getFullYear())
+            : `${weekStart.getFullYear()} – ${weekEnd.getFullYear()}`}
+          onStep={stepWeek}
+          stepUnit="week"
+          jumpDate={currentMonth}
+          onJump={(m, y) => setCurrentMonth(new Date(y, m, Math.min(currentMonth.getDate(), new Date(y, m + 1, 0).getDate())))}
+          onToday={goToToday}
+          isToday={thisWeek}
+          dm={dm}
+          className="mb-4"
+        />
+        {/* minmax(0,1fr) so seven cells always fit the card: with the default
+            auto minimum, "SUN" plus its tracking sets a floor and the last day
+            hangs off the right edge on a phone. */}
+        <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
           {days.map(d => (
             <WeekDayCell key={`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`} d={d} {...sharedCellProps} />
           ))}
@@ -367,26 +377,24 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
         {/* Legend (month/week only — the day schedule carries its own) */}
         {view !== 'day' && (
         <div className="flex items-center gap-x-4 gap-y-2 mt-6 pt-4 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
+          {/* Every swatch here is the real thing, shrunk: today is the rose
+              ring both grids draw, a full day is the soft red card. The old keys
+              still described the indigo/amber blocks the week view used to
+              paint, which stopped being true when those cells were redrawn. */}
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-            <span className="w-3 h-3 rounded-md bg-indigo-50 border-2 border-indigo-300 inline-block" /> Today
+            <span className="w-3 h-3 rounded-md inline-block" style={{ border: '1px solid #C4849A', boxShadow: '0 0 0 1px #C4849A' }} /> Today
           </span>
-          {/* Week view still paints whole cells amber/red; the month grid says
-              it in words on each day instead, so those keys would be noise. */}
           {view === 'week' && (
-            <>
-              <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-                <span className="w-3 h-3 rounded-md bg-amber-50 border border-amber-200 inline-block" /> Filling Up
-              </span>
-              <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
-                <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-block" /> Fully booked
-              </span>
-            </>
+            <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
+              <span className="w-3 h-3 rounded-md inline-block" style={{ background: dm ? 'rgba(239,68,68,0.07)' : '#FFF8F8', border: `1px solid ${dm ? 'rgba(239,68,68,0.34)' : '#F6DCDC'}` }} /> Fully booked
+            </span>
           )}
           {/* Days off share the red cell but carry an ✕, so they get their own
               key rather than being lumped in with "fully booked". */}
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
-            <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200 inline-flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="3.5" strokeLinecap="round" className="w-1.5 h-1.5">
+            <span className="w-3 h-3 rounded-md inline-flex items-center justify-center"
+              style={{ background: dm ? 'rgba(239,68,68,0.10)' : '#FEF3F3', border: `1px solid ${dm ? 'rgba(239,68,68,0.34)' : '#F6DCDC'}` }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={OFF_RED} strokeWidth="3.5" strokeLinecap="round" className="w-1.5 h-1.5">
                 <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
               </svg>
             </span> Day off
