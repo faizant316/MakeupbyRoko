@@ -73,7 +73,7 @@ function layoutEvents(events) {
 
 export default function ScheduleView({
   bookings = [], classRegs = [], dateKey, onChangeDate,
-  onSelectBooking, onSelectClassReg, dm, withViews = false,
+  onSelectBooking, onSelectClassReg, dm, withViews = false, headerRight = null,
 }) {
   const [nowMin, setNowMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
   const [view, setView] = useState('day');
@@ -187,6 +187,11 @@ export default function ScheduleView({
   const activeView = withViews ? view : 'day';
 
   // ── One set of arrows in the header, stepping by whatever the view shows ──
+  // Day steps one day at a time (Booksy behavior). The week strip is for
+  // hopping around inside the visible week; the arrows are how you walk off
+  // the end of it, so making them jump a whole week left no way to reach
+  // tomorrow except by tapping its number.
+  const stepUnit = activeView === 'month' ? 'month' : activeView === 'week' ? 'week' : 'day';
   const step = (dir) => {
     const d = new Date(date);
     if (activeView === 'month') {
@@ -196,7 +201,7 @@ export default function ScheduleView({
       onChangeDate(keyOf(target));
       return;
     }
-    d.setDate(d.getDate() + dir * 7);
+    d.setDate(d.getDate() + dir * (activeView === 'week' ? 7 : 1));
     onChangeDate(keyOf(d));
   };
   const jumpTo = (monthIdx) => {
@@ -214,10 +219,14 @@ export default function ScheduleView({
   const surface = dm ? '#1a1a20' : '#fff';
   const chipBg = dm ? '#26262e' : '#f6f2f4';
 
+  // The header names whatever the arrows move: the day in Day view, the week's
+  // span (or month) in Week, the month in Month.
   const stripFirst = weekDays[0], stripLast = weekDays[6];
-  const monthLabel = activeView !== 'day' || stripFirst.getMonth() === stripLast.getMonth()
-    ? date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : `${stripFirst.toLocaleDateString('en-US', { month: 'short' })} – ${stripLast.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+  const headerLabel = activeView === 'day'
+    ? date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    : activeView === 'week' && stripFirst.getMonth() !== stripLast.getMonth()
+      ? `${stripFirst.toLocaleDateString('en-US', { month: 'short' })} – ${stripLast.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+      : date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   // ── Shared bits ──
 
@@ -543,28 +552,39 @@ export default function ScheduleView({
 
   return (
     <div className="relative">
-      {/* ── Header: arrows + tappable month, one nav for every view ── */}
-      <div className="flex items-center gap-1 mb-3">
-        {navBtn(-1, 'Previous')}
-        <button onClick={() => { setJumpYear(date.getFullYear()); setShowJump(v => !v); }}
-          className="flex items-center gap-1.5 min-w-0 px-1 transition-opacity hover:opacity-70"
-          style={{ WebkitTapHighlightColor: 'transparent' }}>
-          <span className="text-[1.25rem] font-medium leading-tight truncate" style={{ color: ink, letterSpacing: '-0.01em' }}>
-            {monthLabel}
-          </span>
-          <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0"
-            style={{ transition: 'transform 200ms ease', transform: showJump ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-        {navBtn(1, 'Next')}
-        <span className="flex-1" />
-        {!isToday && (
-          <button onClick={() => onChangeDate(todayKey)}
-            className="flex-shrink-0 px-2.5 py-1 rounded-md text-[0.8rem] font-medium transition-colors"
-            style={{ background: chipBg, color: dm ? '#d4d4d8' : '#5c5c66' }}>
-            Today
+      {/* ── Header: arrows + tappable date, one nav for every view. Anything
+             the parent wants alongside it (Block day) rides in headerRight so
+             there's a single row of controls, not two stacked ones. ── */}
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-2 mb-3">
+        {/* The date and its arrows hold together as one unit; on a phone the
+            buttons wrap to their own line rather than crushing the date. */}
+        <div className="flex items-center gap-1 min-w-0" style={{ flex: '1 1 200px' }}>
+          {navBtn(-1, `Previous ${stepUnit}`)}
+          <button onClick={() => { setJumpYear(date.getFullYear()); setShowJump(v => !v); }}
+            className="flex items-center gap-1.5 min-w-0 px-1 transition-opacity hover:opacity-70"
+            style={{ WebkitTapHighlightColor: 'transparent' }}>
+            <span className={`${activeView === 'day' ? 'text-[1.02rem] sm:text-[1.15rem]' : 'text-[1.25rem]'} font-medium leading-tight truncate`}
+              style={{ color: ink, letterSpacing: '-0.01em' }}>
+              {headerLabel}
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0"
+              style={{ transition: 'transform 200ms ease', transform: showJump ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </button>
+          {navBtn(1, `Next ${stepUnit}`)}
+        </div>
+        {(headerRight || !isToday) && (
+          <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+            {headerRight}
+            {!isToday && (
+              <button onClick={() => onChangeDate(todayKey)}
+                className="flex-shrink-0 h-7 px-2.5 rounded-md text-[0.8rem] font-medium transition-colors"
+                style={{ background: chipBg, color: dm ? '#d4d4d8' : '#5c5c66' }}>
+                Today
+              </button>
+            )}
+          </div>
         )}
       </div>
 
