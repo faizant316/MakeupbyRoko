@@ -37,7 +37,7 @@ export function relativeDate(dateStr) {
 // what tomorrow holds, which is the thing you actually want to know.
 export const GROUP_META = [
   { key: 'pastdue', label: 'Past Due', accent: '#E0795B', order: -10 },
-  { key: 'month', label: 'Later This Month', accent: null, order: 50 },
+  { key: 'month', label: 'This Month', accent: null, order: 50 },
   { key: 'later', label: 'Later', accent: null, order: 60 },
   { key: 'unscheduled', label: 'Unscheduled', accent: null, order: 70 },
 ];

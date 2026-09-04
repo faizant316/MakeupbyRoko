@@ -1,10 +1,13 @@
 import { Fragment, useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api/apiClient';
 import BookingRow from './BookingRow';
 import { Archive } from './Glyphs';
 import StatusBadge from './StatusBadge';
 import NewBookingsRail from './NewBookingsRail';
 import Collapse from './Collapse';
 import { groupByTime, timeToMinutes, scheduledDate } from './timeline';
+import { todayItems, localDateKey } from './todayItems';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -332,6 +335,40 @@ export default function BookingsList({
   // Bucket by how soon each appointment is, so the list reads as a timeline
   // instead of one endless run. "Later" folds away by default.
   const timeGroups = groupByTime(visibleActive, ed);
+
+  // Today is the only group that isn't just appointments: the consultations and
+  // the class lessons join it, in time order, because they're the same day's
+  // work. The Today card under the calendar used to hold these; it was the only
+  // place with the Zoom link, which meant the day lived in two columns at once.
+  const todayKey = localDateKey();
+  const todayExtras = todayItems(allBookings, classRegs, todayKey);
+  const { data: blockedToday } = useQuery({
+    queryKey: ['blocked-dates'],
+    queryFn: () => api.entities.BlockedDate.list(),
+    select: (rows) => (rows || []).find(b => b.date === todayKey) || null,
+  });
+
+  // One row list per group. Today is the special one: its appointments, its
+  // consultations and its classes interleaved by time.
+  //
+  // The extras only ride along on an unfiltered list. Searching "Diana" or
+  // filtering to Confirmed is a question about appointments, and answering it
+  // with today's Zoom class attached would be answering a question nobody
+  // asked. Same reason the always-on empty Today only appears unfiltered.
+  const plainList = !search.trim() && statusFilter === 'all' && typeFilter === 'both' && !effectiveMonth;
+  const withToday = (() => {
+    const rest = timeGroups
+      .filter(g => g.key !== 'today')
+      .map(g => ({ ...g, rows: g.items.map(b => ({ b })) }));
+    const appts = (timeGroups.find(g => g.key === 'today')?.items || [])
+      .map(b => ({ b, sort: timeToMinutes(b.time) }));
+    const extras = plainList ? todayExtras.map(a => ({ agenda: a, sort: a.sort })) : [];
+    const rows = [...appts, ...extras].sort((x, y) => x.sort - y.sort);
+    const today = (rows.length || plainList)
+      ? [{ key: 'today', label: 'Today', accent: '#A0607A', day: true, order: 0, rows }]
+      : [];
+    return [...today, ...rest].sort((a, b) => a.order - b.order);
+  })();
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -1121,12 +1158,14 @@ export default function BookingsList({
             </div>
           ) : (
             <div className="flex flex-col gap-6">
+              {/* Today always renders, even empty: a day with nothing on it and
+                  a day that failed to load look identical otherwise. */}
               {/* Today is deliberately not here. The Today card up beside the
                   calendar owns it, and it's the only place that shows today's
                   consultations and classes alongside the appointments, with the
                   Zoom link to join them. This list is the run of days after it:
                   Tomorrow, then each named day. */}
-              {timeGroups.filter(g => g.key !== 'today').map(group => {
+              {withToday.map(group => {
                 const open = !collapsedGroups[group.key];
                 return (
                   <div key={group.key}>
@@ -1146,8 +1185,15 @@ export default function BookingsList({
                       </h3>
                       <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
                         style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
-                        {group.items.length}
+                        {group.rows.length}
                       </span>
+                      {group.key === 'today' && blockedToday && (
+                        <span className="inline-flex items-center gap-1 text-[0.55rem] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1', color: dm ? '#fca5a5' : '#C0392B' }}
+                          title={blockedToday.reason || 'Closed to new bookings'}>
+                          Day off
+                        </span>
+                      )}
                       <span className="flex-1" />
                       <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
                         className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>
@@ -1156,11 +1202,32 @@ export default function BookingsList({
                     </button>
                     <Collapse open={open}>
                       <div className="flex flex-col gap-2 pb-1">
-                        {group.items.map(b => (
-                          <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} hideDate={!!group.day}
-                            onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
-                            selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} />
-                        ))}
+                        {group.rows.length === 0 && (
+                          <p className="text-[0.78rem] px-1 pb-1" style={{ color: dm ? '#7a7a84' : '#a8a8b2' }}>
+                            {blockedToday
+                              ? `You're off today${blockedToday.reason ? ` · ${blockedToday.reason}` : ''}. Clients can't book this day.`
+                              : "Nothing scheduled today. You're all clear."}
+                          </p>
+                        )}
+                        {group.rows.map(row => (row.agenda ? (
+                          <BookingRow
+                            key={row.agenda.id}
+                            booking={row.agenda.booking}
+                            agendaKind={row.agenda.kind}
+                            agendaTime={row.agenda.time}
+                            agendaLabel={row.agenda.label}
+                            join={row.agenda.join}
+                            hideDate
+                            onClick={() => (row.agenda.kind === 'class'
+                              ? onSelectClassReg?.(row.agenda.raw)
+                              : onSelect(row.agenda.raw))}
+                            darkMode={dm}
+                          />
+                        ) : (
+                          <BookingRow key={row.b.id} booking={row.b} bridal={isBridalBooking(row.b)} hideDate={!!group.day}
+                            onClick={() => (selectMode ? toggleSelect(row.b.id) : onSelect(row.b))}
+                            selectable={selectMode} selected={selectedIds.has(row.b.id)} darkMode={dm} />
+                        )))}
                       </div>
                     </Collapse>
                   </div>
