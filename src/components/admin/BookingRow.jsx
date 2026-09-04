@@ -1,6 +1,5 @@
 import StatusBadge from './StatusBadge';
 import { relativeDate } from './timeline';
-import { phoneHref } from '@/lib/phone';
 import { depositState, depositTone } from './depositState';
 import { openZoomRoom } from '@/lib/zoomHost';
 
@@ -29,6 +28,11 @@ export default function BookingRow({
   const agenda = agendaKind ? AGENDA_META[agendaKind] : null;
   const agendaTone = agenda ? (dm ? agenda.dark : agenda.light) : null;
   const canJoin = !!(join && (join.url || join.meetingId));
+  // A row you're about to join doesn't need a chip telling you it's confirmed —
+  // of course it is, there's a Join on it. The badge earns its place only while
+  // something is still unresolved, which is exactly when you'd want to notice.
+  const unresolved = ['pending', 'cancelled', 'new', 'contacted', 'declined'].includes(booking.status);
+  const showStatus = !canJoin || unresolved;
   const initial = (booking.name || '?').trim().charAt(0).toUpperCase() || '?';
 
   // Deposit standing, spelled out on the row so scanning the list is enough.
@@ -56,9 +60,6 @@ export default function BookingRow({
     ? `${locationCity} · ${locationStreet}`
     : locationCity || locationStreet || null;
   const locationColor = dm ? '#8fb3d9' : '#6a7f99';
-
-  const iconBtn = `flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105`;
-  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
 
   // Bridal rows carry a rose wash so the list sorts itself at a glance: in a
   // month that is almost entirely weddings, the one Makeup trial should be the
@@ -241,43 +242,9 @@ export default function BookingRow({
             Join
           </button>
         )}
-        <StatusBadge status={booking.status} />
+        {showStatus && <StatusBadge status={booking.status} />}
       </div>
 
-      {/* Hover quick actions — desktop only, fixed slot so the row doesn't shift.
-          Hidden while selecting so taps only toggle the checkbox. */}
-      <div className={`${selectable ? 'hidden' : 'hidden md:flex'} items-center gap-1 flex-shrink-0 w-[60px] justify-end opacity-0 group-hover:opacity-100 transition-opacity`}>
-        {booking.email && (
-          <a
-            href={`mailto:${booking.email}?subject=Appointment%20with%20Roko%20%C2%B7%20${encodeURIComponent(booking.service || '')}`}
-            onClick={e => e.stopPropagation()}
-            aria-label="Email client"
-            className={iconBtn}
-            style={iconBtnStyle}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-            </svg>
-          </a>
-        )}
-        {booking.phone && (
-          <a
-            href={`sms:${phoneHref(booking.phone)}`}
-            onClick={e => e.stopPropagation()}
-            aria-label="Text client"
-            className={iconBtn}
-            style={iconBtnStyle}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </a>
-        )}
-      </div>
     </div>
   );
 }

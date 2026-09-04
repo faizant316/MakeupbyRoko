@@ -11,6 +11,21 @@ export const STATUS_COLORS = {
   cancelled: '#EF4444',
 };
 
+// Class registrations run on their own status words. Same semantics: blue is
+// locked in, amber is waiting on somebody, red is off.
+//
+// Deliberately a separate map rather than more keys on STATUS_COLORS: that one
+// is iterated to build the calendar legend, and a legend listing "new,
+// contacted, enrolled, declined" alongside the appointment statuses would be
+// nonsense. Before this, `enrolled` simply wasn't in any map and fell through
+// to the pending amber, so a paid and scheduled student read as unresolved.
+export const CLASS_STATUS_COLORS = {
+  new:       '#F59E0B',
+  contacted: '#F59E0B',
+  enrolled:  '#2563EB',
+  declined:  '#EF4444',
+};
+
 // Muted versions for dark-mode fills (dots stay readable without glowing).
 export const STATUS_COLORS_DM = {
   pending:   '#92660A',
