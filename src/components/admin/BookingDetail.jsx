@@ -1323,6 +1323,32 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     }
   };
 
+  // Take the time back off the appointment entirely, so the card reads as though
+  // one was never set — for bridal that means falling straight back to "wants to
+  // be ready by 3:00 PM, does that work?", which is the state she wants when a
+  // time went on by mistake. Recorded like any other change, so clearing is
+  // itself undoable.
+  const clearTime = () => {
+    if (!booking.time) return;
+    const rec = {
+      time: booking.time, date: booking.date || null,
+      newTime: null, newDate: booking.date || null,
+      changedTime: true, changedDate: false, emailed: false, at: Date.now(),
+    };
+    onUpdateBooking({ time: null });
+    setUndoTime(rec);
+    saveUndo(booking.id, rec);
+    setShowTimePicker(false);
+    if (booking.status === 'confirmed' && booking.email) {
+      // They were promised a time that no longer exists — keep the standing
+      // reminder up rather than letting it go quiet.
+      setUpdateNoticeSent(false);
+      setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: 'not set yet' }] });
+      setShowReconfirmBanner(true);
+    }
+    showToast('Time cleared', '#888');
+  };
+
   // Put the appointment back the way it was. If the client was already emailed
   // the new time, undoing leaves them holding the wrong details, so the standing
   // "tell them" banner comes back rather than the change silently reverting.
@@ -2167,6 +2193,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   My Schedule
                 </button>
+                {/* Clear. She asked for this to stand on its own rather than
+                    only existing inside the picker: a time can go on by mistake
+                    and the fix is "there shouldn't be one", not "pick another". */}
+                {!showTimePicker && booking.time && (
+                  <button type="button" onClick={clearTime} title="Remove the time from this appointment"
+                    className="inline-flex items-center gap-1.5 h-9 sm:h-[30px] px-3 sm:px-2.5 rounded-full text-[0.78rem] font-medium whitespace-nowrap transition-colors flex-shrink-0"
+                    style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}` }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-3.5 h-3.5 flex-shrink-0">
+                      <circle cx="12" cy="12" r="9" /><line x1="8.6" y1="8.6" x2="15.4" y2="15.4" />
+                    </svg>
+                    Clear<span className="hidden sm:inline">&nbsp;time</span>
+                  </button>
+                )}
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
                   <button type="button" onClick={() => openTimePicker()}
                     className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-[0.8rem] font-medium whitespace-nowrap transition-opacity hover:opacity-90"
@@ -2462,12 +2501,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </div>
                 )}
 
+                {/* Emptying the window used to dead-end on a disabled button.
+                    Now it's the way to say "no time at all", so Clear leads
+                    somewhere instead of just undoing your own tap. */}
                 <button
                   type="button"
-                  disabled={!pendingStart || panelSending}
-                  onClick={commitChange}
+                  disabled={(!pendingStart && !booking.time) || panelSending}
+                  onClick={!pendingStart && booking.time ? clearTime : commitChange}
                   className="w-full mt-4 py-3.5 rounded-[8px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation flex items-center justify-center gap-2"
-                  style={pendingStart
+                  style={pendingStart || booking.time
                     ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: panelSending ? 0.7 : 1 }
                     : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
                   }
@@ -2475,7 +2517,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {panelSending
                     ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
                     : !pendingStart
-                      ? 'Tap a start time above'
+                      ? (booking.time ? 'Leave this appointment with no time' : 'Tap a start time above')
                       : (() => {
                           const dateMoved = pendingDate && pendingDate !== booking.date;
                           const willEmail = allowNotify && notifyClient && booking.email && (dateMoved || pendingWindow !== booking.time);
