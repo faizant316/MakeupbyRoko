@@ -998,15 +998,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     setConsultDraft(draft);
     if (draft?.date) setScheduleDay(draft.date);
   };
-  // The hero holds the My Schedule button, but she scrolls well past it while
-  // working a card. Track when it leaves the viewport so a floating twin can
-  // keep the schedule one tap away from anywhere on the page.
-  const heroRef = useRef(null);
-  const [heroOut, setHeroOut] = useState(false);
+  // The Appointment box holds the My Schedule button, but she scrolls well past
+  // it while working a card. Track when it leaves the viewport so a floating
+  // twin can keep the schedule one tap away from anywhere on the page.
+  const timeSectionRef = useRef(null);
+  const [apptOut, setApptOut] = useState(false);
   useEffect(() => {
-    const el = heroRef.current;
+    const el = timeSectionRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => setHeroOut(!e.isIntersecting));
+    const io = new IntersectionObserver(([e]) => setApptOut(!e.isIntersecting));
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -1343,7 +1343,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [consultExpanded, setConsultExpanded] = useState(false);
   const consultRef = useRef(null);
   const composeRef = useRef(null);
-  const timeSectionRef = useRef(null);
 
   const showToast = (msg, color) => {
     setToast({ message: msg, color });
@@ -1772,7 +1771,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     <div className="max-w-[1100px] mx-auto transition-[margin] duration-300"
       style={{ marginRight: showSchedule && docked ? scheduleW + 20 : undefined }}>
       {/* ── Booksy-style status hero ── */}
-      <div ref={heroRef} className="relative mb-6">
+      <div className="relative mb-6">
         <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
           style={{ background: HERO_GRADIENTS[booking.status] || HERO_GRADIENTS.pending }}>
           <div className="flex items-center justify-between">
@@ -1788,22 +1787,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 ID: {String(booking.id || '').slice(0, 8).toUpperCase()}{bookedOn ? ` · Booked ${bookedOn}` : ''}
               </p>
             </div>
-            {/* She checks her day constantly while reading a card, so the
-                schedule lives up here in the hero instead of buried down in
-                the appointment section. A floating twin (below) takes over
-                once this scrolls off. */}
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={openSchedule} aria-label="My Schedule" title="See your day side by side"
-                className="inline-flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-full text-[0.78rem] font-semibold text-white transition-all active:scale-95 hover:bg-white/25"
-                style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <span className="hidden sm:inline">My Schedule</span>
-              </button>
-              <button onClick={() => setShowEdit(true)}
-                className="px-3 py-2 -mr-1 rounded-lg text-[0.8rem] font-semibold text-white transition-all active:scale-95 hover:bg-white/10">
-                Edit
-              </button>
-            </div>
+            {/* My Schedule used to sit here in the hero. It's now in the
+                Appointment box, right beside the time she's deciding on —
+                the moment she needs her day is the moment she's answering
+                "does that time work?", not while reading the status banner. */}
+            <button onClick={() => setShowEdit(true)}
+              className="px-3 py-2 -mr-1 rounded-lg text-[0.8rem] font-semibold text-white transition-all active:scale-95 hover:bg-white/10">
+              Edit
+            </button>
           </div>
         </div>
 
@@ -2055,8 +2046,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
               <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
               <div className="flex items-center gap-2 sm:gap-1.5">
-                {/* My Schedule used to sit here; it moved to the hero (and the
-                    floating pill) so it's reachable from anywhere on the card. */}
+                {/* Her day, one tap from the time she's setting. It stays in
+                    this same spot in every state of the box (deciding, picking,
+                    already set) so it never moves out from under her. */}
+                <button type="button" onClick={openSchedule} aria-label="My Schedule" title="See your day side by side"
+                  className="inline-flex items-center gap-1.5 h-9 sm:h-[30px] px-3 sm:px-2.5 rounded-full text-[0.78rem] font-medium whitespace-nowrap transition-colors flex-shrink-0"
+                  style={{ background: dm ? '#2e2e38' : '#F4EFF1', color: dm ? '#d8c3cc' : '#8A5F71', border: `1px solid ${dm ? '#3a3a48' : '#EADCE2'}` }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  My Schedule
+                </button>
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
                   <button type="button" onClick={() => openTimePicker()}
                     className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-[0.8rem] font-medium whitespace-nowrap transition-opacity hover:opacity-90"
@@ -2971,18 +2969,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         </div>
       )}
 
-      {/* Floating twin of the hero's My Schedule. Fades in the moment the hero
-          scrolls off, so her day is always one tap away no matter how far down
-          the card she is. Stays out of the way while the drawer is open. */}
+      {/* Floating twin of the Appointment box's My Schedule. Fades in the moment
+          that box scrolls off, so her day is always one tap away no matter how
+          far down the card she is. Stays out of the way while the drawer is open. */}
       <button type="button" onClick={openSchedule} title="See your day side by side"
-        aria-hidden={!(heroOut && !showSchedule)} tabIndex={heroOut && !showSchedule ? 0 : -1}
+        aria-hidden={!(apptOut && !showSchedule)} tabIndex={apptOut && !showSchedule ? 0 : -1}
         className="fixed bottom-5 right-5 z-[9994] inline-flex items-center gap-2 h-12 px-5 rounded-full text-[0.82rem] font-semibold text-white transition-all duration-200 active:scale-95"
         style={{
           background: '#C4849A',
           boxShadow: '0 10px 30px rgba(150,90,115,0.42)',
-          opacity: heroOut && !showSchedule ? 1 : 0,
-          transform: heroOut && !showSchedule ? 'translateY(0)' : 'translateY(14px)',
-          pointerEvents: heroOut && !showSchedule ? 'auto' : 'none',
+          opacity: apptOut && !showSchedule ? 1 : 0,
+          transform: apptOut && !showSchedule ? 'translateY(0)' : 'translateY(14px)',
+          pointerEvents: apptOut && !showSchedule ? 'auto' : 'none',
         }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-4 h-4 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         My Schedule

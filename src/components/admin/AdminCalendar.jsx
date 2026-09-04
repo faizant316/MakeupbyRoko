@@ -282,31 +282,32 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   const renderDay = () => {
     const d = currentMonth;
     const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const isBlocked = blockedSet.has(key);
     const goKey = (k) => { setCurrentMonth(new Date(k + 'T00:00:00')); setSelectedDate(k); setStatusFilter?.('all'); };
 
+    // The date, the arrows and Today all live in ScheduleView's own header now.
+    // This used to print its own date line and its own Today button right above
+    // that one, so the day view carried two of each. Block day rides along in
+    // the same row instead.
+    const blockBtn = (
+      <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
+        className={`h-7 px-2.5 rounded-md text-[0.68rem] font-semibold tracking-[0.08em] uppercase border transition-all flex-shrink-0 ${
+          isBlocked
+            ? 'text-red-500 border-red-200 hover:bg-red-50'
+            : dm ? 'text-[#8e8e99] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
+        }`}>
+        <span className="inline-flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5">
+            {isBlocked ? <><line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" /></>
+                       : <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>}
+          </svg>
+          {isBlocked ? 'Unblock' : 'Block day'}
+        </span>
+      </button>
+    );
+
     return (
       <>
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <span className="text-[0.875rem] font-semibold flex-1 min-w-0" style={{ color: dm ? '#e4e4e7' : '#111' }}>{label}</span>
-          <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
-            className={`text-[0.65rem] font-semibold tracking-[0.1em] uppercase px-3 py-1 rounded-lg border transition-all flex-shrink-0 ${
-              isBlocked
-                ? 'text-red-500 border-red-200 hover:bg-red-50'
-                : dm ? 'text-[#8e8e99] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
-            }`}>
-            <span className="inline-flex items-center gap-1.5">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5">
-                {isBlocked ? <><line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" /></>
-                           : <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>}
-              </svg>
-              {isBlocked ? 'Unblock' : 'Block Day'}
-            </span>
-          </button>
-          <button onClick={goToToday} className="text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#7a7a84] hover:text-[#27272a] px-3 py-1 rounded-lg transition-all flex-shrink-0" style={{ border: `1px solid ${dm ? '#4a4a5a' : '#E2E4EA'}` }}>Today</button>
-        </div>
-
         {isBlocked && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
             <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4 flex-shrink-0">
@@ -327,6 +328,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           onSelectBooking={onSelectBooking}
           onSelectClassReg={onSelectClassReg}
           dm={dm}
+          headerRight={blockBtn}
         />
       </>
     );
