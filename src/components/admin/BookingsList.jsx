@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { Fragment, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import BookingRow from './BookingRow';
 import { Archive } from './Glyphs';
 import StatusBadge from './StatusBadge';
+import NewBookingsRail from './NewBookingsRail';
 import Collapse from './Collapse';
 import { groupByTime, timeToMinutes, scheduledDate } from './timeline';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
@@ -227,6 +228,13 @@ export default function BookingsList({
   const [showArchive, setShowArchive] = useState(false);
   // iOS-style multi-select for the appointments list. `selectMode` flips rows
   // into pickable checkboxes; `selectedIds` holds the chosen booking ids.
+  // Phone-only chrome. The search field and the filter row are both permanently
+  // on show on a laptop, where there's room; on a phone they're one tap each,
+  // because together they were taking the top third of the screen before a
+  // single appointment appeared.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const searchInputRef = useRef(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -235,12 +243,10 @@ export default function BookingsList({
   // absolutely-positioned dropdowns, which meant an open panel floated on top
   // of the rails beneath it instead of pushing them down. Now they expand
   // inline and opening one closes the others, so the stack never collides.
-  const [openRail, setOpenRail] = useState(null); // 'deposit' | 'recent'
+  const [openRail, setOpenRail] = useState(null); // 'deposit'
   const toggleRail = (name) => setOpenRail(cur => (cur === name ? null : name));
   const showZellePanel = openRail === 'deposit';
-  const showRecentPanel = openRail === 'recent';
   const [lightbox, setLightbox] = useState(null);
-  const [recentSearch, setRecentSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   // On load only "This Week" (and urgent Past Due) is open — "This Month" and
@@ -277,20 +283,6 @@ export default function BookingsList({
     setCollapsedGroups(effectiveMonth ? {} : { month: true, later: true });
   }, [effectiveMonth]);
 
-  // Recent bookings: created within the last 24 hours (uses allBookings, unfiltered).
-  // Booksy imports are excluded — importing 563 clients shouldn't wall the rail.
-  const now = Date.now();
-  const recentBookings = (allBookings || [])
-    .filter(b => b.source !== 'booksy' && b.created_date && (now - new Date(b.created_date).getTime()) < 24 * 60 * 60 * 1000)
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-
-  // "2h ago" labels for the Just Booked rail
-  const timeAgo = (iso) => {
-    const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    return `${Math.round(mins / 60)}h ago`;
-  };
 
   // A booking earns a spot on the appointments list only if it's an actual
   // appointment or consultation. Booksy-imported CRM contacts (no date and no
@@ -414,12 +406,29 @@ export default function BookingsList({
               full calendar (appointments, days off and capacity together).
               It used to open a separate overlay, which meant three different
               calendars showing the same data. */}
+          {/* Phone: a search toggle stands in for the full-width field below. */}
+          {!selectMode && (
+            <button
+              onClick={() => { setSearchOpen(v => !v); if (!searchOpen) setTimeout(() => searchInputRef.current?.focus(), 20); else setSearch(''); }}
+              aria-label="Search appointments"
+              aria-expanded={searchOpen}
+              className="sm:hidden flex flex-shrink-0 items-center justify-center w-10 h-10 rounded-lg transition-all active:scale-95"
+              style={{ background: searchOpen || search ? (dm ? '#26262e' : '#F3F3F7') : 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-4 h-4">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+          )}
+          {/* View all — laptop only. It jumps to the Calendar tab, which on a
+              phone is already one tap away in the nav, so on a small screen it
+              was a third button competing for the same row. */}
           {!selectMode && (
             <button
               onClick={() => onViewAllCalendar?.()}
               aria-label="View all appointments"
               title="View all appointments"
-              className="flex flex-shrink-0 items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap active:scale-95"
+              className="hidden sm:flex flex-shrink-0 items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all whitespace-nowrap active:scale-95"
               style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}
               onMouseEnter={e => { e.currentTarget.style.background = dm ? '#26262e' : '#F7F7FA'; e.currentTarget.style.color = dm ? '#d4d4d8' : '#4b4b53'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#6b6b73'; }}
@@ -602,139 +611,18 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Just Booked — appointments only, last 24 hrs */}
-      {recentBookings.length > 0 && (
-        <div className="mb-5 relative">
-          <button
-            onClick={() => toggleRail('recent')}
-            aria-expanded={showRecentPanel}
-            className="w-full flex items-center gap-2.5 px-2 py-2 -mx-2 rounded-[12px] text-left transition-colors"
-            style={{ background: 'transparent' }}
-            onMouseEnter={e => e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.045)' : 'rgba(196,132,154,0.06)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            {/* The count is the whole signal. The old version stacked a gradient
-                card, a gradient icon tile, a sparkle glyph and an infinite ping
-                for what is usually one booking. */}
-            <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[0.8rem] font-semibold tabular-nums"
-              style={{ background: dm ? 'rgba(224,91,127,0.16)' : '#FBEEF3', color: '#C4849A' }}>
-              {recentBookings.length}
-            </span>
-
-            <span className="min-w-0 flex-1">
-              <span className="block text-[0.86rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
-                {recentBookings.length === 1 ? 'New booking' : 'New bookings'}
-              </span>
-              <span className="block text-[0.75rem] mt-0.5 truncate" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
-                {(recentBookings[0].name || 'Someone').split(' ')[0]}
-                {recentBookings[0].service ? ` · ${recentBookings[0].service}` : ''}
-                {` · ${timeAgo(recentBookings[0].created_date)}`}
-              </span>
-            </span>
-
-            <span className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#8b8b95' : '#6a6a74' }}>
-                {showRecentPanel ? 'Hide' : 'View'}
-              </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8b8b95' : '#9c9ca6'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                className="w-3.5 h-3.5"
-                style={{ transition: 'transform 300ms cubic-bezier(0.22,1,0.36,1)', transform: showRecentPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </span>
-          </button>
-
-          {/* Floating dropdown — animates transform + opacity only (GPU-composited), so it stays
-              buttery on mobile, where animating height / grid-rows forces per-frame layout + repaint. */}
-          <div
-            className="mt-2 rounded-2xl overflow-hidden flex flex-col"
-            style={{
-              background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#EAEBF0'}`,
-              maxHeight: showRecentPanel ? 'min(60vh, 420px)' : '0px',
-              opacity: showRecentPanel ? 1 : 0,
-              marginTop: showRecentPanel ? undefined : 0,
-              borderWidth: showRecentPanel ? '1px' : '0px',
-              pointerEvents: showRecentPanel ? 'auto' : 'none',
-              willChange: 'max-height, opacity',
-              transition: 'max-height 320ms cubic-bezier(0.22,1,0.36,1), opacity 200ms ease, margin-top 320ms ease',
-            }}
-          >
-            {/* A search box above a handful of rows is just clutter. */}
-            {recentBookings.length > 6 && (
-            <div className="px-4 py-3 flex-shrink-0" style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.06)' : 'rgba(113, 113, 122,0.1)'}` }}>
-                <div className="relative">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <input
-                    value={recentSearch}
-                    onChange={e => setRecentSearch(e.target.value)}
-                    placeholder="Search recent clients…"
-                    className="w-full pl-9 pr-3 py-2 rounded-lg text-[0.8rem] outline-none transition-all"
-                    style={{ background: dm ? '#1e1e24' : '#FAFAFB', border: `1px solid ${dm ? '#3f3f46' : '#E8E9EE'}`, color: dm ? '#e4e4e7' : '#111' }}
-                    onClick={e => e.stopPropagation()}
-                  />
-                  {recentSearch && (
-                    <button onClick={() => setRecentSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#bbb] hover:text-[#777] transition-colors">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-              {recentBookings
-                .filter(b => !recentSearch || [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase())))
-                .map(b => (
-                  <button
-                    key={b.id}
-                    onClick={() => onSelect(b)}
-                    className="flex items-center gap-3.5 w-full text-left px-5 py-4 transition-colors"
-                    style={{ borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(113, 113, 122,0.08)'}` }}
-                    onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: dm ? '#3a2e35' : '#F6E3EA' }}>
-                      <span className="font-serif text-[0.85rem]" style={{ color: dm ? '#e7c9d5' : '#A0607A' }}>
-                        {(b.name || '?').trim().charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
-                      <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#8e8e99' : '#a3a3ad' }}>
-                        {b.service}
-                        {b.date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <span className="text-[0.6rem] font-medium tabular-nums" style={{ color: dm ? '#a06070' : '#c48090' }}>
-                        {timeAgo(b.created_date)}
-                      </span>
-                      <StatusBadge status={b.status} />
-                    </div>
-                  </button>
-                ))
-              }
-              {recentSearch && recentBookings.filter(b => [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(recentSearch.toLowerCase()))).length === 0 && (
-                <div className="py-6 text-center text-[0.78rem]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>No results for "{recentSearch}"</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-
+      {/* Just Booked — laptop only. On a phone this same rail renders at the
+          very top of the admin page instead, above the calendar, so a new
+          booking is the first thing on screen rather than three scrolls down. */}
+      <NewBookingsRail bookings={allBookings} onSelect={onSelect} darkMode={dm} className="hidden sm:block mb-5" />
 
       {/* Search */}
-      <div className="relative mb-4">
+      <div className={`relative mb-4 ${searchOpen || search ? '' : 'hidden sm:block'}`}>
         <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
+          ref={searchInputRef}
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -762,7 +650,12 @@ export default function BookingsList({
         )}
       </div>
 
-      {/* Status + service-type filters — minimal text chips, soft-tint when active */}
+      {/* Status + service-type filters.
+          One description of every filter, rendered two ways: the full row of
+          chips on a laptop, and a single pill that opens a list on a phone.
+          Seven chips scrolling sideways under a full-width search box was most
+          of what made this screen feel like a wall on mobile, and a sideways
+          scroller hides half its own options besides. */}
       {(() => {
         const STATUS_COLORS = {
           all:       { dot: null,      light: { bg: 'rgba(160,96,122,0.10)',  txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)',  txt: '#e7c9d5' } },
@@ -777,66 +670,96 @@ export default function BookingsList({
         const hoverBg  = dm ? '#26262d' : '#F3F3F7';
         const chipCls = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
         const inactiveStyle = { background: 'transparent', color: mutedTxt };
-        const onEnter = (e, active) => { if (!active) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } };
-        const onLeave = (e, active) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = mutedTxt; } };
+        const onEnter = (e, on) => { if (!on) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } };
+        const onLeave = (e, on) => { if (!on) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = mutedTxt; } };
+
+        const courseTone = dm ? { bg: 'rgba(199,107,166,0.2)', txt: '#E7A9CE' } : { bg: 'rgba(199,107,166,0.14)', txt: '#A83E86' };
+        const consultTone = dm ? { bg: 'rgba(168,85,247,0.22)', txt: '#C99BF5' } : { bg: 'rgba(168,85,247,0.12)', txt: '#9333EA' };
+
+        const options = [
+          ...STATUSES.map(st => ({
+            key: st,
+            label: st.charAt(0).toUpperCase() + st.slice(1),
+            count: statusCounts[st] || 0,
+            dot: STATUS_COLORS[st].dot,
+            tone: dm ? STATUS_COLORS[st].dark : STATUS_COLORS[st].light,
+            active: inAppointments && statusFilter === st,
+            pick: () => { setStatusFilter(st); setViewType?.('appointments'); },
+          })),
+          {
+            key: 'courses', label: 'Makeup Courses', dot: LESSON_COLOR, tone: courseTone,
+            count: classRegs.filter(r => !r.appointment_date || r.appointment_date >= today).length,
+            active: viewType === 'courses', pick: () => setViewType?.('courses'),
+          },
+          {
+            key: 'consultations', label: 'Consultations', dot: CONSULT_COLOR, tone: consultTone,
+            count: (allBookings || []).filter(b => b.consultation_date && b.consultation_date >= today).length,
+            active: viewType === 'consultations', pick: () => setViewType?.('consultations'),
+          },
+        ];
+        const current = options.find(o => o.active) || options[0];
+
         return (
-          <div className="flex items-center gap-1 mb-5 overflow-x-auto no-scrollbar pb-0.5">
-            {STATUSES.map(s => {
-              const count = statusCounts[s] || 0;
-              const isActive = inAppointments && statusFilter === s;
-              const c = STATUS_COLORS[s];
-              const tone = dm ? c.dark : c.light;
-              return (
-                <button
-                  key={s}
-                  onClick={() => { setStatusFilter(s); setViewType?.('appointments'); }}
-                  className={chipCls}
-                  style={isActive ? { background: tone.bg, color: tone.txt } : inactiveStyle}
-                  onMouseEnter={e => onEnter(e, isActive)}
-                  onMouseLeave={e => onLeave(e, isActive)}
-                >
-                  {c.dot && !isActive && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />}
-                  <span className="capitalize">{s}</span>
-                  <span style={{ opacity: 0.55 }}>{count}</span>
-                </button>
-              );
-            })}
+          <>
+            {/* Laptop: every filter visible at once */}
+            <div className="hidden sm:flex items-center gap-1 mb-5 overflow-x-auto no-scrollbar pb-0.5">
+              {options.map(o => (
+                <Fragment key={o.key}>
+                  {o.key === 'courses' && (
+                    <div className="w-px h-3.5 rounded-full flex-shrink-0 mx-1.5" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
+                  )}
+                  <button onClick={o.pick} className={chipCls}
+                    style={o.active ? { background: o.tone.bg, color: o.tone.txt } : inactiveStyle}
+                    onMouseEnter={e => onEnter(e, o.active)} onMouseLeave={e => onLeave(e, o.active)}>
+                    {o.dot && !o.active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: o.dot }} />}
+                    <span>{o.label}</span>
+                    <span style={{ opacity: 0.55 }}>{o.count}</span>
+                  </button>
+                </Fragment>
+              ))}
+            </div>
 
-            {/* Divider */}
-            <div className="w-px h-3.5 rounded-full flex-shrink-0 mx-1.5" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
-
-            {/* Makeup Courses */}
-            {(() => {
-              const active = viewType === 'courses';
-              const tone = dm ? { bg: 'rgba(199,107,166,0.2)', txt: '#E7A9CE' } : { bg: 'rgba(199,107,166,0.14)', txt: '#A83E86' };
-              const count = classRegs.filter(r => !r.appointment_date || r.appointment_date >= today).length;
-              return (
-                <button onClick={() => setViewType?.('courses')} className={chipCls}
-                  style={active ? { background: tone.bg, color: tone.txt } : inactiveStyle}
-                  onMouseEnter={e => onEnter(e, active)} onMouseLeave={e => onLeave(e, active)}>
-                  {!active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: LESSON_COLOR }} />}
-                  <span>Makeup Courses</span>
-                  <span style={{ opacity: 0.55 }}>{count}</span>
-                </button>
-              );
-            })()}
-
-            {/* Consultations */}
-            {(() => {
-              const active = viewType === 'consultations';
-              const tone = dm ? { bg: 'rgba(168,85,247,0.22)', txt: '#C99BF5' } : { bg: 'rgba(168,85,247,0.12)', txt: '#9333EA' };
-              const count = (allBookings || []).filter(b => b.consultation_date && b.consultation_date >= today).length;
-              return (
-                <button onClick={() => setViewType?.('consultations')} className={chipCls}
-                  style={active ? { background: tone.bg, color: tone.txt } : inactiveStyle}
-                  onMouseEnter={e => onEnter(e, active)} onMouseLeave={e => onLeave(e, active)}>
-                  {!active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CONSULT_COLOR }} />}
-                  <span>Consultations</span>
-                  <span style={{ opacity: 0.55 }}>{count}</span>
-                </button>
-              );
-            })()}
-          </div>
+            {/* Phone: what you're looking at, and one tap to change it */}
+            <div className="sm:hidden relative mb-4">
+              <button type="button" onClick={() => setFilterOpen(v => !v)} aria-expanded={filterOpen}
+                className="inline-flex items-center gap-2 pl-3.5 pr-3 py-2 rounded-full text-[0.8rem] font-semibold"
+                style={{ background: current.tone.bg, color: current.tone.txt }}>
+                {current.dot && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: current.dot }} />}
+                <span>{current.label}</span>
+                <span style={{ opacity: 0.6 }}>{current.count}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"
+                  style={{ transition: 'transform 200ms ease', transform: filterOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {filterOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} aria-hidden="true" />
+                  <div className="absolute z-50 left-0 top-full mt-1.5 rounded-2xl p-1.5 w-[min(280px,88vw)]"
+                    style={{
+                      background: dm ? '#27272a' : '#fff',
+                      border: '1px solid ' + (dm ? '#3f3f46' : '#EAEBF0'),
+                      boxShadow: dm ? '0 16px 40px rgba(0,0,0,0.5)' : '0 16px 40px rgba(60,30,45,0.14)',
+                    }}>
+                    {options.map(o => (
+                      <Fragment key={o.key}>
+                        {o.key === 'courses' && (
+                          <div className="h-px my-1.5 mx-2" style={{ background: dm ? '#3f3f46' : '#EDEDF3' }} />
+                        )}
+                        <button type="button" onClick={() => { o.pick(); setFilterOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-[0.84rem] font-medium"
+                          style={o.active ? { background: o.tone.bg, color: o.tone.txt } : { background: 'transparent', color: dm ? '#d4d4d8' : '#4b4b53' }}>
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: o.dot || 'transparent' }} />
+                          <span className="flex-1 min-w-0 truncate">{o.label}</span>
+                          <span className="tabular-nums" style={{ opacity: 0.55 }}>{o.count}</span>
+                        </button>
+                      </Fragment>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
         );
       })()}
 
@@ -1219,11 +1142,13 @@ export default function BookingsList({
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {/* "Today" is intentionally dropped here — the Home overview's
-                  left-hand Today card already shows today in full (consultations,
-                  appointments AND classes), so a second "Today" in this pipeline
-                  was redundant. This list is the upcoming pipeline from here on. */}
-              {timeGroups.filter(g => g.key !== 'today').map(group => {
+              {/* Today leads, then tomorrow, then each named day. It used to be
+                  dropped here as redundant with the Home Today card, but once
+                  the list reads day by day, starting at Tomorrow just raises the
+                  question of where today went. The Today card stays the detailed
+                  view (it carries classes and consultations too); this is the
+                  same day's place in the run of the week. */}
+              {timeGroups.map(group => {
                 const open = !collapsedGroups[group.key];
                 return (
                   <div key={group.key}>
@@ -1233,7 +1158,14 @@ export default function BookingsList({
                       className="flex items-center gap-2.5 mb-3 w-full"
                     >
                       {group.accent && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: group.accent }} />}
-                      <h3 className="font-serif text-[1.05rem]" style={{ color: group.accent || (dm ? '#e4e4e7' : '#111') }}>{group.label}</h3>
+                      {/* A named day is a signpost, not a section: lighter than
+                          Tomorrow or Past Due so seven of them down the page
+                          still read as one list. */}
+                      <h3
+                        className={group.day && !group.accent ? 'text-[0.82rem] font-semibold' : 'font-serif text-[1.05rem]'}
+                        style={{ color: group.accent || (group.day ? (dm ? '#9a9aa4' : '#8b8b95') : (dm ? '#e4e4e7' : '#111')) }}>
+                        {group.label}
+                      </h3>
                       <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
                         style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
                         {group.items.length}
