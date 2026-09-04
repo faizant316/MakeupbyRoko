@@ -2,16 +2,33 @@ import StatusBadge from './StatusBadge';
 import { relativeDate } from './timeline';
 import { phoneHref } from '@/lib/phone';
 import { depositState, depositTone } from './depositState';
+import { openZoomRoom } from '@/lib/zoomHost';
+
+// A consultation or a class rendered in the same list as the appointments. The
+// tag is what tells them apart; everything else about the row stays identical,
+// which is the point — today reads as one run down the page instead of three
+// lists in different shapes.
+const AGENDA_META = {
+  consult: { label: 'Consultation', light: { bg: '#F3E8FF', txt: '#7E22CE' }, dark: { bg: 'rgba(168,85,247,0.22)', txt: '#C99BF5' } },
+  class:   { label: 'Class',        light: { bg: '#FBE7F3', txt: '#A83E86' }, dark: { bg: 'rgba(199,107,166,0.22)', txt: '#E7A9CE' } },
+};
 
 // Compact one-line list item for the appointments list. The rich detail lives
 // in the modal opened on click, so the row only carries what helps you scan:
 // who, when, what, and status. Bridal rows are tagged and tinted.
-export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dimmed, selectable, selected, hideDate }) {
+export default function BookingRow({
+  booking, onClick, darkMode: dm, bridal, dimmed, selectable, selected, hideDate,
+  // Set when the row is a consultation or a class rather than an appointment.
+  agendaKind, agendaTime, agendaLabel, join,
+}) {
   // Consult-only bookings have no appointment date — show their consultation
   // date/time so they read as scheduled, not "No date".
   const consultOnly = !booking.date && !!booking.consultation_date;
   const rel = relativeDate(booking.date || booking.consultation_date);
-  const rowTime = booking.date ? booking.time : booking.consultation_time;
+  const rowTime = agendaKind ? agendaTime : (booking.date ? booking.time : booking.consultation_time);
+  const agenda = agendaKind ? AGENDA_META[agendaKind] : null;
+  const agendaTone = agenda ? (dm ? agenda.dark : agenda.light) : null;
+  const canJoin = !!(join && (join.url || join.meetingId));
   const initial = (booking.name || '?').trim().charAt(0).toUpperCase() || '?';
 
   // Deposit standing, spelled out on the row so scanning the list is enough.
@@ -68,10 +85,16 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
   const selectedBg = dm ? 'rgba(37,99,235,0.16)' : 'rgba(37,99,235,0.07)';
   const selectedBorder = '#2563EB';
 
+  // A div, not a <button>. The row carries interactive children of its own —
+  // the mailto/sms shortcuts, and now a Join button on today's Zoom rows — and
+  // a button inside a button is invalid HTML that React refuses to hydrate.
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
+      className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all cursor-pointer outline-none"
       style={{
         background: selected ? selectedBg : skin.bg,
         border: `1px solid ${selected ? selectedBorder : skin.border}`,
@@ -103,7 +126,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
       {/* Avatar initial — plum colorway + soft ring marks bridal, no emoji */}
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
-        style={bridal
+        style={bridal && !agenda
           ? { background: dm ? 'rgba(154,84,116,0.22)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#8A4A63', boxShadow: `0 0 0 1.5px ${dm ? 'rgba(176,106,133,0.4)' : 'rgba(154,84,116,0.4)'}` }
           : { background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#A6A6AF' }}
       >
@@ -118,7 +141,15 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           <p className="text-[0.875rem] font-semibold leading-snug break-words min-w-0" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
             {booking.name || 'Unnamed'}
           </p>
-          {bridal && (
+          {agenda && (
+            <span
+              className="inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: agendaTone.bg, color: agendaTone.txt }}
+            >
+              {agenda.label}
+            </span>
+          )}
+          {bridal && !agenda && (
             <span
               className="inline-flex items-center text-[0.5rem] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
               style={{ background: dm ? 'rgba(154,84,116,0.3)' : '#F0D9E3', color: dm ? '#f0d5e1' : '#7A4055' }}
@@ -147,14 +178,14 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           )}
         </div>
         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
-          {booking.service || 'Service not set'}
+          {agendaLabel || booking.service || 'Service not set'}
         </p>
         {/* Where she's driving, on the row itself. Before this the only way to
             find out was opening the card, which is useless for the actual
             question she asks the list: can these two jobs fit in one day.
             City leads because that is what decides it; the street follows for
             the days she is packing the car. */}
-        {locationLine && (
+        {!agenda && locationLine && (
           <p className="flex items-start gap-1.5 text-[0.7rem] mt-1" style={{ color: locationColor }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-2.5 h-2.5 flex-shrink-0 mt-[3px]">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
@@ -162,7 +193,7 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
             <span className="truncate">{locationLine}</span>
           </p>
         )}
-        {depositTint && (
+        {!agenda && depositTint && (
           <p
             className="flex items-center gap-1.5 text-[0.7rem] mt-1"
             style={{ color: depositTint.fg, fontWeight: deposit.kind === 'arrived' ? 600 : 500 }}
@@ -194,6 +225,21 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
         )}
         {hideDate && !rowTime && (
           <span className="text-[0.7rem] whitespace-nowrap" style={{ color: mutedColor }}>No time set</span>
+        )}
+        {/* Only ever on today's rows. It's the one day the link is any use, and
+            keeping it off the rest of the list is what keeps the list quiet. */}
+        {canJoin && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); openZoomRoom(join.url, join.meetingId); }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[0.62rem] font-bold tracking-[0.06em] uppercase transition-opacity hover:opacity-85 active:scale-95"
+            style={{ background: '#A0607A', color: '#fff' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 flex-shrink-0">
+              <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+            </svg>
+            Join
+          </button>
         )}
         <StatusBadge status={booking.status} />
       </div>
@@ -232,6 +278,6 @@ export default function BookingRow({ booking, onClick, darkMode: dm, bridal, dim
           </a>
         )}
       </div>
-    </button>
+    </div>
   );
 }

@@ -16,7 +16,6 @@ import ContractSettings from '../components/admin/ContractSettings';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
 import { MonthNav, dayKey } from '../components/admin/MonthCalendar';
-import TodayAgenda from '../components/admin/TodayAgenda';
 import ClassSignupsCard from '../components/admin/ClassSignupsCard';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
@@ -552,14 +551,6 @@ export default function Admin() {
                       onSelectBooking={setSelectedBooking}
                       onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
                   </div>
-                  {/* Today's agenda — always-on, surfaces appointments + class lessons due today */}
-                  <TodayAgenda
-                    bookings={bookings}
-                    classRegs={classRegs}
-                    onSelectBooking={setSelectedBooking}
-                    onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                    darkMode={dm}
-                  />
                   {/* Class Sign-Ups quick access */}
                   {classRegs.length > 0 && (
                     <ClassSignupsCard
