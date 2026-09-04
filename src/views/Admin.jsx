@@ -6,6 +6,7 @@ import { isScrollLocked } from '@/lib/useScrollLock';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import AdminCalendar from '../components/admin/AdminCalendar';
+import NewBookingsRail from '../components/admin/NewBookingsRail';
 import { Lock, Star4 } from '../components/admin/Glyphs';
 import BookingsList from '../components/admin/BookingsList';
 import BookingDetail from '../components/admin/BookingDetail';
@@ -537,6 +538,10 @@ export default function Admin() {
                 the appointments workspace on the right. The divider between
                 them is user-draggable (desktop only) and remembers its width.
                 Stacks on mobile/tablet. */}
+            {/* Did anyone book? On a phone that's the first question and the
+                appointments list is three scrolls down, so the rail answers it
+                before the calendar does. Laptop keeps it inside the list. */}
+            <NewBookingsRail bookings={bookings} onSelect={setSelectedBooking} darkMode={dm} className="sm:hidden mb-6" />
             <ResizableColumns
               darkMode={dm}
               left={

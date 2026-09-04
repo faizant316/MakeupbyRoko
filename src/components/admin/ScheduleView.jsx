@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { EVENT_COLORS, isBridalService } from './statusColors';
 import { classesOfReg } from '@/lib/classCatalog';
@@ -247,10 +247,101 @@ export default function ScheduleView({
     };
   };
 
+  // ── Swiping the week strip ────────────────────────────────────────────────
+  // Tapping an arrow seven times to reach a week you can see coming is the kind
+  // of thing that's fine on a laptop and miserable on a phone. The strip drags
+  // with your thumb and the next week slides in from the side you threw it.
+  //
+  // Native listeners, bound once per view, reading live values through a ref:
+  // React registers touchmove passively, so an onTouchMove prop could never call
+  // preventDefault, and a horizontal drag would scroll the page at the same
+  // time. Rebuilding the listeners on every render would also drop a gesture in
+  // progress whenever a query resolved mid-swipe.
+  const stripVpRef = useRef(null);
+  const stripTrackRef = useRef(null);
+  const swipeRef = useRef({ dateKey, onChangeDate });
+  swipeRef.current = { dateKey, onChangeDate };
+
+  useEffect(() => {
+    if (activeView !== 'day') return;
+    const vp = stripVpRef.current;
+    const track = stripTrackRef.current;
+    if (!vp || !track) return;
+    let drag = null;
+
+    const glide = (to, ms) => {
+      track.style.transition = ms ? `transform ${ms}ms cubic-bezier(0.22,0.61,0.36,1)` : 'none';
+      track.style.transform = `translate3d(${to}px,0,0)`;
+    };
+
+    const onStart = (e) => {
+      if (e.touches.length !== 1) { drag = null; return; }
+      const t = e.touches[0];
+      glide(0, 0);
+      drag = { x0: t.clientX, y0: t.clientY, axis: null, dx: 0, lastX: t.clientX, lastT: e.timeStamp, v: 0 };
+    };
+
+    const onMove = (e) => {
+      if (!drag || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - drag.x0;
+      const dy = t.clientY - drag.y0;
+      // Axis locked once, in the first few pixels, with horizontal having to
+      // beat vertical by 1.2x — a slightly diagonal flick should still scroll.
+      if (drag.axis === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        drag.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
+      }
+      if (drag.axis !== 'x') return;
+      if (e.cancelable) e.preventDefault();
+      const w = vp.offsetWidth || 1;
+      drag.dx = Math.max(-w, Math.min(w, dx));
+      const dt = e.timeStamp - drag.lastT;
+      if (dt > 0) drag.v = (t.clientX - drag.lastX) / dt;
+      drag.lastX = t.clientX;
+      drag.lastT = e.timeStamp;
+      glide(drag.dx, 0);
+    };
+
+    const onEnd = () => {
+      const d = drag;
+      drag = null;
+      if (!d || d.axis !== 'x') return;
+      const w = vp.offsetWidth || 1;
+      // Drag a fifth of the way across, or flick it. The flick path is what
+      // makes a short, fast swipe behave the way a phone user expects.
+      const far = Math.abs(d.dx) > w * 0.2;
+      const flick = Math.abs(d.v) > 0.35 && Math.abs(d.dx) > 18;
+      if (!far && !flick) { glide(0, 200); return; }
+
+      const dir = d.dx < 0 ? 1 : -1;                 // dragged left → next week
+      const { dateKey: dk, onChangeDate: change } = swipeRef.current;
+      const next = new Date(dk + 'T00:00:00');
+      next.setDate(next.getDate() + dir * 7);
+      change(keyOf(next));
+      // The strip re-renders with the new week already in place, so park it off
+      // the edge it came from and let it slide home. One animation, no delay
+      // between the thumb leaving the glass and the dates changing.
+      glide(dir * w, 0);
+      requestAnimationFrame(() => requestAnimationFrame(() => glide(0, 240)));
+    };
+
+    vp.addEventListener('touchstart', onStart, { passive: true });
+    vp.addEventListener('touchmove', onMove, { passive: false });
+    vp.addEventListener('touchend', onEnd, { passive: true });
+    vp.addEventListener('touchcancel', onEnd, { passive: true });
+    return () => {
+      vp.removeEventListener('touchstart', onStart);
+      vp.removeEventListener('touchmove', onMove);
+      vp.removeEventListener('touchend', onEnd);
+      vp.removeEventListener('touchcancel', onEnd);
+    };
+  }, [activeView]);
+
   // ── Day: week strip + time grid ──
 
   const renderWeekStrip = () => (
-    <div className="grid mb-2" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+    <div ref={stripVpRef} className="overflow-hidden mb-2" style={{ touchAction: 'pan-y' }}>
+    <div ref={stripTrackRef} className="grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
       {weekDays.map(d => {
         const k = keyOf(d);
         const isSel = k === dateKey;
@@ -278,6 +369,7 @@ export default function ScheduleView({
           </button>
         );
       })}
+    </div>
     </div>
   );
 
