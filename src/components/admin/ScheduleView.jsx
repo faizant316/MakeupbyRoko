@@ -30,7 +30,11 @@ const SHORT_LABELS = { bridal: 'Bridal', appt: 'Appt', class: 'Class', consult: 
 // Default durations (minutes) when a booking only has a start time.
 const DEFAULT_DUR = { bridal: 120, appt: 120, class: 90, consult: 30 };
 
-const HOUR_H = 58;      // day grid, px per hour
+// Px per hour in the day grid. At 58 the baseline 7 AM–8 PM ran to ~750px of
+// grid before the header, the week strip and the legend, which is most of a
+// phone screen spent on a day that usually holds one appointment. 46 keeps an
+// hour block tall enough for both its lines and takes 150px off the page.
+const HOUR_H = 46;
 const WEEK_HOUR_H = 26; // week grid, px per hour — the whole day fits without scrolling
 
 function minToLabel(min) {
@@ -418,7 +422,7 @@ export default function ScheduleView({
             const top = ((ev.start - gridStart) / 60) * HOUR_H;
             const height = Math.max(((ev.end - ev.start) / 60) * HOUR_H, 24);
             const width = 100 / ev.cols;
-            const compact = height < 44;
+            const compact = height < 40;   // a one-hour block still gets both lines
             return (
               <button key={ev.id} onClick={ev.onOpen}
                 className="absolute rounded-md text-left overflow-hidden transition-opacity hover:opacity-85 z-10"

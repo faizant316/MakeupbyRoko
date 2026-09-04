@@ -86,11 +86,17 @@ export default function TodayAgenda({ bookings = [], classRegs = [], onSelectBoo
   const offToday = blockedDates.find(b => b.date === todayKey);
 
   return (
-    <div className="mb-8">
+    // A card, like the calendar above it, rather than a bare run of text in the
+    // gap underneath. Today is the only place the appointments list doesn't
+    // cover — it's also the only place showing today's consultations, classes
+    // and the Zoom link — so it shouldn't read as an afterthought below the
+    // calendar. It's also why the list starts at Tomorrow: this owns today.
+    <div className="mb-8 rounded-xl p-4 sm:p-5"
+      style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-4">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-4">
         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasItems ? 'animate-pulse' : ''}`} style={{ background: hasItems ? '#D4A0B0' : (dm ? '#52525b' : '#D0D0D8') }} />
-        <h2 className="font-serif text-[1.2rem] leading-none" style={{ color: dm ? '#e4e4e7' : '#111' }}>Today</h2>
+        <h2 className="font-serif text-[1.35rem] leading-none" style={{ color: dm ? '#e4e4e7' : '#111' }}>Today</h2>
         <span className="text-[0.78rem]" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{todayLabel}</span>
         {hasItems && (
           <span className="text-[0.62rem] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
