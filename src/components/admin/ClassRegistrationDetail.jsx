@@ -9,6 +9,7 @@ import { FORMAT_META } from './ClassRegistrationsList';
 import { parseRange } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { AdminDatePicker } from './SchedulePicker';
+import EmailLogPanel from './EmailLogPanel';
 
 // Booksy-style hero gradients per enrollment status (matches BookingDetail).
 const HERO_GRADIENTS = {
@@ -1049,6 +1050,10 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
             </div>
           )}
         </div>
+
+        {/* Emails — a class client who never got her Zoom link has no way of
+            knowing, and neither did anyone else before this. */}
+        <EmailLogPanel registration={reg} dm={dm} />
 
         {/* Stripe reference */}
         {reg.stripe_session_id && (

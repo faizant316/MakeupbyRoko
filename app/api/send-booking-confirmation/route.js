@@ -110,8 +110,10 @@ export async function POST(req) {
         });
 
     await sendEmailPair([
-      { to: recipient, subject: clientSubject, html: clientHtml },
-      { to: ADMIN_EMAIL, subject: adminSubject, html: adminHtml },
+      { to: recipient, subject: clientSubject, html: clientHtml,
+        log: { bookingId, kind: isBridal ? 'bridal_confirmation' : 'booking_confirmation', audience: 'client' } },
+      { to: ADMIN_EMAIL, subject: adminSubject, html: adminHtml,
+        log: { bookingId, kind: 'admin_new_booking', audience: 'admin' } },
     ]);
 
     return NextResponse.json({ success: true });

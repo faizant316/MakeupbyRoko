@@ -513,41 +513,58 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       : 'your requested date';
     const brideFirst = (form.bride_name || '').split(' ')[0] || 'there';
 
-    fetch('/api/send-booking-confirmation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        bookingId: newBooking.id,
-        bookingType: 'bridal',
-        to: form.email,
-        firstName: brideFirst,
-        lastName: form.soon_to_be_last_name,
-        phone: form.phone,
-        instagram: form.instagram_handle,
-        bridalTitle,
-        bridalDeposit,
-        bridalPrice,
-        bridalRemaining,
-        bridalDateFormatted,
-        uploadUrl,
-        eventLocation: form.event_location,
-        eventStartTime: form.event_start_time,
-        readyByTime: form.ready_by_time,
-        makeupReadyByTime: form.makeup_ready_by_time,
-        photographerArrival: form.photographer_arrival_time,
-        photographer: form.photographer,
-        hairstylist: form.hairstylist,
-        numPeopleGlam: glamSummary,
-        outOfState: form.out_of_state,
-        destinationLocation: form.out_of_state ? form.destination_location : '',
-        weddingDate: selectedDate,
-        additionalDetails: form.additional_details,
-        howHeard: form.how_heard,
-        contractSignedName: sig.name,
-        contractSignedAt: sig.signedAt,
-        contractPhotoConsent: sig.photoConsent,
-      }),
-    }).catch(err => console.error('bridal email error:', err));
+    // The confirmation used to be fired and forgotten: `fetch(...).catch(log)`
+    // with nothing awaiting it. If her phone dropped the connection or she
+    // closed the tab in the second after tapping submit, the request never
+    // reached the server, which meant no email, no Resend record, no alert, and
+    // a booking sitting in the dashboard looking flawless. `keepalive` lets the
+    // request outlive the page; awaiting it means the server at least gets the
+    // chance to log and alert.
+    //
+    // Its own catch, deliberately. The booking is ALREADY saved by this point,
+    // so letting a failed email fall through to the outer "something went wrong,
+    // please try again" would talk her into submitting a second time. That is
+    // how one bride becomes two rows.
+    try {
+      await fetch('/api/send-booking-confirmation', {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: newBooking.id,
+          bookingType: 'bridal',
+          to: form.email,
+          firstName: brideFirst,
+          lastName: form.soon_to_be_last_name,
+          phone: form.phone,
+          instagram: form.instagram_handle,
+          bridalTitle,
+          bridalDeposit,
+          bridalPrice,
+          bridalRemaining,
+          bridalDateFormatted,
+          uploadUrl,
+          eventLocation: form.event_location,
+          eventStartTime: form.event_start_time,
+          readyByTime: form.ready_by_time,
+          makeupReadyByTime: form.makeup_ready_by_time,
+          photographerArrival: form.photographer_arrival_time,
+          photographer: form.photographer,
+          hairstylist: form.hairstylist,
+          numPeopleGlam: glamSummary,
+          outOfState: form.out_of_state,
+          destinationLocation: form.out_of_state ? form.destination_location : '',
+          weddingDate: selectedDate,
+          additionalDetails: form.additional_details,
+          howHeard: form.how_heard,
+          contractSignedName: sig.name,
+          contractSignedAt: sig.signedAt,
+          contractPhotoConsent: sig.photoConsent,
+        }),
+      });
+    } catch (err) {
+      console.error('bridal email error:', err);
+    }
 
     setSubmitted(true);
     } catch (err) {

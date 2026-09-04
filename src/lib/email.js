@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { buildContract } from './contract';
 import { STUDIO_ADDRESS, STUDIO_DISPLAY, STUDIO_MAPS_URL, STUDIO_TOWN, STUDIO_READY_VALUE } from './studio';
 import { formatPhone, phoneHref } from './phone';
+import { beginEmail, finishEmail, failEmail } from './emailLog';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://makeupby-roko.vercel.app';
 const FROM = `Makeup by Roko <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`;
@@ -407,19 +408,29 @@ async function reportEmailFailure({ to, subject, reason, _internal }) {
   } catch (err) { console.error('Could not raise email alert:', err?.message); }
 }
 
-export async function sendEmail({ to, subject, html, _internal = false }) {
+// `log` is what makes this send answerable afterwards: { bookingId, kind,
+// audience }. A row is opened in email_log BEFORE Resend is called and resolved
+// after, so an email that dies mid-flight still leaves a trace, and Resend's
+// message id lands on the row for the delivery webhook to find later.
+// Alert emails (`_internal`) are skipped: email_log is the record of what
+// CLIENTS were sent, and the developer's own alarm mail is not that.
+export async function sendEmail({ to, subject, html, _internal = false, log }) {
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const logId = _internal ? null : await beginEmail({ ...(log || {}), recipient: to, subject, html });
   let result;
   try {
     result = await resend.emails.send({ from: FROM, to: [to], replyTo: REPLY_TO, subject, html });
   } catch (err) {
+    await failEmail(logId, err);
     await reportEmailFailure({ to, subject, reason: err, _internal });
     throw err;
   }
   if (result.error) {
+    await failEmail(logId, result.error);
     await reportEmailFailure({ to, subject, reason: result.error, _internal });
     throw new Error(result.error.message);
   }
+  await finishEmail(logId, { resendId: result.data?.id });
   return result;
 }
 
@@ -428,16 +439,13 @@ export async function sendEmail({ to, subject, html, _internal = false }) {
 // why the failure needs to be reported: before this, a client's confirmation
 // could silently never arrive and the only trace was a serverless log line.
 export async function sendEmailPair(emails) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const results = await Promise.allSettled(
-    emails.map(({ to, subject, html }) =>
-      resend.emails.send({ from: FROM, to: [to], replyTo: REPLY_TO, subject, html })
-        .then(r => { if (r.error) throw new Error(r.error.message); return r; })
-    )
-  );
-  await Promise.all(results.map((r, i) => r.status === 'rejected'
-    ? reportEmailFailure({ to: emails[i]?.to, subject: emails[i]?.subject, reason: r.reason })
-    : null));
+  // Delegates to sendEmail rather than calling Resend again, so there is exactly
+  // ONE send path and therefore exactly one place that logs and reports. It used
+  // to have its own copy, which meant every future change had to be made twice
+  // and the pair quietly missed anything added to sendEmail. allSettled keeps
+  // the old contract: sendEmail reports its own failure and throws, and the
+  // throw is swallowed here so a failed client email can't roll back a booking.
+  await Promise.allSettled(emails.map(e => sendEmail(e)));
 }
 
 export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection = '' }) {

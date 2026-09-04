@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
+import EmailLogPanel from './EmailLogPanel';
 import { lenisScrollTo, lenisStop, lenisStart } from '@/lib/lenis';
 import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
@@ -1559,7 +1560,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         fetch('/api/on-booking-cancelled', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, name: booking.name?.split(' ')[0] || booking.name || 'there', service: booking.service, date: dateFormatted, reason }),
+          body: JSON.stringify({ to: booking.email, name: booking.name?.split(' ')[0] || booking.name || 'there', service: booking.service, date: dateFormatted, reason, bookingId: booking.id }),
         }).catch(err => console.error('cancelled email error:', err));
       }
     }
@@ -1879,7 +1880,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         fetch('/api/on-booking-cancelled', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: booking.email, name: (data.name || booking.name)?.split(' ')[0] || 'there', service: data.service || booking.service, date: editDate }),
+          body: JSON.stringify({ to: booking.email, name: (data.name || booking.name)?.split(' ')[0] || 'there', service: data.service || booking.service, date: editDate, bookingId: booking.id }),
         }).catch(err => console.error('cancelled email error:', err));
       }
     } else if (changes.length && oldStatus === 'confirmed' && booking.email) {
@@ -2916,6 +2917,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
           <DepositStrip booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
         </div>
+
+        {/* Emails — sits right under the deposit because they answer the same
+            worry: has this client actually been told what to do next. */}
+        <EmailLogPanel booking={booking} dm={dm} />
 
         {/* Reference Photos */}
         <BookingReferencePhotos booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />

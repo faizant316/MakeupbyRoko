@@ -124,6 +124,7 @@ export async function finalizeClassRegistration(supabase, { registrationId, sess
 
   await sendEmailPair([
     {
+      log: { registrationId: reg.id, kind: 'class_payment', audience: 'client' },
       to: reg.email,
       subject: dateFormatted
         ? `You're booked! ${classes[0]?.title || 'Your class'} on ${dateFormatted}`
@@ -131,6 +132,7 @@ export async function finalizeClassRegistration(supabase, { registrationId, sess
       html: classPaymentEmail({ firstName, classes, totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink, cancelUrl }),
     },
     {
+      log: { registrationId: reg.id, kind: 'admin_class_payment', audience: 'admin' },
       to: ADMIN_EMAIL,
       subject: `New Class Booking · ${reg.full_name} · ${formatLabel || 'Class'} ($${totalPaid.toLocaleString()})`,
       html: adminClassPaymentEmail({ reg, classes, totalPaid, formatLabel, dateFormatted, classTime, zoomLink, sessionId }),

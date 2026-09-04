@@ -40,6 +40,7 @@ export async function POST(req) {
 
     // Client email
     await sendEmail({
+      log: { bookingId, kind: 'consultation', audience: 'client' },
       to: clientEmail,
       subject: migrated
         ? `Makeup by Roko has a new home ✦ your consultation on ${consultationDate}`
@@ -52,6 +53,7 @@ export async function POST(req) {
     // Admin notification (fire-and-forget, don't fail the request if this errors)
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
+      log: { bookingId, kind: 'admin_consultation', audience: 'admin' },
       to: adminEmail,
       subject: `📋 Consultation Scheduled · ${clientName || clientEmail} · ${consultationDate} at ${consultationTime}`,
       html: adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),

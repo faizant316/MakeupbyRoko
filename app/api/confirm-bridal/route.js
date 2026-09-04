@@ -63,6 +63,7 @@ export async function POST(req) {
 
     // Single client email: confirmation (+ consultation when scheduled) + upload link
     await sendEmail({
+      log: { bookingId, kind: 'bridal_confirmed', audience: 'client' },
       to: clientEmail,
       subject: migrated
         ? `Makeup by Roko has a new home ✦ your ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} + consultation`
@@ -85,6 +86,7 @@ export async function POST(req) {
     // Admin notification (fire-and-forget, don't fail the request if this errors)
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
     sendEmail({
+      log: { bookingId, kind: 'admin_bridal_confirmed', audience: 'admin' },
       to: adminEmail,
       subject: confirmOnly
         ? `✅ Bridal Confirmed · ${clientName || clientEmail} · consultation still to schedule`

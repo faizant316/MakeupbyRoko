@@ -42,6 +42,15 @@ create table if not exists email_log (
   recipient text not null,
   subject text,
 
+  -- The rendered email, kept ONLY for client-facing sends so the admin card's
+  -- resend button is an exact replay rather than a reconstruction. Rebuilding a
+  -- bridal confirmation from scratch would mean reassembling the booking, the
+  -- linked inquiry, the service prices and the signed contract, and any drift in
+  -- that logic would silently send the bride something different from what she
+  -- was told the first time. Roughly 40KB a row, at a few bookings a week.
+  -- Admin copies are not stored: Roko has the dashboard.
+  html text,
+
   -- Resend's message id. The join key for the webhook, and what you paste into
   -- the Resend dashboard to see the exact bytes that were sent.
   resend_id text,
