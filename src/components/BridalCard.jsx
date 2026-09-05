@@ -1,9 +1,15 @@
-import { bestFor, ctaLabel } from '@/lib/serviceCopy';
+import { bestFor, ctaLabel, travelFit } from '@/lib/serviceCopy';
 import ServiceSpecs from './ServiceSpecs';
 import CtaArrow from './CtaArrow';
 
-const AURA_CLASSES = ['bridal-aura', 'fullday-aura', ''];
-const LABELS = ['Featured Service', 'Premium Package', 'Trial Package'];
+// Luxury and Full Day are now the same size on desktop, so the aura is what
+// marks the default rather than the layout. Full Day had its own red/gold aura
+// back when it sat on a separate row; side by side, two differently coloured
+// 24px blurs breathing at each other across a 20px gutter read as noise, and a
+// second glow would have cancelled out the only signal saying which package
+// most brides want.
+const AURA_CLASSES = ['bridal-aura', '', ''];
+const LABELS = ['Most Brides', 'Premium Package', 'Trial Package'];
 
 // Resting + hover elevation. A tight contact shadow layered over a soft ambient
 // one reads as real depth; the hover state lifts the card and deepens both.
@@ -50,7 +56,23 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                 the only place to find. It reads ahead of the numbers now, so the
                 card answers "is this me?" before "what does it cost?". */}
             {bestFor(svc) && (
-              <p className="text-[0.82rem] text-[#8a7f79] leading-[1.5] mb-4">{bestFor(svc)}</p>
+              <p className={`text-[0.82rem] text-[#8a7f79] leading-[1.5] ${travelFit(svc) ? 'mb-2' : 'mb-4'}`}>
+                {bestFor(svc)}
+              </p>
+            )}
+
+            {/* How far away this package is for. The same dot-chip the
+                non-bridal cards use for "Studio only, Mountain House, CA",
+                because it is the same kind of fact: a logistics constraint
+                rather than a selling point. Luxury and Full Day both carry one,
+                so the pair reads as a fork and the two cards stay level. */}
+            {travelFit(svc) && (
+              <div className="mb-4">
+                <span className="inline-flex items-center gap-1.5 text-[0.72rem] text-[#A0785A]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
+                  {travelFit(svc)}
+                </span>
+              </div>
             )}
 
             <div className="mb-4">

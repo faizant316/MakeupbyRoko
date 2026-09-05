@@ -26,7 +26,10 @@ export function ctaLabel(svc) {
 // reason BridalComparison had to exist.
 const BEST_FOR = {
   'Luxury Bridal Look': 'Best for the bride on her wedding day',
-  'Full Day Service':   'Best for early starts, long days, or travel over an hour',
+  // Distance moved out to travelFit below, where it gets its own line on the
+  // card. That left room here for the other two triggers that also force a Full
+  // Day (see the "When Full Day is required" rows in BridalComparison).
+  'Full Day Service':   'Best for early starts, long days, or a second look',
   'Bridal Trial':       'Best for testing your look 1 to 3 months ahead',
   'Non-Bridal Makeup':  'Best for parties, birthdays, graduations, a night out',
   'Photoshoot Makeup':  'Best for editorial, content days and portraits',
@@ -35,6 +38,31 @@ const BEST_FOR = {
 
 export function bestFor(svc) {
   return BEST_FOR[svc?.title] || '';
+}
+
+// Which package your drive time puts you in, said on the card itself.
+//
+// Luxury and Full Day sit side by side on the services grid, and the only
+// question that separates them for most brides is how far the venue is. That
+// answer used to live one click deep (the comparison table) or one form deep
+// (the measured gate in the booking flow), so a bride two hours out picked the
+// wrong package on the grid and got corrected at checkout.
+//
+// Both cards carry a line, not just Full Day: a bride twenty minutes away needs
+// to be told she is in the right place just as much as one three hours out.
+//
+// The hour and the town are read from the constants that enforce the rule
+// rather than retyped, so this copy cannot drift away from what the gate does.
+const STUDIO_CITY = STUDIO_TOWN.split(',')[0].trim();
+const HOUR_LABEL = TRAVEL_HOUR_MINUTES === 60 ? 'an hour' : `${TRAVEL_HOUR_MINUTES} minutes`;
+
+const TRAVEL_FIT = {
+  'Luxury Bridal Look': `Within ${HOUR_LABEL} of ${STUDIO_CITY}`,
+  'Full Day Service':   `Over ${HOUR_LABEL} from ${STUDIO_CITY}`,
+};
+
+export function travelFit(svc) {
+  return TRAVEL_FIT[svc?.title] || '';
 }
 
 // How far out this service can be booked, and what the calendar will call it.

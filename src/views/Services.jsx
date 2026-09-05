@@ -13,7 +13,6 @@ import BeforeAfterGallery from '../components/BeforeAfterGallery';
 import Testimonials from '../components/Testimonials';
 import FAQSection from '../components/FAQSection';
 import BridalCard from '../components/BridalCard';
-import BridalHeroCard from '../components/BridalHeroCard';
 import NonBridalCard from '../components/NonBridalCard';
 import BridalComparison from '../components/BridalComparison';
 import About from '../components/About';
@@ -516,21 +515,43 @@ export default function ServicesPage() {
                 <SwipeHint idx={bridalIdx} count={bridalServices.length} className="lg:hidden" />
               </div>
 
-              {/* Desktop: the flagship gets a full-width split card and the rest
-                  sit two to a row beneath it. An equal 3-up gave the $750 and
-                  $1,700 packages narrower cards than the $400 non-bridal rows
-                  further down the page, which read as the wrong hierarchy. The
-                  mobile carousel below is unchanged — all three still run
-                  through BridalCard there. */}
+              {/* Desktop: the two wedding-day packages side by side, then the
+                  trial as a row beneath.
+
+                  The flagship used to get a full-width split card above the
+                  other two, which is exactly what a featured card is built to
+                  do: absorb the click. A bride three hours out picked the $750
+                  Luxury Bridal Look because it was the biggest thing on screen
+                  and never read the Full Day card that was actually hers, then
+                  got corrected by the measured hour gate at checkout (see
+                  src/lib/travel.js). Equal cards plus the distance line each one
+                  carries (travelFit, in serviceCopy) let her self-select here
+                  instead. Luxury is still the default, said with the aura and
+                  its "Most Brides" label rather than with size.
+
+                  Sliced by position, not by title, so deactivating a bridal
+                  service in Supabase degrades to one column instead of leaving a
+                  half-width orphan. The mobile carousel below is unchanged: all
+                  three still run through BridalCard there. */}
               <div className="hidden lg:flex flex-col gap-5">
-                <BridalHeroCard svc={bridalServices[0]} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
-                {bridalServices.length > 1 && (
-                  <div className="grid gap-5" style={{ gridTemplateColumns: bridalServices.length > 2 ? 'repeat(2, 1fr)' : '1fr' }}>
-                    {bridalServices.slice(1).map((svc, i) => (
-                      <BridalCard key={svc.key} svc={svc} idx={i + 1} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
-                    ))}
-                  </div>
-                )}
+                <div className="grid gap-5" style={{ gridTemplateColumns: bridalServices.length > 1 ? 'repeat(2, 1fr)' : '1fr' }}>
+                  {bridalServices.slice(0, 2).map((svc, i) => (
+                    <BridalCard key={svc.key} svc={svc} idx={i} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
+                  ))}
+                </div>
+                {/* The trial is a supporting service, not a third choice in the
+                    fork, so it takes the same horizontal row the non-bridal
+                    services use further down rather than a tall card with a
+                    hole beside it. */}
+                {bridalServices.slice(2).map((svc) => (
+                  <NonBridalCard
+                    key={svc.key}
+                    svc={svc}
+                    onSelect={setSelectedService}
+                    onOpenClassModal={() => setShowClassModal(true)}
+                    onViewDetail={handleViewDetail}
+                  />
+                ))}
               </div>
 
               {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
