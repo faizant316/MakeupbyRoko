@@ -9,7 +9,14 @@ import { useState, useEffect, useRef } from 'react';
 // on a dark admin panel meant black text on a near-black field: the address was
 // there the whole time and unreadable. Defaults to false so the two public
 // forms, which are always light, are untouched.
-export default function LocationAutocomplete({ value, onChange, placeholder = 'Venue name & city', dm = false }) {
+//
+// `ariaLabel` names the field for screen readers where there is no visible
+// label beside it. The bridal form drops its label on purpose (it used to ask
+// "where are you getting ready?" and then "where will you be getting ready?"
+// back to back), so without this the input would announce as unlabelled.
+// Falls back to the placeholder, which gives the other call sites an accessible
+// name they did not have before.
+export default function LocationAutocomplete({ value, onChange, placeholder = 'Venue name & city', dm = false, ariaLabel }) {
   const [query, setQuery] = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -88,6 +95,7 @@ export default function LocationAutocomplete({ value, onChange, placeholder = 'V
           className={`flex-1 py-3 border-0 text-base sm:text-[0.95rem] outline-none bg-transparent ${dm ? 'placeholder:text-[#787885]' : 'placeholder:text-gray-300'}`}
           style={{ color: dm ? '#ECEDF1' : '#111' }}
           autoComplete="off"
+          aria-label={ariaLabel || placeholder}
         />
         {loading && (
           <div className="mb-1.5">

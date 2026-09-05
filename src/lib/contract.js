@@ -72,6 +72,7 @@ const SUPERSEDED_SECTION_BODIES = {
   ],
   travel: [
     `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance.`,
+    `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance. The Full Day Service is an exception: travel is included in its package price and no additional travel fee is charged.`,
   ],
 };
 
@@ -189,7 +190,7 @@ export function defaultContractTemplate({ kind = 'appointment' } = {}) {
         { id: 'booking', heading: 'Booking & Confirmation', body: `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.` },
         { id: 'payment', heading: 'Deposit & Payment', body: `Your service price is {price}. A non-refundable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due in cash on the day of your appointment, plus any travel fee or add-ons. No digital payments are accepted for the balance.` },
         { id: 'cancellation', heading: 'Cancellation & Rescheduling', body: `The Client must give at least 24 hours notice to cancel or reschedule. The deposit is non-refundable and non-transferable. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.` },
-        { id: 'travel', heading: 'Travel Fee', body: `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance. The Full Day Service is an exception: travel is included in its package price and no additional travel fee is charged.` },
+        { id: 'travel', heading: 'Travel Fee', body: `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee} within approximately one hour of the studio. Beyond that, the booking is made as the Full Day Service, whose package price includes travel and to which no additional travel fee is charged.` },
         shared.health,
         { id: 'punctuality', heading: 'Punctuality', body: `Please arrive on time. Arrivals more than 15 minutes late may result in a shortened service or cancellation at the Artist's discretion, without a refund.` },
         shared.photography,

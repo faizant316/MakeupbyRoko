@@ -27,6 +27,8 @@ import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_READY_VALUE } from '@/lib/studio';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
 import { BRIDAL_LEAD_DAYS, canAddParty, daysUntil } from '@/lib/bookingLeadTime';
+import { useTravelDistance } from '@/lib/useTravelDistance';
+import { LOCAL_TRAVEL_FEE, formatDriveTime, isOutsideCalifornia, needsFullDay } from '@/lib/travel';
 
 // The two-part bridal flow (plan it, then wear it). Desktop only — on a phone
 // step one carries the one-line version of this next to the lead-time note.
@@ -48,6 +50,30 @@ const NO_COUNTS = {};
 
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
+
+// The measured drive from the studio, sat directly under the venue field.
+//
+// It replaces a question the form used to ask her ("is this more than an hour
+// away?") with an answer. Deliberately quiet: one line, no box, no border. It is
+// a fact about what she just typed, not a warning, and the moment it looks like
+// a warning every bride inside the hour starts worrying about a rule that does
+// not apply to her. Renders nothing at all when there is nothing to say.
+function DriveTime({ status, label }) {
+  if (status !== 'checking' && status !== 'measured') return null;
+  const measured = status === 'measured';
+  return (
+    <p className="flex items-center gap-1.5 mt-2 text-[0.75rem]" style={{ color: measured ? '#8A7F79' : '#B5ABA6' }}>
+      <span
+        className={`w-[3px] h-[3px] rounded-full flex-shrink-0 ${measured ? '' : 'animate-pulse'}`}
+        style={{ background: measured ? '#D4A0B0' : '#C9BFBA' }}
+        aria-hidden="true"
+      />
+      {measured
+        ? <>About <strong className="font-semibold" style={{ color: '#4A423E' }}>{label}</strong> from the studio</>
+        : 'Checking the drive from the studio'}
+    </p>
+  );
+}
 
 function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, recapDate, recapRows, recapDateLabel = 'Wedding Date' }) {
   const firstName = (brideName || '').split(' ')[0] || 'there';
@@ -264,10 +290,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // the same thoughtfully-laid-out descriptor + Package Price line that Full Day has.
   const aboutTag = isFullDay ? 'Full Day Coverage' : isTrial ? 'Bridal Trial' : 'Wedding Day Look';
   const aboutBlurb = isFullDay
-    ? <>Roko stays with you from <strong>prep through ceremony</strong>. Best for early starts, switch looks, or venues over an hour away.</>
+    ? <>Roko with you <strong>prep through ceremony</strong>. Best for early starts, switch looks, or venues over an hour away.</>
     : isTrial
-    ? <>A full run-through of your bridal look <strong>before the big day</strong>. Best 1 to 3 months out.</>
-    : <>Your <strong>wedding-day makeup</strong>, designed for your features and built to last all day.</>;
+    ? <>A full run-through of your look, best <strong>1 to 3 months</strong> out.</>
+    : <>Your <strong>wedding-day makeup</strong>, built to last all day.</>;
 
   // Stable for the life of the sheet — a fresh Date on every render would make
   // the calendar re-derive everything (and re-bind its swipe listeners) whenever
@@ -324,6 +350,41 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     onSwitchService(fullDayService);
     setSwitchedToFullDay(true);
   };
+
+  // ── The hour rule ──────────────────────────────────────────────────────────
+  // Only measure when there is actually a drive to measure. A trial is at the
+  // studio; so is a Luxury bride who picked "Roko's studio", and she owes no
+  // travel fee at all. Out of state is quoted per trip rather than by the hour,
+  // so measuring it would only produce a number nobody prices from.
+  const onLocation = !isTrial && (isFullDay || form.ready_location_type === 'elsewhere');
+  const travel = useTravelDistance(form.event_location, {
+    enabled: onLocation && form.out_of_state !== true,
+  });
+  const canSwitchToFullDay = Boolean(fullDayService && onSwitchService);
+  // Full Day already includes travel at any distance, so the gate never applies
+  // to it. It only ever pushes a Luxury Bridal Look up to Full Day, and never
+  // for a destination wedding, which is priced per trip instead.
+  //
+  // Gated on canSwitchToFullDay so the gate can never become a dead end: if the
+  // Full Day service row failed to load there is nothing to switch her to, and
+  // blocking her with no way forward would be worse than the wrong package.
+  const travelGated = !isFullDay
+    && canSwitchToFullDay
+    && needsFullDay(travel.minutes)
+    && !isOutsideCalifornia(travel.matched);
+  const driveTimeLabel = formatDriveTime(travel.minutes);
+  // What the extra costs her, said in her terms. Roko asked for this directly
+  // (2026-09-05): the old switch said only "travel included", so a bride watched
+  // the price go from $750 to $1,700 with no idea what the difference bought.
+  // Prefers the live service record, which Roko edits in Supabase, over anything
+  // hardcoded here.
+  const fullDayHighlights = (fullDayService?.includes?.length ? fullDayService.includes : [
+    'Your bridal makeup, unhurried',
+    'Roko with you from prep through the ceremony',
+    'A switch look between ceremony and reception',
+    'Professional lash application',
+    'All travel to your venue',
+  ]).slice(0, 5);
 
   // Party add-ons need a month. Derived from the date the bride actually picked,
   // so it re-evaluates if she goes back and moves her date.
@@ -401,19 +462,40 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       goStep('sign');
       return;
     }
-    // Required because Roko builds the whole day's timeline backwards from it.
-    // Checked here, after the trial early-return, since a trial has no ready-by
-    // and never renders the field. Ordered above the location and vendor checks
-    // to match where it sits on the page.
-    if (!form.makeup_ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
+    // These run in the order the fields appear on the page, so the first thing
+    // she is told about is the first blank she would find scrolling up. Location
+    // leads because it now leads step two, and because it can change her package
+    // out from under the answers below it.
+    //
     // Full Day travels on-location; the standard Luxury Bridal Look asks "where
-    // would you like to get ready?" (studio vs. somewhere else).
+    // are you getting ready?" (studio vs. somewhere else) first.
     if (isFullDay) {
       if (!form.event_location) { alert('Please enter the event location.'); return; }
     } else {
       if (!form.ready_location_type) { alert('Please choose where you\'d like to get ready.'); return; }
       if (form.ready_location_type === 'elsewhere' && !form.event_location) { alert('Please add the address or venue where you\'ll be getting ready.'); return; }
     }
+    // The hour rule, enforced rather than described. Until this existed a bride
+    // could type a venue two hours out and walk straight past the note about it,
+    // which is exactly what happened on 2026-09-04. `travelGated` is false for a
+    // venue we could not measure and false when there is no Full Day row to
+    // switch her to, so neither a Google outage nor a renamed service can leave
+    // her unable to book at all.
+    if (travelGated) {
+      alert(`That venue is about ${driveTimeLabel} from the studio, which is over an hour away, so it books as the Full Day Service. Tap "Continue with Full Day" to switch.`);
+      return;
+    }
+    // She has a venue on screen and no verdict for it yet: either the debounce
+    // has not fired or Google has not answered. A second of waiting beats
+    // letting the wrong package through in the gap.
+    if (onLocation && travel.status === 'checking') {
+      alert('One moment, still checking how far your venue is from the studio.');
+      return;
+    }
+    // Required because Roko builds the whole day's timeline backwards from it.
+    // Checked after the trial early-return, since a trial has no ready-by and
+    // never renders the field.
+    if (!form.makeup_ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
     if (!form.ready_by_time) { alert('Please select when the hairstylist should arrive by.'); return; }
     // Both are Yes/No booleans that start undefined, so "unanswered" is == null
     // rather than falsy — a deliberate "No" is false and must pass.
@@ -891,7 +973,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <div className="min-w-0">
                   <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#C4849A] mb-0.5">Held at Roko's Studio</p>
                   <p className="text-[0.82rem] leading-[1.6] text-[#6E6058]">
-                    Trials are at Roko's studio in <strong className="text-[#4A423E]">Mountain House</strong>. Exact address once your date is confirmed.
+                    <strong className="text-[#4A423E]">Mountain House</strong>. Exact address once your date is confirmed.
                   </p>
                 </div>
               </div>
@@ -936,7 +1018,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time works best for you? *</label>
                   <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                    Roko confirms the final time and can move it with you.
+                    Roko confirms the final time with you.
                   </p>
                 </div>
 
@@ -953,7 +1035,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                     <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
                     <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
-                      You'll get a private upload link. Send one photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>, so Roko can plan your look. Nothing to upload here.
+                      One photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span>, one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>. You'll get a private link, nothing to upload here.
                     </p>
                   </div>
                 </div>
@@ -973,52 +1055,45 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <>
             <div className="w-full h-px bg-gray-100" />
 
-            {/* Timing and location. The bride's ready-by preference leads, then
-                where she'll get ready, then the vendor arrival times. Event start
-                time was dropped: Roko builds the timeline around the ready-by. */}
+            {/* Where she's getting ready, then the three times.
 
-            {/* The bride's own ready-by preference — the one timing field that's
-                about her, so it gets a soft pink accent bar + plum label to stand
-                out from the vendor times around it. */}
-            <div className="relative pl-3.5">
-              <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-              <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
-              <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
-              <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
-                When you want your makeup finished. Roko builds the timeline around it.
-              </p>
-            </div>
+                Location leads because it decides the package: past an hour from
+                the studio this is a Full Day booking, not a Luxury Bridal Look
+                with a bigger travel fee, and she should find that out before she
+                fills in three vendor times she may have to redo. The times then
+                sit together as one block instead of being split apart by a
+                question about geography. Event start time was dropped: Roko
+                builds the timeline backwards from the ready-by. */}
 
-            {/* Where she'll get ready — grouped right under the ready-by so the two
-                "about you" questions sit together, above the vendor arrival times. */}
             {isFullDay ? (
               <div>
-                {/* She arrived here by tapping the over-an-hour nudge on the Luxury
-                    form, so the package under her just changed and the price nearly
-                    tripled without the sheet reloading. Say so, plainly and where
-                    she tapped, instead of leaving it to be noticed in the footer. */}
+                {/* She got here by tapping the gate on the Luxury form, so the
+                    package under her just changed and the price more than
+                    doubled without the sheet reloading. Say so where she tapped,
+                    rather than leaving it to be noticed in the footer. */}
                 {switchedToFullDay && (
                   <div className="mb-4 rounded-xl px-3.5 py-3" style={{ background: 'rgba(196,132,154,0.08)', border: '1px solid #EBC4D2', animation: 'fadeSlideDown 0.2s ease-out' }}>
                     <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: '#B06883' }}>Package switched</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#4A423E' }}>
-                      You're now booking the <strong>{bridalTitle}</strong>{activeService?.price ? <>, <strong>{activeService.price}</strong></> : null}, with travel included. Everything you'd already filled in has been kept.
+                      Now booking the <strong>{bridalTitle}</strong>{activeService?.price ? <>, <strong>{activeService.price}</strong></> : null}. Travel included, and everything you'd filled in was kept.
                     </p>
                   </div>
                 )}
-                <label className={labelClass}>Where would you like to get ready? *</label>
-                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Hotel, home, or venue. Roko travels to you for full days.</p>
+                <label className={labelClass}>Where are you getting ready? *</label>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Hotel, home or venue. Roko travels to you.</p>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
+                <DriveTime status={travel.status} label={driveTimeLabel} />
                 <div className="mt-3 relative pl-3.5">
                   <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                   <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
                   <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                    <strong style={{ color: '#4A423E' }}>No separate travel fee</strong>, it's already in the full-day price. Your balance is the price minus your deposit, in cash on the day.
+                    Your balance (the price minus your deposit) is cash on the day.
                   </p>
                 </div>
               </div>
             ) : (
               <div>
-                <label className={labelClass}>Where would you like to get ready? *</label>
+                <label className={labelClass}>Where are you getting ready? *</label>
                 <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Where Roko does your makeup, not necessarily the venue.</p>
                 <div className="flex gap-3 mt-1">
                   {[
@@ -1049,57 +1124,109 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
                 {form.ready_location_type === 'elsewhere' && (
                   <div className="mt-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
-                    <label className={labelClass}>Where will you be getting ready? *</label>
-                    <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
-                    {/* Out of state is quoted per trip (flights, hotel, add-on person),
-                        so neither the local $200 nor the over-an-hour Full Day rule
-                        applies. Leaving the $200 note up for a destination bride quotes
-                        her a number that was never hers. */}
+                    {/* No second label here on purpose. "Where would you like to
+                        get ready?" followed by "Where will you be getting ready?"
+                        was two near-identical questions in a row; the field's own
+                        placeholder already says what belongs in it. */}
+                    <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} ariaLabel="Where you will be getting ready" />
+
                     {form.out_of_state === true ? (
+                      /* Destination travel is quoted per trip, so neither the flat
+                         fee nor the hour rule applies. Leaving the fee up for a
+                         destination bride quotes her a number that was never hers. */
                       <div className="mt-3 relative pl-3.5">
                         <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                         <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Destination event</p>
                         <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                          The local <strong style={{ color: '#4A423E' }}>$200</strong> travel fee doesn't apply out of state. Roko quotes destination travel per trip, see the requirements further down.
+                          Roko quotes destination travel per trip, see below. The {LOCAL_TRAVEL_FEE} local fee doesn't apply.
                         </p>
+                      </div>
+                    ) : travelGated ? (
+                      /* Past the hour this stops being an offer and becomes the
+                         booking. Before it was measured, the same rule lived in a
+                         small optional button under a fee note that did not apply
+                         to her, which is how a venue two hours out reached Review
+                         & Sign at $750 on 2026-09-04. */
+                      <div
+                        className="mt-3.5 rounded-2xl border"
+                        style={{
+                          borderColor: '#DCA9BE',
+                          background: 'linear-gradient(180deg, rgba(196,132,154,0.075), rgba(196,132,154,0.025))',
+                          animation: 'fadeSlideDown 0.2s ease-out',
+                        }}
+                      >
+                        <div className="px-4 pt-4 pb-4">
+                          <p className="inline-block text-[0.55rem] font-bold tracking-[0.16em] uppercase mb-2.5 px-2 py-1 rounded-md text-white" style={{ background: '#B06883' }}>
+                            Full Day Service
+                          </p>
+                          <p className="text-[0.86rem] leading-[1.7]" style={{ color: '#4A423E' }}>
+                            Your venue is about <strong className="font-semibold">{driveTimeLabel}</strong> from the studio. Over an hour, Roko books the whole day as the <strong className="font-semibold">Full Day Service</strong>, travel included.
+                          </p>
+
+                          {/* What the extra actually buys. The old switch said only
+                              "travel included", so she watched the price more than
+                              double with no idea what she was getting for it. */}
+                          <ul className="mt-3.5 flex flex-col gap-[0.35rem]">
+                            {fullDayHighlights.map(item => (
+                              <li key={item} className="flex items-start gap-2 text-[0.78rem] leading-[1.55]" style={{ color: '#6E6058' }}>
+                                <span className="mt-[0.42rem] w-[3px] h-[3px] rounded-full flex-shrink-0" style={{ background: '#C4849A' }} aria-hidden="true" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <button
+                            type="button"
+                            onClick={switchToFullDay}
+                            className="mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-[0.82rem] font-semibold text-white transition-all active:scale-[0.985] touch-manipulation"
+                            style={{ background: '#111' }}
+                          >
+                            Continue with Full Day{fullDayService?.price ? ` · ${fullDayService.price}` : ''}
+                            <span aria-hidden="true">&rarr;</span>
+                          </button>
+                          {/* Never a dead end. Both of these are genuinely open to
+                              her, and a bride who is two hours out only because she
+                              typed the reception venue by mistake needs to be told
+                              she can simply fix the address. */}
+                          <p className="text-[0.72rem] text-center mt-2.5 leading-[1.6]" style={{ color: '#A2968F' }}>
+                            Or choose somewhere closer, or get ready at Roko's studio.
+                          </p>
+                        </div>
                       </div>
                     ) : (
-                      <div className="mt-3 relative pl-3.5">
-                        <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                        <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
-                        <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                          <strong style={{ color: '#4A423E' }}>$200</strong> within about an hour of Mountain House. Added to your balance, in cash on the day.
-                        </p>
-                        {/* Past an hour isn't a bigger travel fee, it's a different
-                            service: Full Day is already required for venues over an
-                            hour out (see ServiceFAQ + FullDayIncludes). That rule
-                            existed everywhere except the one screen where it matters,
-                            right after she types a far-away address, so a Sacramento
-                            or LA bride could book the wrong package and only find out
-                            when Roko called her. */}
-                        {fullDayService && onSwitchService && (
-                          <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(196,132,154,0.2)' }}>
-                            <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                              Getting ready more than an hour away? That's the <strong style={{ color: '#4A423E' }}>Full Day Service</strong> instead, travel included.
-                            </p>
-                            {/* Deliberately small, and never full-width. This is an
-                                offer, not the form's next step: at w-full on a phone a
-                                black bar this size reads as the primary CTA and pulls
-                                brides who are ten minutes away into a $1,700 package.
-                                Sized to the label on every screen so it stays a link
-                                you take if the hour applies to you. */}
-                            <button
-                              type="button"
-                              onClick={switchToFullDay}
-                              className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.72rem] font-medium text-white transition-all active:scale-[0.97] touch-manipulation"
-                              style={{ background: '#111' }}
-                            >
-                              Switch to Full Day{fullDayService.price ? ` · ${fullDayService.price}` : ''}
-                              <span aria-hidden="true">→</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <>
+                        <DriveTime status={travel.status} label={driveTimeLabel} />
+                        <div className="mt-3 relative pl-3.5">
+                          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                          <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
+                          <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                            <strong style={{ color: '#4A423E' }}>{LOCAL_TRAVEL_FEE}</strong>, added to your balance. Cash on the day.
+                          </p>
+
+                          {/* The old soft nudge, kept for the one case that still
+                              needs it: Google could not place the venue. It fails
+                              on private estates and on anything with no listing,
+                              and a bride must never be blocked, or left to guess,
+                              because of that. When the drive IS measured this is
+                              either irrelevant to her or replaced by the gate. */}
+                          {travel.status === 'unmeasurable' && canSwitchToFullDay && (
+                            <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(196,132,154,0.2)' }}>
+                              <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                                More than an hour from Mountain House? That's the <strong style={{ color: '#4A423E' }}>Full Day Service</strong>, travel included.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={switchToFullDay}
+                                className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[0.72rem] font-medium text-white transition-all active:scale-[0.97] touch-manipulation"
+                                style={{ background: '#111' }}
+                              >
+                                Switch to Full Day{fullDayService?.price ? ` · ${fullDayService.price}` : ''}
+                                <span aria-hidden="true">&rarr;</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -1109,12 +1236,24 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                     <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>You're all set</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                      Roko's studio in Mountain House. Exact address once your date is confirmed.
+                      No travel fee. Exact address once your date is confirmed.
                     </p>
                   </div>
                 )}
               </div>
             )}
+
+            {/* The bride's own ready-by preference, leading the three times now
+                that the location question no longer sits between them. Soft pink
+                accent bar + plum label so it reads as hers, not a vendor's. */}
+            <div className="relative pl-3.5">
+              <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
+              <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
+              <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
+              <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
+                Roko builds your timeline around this.
+              </p>
+            </div>
 
             <div>
               <label className={labelClass}>Photographer Arrives</label>
@@ -1132,7 +1271,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
               <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
               <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                Roko won't glam at the same time as another hairstylist, so she works around when yours arrives. (Unless it's <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>.)
+                Roko won't glam alongside another hairstylist, so she works around yours. (Unless it's <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>.)
               </p>
             </div>
 
@@ -1223,7 +1362,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                 <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
                 <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
-                  You'll get a private upload link. Send one photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span> and one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>, so Roko can pick the right products for you. Required, but not on this form.
+                  One photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span>, one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>. You'll get a private link, nothing to upload here.
                 </p>
               </div>
             </div>
@@ -1244,7 +1383,6 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
             <div>
               <label className={labelClass}>Is this an out-of-state event? *</label>
-              <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Local = California &nbsp;·&nbsp; Out of state = outside CA</p>
               <div className="flex gap-3 mt-1">
                 {['No', 'Yes'].map(opt => (
                   <button
@@ -1279,7 +1417,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     className={inputClass}
                   />
                   <p className="text-[0.75rem] text-gray-400 mt-1.5 leading-[1.6]">
-                    Where Roko would be travelling to. It's what she prices the trip from.
+                    What Roko prices the trip from.
                   </p>
                 </div>
               )}
