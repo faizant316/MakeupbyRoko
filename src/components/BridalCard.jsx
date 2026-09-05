@@ -65,29 +65,51 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                 the only place to find. It reads ahead of the numbers now, so the
                 card answers "is this me?" before "what does it cost?". */}
             {bestFor(svc) && (
-              <p className={`text-[0.82rem] text-[#8a7f79] leading-[1.5] ${travelFit(svc) ? 'mb-2' : 'mb-4'}`}>
+              <p className="text-[0.82rem] text-[#8a7f79] leading-[1.5] mb-4">
                 {bestFor(svc)}
               </p>
             )}
 
             {/* How far away this package is for, and the whole reason the two
                 cards sit side by side: it is the single question that decides
-                between them. It started as the same faint dot-chip the
-                non-bridal cards use for "Studio only, Mountain House, CA" and
-                read as fine print, which is exactly what a bride skims past on
-                her way to the biggest button. A tinted band with a pin carries
-                it instead. Luxury and Full Day both get one, so the pair reads
-                as a fork and the two cards stay level. */}
+                between them.
+
+                The value on its own ("Within an hour of Mountain House, CA")
+                is a fragment with no subject. It states a property of the
+                package, but the bride is trying to answer a question about
+                herself, and nothing on the card asked it, so she has to supply
+                the question before the answer means anything (reported
+                2026-09-05: "it's not clear that if you're getting ready over an
+                hour away, choose this one"). The GETTING READY label is that
+                question, in two words, read before the value rather than after.
+
+                Framed like a ServiceSpecs cell on purpose: same label size,
+                weight, tracking and colour, same hairline rule. A first pass
+                put this in a tinted pink band, which is the exact thing
+                ServiceSpecs already tried and rejected for dropping a coloured
+                panel into an otherwise white, hairline-ruled page, and on the
+                Luxury card it sat inside the pink aura and muddied. */}
             {travelFit(svc) && (
-              <div className="mb-4 flex items-center gap-2 rounded-[var(--radius)] border border-[#F1E1E7] bg-[#FBF5F7] px-3 py-2.5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  className="w-[15px] h-[15px] flex-shrink-0">
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span className="text-[0.86rem] font-semibold leading-[1.35] text-[#6B4055] text-balance">
-                  {travelFit(svc)}
+              <div className="mb-4 pt-4" style={{ borderTop: '1px solid #f0ebe6' }}>
+                <span
+                  className="block mb-1.5"
+                  style={{
+                    fontFamily: 'var(--font-sans)', fontSize: '0.58rem', fontWeight: 600,
+                    letterSpacing: '0.12em', textTransform: 'uppercase', color: '#a89f99',
+                  }}
+                >
+                  Getting ready
                 </span>
+                <div className="flex items-start gap-2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className="w-[15px] h-[15px] flex-shrink-0 mt-[2px]">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <span className="text-[0.86rem] font-semibold leading-[1.35] text-[#6B4055] text-balance">
+                    {travelFit(svc)}
+                  </span>
+                </div>
               </div>
             )}
 
