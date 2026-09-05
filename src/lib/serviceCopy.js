@@ -53,12 +53,11 @@ export function bestFor(svc) {
 //
 // The hour and the town are read from the constants that enforce the rule
 // rather than retyped, so this copy cannot drift away from what the gate does.
-const STUDIO_CITY = STUDIO_TOWN.split(',')[0].trim();
 const HOUR_LABEL = TRAVEL_HOUR_MINUTES === 60 ? 'an hour' : `${TRAVEL_HOUR_MINUTES} minutes`;
 
 const TRAVEL_FIT = {
-  'Luxury Bridal Look': `Within ${HOUR_LABEL} of ${STUDIO_CITY}`,
-  'Full Day Service':   `Over ${HOUR_LABEL} from ${STUDIO_CITY}`,
+  'Luxury Bridal Look': `Within ${HOUR_LABEL} of ${STUDIO_TOWN}`,
+  'Full Day Service':   `Over ${HOUR_LABEL} from ${STUDIO_TOWN}`,
 };
 
 export function travelFit(svc) {

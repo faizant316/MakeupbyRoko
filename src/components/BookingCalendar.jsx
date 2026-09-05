@@ -65,6 +65,170 @@ const SETTLE = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)';
 // paints", but React warns about it during SSR. Same hook, no warning.
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
+// One swipe track, used twice: the day grid steps months, the month board steps
+// years. Both are the same gesture over the same three-panel strip, and the
+// second one is not worth a second implementation.
+//
+// The track is moved directly on the DOM node, never through React state: a
+// setState per touchmove would re-render every cell on every frame of the drag,
+// which is exactly what made the old threshold-based swipe feel stiff. React
+// only hears about it once, when the value actually changes.
+//
+// A commit is two beats: animate the track to the neighbour panel, then (once
+// that lands) report the new value and snap the track back to centre in the
+// same layout pass. The panel under the finger and the panel that ends up
+// centred hold identical content, so the snap is invisible.
+function useSwipeTrack({ viewportRef, trackRef, canPrev = true, canNext = true, onCommit, resetKey, active = true }) {
+  const commitRef = useRef(null);   // 'next' | 'prev' while an animation is in flight
+  const fallbackRef = useRef(null);
+  const commitFnRef = useRef(() => {});
+
+  // Handlers read live values through this and the listener effect runs once per
+  // mount. Depending on the callbacks directly would tear the listeners down and
+  // rebuild them on every re-render, and a re-render landing mid-gesture (a
+  // capacity query resolving, say) would drop the in-progress touch on the floor.
+  const liveRef = useRef({ canPrev: true, canNext: true });
+  liveRef.current.canPrev = canPrev;
+  liveRef.current.canNext = canNext;
+
+  // Reassigned every render so the timer/transition callbacks always commit from
+  // the value that is current NOW, not the one captured when the drag started.
+  commitFnRef.current = () => {
+    const dir = commitRef.current;
+    if (!dir) return;
+    clearTimeout(fallbackRef.current);
+    onCommit(dir);
+  };
+
+  const settle = useCallback((dir) => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.style.animation = 'none';   // cancel the first-run nudge if it's mid-flight
+    track.style.transition = SETTLE;
+    if (!dir) { track.style.transform = BASE_X; return; }
+    commitRef.current = dir;
+    track.style.transform = dir === 'next' ? NEXT_X : PREV_X;
+    // Belt and braces: if transitionend never arrives (element hidden mid-swipe,
+    // reduced-motion killing the transition) the track would otherwise jam with
+    // commitRef stuck set and every further gesture ignored.
+    clearTimeout(fallbackRef.current);
+    fallbackRef.current = setTimeout(() => commitFnRef.current(), 460);
+  }, [trackRef]);
+
+  const onTransitionEnd = useCallback((e) => {
+    if (e.target !== trackRef.current || e.propertyName !== 'transform') return;
+    commitFnRef.current();
+  }, [trackRef]);
+
+  // Runs before paint, so the track is already back at centre by the time the
+  // new panels are drawn: no flash of the wrong month or year.
+  useIsoLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track || !commitRef.current) return;
+    commitRef.current = null;
+    track.style.transition = 'none';
+    track.style.transform = BASE_X;
+  }, [resetKey]);
+
+  useEffect(() => () => clearTimeout(fallbackRef.current), []);
+
+  const step = useCallback((dir) => {
+    if (commitRef.current) return;
+    if (dir === 'prev' && !liveRef.current.canPrev) return;
+    if (dir === 'next' && !liveRef.current.canNext) return;
+    settle(dir);
+  }, [settle]);
+
+  // Drag.
+  // Attached natively (not via React's onTouchMove) because React registers
+  // touchmove as a PASSIVE listener on its root, and a passive listener cannot
+  // preventDefault. Without that call, a horizontal drag would scroll the sheet
+  // vertically at the same time as dragging the track.
+  //
+  // The axis is locked once, within the first ~6px, and horizontal has to beat
+  // vertical by 1.2x to win. That bias matters: this lives in a tall scrolling
+  // sheet, and a slightly-diagonal flick should still scroll the page.
+  //
+  // `active` is in the deps because the month board mounts and unmounts: without
+  // it the listeners would look for a viewport that did not exist yet on the
+  // first render and never be re-attached once it appeared.
+  useEffect(() => {
+    if (!active) return;
+    const vp = viewportRef.current;
+    const track = trackRef.current;
+    if (!vp || !track) return;
+    let drag = null;
+
+    const onStart = (e) => {
+      if (commitRef.current) return;          // still landing the last swipe
+      if (e.touches.length !== 1) { drag = null; return; }
+      track.style.animation = 'none';
+      track.style.transition = 'none';        // from here the track tracks the thumb 1:1
+      const t = e.touches[0];
+      drag = { x0: t.clientX, y0: t.clientY, axis: null, dx: 0, lastX: t.clientX, lastT: e.timeStamp, v: 0 };
+    };
+
+    const onMove = (e) => {
+      if (!drag || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - drag.x0;
+      const dy = t.clientY - drag.y0;
+
+      if (drag.axis === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        drag.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
+      }
+      if (drag.axis !== 'x') return;
+      if (e.cancelable) e.preventDefault();
+
+      const w = vp.offsetWidth || 1;
+      // Dragging past either end has nothing real behind it, so it rubber-bands
+      // instead of revealing a panel that cannot be reached.
+      const blocked = (dx > 0 && !liveRef.current.canPrev) || (dx < 0 && !liveRef.current.canNext);
+      let shift = blocked ? dx * 0.22 : dx;
+      shift = Math.max(-w, Math.min(w, shift));
+      drag.dx = shift;
+
+      const dt = e.timeStamp - drag.lastT;
+      if (dt > 0) drag.v = (t.clientX - drag.lastX) / dt;
+      drag.lastX = t.clientX;
+      drag.lastT = e.timeStamp;
+
+      // Plain pixels, not calc() against a percentage. -33.3333% of a track that
+      // is 300% wide is exactly one viewport, so this is the same position, but
+      // the browser doesn't have to resolve a percentage against a freshly
+      // measured box on every touchmove to get there.
+      track.style.transform = `translate3d(${(shift - w).toFixed(2)}px,0,0)`;
+    };
+
+    const onEnd = () => {
+      const d = drag;
+      drag = null;
+      if (!d || d.axis !== 'x') return;
+      const w = vp.offsetWidth || 1;
+      // Either drag it a fifth of the way across, or flick it. The flick path is
+      // what makes a short, fast swipe work the way a phone user expects.
+      const far = Math.abs(d.dx) > w * 0.2;
+      const flick = Math.abs(d.v) > 0.35 && Math.abs(d.dx) > 18;
+      if (!far && !flick) { settle(null); return; }
+      if (d.dx < 0) settle(liveRef.current.canNext ? 'next' : null);
+      else settle(liveRef.current.canPrev ? 'prev' : null);
+    };
+
+    vp.addEventListener('touchstart', onStart, { passive: true });
+    vp.addEventListener('touchmove', onMove, { passive: false });
+    vp.addEventListener('touchend', onEnd, { passive: true });
+    vp.addEventListener('touchcancel', onEnd, { passive: true });
+    return () => {
+      vp.removeEventListener('touchstart', onStart);
+      vp.removeEventListener('touchmove', onMove);
+      vp.removeEventListener('touchend', onEnd);
+      vp.removeEventListener('touchcancel', onEnd);
+    };
+  }, [settle, active, viewportRef, trackRef]);
+
+  return { step, onTransitionEnd };
+}
+
 // Leading blanks to line the 1st up under its weekday, then one entry per day.
 function buildMonthGrid(year, month) {
   const firstDay = new Date(year, month, 1).getDay();
@@ -401,156 +565,15 @@ export default function BookingCalendar({
     };
   }, [picking, placeBoard]);
 
-  // ── Swipe / step animation ────────────────────────────────────────────────
-  // The track is moved directly on the DOM node, never through React state: a
-  // setState per touchmove would re-render 30-odd day buttons on every frame of
-  // the drag, which is exactly what made the old threshold-based swipe feel
-  // stiff. React only hears about it once, when the month actually changes.
-  //
-  // A commit is two beats: animate the track to the neighbour panel, then (once
-  // that lands) tell the parent about the new month and snap the track back to
-  // centre in the same layout pass. The panel under the finger and the panel
-  // that ends up centred hold identical content, so the snap is invisible.
-  const commitRef = useRef(null);   // 'next' | 'prev' while an animation is in flight
-  const fallbackRef = useRef(null);
-  const commitFnRef = useRef(() => {});
+  // Months step on the day grid's own track (see useSwipeTrack).
+  const { step: stepMonth, onTransitionEnd: onMonthTrackEnd } = useSwipeTrack({
+    viewportRef,
+    trackRef,
+    canPrev: canGoPrev,
+    onCommit: (dir) => onMonthChange(new Date(year, month + (dir === 'next' ? 1 : -1))),
+    resetKey: `${year}-${month}`,
+  });
 
-  // Reassigned every render so the timer/transition callbacks always commit from
-  // the month that is current NOW, not the one captured when the drag started.
-  commitFnRef.current = () => {
-    const dir = commitRef.current;
-    if (!dir) return;
-    clearTimeout(fallbackRef.current);
-    onMonthChange(new Date(year, month + (dir === 'next' ? 1 : -1)));
-  };
-
-  const settle = useCallback((dir) => {
-    const track = trackRef.current;
-    if (!track) return;
-    track.style.animation = 'none';   // cancel the first-run nudge if it's mid-flight
-    track.style.transition = SETTLE;
-    if (!dir) { track.style.transform = BASE_X; return; }
-    commitRef.current = dir;
-    track.style.transform = dir === 'next' ? NEXT_X : PREV_X;
-    // Belt and braces: if transitionend never arrives (element hidden mid-swipe,
-    // reduced-motion killing the transition) the calendar would otherwise jam
-    // with commitRef stuck set and every further gesture ignored.
-    clearTimeout(fallbackRef.current);
-    fallbackRef.current = setTimeout(() => commitFnRef.current(), 460);
-  }, []);
-
-  const handleTrackTransitionEnd = (e) => {
-    if (e.target !== trackRef.current || e.propertyName !== 'transform') return;
-    commitFnRef.current();
-  };
-
-  // Runs before paint, so the track is already back at centre by the time the
-  // new month's panels are drawn — no flash of the wrong month.
-  useIsoLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track || !commitRef.current) return;
-    commitRef.current = null;
-    track.style.transition = 'none';
-    track.style.transform = BASE_X;
-  }, [year, month]);
-
-  useEffect(() => () => clearTimeout(fallbackRef.current), []);
-
-  const stepMonth = useCallback((dir) => {
-    if (commitRef.current) return;
-    if (dir === 'prev' && !canGoPrev) return;
-    settle(dir);
-  }, [canGoPrev, settle]);
-
-  // ── Drag ──────────────────────────────────────────────────────────────────
-  // Attached natively (not via React's onTouchMove) because React registers
-  // touchmove as a PASSIVE listener on its root, and a passive listener cannot
-  // preventDefault. Without that call, a horizontal drag would scroll the sheet
-  // vertically at the same time as dragging the month.
-  //
-  // The axis is locked once, within the first ~6px, and horizontal has to beat
-  // vertical by 1.2x to win. That bias matters: this grid lives in a tall
-  // scrolling sheet, and a slightly-diagonal flick should still scroll the page.
-  //
-  // Handlers read live values through refs and the effect runs ONCE. Depending
-  // on the callbacks directly would tear the listeners down and rebuild them on
-  // every re-render, and a re-render landing mid-gesture (a capacity query
-  // resolving, say) would drop the in-progress touch on the floor.
-  const liveRef = useRef({ canPrev: true });
-  liveRef.current.canPrev = canGoPrev;
-
-  useEffect(() => {
-    const vp = viewportRef.current;
-    const track = trackRef.current;
-    if (!vp || !track) return;
-    let drag = null;
-
-    const onStart = (e) => {
-      if (commitRef.current) return;          // still landing the last swipe
-      if (e.touches.length !== 1) { drag = null; return; }
-      track.style.animation = 'none';
-      track.style.transition = 'none';        // from here the track tracks the thumb 1:1
-      const t = e.touches[0];
-      drag = { x0: t.clientX, y0: t.clientY, axis: null, dx: 0, lastX: t.clientX, lastT: e.timeStamp, v: 0 };
-    };
-
-    const onMove = (e) => {
-      if (!drag || e.touches.length !== 1) return;
-      const t = e.touches[0];
-      const dx = t.clientX - drag.x0;
-      const dy = t.clientY - drag.y0;
-
-      if (drag.axis === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
-        drag.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
-      }
-      if (drag.axis !== 'x') return;
-      if (e.cancelable) e.preventDefault();
-
-      const w = vp.offsetWidth || 1;
-      // Dragging back past the earliest bookable month has nothing real behind
-      // it, so it rubber-bands instead of revealing a month of dead dates.
-      let shift = dx > 0 && !liveRef.current.canPrev ? dx * 0.22 : dx;
-      shift = Math.max(-w, Math.min(w, shift));
-      drag.dx = shift;
-
-      const dt = e.timeStamp - drag.lastT;
-      if (dt > 0) drag.v = (t.clientX - drag.lastX) / dt;
-      drag.lastX = t.clientX;
-      drag.lastT = e.timeStamp;
-
-      // Plain pixels, not calc() against a percentage. -33.3333% of a track that
-      // is 300% wide is exactly one viewport, so this is the same position — but
-      // the browser doesn't have to resolve a percentage against a freshly
-      // measured box on every touchmove to get there.
-      track.style.transform = `translate3d(${(shift - w).toFixed(2)}px,0,0)`;
-    };
-
-    const onEnd = () => {
-      const d = drag;
-      drag = null;
-      if (!d || d.axis !== 'x') return;
-      const w = vp.offsetWidth || 1;
-      // Either drag it a fifth of the way across, or flick it. The flick path is
-      // what makes a short, fast swipe work the way a phone user expects.
-      const far = Math.abs(d.dx) > w * 0.2;
-      const flick = Math.abs(d.v) > 0.35 && Math.abs(d.dx) > 18;
-      if (!far && !flick) { settle(null); return; }
-      if (d.dx < 0) settle('next');
-      else if (liveRef.current.canPrev) settle('prev');
-      else settle(null);
-    };
-
-    vp.addEventListener('touchstart', onStart, { passive: true });
-    vp.addEventListener('touchmove', onMove, { passive: false });
-    vp.addEventListener('touchend', onEnd, { passive: true });
-    vp.addEventListener('touchcancel', onEnd, { passive: true });
-    return () => {
-      vp.removeEventListener('touchstart', onStart);
-      vp.removeEventListener('touchmove', onMove);
-      vp.removeEventListener('touchend', onEnd);
-      vp.removeEventListener('touchcancel', onEnd);
-    };
-  }, [settle]);
 
   // Stable across renders, on purpose: an inline `d => pick(p, d)` per cell
   // would hand every memo'd CalDay a fresh prop on every render and defeat the
@@ -683,7 +706,7 @@ export default function BookingCalendar({
         <div ref={viewportRef} className="overflow-hidden" style={{ touchAction: 'pan-y' }}>
           <div
             ref={trackRef}
-            onTransitionEnd={handleTrackTransitionEnd}
+            onTransitionEnd={onMonthTrackEnd}
             className="flex"
             style={{
               width: '300%',
