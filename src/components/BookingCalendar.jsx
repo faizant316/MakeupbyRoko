@@ -1,5 +1,6 @@
 'use client';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
 import { studioToday } from '@/lib/studio';
 
@@ -328,6 +329,33 @@ export default function BookingCalendar({
   const [pickYear, setPickYear] = useState(year);
   const boardRef = useRef(null);
   const titleRef = useRef(null);
+  const gridBoxRef = useRef(null);
+  const [boardRect, setBoardRect] = useState(null);
+
+  // The board opens as a lifted card over a dimmed screen, not as a quiet swap
+  // in place. In place it was easy to miss entirely: the panel is white, the
+  // board is white, and on a phone the only thing that changed was a block of
+  // text most of the way down the page. Dimming everything behind it is the
+  // whole signal — it says a picker took over, the same way any sheet does.
+  //
+  // Which is why it's a portal: fixed positioning inside the booking sheet is
+  // relative to the sheet's own transform, and a scrim that only dims the
+  // calendar would be dimming the one thing you're looking at. Measured off the
+  // grid so it still lands where the grid was.
+  const placeBoard = useCallback(() => {
+    const el = gridBoxRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const PAD = 10;
+    const width = Math.min(window.innerWidth - 16, r.width + PAD * 2);
+    const height = Math.min(window.innerHeight - 16, r.height + PAD * 2);
+    setBoardRect({
+      left: Math.max(8, Math.min(r.left - PAD, window.innerWidth - width - 8)),
+      top: Math.max(8, Math.min(r.top - PAD, window.innerHeight - height - 8)),
+      width,
+      height,
+    });
+  }, []);
 
   // How far out the year stepper can run. The bottom is the first month holding
   // a bookable date; the top matches the old dropdown's six-year window.
@@ -351,8 +379,9 @@ export default function BookingCalendar({
   // Escape, or a tap anywhere off the board — both are what a visitor expects
   // of something that opened over the top of what they were looking at. The
   // trigger is exempt so its own toggle isn't closed out from under it.
-  useEffect(() => {
-    if (!picking) return;
+  useIsoLayoutEffect(() => {
+    if (!picking) { setBoardRect(null); return; }
+    placeBoard();
     const onKey = (e) => { if (e.key === 'Escape') setPicking(false); };
     const onDown = (e) => {
       if (boardRef.current?.contains(e.target) || titleRef.current?.contains(e.target)) return;
@@ -360,11 +389,17 @@ export default function BookingCalendar({
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onDown);
+    // Capture, because the sheet scrolls in its own container rather than the
+    // window — without it the board would sit still while the grid moved.
+    window.addEventListener('scroll', placeBoard, true);
+    window.addEventListener('resize', placeBoard);
     return () => {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('scroll', placeBoard, true);
+      window.removeEventListener('resize', placeBoard);
     };
-  }, [picking]);
+  }, [picking, placeBoard]);
 
   // ── Swipe / step animation ────────────────────────────────────────────────
   // The track is moved directly on the DOM node, never through React state: a
@@ -628,11 +663,10 @@ export default function BookingCalendar({
         </div>
       )}
 
-      {/* The grid and the month board share this box: the board sits over the
-          grid instead of in a popup, so it can never be clipped by the panel's
-          overflow-hidden and the swipe track underneath is covered while it's
-          open. */}
-      <div className="relative">
+      {/* Measured, not just laid out: the month board is a portal (see
+          placeBoard) and lands on this box's rect, so the card it opens as sits
+          exactly where the grid was. */}
+      <div ref={gridBoxRef} className="relative">
         <div
           className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3 ${assembling ? 'cal-head-in' : ''}`}
           // Same hold-back as the cells, so the header leads the grid in by a
@@ -687,12 +721,27 @@ export default function BookingCalendar({
             ))}
           </div>
         </div>
+      </div>
 
-        {picking && (
+      {/* Month board. Dimming the whole screen behind it is what makes the tap
+          register — see placeBoard. */}
+      {picking && boardRect && typeof document !== 'undefined' && createPortal(
+        <>
+          <div
+            className="fixed inset-0 z-[9998]"
+            style={{ background: 'rgba(44,26,20,0.34)', animation: 'calScrimIn 0.18s ease-out both' }}
+          />
           <div
             ref={boardRef}
-            className="absolute inset-0 z-20 bg-white flex flex-col justify-center px-1"
-            style={{ animation: 'fadeRiseIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both' }}
+            className="fixed z-[9999] bg-white rounded-2xl border border-[#F2E6EC] flex flex-col justify-center px-3"
+            style={{
+              left: boardRect.left,
+              top: boardRect.top,
+              width: boardRect.width,
+              height: boardRect.height,
+              boxShadow: '0 26px 64px rgba(60,30,45,0.26)',
+              animation: 'calBoardIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both',
+            }}
           >
             {/* Year stepper. A range this short (six years) is faster to step
                 than to pick from a list, and stepping needs no scrolling. */}
@@ -753,8 +802,9 @@ export default function BookingCalendar({
               })}
             </div>
           </div>
-        )}
-      </div>
+        </>,
+        document.body
+      )}
 
       {/* Legend */}
       <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5 mt-5 pt-4 border-t border-gray-100">
