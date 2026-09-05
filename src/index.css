@@ -698,43 +698,6 @@ body.site-nav-hidden #nav {
   }
 }
 
-/* Full Day Service — red/pink aura */
-.fullday-aura {
-  position: relative;
-}
-
-.fullday-aura::before {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: calc(var(--radius-lg) + 6px);
-  background: conic-gradient(
-    from 0deg,
-    rgba(180, 40, 40, 0.68),
-    rgba(200, 60, 50, 0.6),
-    rgba(218, 165, 32, 0.55),
-    rgba(255, 200, 60, 0.42),
-    rgba(190, 50, 40, 0.55),
-    rgba(180, 40, 40, 0.68)
-  );
-  filter: blur(24px);
-  z-index: -1;
-  --aura-min: 0.3;
-  --aura-max: 0.42;
-  opacity: var(--aura-min);
-  animation: aura-breathe 4s ease-in-out infinite;
-  will-change: opacity;
-}
-
-@media (max-width: 768px) {
-  .fullday-aura::before {
-    inset: -3px;
-    filter: blur(15px);
-    --aura-min: 0.26;
-    --aura-max: 0.36;
-  }
-}
-
 /* Responsive */
 @media (max-width: 900px) {
   .grid-2 { grid-template-columns: 1fr; gap: 2.5rem; }
