@@ -27,12 +27,17 @@ export async function POST(req) {
     // either a mistake or someone running up the bill.
     if (dest.length > 200) return NextResponse.json({ ok: false, reason: 'DESTINATION_TOO_LONG' });
 
-    const key = process.env.GOOGLE_MAPS_SERVER_KEY;
+    // Usually the same key the autocomplete route uses. GOOGLE_DISTANCE_KEY is
+    // the escape hatch for the case we actually hit on 2026-09-05: the Places
+    // key and the Distance Matrix key turned out to live in different Google
+    // Cloud projects, and neither project had both APIs. One key is still the
+    // goal, so this stays unset unless it has to be set.
+    const key = process.env.GOOGLE_DISTANCE_KEY || process.env.GOOGLE_MAPS_SERVER_KEY;
     if (!key) {
       // Same trap as the autocomplete route: without this the key rides along as
       // the literal string "undefined" and Google answers REQUEST_DENIED, which
       // reads exactly like lapsed billing.
-      console.error('travel-distance: GOOGLE_MAPS_SERVER_KEY is not set');
+      console.error('travel-distance: no GOOGLE_DISTANCE_KEY or GOOGLE_MAPS_SERVER_KEY set');
       return NextResponse.json({ ok: false, reason: 'NOT_CONFIGURED' });
     }
 
