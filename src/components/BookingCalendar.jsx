@@ -59,6 +59,11 @@ const NEXT_X = 'translate3d(-66.6667%,0,0)';
 // touches are ignored for its duration (see onStart), which is why it stays well
 // under 300ms — long enough to read as motion, short enough that a second swipe
 // never feels dropped.
+// How long the month board takes to fold away. Matches calBoardOut in
+// index.css: the board must outlive its own exit animation or it disappears
+// mid-fade.
+const BOARD_EXIT_MS = 150;
+
 const SETTLE = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)';
 
 // useLayoutEffect is the right hook for "fix the transform before the browser
@@ -123,12 +128,24 @@ function useSwipeTrack({ viewportRef, trackRef, canPrev = true, canNext = true, 
   // Runs before paint, so the track is already back at centre by the time the
   // new panels are drawn: no flash of the wrong month or year.
   useIsoLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track || !commitRef.current) return;
+    if (!commitRef.current) return;
+    // Cleared before the track is even looked at: the month board can unmount
+    // mid-swipe, and a commitRef left set would make every later gesture bail
+    // out as "still landing the last swipe".
     commitRef.current = null;
+    const track = trackRef.current;
+    if (!track) return;
     track.style.transition = 'none';
     track.style.transform = BASE_X;
   }, [resetKey]);
+
+  // Same reason, for the case where the track goes away without the value ever
+  // changing (a month picked mid-swipe closes the board and commits nothing).
+  useEffect(() => {
+    if (active) return;
+    clearTimeout(fallbackRef.current);
+    commitRef.current = null;
+  }, [active]);
 
   useEffect(() => () => clearTimeout(fallbackRef.current), []);
 
@@ -486,14 +503,15 @@ export default function BookingCalendar({
   // Jumping used to be two dropdowns, month and year, each a scrolling list in a
   // popup. That is four taps to reach April 2027, and inside the booking sheet
   // the lists barely scrolled at all. This replaces both: tapping the title
-  // turns the day grid into a board of all twelve months with the year stepping
-  // above it. One tap to land, nothing to scroll, and it reads the same under a
-  // thumb as under a mouse.
+  // turns the day grid into a board of all twelve months with the year swiping
+  // underneath it. One tap to land, nothing to scroll, and it reads the same
+  // under a thumb as under a mouse.
   const [picking, setPicking] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [pickYear, setPickYear] = useState(year);
   const boardRef = useRef(null);
-  const titleRef = useRef(null);
   const gridBoxRef = useRef(null);
+  const exitRef = useRef(null);
   const [boardRect, setBoardRect] = useState(null);
 
   // The board opens as a lifted card over a dimmed screen, not as a quiet swap
@@ -521,8 +539,22 @@ export default function BookingCalendar({
     });
   }, []);
 
-  // How far out the year stepper can run. The bottom is the first month holding
-  // a bookable date; the top matches the old dropdown's six-year window.
+  // Closing runs its own animation, so the board stays mounted for the length of
+  // it. Without this it vanished between frames, which after an entrance that
+  // pops open read as the board being yanked away rather than put back.
+  const closeBoard = useCallback(() => {
+    if (exitRef.current) return;   // already on its way out
+    setExiting(true);
+    exitRef.current = setTimeout(() => {
+      exitRef.current = null;
+      setExiting(false);
+      setPicking(false);
+    }, BOARD_EXIT_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(exitRef.current), []);
+
+  // How far out the year can run. The bottom is the first month holding a
+  // bookable date; the top matches the old dropdown's six-year window.
   const yearRange = useMemo(() => ({
     min: floor.y,
     max: Math.max(floor.y, studioToday().getFullYear() + 5),
@@ -531,39 +563,51 @@ export default function BookingCalendar({
   // Opening always starts on the year being shown, however far the visitor
   // wandered the last time they had the board open.
   const togglePicking = useCallback(() => {
+    if (picking) { closeBoard(); return; }
     setPickYear(year);
-    setPicking(p => !p);
-  }, [year]);
+    setPicking(true);
+  }, [picking, closeBoard, year]);
 
-  const chooseMonth = useCallback((m) => {
-    goToMonth(pickYear, m);
-    setPicking(false);
-  }, [goToMonth, pickYear]);
+  const chooseMonth = useCallback((y, m) => {
+    goToMonth(y, m);
+    closeBoard();
+  }, [goToMonth, closeBoard]);
 
-  // Escape, or a tap anywhere off the board — both are what a visitor expects
-  // of something that opened over the top of what they were looking at. The
-  // trigger is exempt so its own toggle isn't closed out from under it.
+  // Years swipe on their own track, the same one the day grid uses for months.
+  const yearViewportRef = useRef(null);
+  const yearTrackRef = useRef(null);
+  const { step: stepYear, onTransitionEnd: onYearTrackEnd } = useSwipeTrack({
+    viewportRef: yearViewportRef,
+    trackRef: yearTrackRef,
+    canPrev: pickYear > yearRange.min,
+    canNext: pickYear < yearRange.max,
+    onCommit: (dir) => setPickYear(y => y + (dir === 'next' ? 1 : -1)),
+    resetKey: pickYear,
+    active: picking && !!boardRect,
+  });
+
+  // Escape closes it. Everything else is handled by the scrim itself: it covers
+  // the whole screen, so a tap anywhere off the board is a tap on the scrim, and
+  // letting the scrim swallow that click is what makes re-tapping the title
+  // close the board on a phone. A document-level pointerdown listener closed it
+  // a beat too early instead: the scrim was already gone by the time the click
+  // was dispatched, so on touch it landed on the title underneath and reopened
+  // the board on the way out.
   useIsoLayoutEffect(() => {
     if (!picking) { setBoardRect(null); return; }
     placeBoard();
-    const onKey = (e) => { if (e.key === 'Escape') setPicking(false); };
-    const onDown = (e) => {
-      if (boardRef.current?.contains(e.target) || titleRef.current?.contains(e.target)) return;
-      setPicking(false);
-    };
+    const onKey = (e) => { if (e.key === 'Escape') closeBoard(); };
     document.addEventListener('keydown', onKey);
-    document.addEventListener('pointerdown', onDown);
     // Capture, because the sheet scrolls in its own container rather than the
     // window — without it the board would sit still while the grid moved.
     window.addEventListener('scroll', placeBoard, true);
     window.addEventListener('resize', placeBoard);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.removeEventListener('pointerdown', onDown);
       window.removeEventListener('scroll', placeBoard, true);
       window.removeEventListener('resize', placeBoard);
     };
-  }, [picking, placeBoard]);
+  }, [picking, placeBoard, closeBoard]);
 
   // Months step on the day grid's own track (see useSwipeTrack).
   const { step: stepMonth, onTransitionEnd: onMonthTrackEnd } = useSwipeTrack({
@@ -615,7 +659,6 @@ export default function BookingCalendar({
         {/* The title is the control. One chevron, one tap target, and it opens
             the month board over the grid rather than a list beside it. */}
         <button
-          ref={titleRef}
           type="button"
           onClick={togglePicking}
           aria-expanded={picking}
@@ -750,28 +793,37 @@ export default function BookingCalendar({
           register — see placeBoard. */}
       {picking && boardRect && typeof document !== 'undefined' && createPortal(
         <>
+          {/* Neutral grey, not the warm near-black the rest of the palette uses:
+              over a white sheet that read as a pink wash rather than as a dim. */}
           <div
             className="fixed inset-0 z-[9998]"
-            style={{ background: 'rgba(44,26,20,0.34)', animation: 'calScrimIn 0.18s ease-out both' }}
+            onClick={closeBoard}
+            style={{
+              background: 'rgba(24,24,27,0.34)',
+              animation: `${exiting ? 'calScrimOut 0.15s ease-in' : 'calScrimIn 0.18s ease-out'} both`,
+            }}
           />
           <div
             ref={boardRef}
-            className="fixed z-[9999] bg-white rounded-2xl border border-[#F2E6EC] flex flex-col justify-center px-3"
+            className="fixed z-[9999] bg-white rounded-2xl border border-[#F2E6EC] flex flex-col justify-center px-2 overflow-hidden"
             style={{
               left: boardRect.left,
               top: boardRect.top,
               width: boardRect.width,
               height: boardRect.height,
-              boxShadow: '0 26px 64px rgba(60,30,45,0.26)',
-              animation: 'calBoardIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both',
+              boxShadow: '0 26px 64px rgba(40,40,45,0.26)',
+              animation: `${exiting
+                ? 'calBoardOut 0.15s cubic-bezier(0.4, 0, 1, 1)'
+                : 'calBoardIn 0.22s cubic-bezier(0.22, 1, 0.36, 1)'} both`,
             }}
           >
-            {/* Year stepper. A range this short (six years) is faster to step
-                than to pick from a list, and stepping needs no scrolling. */}
+            {/* Year. Steppers for a mouse, a swipe for a thumb — the year was
+                reachable only by tapping an arrow, which on a phone is the one
+                thing a calendar is never operated with. */}
             <div className="flex items-center justify-center gap-1 mb-4">
               <button
                 type="button"
-                onClick={() => setPickYear(y => Math.max(yearRange.min, y - 1))}
+                onClick={() => stepYear('prev')}
                 disabled={pickYear <= yearRange.min}
                 aria-label="Previous year"
                 className={`w-9 h-9 flex items-center justify-center text-xl transition-all ${
@@ -785,7 +837,7 @@ export default function BookingCalendar({
               <span className="font-serif text-[1.15rem] text-[#111] tracking-tight w-[4.25rem] text-center tabular-nums">{pickYear}</span>
               <button
                 type="button"
-                onClick={() => setPickYear(y => Math.min(yearRange.max, y + 1))}
+                onClick={() => stepYear('next')}
                 disabled={pickYear >= yearRange.max}
                 aria-label="Next year"
                 className={`w-9 h-9 flex items-center justify-center text-xl transition-all ${
@@ -798,31 +850,49 @@ export default function BookingCalendar({
               </button>
             </div>
 
-            {/* All twelve at once. Months with nothing bookable in them are dead
-                on the board for the same reason they're dead in the grid. */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-              {MONTHS_SHORT.map((label, i) => {
-                const tooSoon = pickYear < floor.y || (pickYear === floor.y && i < floor.m);
-                const isCurrent = pickYear === year && i === month;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => chooseMonth(i)}
-                    disabled={tooSoon}
-                    aria-current={isCurrent ? 'true' : undefined}
-                    className={`py-2.5 rounded-xl font-serif text-[0.95rem] transition-colors ${
-                      tooSoon
-                        ? 'text-gray-200 cursor-not-allowed'
-                        : isCurrent
-                          ? 'bg-[#111] text-white'
-                          : 'text-[#3A2C26] hover:bg-[#FAF4F7] active:bg-[#F6EEF1] cursor-pointer'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            {/* Three years side by side, same track the day grid rides on. */}
+            <div ref={yearViewportRef} className="overflow-hidden" style={{ touchAction: 'pan-y' }}>
+              <div
+                ref={yearTrackRef}
+                onTransitionEnd={onYearTrackEnd}
+                className="flex"
+                style={{ width: '300%', transform: BASE_X, willChange: 'transform' }}
+              >
+                {[-1, 0, 1].map(off => {
+                  const panelYear = pickYear + off;
+                  return (
+                    // Only the centred year is tappable. The neighbours are
+                    // off-screen except mid-drag, where a stray tap would jump to
+                    // a month in a year the visitor isn't looking at.
+                    <div key={panelYear} className="w-1/3 flex-shrink-0 px-1" style={{ pointerEvents: off === 0 ? 'auto' : 'none' }}>
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                        {MONTHS_SHORT.map((label, i) => {
+                          const tooSoon = panelYear < floor.y || (panelYear === floor.y && i < floor.m);
+                          const isCurrent = panelYear === year && i === month;
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => chooseMonth(panelYear, i)}
+                              disabled={tooSoon}
+                              aria-current={isCurrent ? 'true' : undefined}
+                              className={`py-2.5 rounded-xl font-serif text-[0.95rem] transition-colors ${
+                                tooSoon
+                                  ? 'text-gray-200 cursor-not-allowed'
+                                  : isCurrent
+                                    ? 'bg-[#111] text-white'
+                                    : 'text-[#3A2C26] hover:bg-[#FAF4F7] active:bg-[#F6EEF1] cursor-pointer'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </>,

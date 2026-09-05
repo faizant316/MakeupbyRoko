@@ -426,11 +426,24 @@
   from { opacity: 0; transform: scale(0.965) translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
+/* Closing is quicker than opening and pulls back the way it came. Without an
+   exit the board vanished between frames, which after an entrance that pops
+   read as it being yanked away rather than put back. */
+@keyframes calScrimOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes calBoardOut {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: scale(0.97) translateY(4px); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cal-head-in { animation: none; }
   /* The board still needs to arrive instantly-visible, not stay at opacity 0. */
   [style*="calBoardIn"], [style*="calScrimIn"] { animation: none !important; }
+  /* The exits keep running: with animation:none the board would sit at full
+     opacity for its whole unmount delay and then blink out. */
 }
 
 /* ── Skeletons ────────────────────────────────────────────────────────────────
