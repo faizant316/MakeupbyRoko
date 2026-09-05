@@ -1,6 +1,5 @@
 'use client';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import CalendarNavSelect from './CalendarNavSelect';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
 import { studioToday } from '@/lib/studio';
 
@@ -28,6 +27,7 @@ export function getMinBookingDate(days = BRIDAL_LEAD_DAYS) {
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
 // One-time mount assemble (see .cal-head-in / calCellIn in index.css).
@@ -305,9 +305,9 @@ export default function BookingCalendar({
   );
   const canGoPrev = year > floor.y || (year === floor.y && month > floor.m);
 
-  // Direct jump, no track animation. Used by the month/year dropdowns, which can
-  // land any distance away — there is no meaningful slide between June and next
-  // March, so those swap instantly.
+  // Direct jump, no track animation. Used by the month board, which can land any
+  // distance away — there is no meaningful slide between June and next March, so
+  // those swap instantly.
   const goToMonth = useCallback((y, m) => {
     const target = new Date(y, m);
     const clamped = (target.getFullYear() < floor.y || (target.getFullYear() === floor.y && target.getMonth() < floor.m))
@@ -316,6 +316,55 @@ export default function BookingCalendar({
     if (clamped.getFullYear() === year && clamped.getMonth() === month) return;
     onMonthChange(clamped);
   }, [floor, year, month, onMonthChange]);
+
+  // ── Month board ───────────────────────────────────────────────────────────
+  // Jumping used to be two dropdowns, month and year, each a scrolling list in a
+  // popup. That is four taps to reach April 2027, and inside the booking sheet
+  // the lists barely scrolled at all. This replaces both: tapping the title
+  // turns the day grid into a board of all twelve months with the year stepping
+  // above it. One tap to land, nothing to scroll, and it reads the same under a
+  // thumb as under a mouse.
+  const [picking, setPicking] = useState(false);
+  const [pickYear, setPickYear] = useState(year);
+  const boardRef = useRef(null);
+  const titleRef = useRef(null);
+
+  // How far out the year stepper can run. The bottom is the first month holding
+  // a bookable date; the top matches the old dropdown's six-year window.
+  const yearRange = useMemo(() => ({
+    min: floor.y,
+    max: Math.max(floor.y, studioToday().getFullYear() + 5),
+  }), [floor]);
+
+  // Opening always starts on the year being shown, however far the visitor
+  // wandered the last time they had the board open.
+  const togglePicking = useCallback(() => {
+    setPickYear(year);
+    setPicking(p => !p);
+  }, [year]);
+
+  const chooseMonth = useCallback((m) => {
+    goToMonth(pickYear, m);
+    setPicking(false);
+  }, [goToMonth, pickYear]);
+
+  // Escape, or a tap anywhere off the board — both are what a visitor expects
+  // of something that opened over the top of what they were looking at. The
+  // trigger is exempt so its own toggle isn't closed out from under it.
+  useEffect(() => {
+    if (!picking) return;
+    const onKey = (e) => { if (e.key === 'Escape') setPicking(false); };
+    const onDown = (e) => {
+      if (boardRef.current?.contains(e.target) || titleRef.current?.contains(e.target)) return;
+      setPicking(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [picking]);
 
   // ── Swipe / step animation ────────────────────────────────────────────────
   // The track is moved directly on the DOM node, never through React state: a
@@ -505,25 +554,27 @@ export default function BookingCalendar({
           ‹
         </button>
 
-        {/* Month and year each carry their own chevron — that's what says "this is
-            a dropdown you can pick from". */}
-        <div className="flex-1 flex items-center justify-center gap-1 min-w-0">
-          <CalendarNavSelect
-            ariaLabel="Month"
-            align="right"
-            value={month}
-            onChange={v => goToMonth(year, Number(v))}
-            options={MONTHS.map((m, i) => ({ value: i, label: m }))}
-          />
-          <CalendarNavSelect
-            ariaLabel="Year"
-            align="left"
-            menuMinWidth={120}
-            value={year}
-            onChange={v => goToMonth(Number(v), month)}
-            options={Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => ({ value: y, label: String(y) }))}
-          />
-        </div>
+        {/* The title is the control. One chevron, one tap target, and it opens
+            the month board over the grid rather than a list beside it. */}
+        <button
+          ref={titleRef}
+          type="button"
+          onClick={togglePicking}
+          aria-expanded={picking}
+          aria-label="Choose a month"
+          className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 font-serif text-[1.15rem] sm:text-[1.2rem] text-[#111] tracking-tight rounded-lg px-2 py-1 transition-colors cursor-pointer outline-none ${
+            picking ? 'bg-[#D4A0B0]/12' : 'hover:bg-[#F6EEF1] active:bg-[#F6EEF1]'
+          }`}
+        >
+          <span className="truncate">{MONTHS[month]} {year}</span>
+          <svg
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            className="w-3.5 h-3.5 flex-shrink-0 text-[#C4849A] transition-transform duration-200"
+            style={{ transform: picking ? 'rotate(180deg)' : 'none' }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
 
         <button
           type="button"
@@ -577,59 +628,132 @@ export default function BookingCalendar({
         </div>
       )}
 
-      <div
-        className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3 ${assembling ? 'cal-head-in' : ''}`}
-        // Same hold-back as the cells, so the header leads the grid in by a
-        // beat instead of arriving while the sheet is still sliding.
-        style={assembling ? { animationDelay: `${ASSEMBLE_START_MS}ms` } : undefined}
-      >
-        {WEEKDAYS.map(d => (
-          <div key={d} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
-        ))}
-      </div>
-
-      {/* touchAction pan-y tells the browser this area scrolls vertically only,
-          so a horizontal drag is ours to interpret. */}
-      <div ref={viewportRef} className="overflow-hidden" style={{ touchAction: 'pan-y' }}>
+      {/* The grid and the month board share this box: the board sits over the
+          grid instead of in a popup, so it can never be clipped by the panel's
+          overflow-hidden and the swipe track underneath is covered while it's
+          open. */}
+      <div className="relative">
         <div
-          ref={trackRef}
-          onTransitionEnd={handleTrackTransitionEnd}
-          className="flex"
-          style={{
-            width: '300%',
-            transform: BASE_X,
-            willChange: 'transform',
-          }}
+          className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-4 mb-3 ${assembling ? 'cal-head-in' : ''}`}
+          // Same hold-back as the cells, so the header leads the grid in by a
+          // beat instead of arriving while the sheet is still sliding.
+          style={assembling ? { animationDelay: `${ASSEMBLE_START_MS}ms` } : undefined}
         >
-          {panels.map((p, i) => (
-            // Only the centred month is tappable. The neighbours are off-screen
-            // except mid-drag, where a stray tap would otherwise select a date in
-            // a month the visitor isn't actually looking at.
-            <div key={p.key} className="w-1/3 flex-shrink-0" style={{ pointerEvents: i === 1 ? 'auto' : 'none' }}>
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center justify-items-center">
-                {p.days.map((day, idx) => !day
-                  ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
-                  : (
-                    <CalDay
-                      key={dateKey(p.y, p.m, day.d)}
-                      day={day}
-                      panelKey={p.key}
-                      state={p.states.get(dateKey(p.y, p.m, day.d))}
-                      isSel={selectedDate === dateKey(p.y, p.m, day.d)}
-                      onPick={pick}
-                      // Centre panel only. The neighbours are off-screen, and
-                      // animating them too would put three months of cells on the
-                      // animation path for the track's own transform.
-                      enterDelay={assembling && i === 1
-                        ? ASSEMBLE_START_MS + Math.min(idx * CELL_STEP_MS, ASSEMBLE_CELLS_MS)
-                        : null}
-                    />
-                  )
-                )}
-              </div>
-            </div>
+          {WEEKDAYS.map(d => (
+            <div key={d} className="text-[0.6rem] sm:text-[0.68rem] font-semibold text-gray-400 uppercase py-2 tracking-[0.08em]">{d}</div>
           ))}
         </div>
+
+        {/* touchAction pan-y tells the browser this area scrolls vertically only,
+            so a horizontal drag is ours to interpret. */}
+        <div ref={viewportRef} className="overflow-hidden" style={{ touchAction: 'pan-y' }}>
+          <div
+            ref={trackRef}
+            onTransitionEnd={handleTrackTransitionEnd}
+            className="flex"
+            style={{
+              width: '300%',
+              transform: BASE_X,
+              willChange: 'transform',
+            }}
+          >
+            {panels.map((p, i) => (
+              // Only the centred month is tappable. The neighbours are off-screen
+              // except mid-drag, where a stray tap would otherwise select a date in
+              // a month the visitor isn't actually looking at.
+              <div key={p.key} className="w-1/3 flex-shrink-0" style={{ pointerEvents: i === 1 ? 'auto' : 'none' }}>
+                <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center justify-items-center">
+                  {p.days.map((day, idx) => !day
+                    ? <div key={`e-${idx}`} className="w-11 h-11 sm:w-[3.15rem] sm:h-[3.15rem]" />
+                    : (
+                      <CalDay
+                        key={dateKey(p.y, p.m, day.d)}
+                        day={day}
+                        panelKey={p.key}
+                        state={p.states.get(dateKey(p.y, p.m, day.d))}
+                        isSel={selectedDate === dateKey(p.y, p.m, day.d)}
+                        onPick={pick}
+                        // Centre panel only. The neighbours are off-screen, and
+                        // animating them too would put three months of cells on the
+                        // animation path for the track's own transform.
+                        enterDelay={assembling && i === 1
+                          ? ASSEMBLE_START_MS + Math.min(idx * CELL_STEP_MS, ASSEMBLE_CELLS_MS)
+                          : null}
+                      />
+                    )
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {picking && (
+          <div
+            ref={boardRef}
+            className="absolute inset-0 z-20 bg-white flex flex-col justify-center px-1"
+            style={{ animation: 'fadeRiseIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both' }}
+          >
+            {/* Year stepper. A range this short (six years) is faster to step
+                than to pick from a list, and stepping needs no scrolling. */}
+            <div className="flex items-center justify-center gap-1 mb-4">
+              <button
+                type="button"
+                onClick={() => setPickYear(y => Math.max(yearRange.min, y - 1))}
+                disabled={pickYear <= yearRange.min}
+                aria-label="Previous year"
+                className={`w-9 h-9 flex items-center justify-center text-xl transition-all ${
+                  pickYear > yearRange.min
+                    ? 'text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90'
+                    : 'text-gray-100 cursor-not-allowed'
+                }`}
+              >
+                ‹
+              </button>
+              <span className="font-serif text-[1.15rem] text-[#111] tracking-tight w-[4.25rem] text-center tabular-nums">{pickYear}</span>
+              <button
+                type="button"
+                onClick={() => setPickYear(y => Math.min(yearRange.max, y + 1))}
+                disabled={pickYear >= yearRange.max}
+                aria-label="Next year"
+                className={`w-9 h-9 flex items-center justify-center text-xl transition-all ${
+                  pickYear < yearRange.max
+                    ? 'text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90'
+                    : 'text-gray-100 cursor-not-allowed'
+                }`}
+              >
+                ›
+              </button>
+            </div>
+
+            {/* All twelve at once. Months with nothing bookable in them are dead
+                on the board for the same reason they're dead in the grid. */}
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              {MONTHS_SHORT.map((label, i) => {
+                const tooSoon = pickYear < floor.y || (pickYear === floor.y && i < floor.m);
+                const isCurrent = pickYear === year && i === month;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => chooseMonth(i)}
+                    disabled={tooSoon}
+                    aria-current={isCurrent ? 'true' : undefined}
+                    className={`py-2.5 rounded-xl font-serif text-[0.95rem] transition-colors ${
+                      tooSoon
+                        ? 'text-gray-200 cursor-not-allowed'
+                        : isCurrent
+                          ? 'bg-[#111] text-white'
+                          : 'text-[#3A2C26] hover:bg-[#FAF4F7] active:bg-[#F6EEF1] cursor-pointer'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Legend */}

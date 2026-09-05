@@ -8,6 +8,8 @@
 // no. Both now come from here.
 
 import { BRIDAL_LEAD_DAYS, NON_BRIDAL_LEAD_DAYS, LEAD_LABEL, leadDate } from './bookingLeadTime';
+import { TRAVEL_HOUR_MINUTES } from './travel';
+import { STUDIO_TOWN } from './studio';
 import { AVAILABLE_DAYS } from '@/components/BookingCalendar';
 
 // One verb for the whole page. Every path starts at the same calendar, so every
