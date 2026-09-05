@@ -702,14 +702,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   return (
     <form onSubmit={(e) => e.preventDefault()} className="flex flex-col flex-1">
 
-      {/* Compact identity strip — MOBILE ONLY.
+      {/* Compact identity strip — MOBILE ONLY, and not on step one.
           The desktop treatment below (150px photo banner + a separate price row)
           costs ~205px of vertical space, which on a phone is most of what stands
           between a bride and the calendar. Same three facts (which package, the
-          price, the deposit) in one ~68px row. The sticky footer repeats the
-          price permanently, so this stays deliberately quiet. */}
+          price, the deposit) in one ~68px row.
+          Step one drops it entirely: the sheet header already names the package
+          word for word and the sticky footer already carries the price and the
+          deposit, so on a phone this row was the third copy of both. */}
       <div
-        className={`${calFocus && step === 'date' ? 'hidden' : 'flex sm:hidden'} items-center gap-3 px-4 py-2.5 border-b border-[#F5EDF1] flex-shrink-0 bg-white`}
+        className={`${step === 'date' ? 'hidden' : 'flex sm:hidden'} items-center gap-3 px-4 py-2.5 border-b border-[#F5EDF1] flex-shrink-0 bg-white`}
       >
         <div className="flex-1 min-w-0">
           <p className="text-[0.48rem] font-bold tracking-[0.2em] uppercase text-[#CE9BAD] leading-none mb-1">You're booking</p>
@@ -805,10 +807,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 regardless of the toggle's state. */}
             <div className={calFocus ? 'hidden sm:contents' : 'contents'}>
 
-            {/* Calendar heading — the main event of step one. Scaled back on
-                mobile (the 48px icon tile and 1.9rem serif were pushing the grid
-                itself below the fold). */}
-            <div className="flex items-center gap-3 lg:gap-3.5 relative z-10">
+            {/* Calendar heading — DESKTOP ONLY. On a phone it was the second
+                place the screen said "wedding date": the sheet header above it
+                already reads "Step 1 of 3 · Wedding date", and between the two of
+                them plus the identity strip a bride met the same fact three times
+                before reaching a single tappable day. Desktop has the width to
+                carry it, so it stays there. */}
+            <div className="hidden sm:flex items-center gap-3 lg:gap-3.5 relative z-10">
               <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5 lg:w-6 lg:h-6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </div>

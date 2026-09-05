@@ -323,7 +323,7 @@ export default function BookingModal({ service: initialService, onClose }) {
             : isBridal
               ? (bridalStep === 'sign' ? 'Step 3 of 3 · Review & sign'
                 : bridalStep === 'form' ? 'Step 2 of 3 · Your details'
-                : 'Step 1 of 3 · Wedding date')
+                : `Step 1 of 3 · ${/trial/i.test(service?.title || '') ? 'Trial' : 'Wedding'} date`)
               : (step === 'sign' ? 'Step 3 of 3 · Review & sign'
                 : step === 'form' ? 'Step 2 of 3 · Your details'
                 : `Step 1 of 3 · Choose date${service.duration ? ' · ' + service.duration : ''}`);
@@ -410,12 +410,15 @@ export default function BookingModal({ service: initialService, onClose }) {
                 Lives inside the scroller (and outside the animated step body,
                 so it doesn't re-animate on every step) so it scrolls away
                 exactly like the bridal banner instead of staying pinned. */}
-            {/* Compact identity strip — MOBILE ONLY. Mirrors the bridal sheet:
-                which service, the price, the deposit, in one ~62px row instead
-                of the ~120px stacked block below. The sticky footer already
-                repeats the total, so this stays quiet. */}
+            {/* Compact identity strip — MOBILE ONLY, and not on step one.
+                Mirrors the bridal sheet: which service, the price, the deposit,
+                in one ~62px row instead of the ~120px stacked block below.
+                Step one drops it, same as bridal: the header names the service
+                and the footer carries the price, so it was repeating both right
+                above a calendar that needed the room. The deposit moves into the
+                footer for that step (see the pinned CTA below). */}
             {step !== 'done' && (
-              <div className="sm:hidden flex items-center gap-3 px-4 py-2.5 border-b flex-shrink-0" style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
+              <div className={`${step === 'date' ? 'hidden' : 'flex sm:hidden'} items-center gap-3 px-4 py-2.5 border-b flex-shrink-0`} style={{ background: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.06)' }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-[0.48rem] font-bold tracking-[0.2em] uppercase text-[#c2b4a6] leading-none mb-1">You're booking</p>
                   <p className="font-serif text-[0.98rem] leading-tight text-[#2C1A14] truncate">{service.title}</p>
@@ -479,8 +482,10 @@ export default function BookingModal({ service: initialService, onClose }) {
                   <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full opacity-[0.06] pointer-events-none"
                     style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
 
-                  {/* Calendar heading — folded away in mobile focus mode */}
-                  <div className={`${calFocus ? 'hidden sm:flex' : 'flex'} items-center gap-3 mb-5 relative z-10`}>
+                  {/* Calendar heading — DESKTOP ONLY, same reasoning as bridal:
+                      the sheet header already reads "Step 1 of 3 · Choose date",
+                      so on a phone this was saying it twice above the fold. */}
+                  <div className="hidden sm:flex items-center gap-3 mb-5 relative z-10">
                     <div className="w-11 h-11 rounded-xl bg-[#D4A0B0]/12 flex items-center justify-center flex-shrink-0">
                       <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-5 h-5">
                         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -947,7 +952,11 @@ export default function BookingModal({ service: initialService, onClose }) {
             <div className="max-w-[680px] lg:max-w-[740px] mx-auto flex items-center gap-4">
               <div className="flex flex-col leading-tight flex-shrink-0">
                 <span className="font-serif text-[1.25rem] text-[#111]">{step === 'form' ? footerTotal : service.price}</span>
-                <span className="text-[0.62rem] text-[#b5a99a] uppercase tracking-[0.1em]">{step === 'form' ? 'Est. total' : (service.duration || 'Total')}</span>
+                {/* Deposit, not duration: the header subtitle already carries the
+                    duration on this step, and with the mobile identity strip gone
+                    the footer is the only place left showing what actually comes
+                    out of her card today. */}
+                <span className="text-[0.62rem] text-[#b5a99a] uppercase tracking-[0.1em]">{step === 'form' ? 'Est. total' : (service.deposit || service.duration || 'Total')}</span>
               </div>
               {step === 'date' ? (
                 <button
