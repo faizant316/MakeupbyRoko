@@ -49,11 +49,11 @@ const INFO_CONTENT = {
     sections: [
       {
         title: 'Home Base',
-        body: 'Roqia Moshref is based in Mountain House, California. Studio appointments there have no travel fee. On-location services (the artist traveling to you) add a flat travel fee, regardless of distance.'
+        body: 'Roqia Moshref is based in Mountain House, California. Studio appointments there have no travel fee. On-location services (the artist traveling to you) within about an hour add a flat travel fee. Venues further out book as the Full Day Service, which includes travel.'
       },
       {
         title: 'Travel Fee',
-        body: 'For on-location services (bridal, event, photoshoot), a flat travel fee of $200 applies regardless of distance, in addition to the service price. Studio appointments in Mountain House have no travel fee. The Full Day Service includes travel in its price, so no travel fee is added to it. The travel fee is due along with the remaining balance.'
+        body: 'For on-location services (bridal, event, photoshoot) within about an hour of Mountain House, a flat travel fee of $200 applies in addition to the service price. Venues further out book as the Full Day Service instead. Studio appointments in Mountain House have no travel fee. The Full Day Service includes travel in its price, so no travel fee is added to it. The travel fee is due along with the remaining balance.'
       },
       {
         title: 'Destination Bookings',

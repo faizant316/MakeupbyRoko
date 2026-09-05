@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: 'Do you travel for events?',
-    a: 'Yes! Roko is a traveling artist available for destination bookings. Studio appointments in Mountain House have no travel fee. On-location services add a flat $200 travel fee, regardless of distance, except the Full Day Service, which has travel included in its price. For destination events, travel and lodging are arranged with the client directly.',
+    a: 'Yes! Roko is a traveling artist available for destination bookings. Studio appointments in Mountain House have no travel fee. On-location services within about an hour of the studio add a flat $200 travel fee. Further out, the day books as the Full Day Service instead, which has travel included in its price. For destination events, travel and lodging are arranged with the client directly.',
   },
   {
     q: 'What travel costs apply to destination and out-of-state weddings?',
