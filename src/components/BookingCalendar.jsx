@@ -1,5 +1,6 @@
 'use client';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import CalendarNavSelect from './CalendarNavSelect';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
 import { studioToday } from '@/lib/studio';
 
@@ -27,7 +28,6 @@ export function getMinBookingDate(days = BRIDAL_LEAD_DAYS) {
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
 // One-time mount assemble (see .cal-head-in / calCellIn in index.css).
