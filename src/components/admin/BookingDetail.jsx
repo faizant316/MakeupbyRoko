@@ -1707,6 +1707,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // ends there, so numbering a confirmed one would imply unfinished work.
   const showSteps = isBridal || booking.status === 'pending';
 
+  // A booking can reach Confirmed with no time on it: confirming and setting the
+  // time are separate steps and nothing ever insisted on the order. It happened
+  // on the first real bride, whose time lived in Roko's head rather than on the
+  // card. So while a time is still missing, the Appointment box says so in
+  // colour rather than looking as settled as every other section. Completed and
+  // cancelled are excluded, since there is nothing left to set on either.
+  const needsTime = !booking.time
+    && booking.status !== 'cancelled' && booking.status !== 'completed';
+
   // "Confirm now, schedule the consultation later": sends the confirmation
   // email (minus the consultation panel) so Roko can lock the date before a
   // consult time is agreed. The hub keeps a standing reminder until it's set.
@@ -1951,7 +1960,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           }}>
           <div className="px-3 sm:px-4 min-w-0">
             <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>
-            <p className="text-[0.98rem] sm:text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums" style={{ color: dm ? '#ECEDF1' : '#111' }}>
+            <p className="text-[0.98rem] sm:text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums"
+              style={{ color: heroStart ? (dm ? '#ECEDF1' : '#111') : '#C4849A' }}>
               {heroStart || 'Set time'}
             </p>
             {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>until {heroEnd}</p>}
@@ -2178,11 +2188,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             so there's no separate time section further down the card. */}
         <div ref={timeSectionRef} className="mb-6 flex flex-col gap-3">
           {/* Appointment / ready-by card */}
-          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, background: dm ? '#1e1e24' : '#fff' }}>
+          <div className="rounded-[14px] overflow-hidden" style={{
+            border: `1px solid ${needsTime ? (dm ? '#5c4550' : '#E7C6D3') : (dm ? '#3a3a48' : '#E5E5EC')}`,
+            background: dm ? '#1e1e24' : '#fff',
+            boxShadow: needsTime ? (dm ? 'none' : '0 2px 14px rgba(196,132,154,0.13)') : 'none',
+          }}>
             {/* Narrow screens stack the label above the buttons: side by side,
                 the label plus two pills overflow and the pill text wraps mid
                 word. Stacked, each pill gets a full-width tap target. */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-2 px-4 py-3" style={{
+              borderBottom: `1px solid ${needsTime ? (dm ? '#3d2f36' : '#F2DFE6') : (dm ? '#2e2e38' : '#EDEDF3')}`,
+              background: needsTime ? (dm ? 'rgba(196,132,154,0.09)' : '#FCF5F8') : 'transparent',
+            }}>
               <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
               <div className="flex items-center gap-2 sm:gap-1.5">
                 {/* Her day, one tap from the time she's setting. It stays in

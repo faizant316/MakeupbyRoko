@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { shortDateTime, timeAgo } from './depositState';
+import { shortDateTime } from './depositState';
 
 // "Did she actually get the email?" — answered on the card, where the question
 // gets asked.
@@ -58,8 +58,24 @@ const KIND_LABEL = {
   cancelled_by_admin: 'Cancellation notice',
   class_lesson: 'Class scheduled',
   class_payment: 'Class booking confirmed',
+  // Roko's own copies. The "your copy" tag beside the name says who it went to,
+  // so these only need to name the event, not repeat the word admin.
+  admin_new_booking: 'New booking',
+  admin_bridal_confirmed: 'Confirmed + consultation',
+  admin_consultation: 'Consultation scheduled',
+  admin_cancel_requested: 'Cancellation request',
+  admin_cancelled: 'Cancellation',
+  admin_agreement_resigned: 'Agreement re-signed',
+  admin_class_lesson: 'Class scheduled',
+  admin_class_payment: 'New class booking',
 };
-const kindLabel = (k) => KIND_LABEL[k] || String(k || 'Email').replace(/_/g, ' ');
+// Anything unmapped still reads as English rather than as a variable name that
+// escaped: "some_new_email" becomes "Some new email".
+const kindLabel = (k) => {
+  if (KIND_LABEL[k]) return KIND_LABEL[k];
+  const words = String(k || 'Email').replace(/^admin_/, '').replace(/_/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
 
 export default function EmailLogPanel({ booking, registration, dm }) {
   const queryClient = useQueryClient();
@@ -178,21 +194,13 @@ export default function EmailLogPanel({ booking, registration, dm }) {
                     {!isClient && <span className="text-[0.68rem]" style={{ color: muted }}>your copy</span>}
                   </div>
                   <p className="text-[0.72rem] mt-1 break-all" style={{ color: muted }}>
-                    {row.recipient}{stamp ? ` · ${shortDateTime(stamp)} (${timeAgo(stamp)})` : ''}
+                    {row.recipient}{stamp ? ` · ${shortDateTime(stamp)}` : ''}
                   </p>
+                  {/* The only subtitle left, and the only one that ever told
+                      Roko something she could act on. */}
                   {row.error && (
                     <p className="text-[0.72rem] mt-1 leading-snug" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
                       {row.error}
-                    </p>
-                  )}
-                  {row.status === 'delivered' && row.delivered_at && (
-                    <p className="text-[0.7rem] mt-1" style={{ color: muted }}>
-                      Landed in her inbox {timeAgo(row.delivered_at)}
-                    </p>
-                  )}
-                  {row.status === 'sent' && (
-                    <p className="text-[0.7rem] mt-1" style={{ color: muted }}>
-                      Accepted by the mail service. No delivery confirmation back yet.
                     </p>
                   )}
                 </div>
@@ -217,8 +225,7 @@ export default function EmailLogPanel({ booking, registration, dm }) {
 
       {list.length > 0 && (
         <p className="text-[0.68rem] mt-2 leading-snug" style={{ color: muted }}>
-          Send again replays the exact email she was originally sent. If her time or
-          details have changed since, use Message Client instead.
+          Send again resends the original email exactly as it was.
         </p>
       )}
     </div>
