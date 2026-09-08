@@ -236,6 +236,7 @@ export default function BookingsList({
   // because together they were taking the top third of the screen before a
   // single appointment appeared.
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const searchInputRef = useRef(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -648,43 +649,56 @@ export default function BookingsList({
         </div>
       )}
 
-      {/* Just Booked — laptop only. On a phone this same rail renders at the
-          very top of the admin page instead, above the calendar, so a new
-          booking is the first thing on screen rather than three scrolls down. */}
+      {/* Recent bookings — laptop only. On a phone this same rail renders at
+          the very top of the admin page instead, above the calendar, so who
+          booked is the first thing on screen rather than three scrolls down. */}
       <NewBookingsRail bookings={allBookings} loading={loading} onSelect={onSelect} darkMode={dm} className="hidden sm:block mb-5" />
 
-      {/* Search */}
-      <div className={`relative mb-4 ${searchOpen || search ? '' : 'hidden sm:block'}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search by name, email, or service..."
-          className="w-full pl-10 pr-10 py-2.5 rounded-lg text-base sm:text-[0.82rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
+      {/* Search — a line, not a box.
+          It used to be a filled, bordered, full-width field carrying the
+          placeholder "Search by name, email, or service...", which put a heavy
+          grey slab and a sentence directly under the rail and above the list,
+          in the one strip of the page where nothing is happening. Nobody needs
+          telling that a search box searches names. What's left is the glass, a
+          hairline that warms to rose on focus, and the word Search. */}
+      <div className={`mb-4 ${searchOpen || search ? '' : 'hidden sm:block'}`}>
+        <div className="relative flex items-center gap-2.5 pb-2"
           style={{
-            background: dm ? '#232328' : '#FAFAFB',
-            border: `1px solid ${dm ? '#34343d' : '#E8E9EE'}`,
-            color: dm ? '#e4e4e7' : '#111',
-          }}
-        />
-        {/* Clear button — appears once there's text to wipe out */}
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch('')}
-            aria-label="Clear search"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#3f3f46' : '#ECEDF1', touchAction: 'manipulation' }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        )}
+            borderBottom: `1px solid ${searchFocused ? (dm ? '#5c4450' : '#E3C6D1') : (dm ? '#34343d' : '#EDEDF1')}`,
+            transition: 'border-color 200ms ease',
+          }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={searchFocused ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#7a7a84' : '#b0b0ba')} strokeWidth="1.4" strokeLinecap="round"
+            className="w-4 h-4 flex-shrink-0" style={{ transition: 'stroke 200ms ease' }}>
+            <circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.2" y2="16.2"/>
+          </svg>
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="Search"
+            className="flex-1 min-w-0 bg-transparent border-0 p-0 text-base sm:text-[0.82rem] outline-none"
+            style={{ color: dm ? '#e4e4e7' : '#111' }}
+          />
+          {/* Clear — appears once there's text to wipe out. A bare glyph now:
+              the grey pill it used to sit in was the second-heaviest thing in
+              a row that is meant to be a hairline. */}
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+              className="flex-shrink-0 flex items-center justify-center w-6 h-6 -mr-1 transition-opacity hover:opacity-60 active:scale-90"
+              style={{ color: dm ? '#7a7a84' : '#b0b0ba', touchAction: 'manipulation' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-3.5 h-3.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Status + service-type filters.
