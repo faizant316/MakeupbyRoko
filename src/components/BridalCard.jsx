@@ -134,9 +134,9 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
               {/* Phone: one line instead of three bullets. See highlights() in
                   serviceCopy for why the list comes off the card at this width. */}
               {hl && (
-                <div className="lg:hidden mb-4 text-[0.79rem] text-[#6d6460] leading-[1.5]">
-                  {hl.items.join(', ')}
-                  {hl.more > 0 && <span className="text-[#D4A0B0]">, +{hl.more} more</span>}
+                <div className="lg:hidden mb-4 text-[0.8rem] text-[#6d6460] leading-[1.5]">
+                  {hl.lead}
+                  {hl.more > 0 && <span className="text-[#D4A0B0]">, and {hl.more} more</span>}
                 </div>
               )}
               <ul className="hidden lg:flex flex-col gap-1.5 mb-4">
@@ -157,18 +157,15 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
             )}
           </div>
 
-          {/* Desktop gets two explicit targets: Details opens the sheet, the black
-              button starts the booking.
-
-              On a phone the Details button is gone. Tapping the card body already
-              opens the same sheet, so it was one of three tap meanings on a card
-              a first-time visitor has never seen, two of which did the same
-              thing. What is left is one full-width black button that books. */}
+          {/* Two explicit targets at every width: Details opens the sheet, the
+              black button starts the booking. Tapping the card body opens the
+              sheet too, but a visible Details button is what tells a first-time
+              reader the sheet exists at all. */}
           <div className="flex items-stretch gap-2.5">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetail && onViewDetail(svc, e); }}
               type="button"
-              className="hidden lg:block flex-shrink-0 px-5 py-3.5 text-[0.79rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[var(--radius)] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
+              className="flex-shrink-0 px-5 py-4 lg:py-3.5 text-[0.79rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[var(--radius)] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
               style={{ touchAction: 'manipulation' }}
             >
               Details

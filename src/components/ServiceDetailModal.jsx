@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
-import { bestFor, ctaLabel, earliestDateLabel, leadLabelFor, showsEarliestDate } from '@/lib/serviceCopy';
+import { ctaLabel, earliestDateLabel, leadLabelFor, showsEarliestDate } from '@/lib/serviceCopy';
 import { STUDIO_TOWN } from '@/lib/studio';
 import CtaArrow from './CtaArrow';
 
@@ -30,6 +30,19 @@ const IconClose = ({ dark = false }) => (
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
+// How far down the phone screen the white sheet starts, as a percentage of the
+// viewport.
+//
+// This was 72, which put the title just off the bottom edge and everything worth
+// reading below it: the sheet opened as a photo with a handle, and you had to
+// know to drag it up. That was the right call when a service carried a gallery
+// and the sheet would have covered photos the visitor came to see. Every service
+// has exactly one cover photo now, so the photo is an establishing shot and the
+// words are the point. At 40 the title, the price row, the whole description and the
+// first of the included lines are on screen the moment it opens, with the cover
+// still large enough to read as the photo for this service.
+const SHEET_TOP_VH = 40;
 
 const darkPill = {
   background: 'rgba(0,0,0,0.42)',
@@ -278,8 +291,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
   };
 
   const dupeFilters  = svc.title === 'Luxury Bridal Look' ? ['travel fee', '$200'] : [];
-  const descToShow   = dupeFilters.length ? dedupeText(svc.desc,           dupeFilters) : svc.desc;
-  const expectToShow = dupeFilters.length ? dedupeText(svc.what_to_expect, dupeFilters) : svc.what_to_expect;
+  const descToShow   = dupeFilters.length ? dedupeText(svc.desc, dupeFilters) : svc.desc;
   const fadeT        = closing
     ? 'background 0.18s ease, backdrop-filter 0.18s ease'
     : 'background 0.30s ease, backdrop-filter 0.30s ease';
@@ -307,11 +319,11 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           <span className="block mt-1 text-[#8C6070]">Booked far in advance? Bridal pricing may apply.</span>
         </div>
       )}
+      {/* Two rules, not three. The third read "Test your look before the big
+          day. No surprises on your wedding day.", which is the description again
+          in a pink box rather than anything the bride has to know. */}
       {svc.title === 'Bridal Trial' && (
         <div className="flex flex-col gap-2 mb-4">
-          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
-            <strong>Test your look before the big day.</strong> No surprises on your wedding day.
-          </div>
           <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
             Recommended <strong>1–3 months before</strong> your wedding date
           </div>
@@ -333,38 +345,43 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         {svc.duration && <><span className="text-[#ddd]">·</span><span className="text-[0.84rem] text-[#888]">{svc.duration}</span></>}
         {svc.deposit  && <><span className="text-[#ddd]">·</span><span className="text-[0.78rem] text-[#aaa]">{svc.deposit}</span></>}
       </div>
-      {bestFor(svc) && <p className="text-[0.84rem] text-[#8a7f79] leading-[1.55] mb-3">{bestFor(svc)}</p>}
       {showsEarliestDate(svc) && (
         <p className="text-[0.78rem] text-[#a89f99] mb-4">
           Earliest date available <span className="text-[#6d6460]">{earliestDateLabel(svc)}</span>
         </p>
       )}
+      {/* The description leads, the policy badges follow it.
+          Badges first meant the first full sentence in the sheet was a rule
+          ("Required for: bridal switch, location over 1 hr from studio..."),
+          which is an answer to a question she has not asked yet. It also pushed
+          the description below the fold on a phone even after the sheet was
+          raised. Set a step larger than the body text around it, and darker: at
+          0.93rem/#666 the one paragraph the sheet exists to show read like a
+          caption. The bestFor line came out here, it said in worse words what
+          this paragraph now says, and the card already carries it. */}
+      {descToShow && <p className="text-[1.02rem] text-[#4a4340] leading-[1.62] mb-5">{descToShow}</p>}
       {badges}
-      {descToShow   && <p className="text-[0.93rem] text-[#666] leading-[1.78] mb-5">{descToShow}</p>}
-      {expectToShow && (
-        <div className="mb-5">
-          <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2">What to Expect</p>
-          <p className="text-[0.92rem] text-[#666] leading-[1.72]">{expectToShow}</p>
-        </div>
-      )}
-      {svc.key_features?.length > 0 && (
-        <div className="mb-5">
-          <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">Highlights</p>
-          <ul className="flex flex-col gap-1.5">
-            {svc.key_features.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-[0.92rem] text-[#666]">
-                <span className="text-[#D4A0B0] mt-[3px] flex-shrink-0 text-[0.55rem]">●</span>{item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* One description and one list.
+          The sheet used to run four text blocks back to back: this description,
+          a "What to Expect" paragraph, a "Highlights" list and this one. They
+          were written at different times and said the same things in different
+          words. On Luxury, the description mentioned the consultation, What to
+          Expect opened by mentioning the consultation, Highlights said "Travel
+          available (fee applies)" directly under a badge reading "$200+ travel
+          fee automatically added", and What's Included listed the Zoom call a
+          second time. A reader has to get through all of it to find out whether
+          any of it is new.
+
+          what_to_expect and key_features are untouched in the services table,
+          they are just no longer rendered here; the few facts only they carried
+          (airbrush on request, the trial's photo documentation) moved into the
+          includes copy in src/views/Services.jsx. */}
       {svc.includes?.length > 0 && (
         <div className="mb-2">
           <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">What's Included</p>
-          <ul className="flex flex-col gap-1.5">
+          <ul className="flex flex-col gap-2">
             {svc.includes.map((item, i) => (
-              <li key={i} className="flex items-start gap-2 text-[0.92rem] text-[#555]">
+              <li key={i} className="flex items-start gap-2.5 text-[0.95rem] text-[#55504d] leading-[1.5]">
                 <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>{item}
               </li>
             ))}
@@ -516,7 +533,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
         <div ref={mobileInnerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
 
           {/* Photo strip */}
-          <div className="absolute inset-x-0 top-0 z-0" style={{ height: '72vh' }}>
+          <div className="absolute inset-x-0 top-0 z-0" style={{ height: `${SHEET_TOP_VH}vh` }}>
             <PhotoCarousel photos={photos} idx={photoIdx} />
             {svc.title === 'Full Day Service' && <PhotoWatermark style={{ right: 14, bottom: 20 }} />}
           </div>
@@ -526,7 +543,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             <div
               className="absolute left-1/2 z-[15]"
               style={{
-                top: 'calc(72vh - 36px)',
+                top: `calc(${SHEET_TOP_VH}vh - 36px)`,
                 transform: 'translateX(-50%)',
                 opacity: dotsVisible ? 1 : 0,
                 transition: 'opacity 0.2s ease',
@@ -547,7 +564,7 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
             onScroll={e => setDotsVisible(e.target.scrollTop < 24)}
           >
             {/* Transparent spacer — tap to close */}
-            <div style={{ height: '72vh' }} onClick={handleClose} />
+            <div style={{ height: `${SHEET_TOP_VH}vh` }} onClick={handleClose} />
 
             {/* White content sheet */}
             <div style={{ background: '#fff', borderRadius: '22px 22px 0 0', minHeight: '100vh' }}>

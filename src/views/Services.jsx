@@ -127,14 +127,67 @@ const PHOTO_OVERRIDES = {
 // reads those same rows: editing them there publishes instantly, with no way to
 // look at the wording first. Move these into Supabase and delete the entry once
 // the copy is signed off.
+// The descriptions the DB ships are written at the reader rather than to her:
+// Full Day's opens "Full-day booking is required for brides who need a bridal
+// switch (second look), are located over 1 hour from the studio..." which is the
+// policy, in policy language, as the first thing she reads about the package.
+// The rules still get said, in the badges directly underneath, where a rule
+// belongs. These say what she is actually buying, in words nobody has to work
+// at, short enough to be read in full on a phone without scrolling.
 const CONTENT_OVERRIDES = {
-  'Bridal Trial': {
+  'Luxury Bridal Look': {
+    desc: 'Everything for your wedding day look, from skin prep to lashes. You keep a touch-up kit for the day, and you get a 30 minute Zoom call beforehand to plan it together.',
     includes: [
-      '30-minute consultation first',
+      'Full bridal makeup',
+      'Lashes included',
+      'Touch-up kit to take with you',
+      '30 minute Zoom call before the day',
+      'Airbrush on request',
+      'Bridesmaid add-ons available',
+    ],
+  },
+  'Full Day Service': {
+    desc: "Roko stays with you for up to four hours, so she's there for an early start, a second look, or a venue further out. Travel is included, so there's no separate fee.",
+    includes: [
+      'Up to four hours reserved for you',
+      'Full bridal makeup, including chest and back',
+      'Skin prep matched to your skin type',
+      'Lashes included',
+      'Touch-up kit to take with you',
+      'A second look, or one extra full glam',
+      'Touch-ups before photos and the ceremony',
+      'Help with your dress and finishing touches',
+      '30 minute Zoom call before the day',
+      'Travel included, no extra fee',
+      'Bridesmaid add-ons available',
+    ],
+  },
+  'Non-Bridal Makeup': {
+    desc: 'Makeup for parties, birthdays, graduations, nights out and wedding guests, done at the studio. Book at least a month ahead, since wedding clients are booked first.',
+    includes: [
+      'Skin prep and primer',
+      'Foundation matched to your skin',
+      'Eyeshadow, liner and lashes',
+      'Long-wear finish that lasts the night',
+    ],
+  },
+  'Photoshoot Makeup': {
+    desc: 'Camera-ready makeup for engagement, maternity, birthday and quinceañera shoots. Built to hold up under bright lights and close-up photos.',
+    includes: [
+      'Skin prep for camera',
+      'Foundation that holds up in HD',
+      'Contour and highlight for depth on camera',
+      'Eye and lip look built for your shoot',
+    ],
+  },
+  'Bridal Trial': {
+    desc: 'A practice run before the wedding, at the studio. You try the full look, change whatever you want, and leave knowing exactly how the day will go.',
+    includes: [
+      '30 minute consultation first',
       'Inspiration photos reviewed together',
       'Skin type and allergies covered',
       'Full trial application, refined until you love it',
-      'Your wedding-day look, locked in',
+      'Photos of the final look, so it can be recreated exactly',
     ],
   },
   'Makeup Courses': {
