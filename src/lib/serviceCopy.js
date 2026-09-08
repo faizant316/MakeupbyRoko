@@ -40,7 +40,13 @@ export function bestFor(svc) {
   return BEST_FOR[svc?.title] || '';
 }
 
-// Which package your drive time puts you in, said on the card itself.
+// Where the appointment happens, said on the card itself.
+//
+// Two questions wear the same shape here, so they share one line rather than
+// two treatments. For the wedding-day packages it is "how far away are you
+// getting ready", because that is the only thing separating Luxury from Full
+// Day. For everything else it is "where is this held", because the answer is
+// always the studio and the card never said so.
 //
 // Luxury and Full Day sit side by side on the services grid, and the only
 // question that separates them for most brides is how far the venue is. That
@@ -51,17 +57,54 @@ export function bestFor(svc) {
 // Both cards carry a line, not just Full Day: a bride twenty minutes away needs
 // to be told she is in the right place just as much as one three hours out.
 //
+// The trial is studio only and always has been (BridalInquiryForm skips the
+// location question for it entirely and stamps the studio), but nothing on the
+// card said so, so a bride found out at step 2 of the form. Non-bridal and
+// photoshoots already carried a studio note as small print at the bottom of
+// their card; putting them all through here is what makes it a stated fact
+// rather than a footnote.
+//
 // The hour and the town are read from the constants that enforce the rule
 // rather than retyped, so this copy cannot drift away from what the gate does.
 const HOUR_LABEL = TRAVEL_HOUR_MINUTES === 60 ? 'an hour' : `${TRAVEL_HOUR_MINUTES} minutes`;
 
-const TRAVEL_FIT = {
-  'Luxury Bridal Look': `Within ${HOUR_LABEL} of ${STUDIO_TOWN}`,
-  'Full Day Service':   `Over ${HOUR_LABEL} from ${STUDIO_TOWN}`,
+const PLACE = {
+  'Luxury Bridal Look': { label: 'Getting ready', value: `Within ${HOUR_LABEL} of ${STUDIO_TOWN}` },
+  'Full Day Service':   { label: 'Getting ready', value: `Over ${HOUR_LABEL} from ${STUDIO_TOWN}` },
+  'Bridal Trial':       { label: 'Where',         value: `Studio only, ${STUDIO_TOWN}` },
+  'Non-Bridal Makeup':  { label: 'Where',         value: `Studio only, ${STUDIO_TOWN}` },
+  'Photoshoot Makeup':  { label: 'Where',         value: `Studio only, ${STUDIO_TOWN}` },
 };
 
-export function travelFit(svc) {
-  return TRAVEL_FIT[svc?.title] || '';
+/** { label, value } for the card's location line, or null if the service has none. */
+export function placeLine(svc) {
+  return PLACE[svc?.title] || null;
+}
+
+// The mobile card's one-line stand-in for the bullet list.
+//
+// A phone card that carries three bullets, a distance line, three figures and
+// two buttons is a page, not a card, and a first-time bride has to read all of
+// it before she can scroll to the package that is actually hers. So on a phone
+// the list collapses to the few words that say "this is a real package" and the
+// full list stays one tap away in the detail sheet, which the card body already
+// opens. Desktop keeps the bullets: there is room for them there.
+//
+// Written out rather than trimmed from svc.includes because the DB sentences do
+// not shorten mechanically ("Lash application included" wants to be "Lashes").
+// A service with no entry falls back to its own first two bullets, so adding one
+// in Supabase still gets a line instead of a blank.
+const HIGHLIGHTS = {
+  'Luxury Bridal Look': ['Lashes', 'Touch-up kit', 'Zoom consult'],
+  'Full Day Service':   ['Lashes', 'Touch-up kit', 'Second look'],
+  'Bridal Trial':       ['30-min consult', 'Full application'],
+};
+
+export function highlights(svc) {
+  const total = svc?.includes?.length || 0;
+  const items = HIGHLIGHTS[svc?.title] || (svc?.includes || []).slice(0, 2).map((s) => s.split(/[,(]/)[0].trim());
+  if (!items.length) return null;
+  return { items, more: Math.max(0, total - items.length) };
 }
 
 // How far out this service can be booked, and what the calendar will call it.

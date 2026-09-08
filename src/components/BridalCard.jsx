@@ -1,4 +1,4 @@
-import { bestFor, ctaLabel, travelFit } from '@/lib/serviceCopy';
+import { bestFor, ctaLabel, placeLine, highlights } from '@/lib/serviceCopy';
 import ServiceSpecs from './ServiceSpecs';
 import CtaArrow from './CtaArrow';
 
@@ -18,6 +18,8 @@ const CARD_CLASS =
 
 export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
   const remaining = svc.includes.length - 3;
+  const place = placeLine(svc);
+  const hl = highlights(svc);
 
   return (
     <div
@@ -29,7 +31,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
         {/* Photo. Wider crop on desktop, where these sit two to a row rather
             than three and a 4:3 would run tall enough to push the CTA under
             the fold. */}
-        <div className="aspect-[4/3] lg:aspect-[16/10] overflow-hidden bg-[#f5f5f5] flex-shrink-0 relative">
+        <div className="aspect-[16/9] lg:aspect-[16/10] overflow-hidden bg-[#f5f5f5] flex-shrink-0 relative">
           <img src={svc.photo} alt={svc.title} loading="lazy" decoding="async"
             className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
             style={{ objectPosition: svc.title === 'Bridal Trial' ? 'center 42%' : 'top' }} />
@@ -89,7 +91,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                 ServiceSpecs already tried and rejected for dropping a coloured
                 panel into an otherwise white, hairline-ruled page, and on the
                 Luxury card it sat inside the pink aura and muddied. */}
-            {travelFit(svc) && (
+            {place && (
               <div className="mb-4 pt-4" style={{ borderTop: '1px solid #f0ebe6' }}>
                 <span
                   className="block mb-1.5"
@@ -98,7 +100,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                     letterSpacing: '0.12em', textTransform: 'uppercase', color: '#a89f99',
                   }}
                 >
-                  Getting ready
+                  {place.label}
                 </span>
                 <div className="flex items-start gap-2">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -107,7 +109,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                     <circle cx="12" cy="10" r="3" />
                   </svg>
                   <span className="text-[0.86rem] font-semibold leading-[1.35] text-[#6B4055] text-balance">
-                    {travelFit(svc)}
+                    {place.value}
                   </span>
                 </div>
               </div>
@@ -128,7 +130,16 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                 See what's included →
               </div>
             ) : (
-              <ul className="flex flex-col gap-1.5 mb-4">
+              <>
+              {/* Phone: one line instead of three bullets. See highlights() in
+                  serviceCopy for why the list comes off the card at this width. */}
+              {hl && (
+                <div className="lg:hidden mb-4 text-[0.79rem] text-[#6d6460] leading-[1.5]">
+                  {hl.items.join(', ')}
+                  {hl.more > 0 && <span className="text-[#D4A0B0]">, +{hl.more} more</span>}
+                </div>
+              )}
+              <ul className="hidden lg:flex flex-col gap-1.5 mb-4">
                 {svc.includes.slice(0, 3).map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[0.84rem] text-[#6d6460] leading-[1.45]">
                     <span className="text-[#D4A0B0] mt-px flex-shrink-0">✦</span>
@@ -142,16 +153,22 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                   <li className="text-[0.76rem] text-[#D4A0B0] pl-4">+{remaining} more</li>
                 )}
               </ul>
+              </>
             )}
           </div>
 
-          {/* Two explicit targets instead of one card with two meanings: Details
-              opens the sheet, the black button starts the booking. */}
+          {/* Desktop gets two explicit targets: Details opens the sheet, the black
+              button starts the booking.
+
+              On a phone the Details button is gone. Tapping the card body already
+              opens the same sheet, so it was one of three tap meanings on a card
+              a first-time visitor has never seen, two of which did the same
+              thing. What is left is one full-width black button that books. */}
           <div className="flex items-stretch gap-2.5">
             <button
               onClick={(e) => { e.stopPropagation(); onViewDetail && onViewDetail(svc, e); }}
               type="button"
-              className="flex-shrink-0 px-5 py-4 lg:py-3.5 text-[0.79rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[var(--radius)] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
+              className="hidden lg:block flex-shrink-0 px-5 py-3.5 text-[0.79rem] tracking-[0.02em] text-[#7a7068] bg-transparent border border-[#e6dcd7] rounded-[var(--radius)] hover:border-[#111] hover:text-[#111] active:scale-[0.97] transition-all"
               style={{ touchAction: 'manipulation' }}
             >
               Details
