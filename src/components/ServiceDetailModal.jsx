@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
 import { useModalLenis, scrollModalTop } from '@/lib/modalLenis';
 import { bestFor, ctaLabel, earliestDateLabel, leadLabelFor, showsEarliestDate } from '@/lib/serviceCopy';
+import { STUDIO_TOWN } from '@/lib/studio';
 import CtaArrow from './CtaArrow';
 
 // Same hook, no SSR warning. The lock/unlock and the opening FLIP both have to
@@ -313,6 +314,11 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           </div>
           <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
             Recommended <strong>1–3 months before</strong> your wedding date
+          </div>
+          {/* The trial has always been studio only (BridalInquiryForm never asks
+              where, it stamps the studio), and the sheet never said so either. */}
+          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
+            Held at <strong>Roko's studio in {STUDIO_TOWN}</strong>, no travel option on trials
           </div>
         </div>
       )}

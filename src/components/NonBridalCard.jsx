@@ -1,4 +1,4 @@
-import { bestFor, ctaLabel } from '@/lib/serviceCopy';
+import { bestFor, ctaLabel, placeLine } from '@/lib/serviceCopy';
 import CtaArrow from './CtaArrow';
 
 const PhotoBadge = ({ count }) => (
@@ -13,6 +13,7 @@ const PhotoBadge = ({ count }) => (
 
 export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewDetail }) {
   const isLessons = svc.category === 'lessons';
+  const place = placeLine(svc);
   const action = (e) => { e.stopPropagation(); if (isLessons) onOpenClassModal(); else onSelect(svc); };
 
   return (
@@ -60,15 +61,28 @@ export default function NonBridalCard({ svc, onSelect, onOpenClassModal, onViewD
             <p className="text-[0.78rem] text-[#6d6460] leading-[1.55] line-clamp-1 mb-2">{svc.desc}</p>
           ) : null}
 
-          {/* One short logistics line. The old "must be booked within 1 month of
-              the event" contradicted the calendar's "bookable at least 1 month
-              out"; both the rule and the pricing note live in the detail sheet
-              now, where a date is actually the subject. */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-0.5">
-            {(svc.category === 'event' || svc.category === 'creative') && (
-              <span className="inline-flex items-center gap-1.5 text-[0.72rem] text-[#A0785A]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4A0B0] flex-shrink-0" />
-                Studio only · Mountain House, CA
+          {/* Where it happens, and the one bit of scheduling the card still owns.
+              The old "must be booked within 1 month of the event" contradicted the
+              calendar's "bookable at least 1 month out"; both the rule and the
+              pricing note live in the detail sheet now, where a date is actually
+              the subject.
+
+              "Studio only" used to be a 0.72rem brown footnote at the bottom of
+              the card, which is roughly how carefully it was read. It is a hard
+              constraint (there is no travel option on these), and on the bridal
+              trial it was never said at all, so a bride only found out at step 2
+              of the form. It now comes from placeLine, the same source and the
+              same pin the bridal cards use for their distance line, at a size
+              that carries. */}
+          <div className="flex flex-col gap-1.5 mt-2.5 pt-2.5" style={{ borderTop: '1px solid #f3ede9' }}>
+            {place && (
+              <span className="inline-flex items-start gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className="w-[14px] h-[14px] flex-shrink-0 mt-[2px]">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span className="text-[0.79rem] font-semibold leading-[1.35] text-[#6B4055]">{place.value}</span>
               </span>
             )}
             {isLessons && (

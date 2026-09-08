@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
@@ -83,7 +83,9 @@ const CATEGORIES = [
   { key: 'lessons', label: 'Makeup Courses' },
 ];
 
-// Position + "there's more sideways" cue for the mobile carousels. The dots
+// Position + "there's more sideways" cue for the Other Services carousel on a
+// phone. The bridal fork used to have one too and no longer does: see the
+// stacked grid below for why swiping was the wrong gesture there. The dots
 // under a carousel only report where you are once you've already swiped; this
 // says there is something to swipe before you do, which is the whole reason
 // people were missing the services past the first card.
@@ -109,27 +111,51 @@ const PHOTO_OVERRIDES = {
   'Bridal Trial': '/bridal-trial.jpg',
 };
 
-// The DB row for "Makeup Courses" still holds the old copy (Mon-Thu, 50%
-// deposit via Zelle, stale prices). Classes are now Wednesdays only and paid in
-// full, so override that content here for both the card and its detail modal.
-const LESSONS_OVERRIDE = {
-  desc: 'Learn from Roko one-on-one, online over Zoom or in person at the Mountain House studio. Every class is private, one client per Wednesday, and you pay in full to reserve your day.',
-  price: 'From $310',
-  duration: 'Online or in person',
-  deposit: '',
-  includes: [
-    'Beginner Makeup Lesson (3 hours) - from $310',
-    'Advanced Makeup Artist Training (full day) - from $1,240',
-  ],
-  key_features: [],
-  what_to_expect: '',
+// Copy the DB row gets wrong, overridden here for both the card and its detail
+// modal.
+//
+// "Makeup Courses" still holds the old class copy (Mon-Thu, 50% deposit via
+// Zelle, stale prices). Classes are now Wednesdays only and paid in full.
+//
+// The "Bridal Trial" bullets are three full sentences, the first of which only
+// repeats the duration figure sitting directly above it ("Three hours of
+// personalized bridal trial..." over a DURATION cell reading "3 hours"). On a
+// phone the card clamps each bullet to two lines, so all three arrived chopped
+// mid-sentence. Same information, five short lines instead of three long ones.
+//
+// Kept here rather than rewritten in the services table because the live site
+// reads those same rows: editing them there publishes instantly, with no way to
+// look at the wording first. Move these into Supabase and delete the entry once
+// the copy is signed off.
+const CONTENT_OVERRIDES = {
+  'Bridal Trial': {
+    includes: [
+      '30-minute consultation first',
+      'Inspiration photos reviewed together',
+      'Skin type and allergies covered',
+      'Full trial application, refined until you love it',
+      'Your wedding-day look, locked in',
+    ],
+  },
+  'Makeup Courses': {
+    desc: 'Learn from Roko one-on-one, online over Zoom or in person at the Mountain House studio. Every class is private, one client per Wednesday, and you pay in full to reserve your day.',
+    price: 'From $310',
+    duration: 'Online or in person',
+    deposit: '',
+    includes: [
+      'Beginner Makeup Lesson (3 hours) - from $310',
+      'Advanced Makeup Artist Training (full day) - from $1,240',
+    ],
+    key_features: [],
+    what_to_expect: '',
+  },
 };
 
 function mapService(svc) {
   const mainPhoto = PHOTO_OVERRIDES[svc.title] || svc.photo || '';
   // One cover photo per card — no gallery carousel.
   const photos = [mainPhoto].filter(Boolean);
-  const isLessons = svc.category === 'lessons';
+  const o = CONTENT_OVERRIDES[svc.title] || {};
 
   return {
     key: svc.id,
@@ -137,13 +163,13 @@ function mapService(svc) {
     title: svc.title,
     photo: mainPhoto,
     photos,
-    desc: isLessons ? LESSONS_OVERRIDE.desc : (svc.description || ''),
-    price: isLessons ? LESSONS_OVERRIDE.price : svc.price,
-    duration: isLessons ? LESSONS_OVERRIDE.duration : svc.duration,
-    deposit: isLessons ? LESSONS_OVERRIDE.deposit : (svc.deposit || ''),
-    includes: isLessons ? LESSONS_OVERRIDE.includes : (svc.includes || []),
-    key_features: isLessons ? LESSONS_OVERRIDE.key_features : (svc.key_features || []),
-    what_to_expect: isLessons ? LESSONS_OVERRIDE.what_to_expect : (svc.what_to_expect || ''),
+    desc: o.desc ?? (svc.description || ''),
+    price: o.price ?? svc.price,
+    duration: o.duration ?? svc.duration,
+    deposit: o.deposit ?? (svc.deposit || ''),
+    includes: o.includes ?? (svc.includes || []),
+    key_features: o.key_features ?? (svc.key_features || []),
+    what_to_expect: o.what_to_expect ?? (svc.what_to_expect || ''),
     before_after_photos: svc.before_after_photos || [],
   };
 }
@@ -155,9 +181,7 @@ export default function ServicesPage() {
   const [detailOrigin, setDetailOrigin] = useState(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [bridalIdx, setBridalIdx] = useState(0);
   const [otherIdx, setOtherIdx]   = useState(0);
-  const bridalScrollRef  = useRef(null);
   const otherScrollRef   = useRef(null);
   const filterScrollRef  = useRef(null);
   // Edge state for the category filter strip, so we can show "more to scroll" cues.
@@ -214,9 +238,7 @@ export default function ServicesPage() {
 
   // Reset carousel scroll position when category changes
   useEffect(() => {
-    if (bridalScrollRef.current) bridalScrollRef.current.scrollLeft = 0;
-    if (otherScrollRef.current)  otherScrollRef.current.scrollLeft  = 0;
-    setBridalIdx(0);
+    if (otherScrollRef.current) otherScrollRef.current.scrollLeft = 0;
     setOtherIdx(0);
   }, [activeCategory]);
 
@@ -512,11 +534,9 @@ export default function ServicesPage() {
                 <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#D4A0B0]">Bridal Services</span>
                 <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
-                <SwipeHint idx={bridalIdx} count={bridalServices.length} className="lg:hidden" />
               </div>
 
-              {/* Desktop: the two wedding-day packages side by side, then the
-                  trial as a row beneath.
+              {/* One fork, two columns on a laptop and one on a phone.
 
                   The flagship used to get a full-width split card above the
                   other two, which is exactly what a featured card is built to
@@ -525,24 +545,50 @@ export default function ServicesPage() {
                   and never read the Full Day card that was actually hers, then
                   got corrected by the measured hour gate at checkout (see
                   src/lib/travel.js). Equal cards plus the distance line each one
-                  carries (travelFit, in serviceCopy) let her self-select here
+                  carries (placeLine, in serviceCopy) let her self-select here
                   instead. Luxury is still the default, said with the aura and
                   its "Most Brides" label rather than with size.
 
+                  On a phone this was a horizontal scroll-snap carousel holding
+                  all three cards. Swiping sideways inside a page she is already
+                  scrolling down is a second gesture, and the only thing
+                  announcing it was a row of 6px dots, so a first-time bride who
+                  scrolled straight past saw one package and took it for the
+                  whole offer. Stacked, the second card is found by the gesture
+                  her thumb is already doing. BridalCard is deliberately shorter
+                  at this width (16:9 cover, bullets collapsed to one line, no
+                  Details button) so Full Day's photo and title are on screen
+                  before she leaves the Luxury card, which is the job the swipe
+                  hint used to do badly.
+
                   Sliced by position, not by title, so deactivating a bridal
                   service in Supabase degrades to one column instead of leaving a
-                  half-width orphan. The mobile carousel below is unchanged: all
-                  three still run through BridalCard there. */}
-              <div className="hidden lg:flex flex-col gap-5">
-                <div className="grid gap-5" style={{ gridTemplateColumns: bridalServices.length > 1 ? 'repeat(2, 1fr)' : '1fr' }}>
+                  half-width orphan. */}
+              <div className="flex flex-col gap-4 lg:gap-5">
+                <div className={`grid grid-cols-1 gap-4 lg:gap-5 ${bridalServices.length > 1 ? 'lg:grid-cols-2' : ''}`}>
                   {bridalServices.slice(0, 2).map((svc, i) => (
-                    <BridalCard key={svc.key} svc={svc} idx={i} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
+                    <Fragment key={svc.key}>
+                      {/* Phone only: says the second card is the alternative for
+                          a bride further out, not a lesser version of the first. */}
+                      {i === 1 && (
+                        <div className="lg:hidden flex items-center gap-3 px-1">
+                          <span className="flex-1 h-px bg-[#efe7e2]" />
+                          <span className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase text-[#b3a9a3]">
+                            Or, if you're further out
+                          </span>
+                          <span className="flex-1 h-px bg-[#efe7e2]" />
+                        </div>
+                      )}
+                      <BridalCard svc={svc} idx={i} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
+                    </Fragment>
                   ))}
                 </div>
                 {/* The trial is a supporting service, not a third choice in the
                     fork, so it takes the same horizontal row the non-bridal
                     services use further down rather than a tall card with a
-                    hole beside it. */}
+                    hole beside it. It used to be a third full card on mobile,
+                    which read as a third equal option beside two wedding-day
+                    packages; it is the same row at every width now. */}
                 {bridalServices.slice(2).map((svc) => (
                   <NonBridalCard
                     key={svc.key}
@@ -552,59 +598,6 @@ export default function ServicesPage() {
                     onViewDetail={handleViewDetail}
                   />
                 ))}
-              </div>
-
-              {/* Mobile: native CSS scroll-snap — runs on compositor, true 120fps */}
-              <div className="lg:hidden">
-                <div
-                  ref={bridalScrollRef}
-                  onScroll={() => handleCarouselScroll(bridalScrollRef, bridalServices.length, setBridalIdx)}
-                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
-                  style={{
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    scrollSnapType: 'x mandatory',
-                    scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                  }}
-                >
-                  <div
-                    className="flex gap-4 pb-4"
-                    style={{
-                      paddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                      paddingRight: 'clamp(1.25rem,5vw,3rem)',
-                    }}
-                  >
-                    {bridalServices.map((svc, idx) => (
-                      <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[340px]" style={{ scrollSnapAlign: 'start' }}>
-                        <BridalCard svc={svc} idx={idx} onSelect={setSelectedService} onViewDetail={handleViewDetail} />
-                      </div>
-                    ))}
-                    {/* Trailing space so the last card can snap fully to the left
-                        edge instead of getting stuck pushed off the right. */}
-                    <div
-                      className="flex-shrink-0"
-                      style={{ width: 'max(1rem, calc(100vw - min(82vw, 340px) - 2 * clamp(1.25rem,5vw,3rem)))' }}
-                    />
-                  </div>
-                </div>
-                {/* Pagination dots — one per card, active card highlighted */}
-                {bridalServices.length > 1 && (
-                  <div className="flex justify-center items-center gap-1.5 mt-3">
-                    {bridalServices.map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-1.5 rounded-full transition-all duration-300"
-                        style={{
-                          width: i === bridalIdx ? 18 : 6,
-                          background: i === bridalIdx ? '#D4A0B0' : 'rgba(212,160,176,0.35)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Comparison toggle — below all bridal cards */}
