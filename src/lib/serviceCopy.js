@@ -91,20 +91,30 @@ export function placeLine(svc) {
 // opens. Desktop keeps the bullets: there is room for them there.
 //
 // Written out rather than trimmed from svc.includes because the DB sentences do
-// not shorten mechanically ("Lash application included" wants to be "Lashes").
+// not shorten mechanically ("Lash application included" wants to be "lashes").
 // A service with no entry falls back to its own first two bullets, so adding one
 // in Supabase still gets a line instead of a blank.
+//
+// Lower case and whole words on purpose. The first pass wrote these as clipped
+// title-case labels ("Lashes, Touch-up kit, Zoom consult") which read as three
+// unrelated tags rather than one sentence about the package, and abbreviated a
+// word ("consult") the reader has no reason to meet abbreviated. The card joins
+// them into an ordinary phrase, so they have to behave like ordinary words.
 const HIGHLIGHTS = {
-  'Luxury Bridal Look': ['Lashes', 'Touch-up kit', 'Zoom consult'],
-  'Full Day Service':   ['Lashes', 'Touch-up kit', 'Second look'],
-  'Bridal Trial':       ['30-min consult', 'Full application'],
+  'Luxury Bridal Look': ['lashes', 'touch-up kit', 'Zoom call'],
+  'Full Day Service':   ['lashes', 'touch-up kit', 'second look'],
+  'Bridal Trial':       ['consultation', 'full trial look'],
 };
 
 export function highlights(svc) {
   const total = svc?.includes?.length || 0;
-  const items = HIGHLIGHTS[svc?.title] || (svc?.includes || []).slice(0, 2).map((s) => s.split(/[,(]/)[0].trim());
+  const items = HIGHLIGHTS[svc?.title]
+    || (svc?.includes || []).slice(0, 2).map((s) => s.split(/[,(]/)[0].trim().toLowerCase());
   if (!items.length) return null;
-  return { items, more: Math.max(0, total - items.length) };
+  return {
+    lead: items.join(', ').replace(/^./, (c) => c.toUpperCase()),
+    more: Math.max(0, total - items.length),
+  };
 }
 
 // How far out this service can be booked, and what the calendar will call it.
