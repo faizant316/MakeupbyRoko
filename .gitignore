@@ -45,3 +45,6 @@ out/
 booksy-capture*.json
 *.har
 .booksy-addresses.json
+
+# Preview dev server build dir (see NEXT_DIST_DIR in next.config.mjs)
+.next-preview
