@@ -280,20 +280,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','Professional touch-up kit','30-min Zoom consultation included','Bridesmaid add-ons available'];
   const bridalTitle = activeService?.title || 'Bridal Package';
 
-  // For the Bridal Trial, the date being picked is the trial date, not the wedding
-  // date — mirror that wording in the calendar copy so it matches "Tell me about
-  // your trial" on the next step.
+  // For the Bridal Trial, the date being picked is the trial date, not the
+  // wedding date — mirror that wording in the calendar copy.
   const dateNoun = isTrial ? 'trial' : 'wedding';    // "your trial date"
   const dateNounCap = isTrial ? 'Trial' : 'Wedding'; // "Trial Date" heading / label
-
-  // Short "about" block shown above the form fields — gives every bridal service
-  // the same thoughtfully-laid-out descriptor + Package Price line that Full Day has.
-  const aboutTag = isFullDay ? 'Full Day Coverage' : isTrial ? 'Bridal Trial' : 'Wedding Day Look';
-  const aboutBlurb = isFullDay
-    ? <>Roko with you <strong>prep through ceremony</strong>. Best for early starts, switch looks, or venues over an hour away.</>
-    : isTrial
-    ? <>A full run-through of your look, best <strong>1 to 3 months</strong> out.</>
-    : <>Your <strong>wedding-day makeup</strong>, built to last all day.</>;
 
   // Stable for the life of the sheet — a fresh Date on every render would make
   // the calendar re-derive everything (and re-bind its swipe listeners) whenever
@@ -923,46 +913,42 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
         {step === 'form' && (
           <div className="w-full max-w-[680px] lg:max-w-[740px] mx-auto p-6 lg:p-9 flex flex-col gap-5">
 
-            {/* Selected wedding-date chip — tap to change */}
+            {/* The date she picked, and then the fields. Nothing else.
+
+                This was a tinted rounded chip for the date, then a serif "Tell
+                me about your day", then a ✦ WEDDING DAY LOOK eyebrow, then
+                "Your wedding-day makeup, built to last all day", then a Package
+                Price row. The word "wedding" appeared four times before the
+                first input. The heading invited a story from someone who is
+                filling in a form. The tinted rounded box was the only one of
+                its kind on a page otherwise built from hairlines. And the price
+                was already in the sticky bar above and on the button below, so
+                this was its third appearance on one screen.
+
+                What is left is the one thing this step still has to confirm:
+                which date she picked, and that she can change it. Same tap
+                target, in the page's own ruled language. */}
             <button
               type="button"
               onClick={() => goStep('date', 'back')}
-              className="w-full text-left bg-[#D4A0B0]/[0.07] border border-[#D4A0B0]/20 rounded-xl px-4 py-3.5 flex items-center gap-3 transition-colors hover:bg-[#D4A0B0]/[0.11] hover:border-[#D4A0B0]/35"
+              className="group w-full text-left flex items-center gap-3 py-3.5"
+              style={{ borderTop: '1px solid #f0ebe6', borderBottom: '1px solid #f0ebe6' }}
             >
-              <div className="w-9 h-9 rounded-xl bg-[#D4A0B0]/15 flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-[17px] h-[17px] flex-shrink-0">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
               <div className="flex-1 min-w-0">
-                <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase text-[#D4A0B0] mb-0.5">{dateNounCap} Date</p>
-                <p className="text-[0.82rem] text-[#333]">{selectedDateLong}</p>
+                <span className="block text-[0.58rem] font-semibold tracking-[0.12em] uppercase text-[#a89f99] mb-1">{dateNounCap} date</span>
+                <span className="block text-[0.92rem] font-medium text-[#111]">{selectedDateLong}</span>
               </div>
-              <span className="text-[0.7rem] font-medium text-[#D4A0B0] flex items-center gap-1 flex-shrink-0">
+              <span className="flex-shrink-0 text-[0.76rem] text-[#8a7f79] underline decoration-[#ded3cd] underline-offset-[3px] transition-colors group-hover:text-[#111] group-hover:decoration-[#111]">
                 Change
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><polyline points="9 18 15 12 9 6"/></svg>
               </span>
             </button>
 
             <div>
-              <h3 className="font-serif text-[1.7rem] lg:text-[1.9rem] text-[#111] mb-2 leading-tight">
-                {isFullDay
-                  ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">full day</em></>
-                  : isTrial
-                  ? <>Tell me about your <em className="text-[#D4A0B0] not-italic">trial</em></>
-                  : <>Tell me about your <em className="text-[#D4A0B0] not-italic">day</em></>
-                }
-              </h3>
-              <div className="mb-3.5 border-b border-gray-100 pb-5">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span className="text-[#D4A0B0] text-[0.7rem]">✦</span>
-                  <span className="text-[0.68rem] font-bold tracking-[0.14em] uppercase text-[#D4A0B0]">{aboutTag}</span>
-                </div>
-                <p className="text-[0.92rem] text-[#555] leading-[1.75] mb-4">{aboutBlurb}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[0.72rem] text-[#b5a99a]">Package Price</span>
-                  <span className="font-serif text-[1.3rem] text-[#111]">{bridalPrice} <span className="text-[0.78rem] font-sans text-[#b5a99a]">· {bridalDeposit}</span></span>
-                </div>
-              </div>
-              <p className="text-[0.85rem] text-gray-400">Fields marked * are required.</p>
+              <h3 className="font-serif text-[1.5rem] lg:text-[1.7rem] text-[#111] mb-1.5 leading-tight">Your details</h3>
+              <p className="text-[0.8rem] text-[#a89f99]">Fields marked * are required.</p>
             </div>
 
             {/* Studio-only note for trials — prominent (its own card, right at the
@@ -1033,17 +1019,14 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     point of a trial is to work the look out together in person, so
                     asking her to describe it up front is busywork. */}
 
-                {/* Photos note — same personal upload-link flow, framed for the trial. */}
-                <div>
-                  <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
-                  <div className="relative pl-3.5 mt-1.5">
-                    <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                    <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
-                    <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
-                      One photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span>, one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>. You'll get a private link, nothing to upload here.
-                    </p>
-                  </div>
-                </div>
+                {/* The "with & without makeup" photos used to be explained here,
+                    as a labelled field that took no input. It is a task for after
+                    she reserves, so on the form it was a paragraph of homework
+                    sitting between two questions. It is still said twice where it
+                    is actually actionable: the post-submit recap ("Check your
+                    email for your secure upload link", and again under Before Your
+                    Consultation) and the inquiry email, which carries the upload
+                    link itself (cmoneyBox photos: true, in src/lib/email.js). */}
 
                 <div>
                   <CustomSelect
@@ -1357,20 +1340,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
             <div className="w-full h-px bg-gray-100" />
 
-            {/* Before & after photos are collected later, through the client's
-                personal upload link — not on this form. We only set expectations here. */}
-            {/* Photos note — subtle: thin pink accent line + small pink tag, with
-                "with / without makeup" as little highlighted pink chips. No box. */}
-            <div>
-              <label className={labelClass}>Photos of You (With &amp; Without Makeup)</label>
-              <div className="relative pl-3.5 mt-1.5">
-                <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>After you reserve</p>
-                <p className="text-[0.82rem] leading-[1.7]" style={{ color: '#6E6058' }}>
-                  One photo <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>with makeup</span>, one <span className="inline-block px-1.5 py-0.5 rounded-md text-[0.76rem] font-semibold align-baseline" style={{ background: 'rgba(196,132,154,0.12)', color: '#B06883' }}>without</span>. You'll get a private link, nothing to upload here.
-                </p>
-              </div>
-            </div>
+            {/* Photos are collected after she reserves, through her private
+                upload link, so explaining them mid-form was homework between two
+                questions. Said instead where it can be acted on: the post-submit
+                recap and the inquiry email. */}
 
             <div>
               <CustomSelect
@@ -1383,9 +1356,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               />
             </div>
 
-            {/* Out-of-State Section */}
-            <div className="w-full h-px bg-gray-100" />
-
+            {/* No rule between these two: CustomSelect draws its own full-width
+                line under the field, so a divider here stacked two hairlines a
+                few pixels apart. It only looked deliberate while the photos note
+                sat between them. */}
             <div>
               <label className={labelClass}>Is this an out-of-state event? *</label>
               <div className="flex gap-3 mt-1">
