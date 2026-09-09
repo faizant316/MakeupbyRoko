@@ -25,6 +25,13 @@ import { amountValue } from '../../../src/lib/contract';
 // follow, and it is the right answer: an absent number costs a question, a
 // wrong one costs a client turning up short.
 async function cashOnTheDay(supabase, booking, postedService) {
+  // Roko's own figure wins over anything derived. She sets it on the client
+  // card at the moment she confirms, which is the moment the real number
+  // exists for a travel job priced "from $750". Nothing below can beat a
+  // number typed by the person who agreed it.
+  const typed = Number(booking?.cash_due);
+  if (Number.isFinite(typed) && typed >= 0) return `$${typed.toLocaleString('en-US')}`;
+
   const service = booking?.service;
   if (!service) return '';
 
@@ -73,11 +80,12 @@ export async function POST(req) {
     // the confirmation email can carry a "need to cancel?" link.
     let cancelUrl = '';
     let balanceDue = '';
+    let clientAddress = '';
     if (bookingId) {
       const supabase = createClient();
       const { data: booking } = await supabase
         .from('bookings')
-        .select('upload_token, service, notes, location')
+        .select('upload_token, service, notes, location, cash_due')
         .eq('id', bookingId)
         .maybeSingle();
       if (booking?.upload_token) {
@@ -87,9 +95,12 @@ export async function POST(req) {
       // Never let the money lookup take the send down with it. A confirmation
       // that arrives without a figure is a small loss; one that never arrives
       // because a price column was malformed is a client left hanging.
+      // Only ever the address off the booking row itself, never one posted by
+      // the caller, and only for a booking that is actually a drive.
+      if (travels && booking?.location) clientAddress = booking.location;
       if (booking) {
         try {
-          balanceDue = travels ? '' : await cashOnTheDay(supabase, booking, serviceName);
+          balanceDue = await cashOnTheDay(supabase, booking, serviceName);
         } catch (err) {
           console.error('send-booking-confirmed: balance lookup failed', err);
         }
@@ -100,7 +111,7 @@ export async function POST(req) {
       log: { bookingId, kind: 'booking_confirmed', audience: 'client' },
       to,
       subject: `Your ${serviceName} appointment is confirmed ✦`,
-      html: bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels: !!travels, cancelUrl, balanceDue }),
+      html: bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels: !!travels, cancelUrl, balanceDue, clientAddress }),
     });
     return NextResponse.json({ success: true });
   } catch (err) {

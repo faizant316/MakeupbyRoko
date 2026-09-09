@@ -1,0 +1,24 @@
+-- 0020: What the client actually hands over on the day.
+--
+-- The confirmed-appointment email can work this out on its own for a plain
+-- studio booking: the service price minus its deposit. It cannot work it out
+-- for the jobs where a client most needs to know, because those are the ones
+-- with no fixed price. A travel appointment starts at $750 and lands wherever
+-- the drive puts it; an early-arrival surcharge exists only as English prose in
+-- `notes`. In both cases the email had to fall back to "Roko will confirm the
+-- exact amount", which is exactly the ambiguity the client is complaining
+-- about: she is told to bring cash and not told how much.
+--
+-- Roko is the one who settles that number, and she settles it at the moment she
+-- confirms the booking. So this is somewhere to write it down.
+--
+-- Deliberately the CASH DUE, not a total to subtract a deposit from. Every
+-- other money figure in this system is derived, and every derivation is another
+-- chance to be wrong: the deposit column is text ("$375 deposit"), deposits are
+-- sometimes unpaid at confirm time, and a tenth of bookings name a service that
+-- no longer exists. This column is the answer itself, typed by the person who
+-- knows it, and it overrides whatever the email would otherwise have computed.
+--
+-- Null means "not set", and the email keeps its existing wording. Never
+-- backfilled: a guess here would print a wrong figure to a real client.
+alter table bookings add column if not exists cash_due numeric;

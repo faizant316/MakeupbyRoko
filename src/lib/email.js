@@ -136,8 +136,19 @@ export function contractClientPanel({ clientName, serviceName, dateFormatted, ti
 // since every mail client renders it in a different font at a different weight,
 // and it made a confirmation look like a push notification. The eyebrow already
 // says which email this is, in the brand's own type.
-function clientHero({ eyebrow, title, titleAccent, subtitle }) {
+// `badge` draws a filled circle with a mark in it above the title. Built from a
+// table cell and a text character rather than an SVG or an image, because Gmail
+// strips inline SVG and blocks remote images until the reader allows them, and
+// a confirmation that renders as a broken box is worse than no badge at all.
+function cbadge(mark = '✓') {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 18px;"><tr>
+    <td width="46" height="46" align="center" valign="middle" bgcolor="#F4DDE7" style="border-radius:23px;font-size:22px;line-height:46px;color:#B9788F;">${mark}</td>
+  </tr></table>`;
+}
+
+function clientHero({ eyebrow, title, titleAccent, subtitle, badge }) {
   return `<tr><td style="padding:40px 28px 32px;background:#FBF5F8;border-bottom:1px solid #F0E6EC;text-align:center;">
+    ${badge ? cbadge(badge) : ''}
     ${eyebrow ? `<p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4849A;margin:0 0 14px;">${eyebrow}</p>` : ''}
     <h1 style="font-family:${EMAIL_FONT};font-size:32px;line-height:1.16;font-weight:400;color:#16110F;margin:0;">${title}${titleAccent ? `<br><span style="color:#C4849A;font-style:italic;">${titleAccent}</span>` : ''}</h1>
     ${subtitle ? `<p style="font-size:14px;color:#857A80;margin:14px 0 0;line-height:1.55;">${subtitle}</p>` : ''}
@@ -367,8 +378,11 @@ function cactionButton(uploadUrl, { photos = false } = {}) {
 // been told she's confirmed does not need a warning box; she needs to be told
 // once, softly, where the details live.
 function ckeep(body) {
-  return `<tr><td style="padding:16px 34px 0;text-align:center;">
-    <p style="font-size:12.5px;color:#A99FA4;line-height:1.6;margin:0;">${body}</p>
+  return `<tr><td style="padding:18px 34px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;"><tr>
+      <td width="20" valign="middle" style="font-size:13px;line-height:1;color:#C4849A;padding-right:7px;">🔖</td>
+      <td valign="middle" style="font-size:12.5px;color:#A99FA4;line-height:1.6;">${body}</td>
+    </tr></table>
   </td></tr>`;
 }
 
@@ -602,8 +616,15 @@ export function bridalConfirmationEmail({
 // which is the same rule the contract, the booking email and the site already
 // follow. An absent figure is correct; a guessed one is a client turning up
 // with the wrong cash.
-export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false, cancelUrl = '', balanceDue = '' }) {
-  const locationValue = travels ? 'Roko travels to you' : STUDIO_TOWN;
+export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false, cancelUrl = '', balanceDue = '', clientAddress = '' }) {
+  // Where she is going, not a description of the fact that she is going. This
+  // said "Roko travels to you" and then, in a separate bar underneath, promised
+  // to confirm the address later — while the address the client typed on the
+  // form was sitting in the booking row the whole time. Both the client and
+  // Roko were left without the one fact the row already had.
+  const locationValue = travels
+    ? (clientAddress || 'Roko travels to you')
+    : STUDIO_TOWN;
 
   return clientShell({
     // The visible save-this line says "keep this email", so the preheader must
@@ -611,9 +632,9 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
     // instead, which is the one thing worth seeing before opening.
     preheader: `You're confirmed for ${serviceName} on ${dateFormatted}${time ? ` at ${time}` : ''}.`,
     content: `
-      ${clientHero({ title: "You're", titleAccent: 'Confirmed!' })}
+      ${clientHero({ badge: '✓', title: "You're", titleAccent: 'Confirmed!' })}
       ${ckeep('Save this email. Your appointment details are in it.')}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're all set. I'm so excited, see you then.`)}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>, you're all set.`)}
       ${cpanel(`${ctitle('Appointment Details')}${crows(
         crow('Service', serviceName) +
         crow('Date', dateFormatted) +
@@ -621,7 +642,6 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
         crow('Location', locationValue) +
         (balanceDue ? crow('Cash on the day', `<strong>${balanceDue}</strong>`, '#C4849A') : '')
       )}${travels ? '' : cStudio()}`)}
-      ${travels ? cinfo(`I'll be coming to you, and I'll confirm the exact address with you before the day.`) : ''}
       ${balanceDue ? '' : cinfo(`Your remaining balance is due in cash on the day.`)}
       ${cstepsPanel('What to Expect', [
         ['1', travels ? 'Be ready for me' : 'Arrive on time', time ? `We start at ${time}` : 'At your confirmed time'],
