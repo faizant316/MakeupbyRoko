@@ -128,9 +128,16 @@ export function contractClientPanel({ clientName, serviceName, dateFormatted, ti
   `);
 }
 
-function clientHero({ eyebrow, title, titleAccent, subtitle, emoji }) {
+// The top of every client email: a small tracked eyebrow, the line she reads
+// first, and one warm sentence under it.
+//
+// There used to be an emoji in a white circle above all of it — a ✓, a 🎉, a
+// 📅 — which is the one thing in these emails that couldn't hold its shape,
+// since every mail client renders it in a different font at a different weight,
+// and it made a confirmation look like a push notification. The eyebrow already
+// says which email this is, in the brand's own type.
+function clientHero({ eyebrow, title, titleAccent, subtitle }) {
   return `<tr><td style="padding:40px 28px 32px;background:#FBF5F8;border-bottom:1px solid #F0E6EC;text-align:center;">
-    ${emoji ? `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 16px;"><tr><td width="54" height="54" align="center" valign="middle" bgcolor="#ffffff" style="border-radius:50%;font-size:24px;box-shadow:0 2px 10px rgba(196,132,154,0.20);">${emoji}</td></tr></table>` : ''}
     ${eyebrow ? `<p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#C4849A;margin:0 0 14px;">${eyebrow}</p>` : ''}
     <h1 style="font-family:${EMAIL_FONT};font-size:32px;line-height:1.16;font-weight:400;color:#16110F;margin:0;">${title}${titleAccent ? `<br><span style="color:#C4849A;font-style:italic;">${titleAccent}</span>` : ''}</h1>
     ${subtitle ? `<p style="font-size:14px;color:#857A80;margin:14px 0 0;line-height:1.55;">${subtitle}</p>` : ''}
@@ -191,10 +198,15 @@ function crows(rowsHtml) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>`;
 }
 
+// A detail row. The value carries ONE weight — 500 — and the separation from
+// the label is done with colour, which is what a printed receipt does. It used
+// to be 600 here and then wrapped in <strong> at nearly every call site, so
+// every value in the panel came out at 700 and the panel read as a wall of
+// bold with no emphasis left over for anything that mattered.
 function crow(label, value, color) {
   return `<tr>
-    <td style="padding:11px 0;font-size:14px;color:#6B636A;border-bottom:1px solid #F4ECF1;">${label}</td>
-    <td align="right" style="padding:11px 0;font-size:14px;font-weight:600;color:${color || '#16110F'};border-bottom:1px solid #F4ECF1;">${value}</td>
+    <td style="padding:12px 0;font-size:13.5px;color:#8A7F85;border-bottom:1px solid #F4ECF1;">${label}</td>
+    <td align="right" style="padding:12px 0;font-size:14px;font-weight:500;color:${color || '#16110F'};border-bottom:1px solid #F4ECF1;">${value}</td>
   </tr>`;
 }
 
@@ -259,7 +271,7 @@ function cStudio() {
        <p style="font-size:14px;color:#8A7F85;margin:4px 0 0;line-height:1.45;">${region}</p>`
     : `<p style="font-size:15px;font-weight:600;color:#16110F;margin:0;line-height:1.5;">${STUDIO_DISPLAY}</p>`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;background:#FBF1F6;border:1px solid #F0D9E6;border-radius:12px;"><tr><td style="padding:20px 16px;text-align:center;">
-    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">📍 Address</p>
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Address</p>
     ${lines}
     ${STUDIO_ADDRESS ? `<div style="height:16px;line-height:16px;">&nbsp;</div>${clientButton(STUDIO_MAPS_URL, 'Get Directions', true)}` : ''}
     <p style="font-size:11px;color:#A99FA4;margin:12px 0 0;">Roko's studio</p>
@@ -346,17 +358,17 @@ function cactionButton(uploadUrl, { photos = false } = {}) {
         </tr></table>`;
 }
 
-// A "hold onto this" banner, in warm gold rather than the usual pink so it
-// reads as a notice instead of another brand panel. Used on the emails a client
-// needs to find again later (a confirmed booking with times in it).
-function cnotice(title, body) {
-  return `<tr><td style="padding:18px 24px 4px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FDF8EE;border:1px solid #EFE1C4;border-left:3px solid #D9B36A;border-radius:12px;">
-      <tr><td style="padding:15px 18px;">
-        <p style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#AD8535;margin:0 0 6px;">${title}</p>
-        <p style="font-size:13px;color:#6B636A;margin:0;line-height:1.6;">${body}</p>
-      </td></tr>
-    </table>
+// "Hold onto this" — one quiet line, centred under the hero.
+//
+// This used to be a gold warning banner with an ALL-CAPS "IMPORTANT · KEEP
+// THIS EMAIL" heading, which was the loudest thing in a confirmation email and
+// the only element in the whole set painted in a colour the brand doesn't use.
+// It was shouting a housekeeping note over the good news. A client who has just
+// been told she's confirmed does not need a warning box; she needs to be told
+// once, softly, where the details live.
+function ckeep(body) {
+  return `<tr><td style="padding:16px 34px 0;text-align:center;">
+    <p style="font-size:12.5px;color:#A99FA4;line-height:1.6;margin:0;">${body}</p>
   </td></tr>`;
 }
 
@@ -466,7 +478,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
   return clientShell({
     preheader: `Your ${serviceName} request is in. Send your deposit to lock in ${dateFormatted}.`,
     content: `
-      ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up ✦" })}
+      ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up" })}
       ${cintro(`Your request is in! I'll reach out to confirm your time within <strong style="color:#16110F;">24–48 hours</strong>.`)}
       ${cmoneyBox({ amount: serviceDeposit || 'Deposit', dateFormatted, uploadUrl })}
       ${cpanel(`${ctitle('Booking Summary')}${crows(
@@ -527,8 +539,8 @@ export function bridalConfirmationEmail({
     : (bridalRemaining || '');
 
   const inquiryRows = [
-    crow('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),
-    crow(isTrialPkg ? 'Preferred Date' : 'Wedding Date', `<strong>${bridalDateFormatted}</strong>`),
+    crow('Package', bridalTitle, '#C4849A'),
+    crow(isTrialPkg ? 'Preferred Date' : 'Wedding Date', bridalDateFormatted),
     bridalPrice ? crow('Package price', bridalPrice) : '',
     onLocation && bPriceN ? crow('Local travel fee', `+${fmtMoney(LOCAL_TRAVEL_FEE)}`) : '',
     onLocation && bTotalN ? crow('Total', `<strong>${fmtMoney(bTotalN)}</strong>`) : '',
@@ -543,7 +555,7 @@ export function bridalConfirmationEmail({
   ].filter(Boolean).join('');
 
   const timingRows = [
-    makeupReadyByTime ? crow('Ready by', `<strong>${makeupReadyByTime}</strong>`) : '',
+    makeupReadyByTime ? crow('Ready by', makeupReadyByTime) : '',
     eventStartTime ? crow(isTrialPkg ? 'Preferred time' : 'Event starts', eventStartTime) : '',
     venueAccessTime ? crow('Venue access', venueAccessTime) : '',
     hairstylistArriveBy ? crow('Hairstylist arrives', hairstylistArriveBy) : '',
@@ -555,7 +567,7 @@ export function bridalConfirmationEmail({
   return clientShell({
     preheader: `Your bridal inquiry for ${bridalTitle} is in. ${bridalDeposit || 'Your deposit'} locks in ${bridalDateFormatted}.`,
     content: `
-      ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
+      ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day" })}
       ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
       ${cmoneyBox({ amount: bridalDeposit, dateFormatted: bridalDateFormatted, uploadUrl, photos: true })}
       ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
@@ -582,29 +594,26 @@ export function bridalConfirmationEmail({
 // Mountain House, and this is the email they'll dig up the morning of, so the
 // address belongs here rather than in a follow-up.
 export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false, cancelUrl = '' }) {
-  const locationValue = travels
-    ? "<strong>Roko travels to you</strong>"
-    : `<strong>${STUDIO_TOWN}</strong>`;
+  const locationValue = travels ? 'Roko travels to you' : STUDIO_TOWN;
 
   return clientShell({
     preheader: `You're confirmed for ${serviceName} on ${dateFormatted}. Keep this email for your appointment details.`,
     content: `
-      ${clientHero({ emoji: '✓', eyebrow: 'Appointment Confirmed', title: "You're", titleAccent: 'Confirmed!', subtitle: "Can't wait to see you ✦" })}
-      ${cnotice('Important · Keep This Email', `Your <strong style="color:#16110F;">appointment time</strong>${travels ? '' : ' and <strong style="color:#16110F;">the address</strong>'} live here. It's the one to find again on the day.`)}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your appointment is officially confirmed. I'm so excited, see you then!`)}
+      ${clientHero({ eyebrow: 'Appointment Confirmed', title: "You're", titleAccent: 'Confirmed!', subtitle: "Can't wait to see you" })}
+      ${ckeep(`Keep this one. Your time${travels ? '' : ' and the address'} live here, and it's the email to find again on the day.`)}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're all set. I'm so excited, see you then.`)}
       ${cpanel(`${ctitle('Appointment Details')}${crows(
         crow('Service', serviceName) +
-        crow('Date', `<strong>${dateFormatted}</strong>`) +
-        (time ? crow('Time', `<strong>${time}</strong>`) : '') +
-        crow('Location', locationValue) +
-        crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
+        crow('Date', dateFormatted) +
+        (time ? crow('Time', time) : '') +
+        crow('Location', locationValue)
       )}${travels ? '' : cStudio()}`)}
-      ${travels ? cinfo(`📍 I'll be coming to you. I'll confirm the exact address with you before the day.`) : ''}
-      ${cinfo(`💵 Remaining balance is due in <strong style="color:#16110F;">cash</strong> on the day of your appointment.`)}
+      ${travels ? cinfo(`I'll be coming to you, and I'll confirm the exact address with you before the day.`) : ''}
+      ${cinfo(`Your remaining balance is due in cash on the day.`)}
       ${cstepsPanel('What to Expect', [
         ['1', travels ? 'Be ready for me' : 'Arrive on time', time ? `We start at ${time}` : 'At your confirmed time'],
-        ['2', 'Bring your inspiration', 'Photos of your desired look are always welcome'],
-        ['3', 'Bring cash for the balance', 'Exact amount confirmed with Roko beforehand'],
+        ['2', 'Bring your inspiration', 'Photos of the look you want are always welcome'],
+        ['3', 'Bring cash for the balance', 'Roko will confirm the exact amount beforehand'],
       ])}
       ${ccancel(cancelUrl, 'Need to cancel? You can do that here,')}
     `,
@@ -619,12 +628,12 @@ export function contactClientEmail({ firstName, message, serviceName, dateFormat
   const detailRows = [
     serviceName ? crow('Service', serviceName) : '',
     dateFormatted ? crow('Date', dateFormatted) : '',
-    time ? crow('Time', `<strong style="color:#16110F;">${time}</strong>`, '#C4849A') : '',
+    time ? crow('Time', time, '#C4849A') : '',
   ].filter(Boolean).join('');
   return clientShell({
     preheader: message ? String(message).slice(0, 120) : `A note from Makeup by Roko`,
     content: `
-      ${clientHero({ eyebrow: 'A Note from Roko', title: `Hi ${firstName || 'there'},`, subtitle: resignUrl ? 'A quick update on your appointment ✦' : '' })}
+      ${clientHero({ eyebrow: 'A Note from Roko', title: `Hi ${firstName || 'there'},`, subtitle: resignUrl ? 'A quick update on your appointment' : '' })}
       ${cintro(safeMsg)}
       ${detailRows ? cpanel(`${ctitle(resignUrl ? 'Updated Appointment' : 'Appointment Details')}${crows(detailRows)}`) : ''}
       ${resignUrl ? cpanel(`${ctitle('Please Review & Re-Sign')}
@@ -639,7 +648,7 @@ export function contactClientEmail({ firstName, message, serviceName, dateFormat
 export function adminContractResignedEmail({ name, service, date, time, signedName, photoConsent }) {
   return base(`
     <div style="text-align:center;margin-bottom:14px;">
-      <p style="font-size:15px;font-weight:700;color:#16110F;margin:0;">Updated agreement re-signed ✍️</p>
+      <p style="font-size:15px;font-weight:700;color:#16110F;margin:0;">Updated agreement re-signed</p>
       <p style="font-size:12px;color:#888;margin:4px 0 0;">${name || 'A client'} signed the new time.</p>
     </div>
     ${card(`<table width="100%" cellpadding="0" cellspacing="0">
@@ -670,7 +679,7 @@ export function bookingCancelledEmail({ name, service, date, reason }) {
     preheader: `An update about your ${service} appointment.`,
     content: `
       ${clientHero({ eyebrow: 'Booking Update', title: 'Booking', titleAccent: 'Cancelled' })}
-      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I'm so sorry, but your <strong style="color:#16110F;">${service}</strong> appointment on <strong style="color:#16110F;">${date}</strong> has to be cancelled.`)}
+      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I'm so sorry, but your ${service} appointment on ${date} has to be cancelled.`)}
       ${reasonBlock}
       ${cintro(`I'd genuinely love to still make it work another time. You can rebook anytime below, or just hit the Reply button in your email app.`)}
       <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
@@ -691,8 +700,8 @@ export function clientCancelledEmail({ name, service, date, kind = 'appointment'
   return clientShell({
     preheader: `Your ${service} ${isClass ? 'class' : 'appointment'} has been cancelled.`,
     content: `
-      ${clientHero({ emoji: '✓', eyebrow: isClass ? 'Class Cancelled' : 'Appointment Cancelled', title: 'All', titleAccent: 'done' })}
-      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''} has been cancelled.`)}
+      ${clientHero({ eyebrow: isClass ? 'Class Cancelled' : 'Appointment Cancelled', title: 'All', titleAccent: 'done' })}
+      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, your ${service}${date ? ` on ${date}` : ''} has been cancelled.`)}
       ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${moneyLine}</p>`)}
       ${cintro(`I'd genuinely love to work with you another time. You can rebook whenever you're ready, or just hit the Reply button in your email app.`)}
       <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
@@ -750,7 +759,7 @@ export function adminClientCancelledEmail({ name, service, date, reason, kind = 
 export function adminBridalCancelRequestEmail({ name, service, date, reason, email, phone }) {
   return base(`
     ${card(`
-      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#D97706;margin:0 0 6px;">⚠️ Bridal Cancellation Requested</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#D97706;margin:0 0 6px;">Bridal Cancellation Requested</h2>
       <p style="font-size:13px;color:#444444;margin:0;line-height:1.6;"><strong>${name || 'A bride'}</strong> has requested to cancel. Nothing has changed and her date is still held. Please call her.</p>
     `)}
     ${card(`
@@ -783,16 +792,16 @@ export function classPaymentEmail({ firstName, classes = [], totalPaid, format, 
   ).join('');
 
   const scheduleRows = [
-    dateFormatted ? crow('Date', `<strong style="color:#16110F;">${dateFormatted}</strong>`) : '',
-    classTime ? crow('Time', `<strong style="color:#16110F;">${classTime}</strong>`) : '',
-    formatLabel ? crow('Format', `<strong style="color:#16110F;">${isInPerson ? '📍 In Person · Mountain House' : isOnline ? '💻 Online · Zoom' : formatLabel}</strong>`) : '',
+    dateFormatted ? crow('Date', dateFormatted) : '',
+    classTime ? crow('Time', classTime) : '',
+    formatLabel ? crow('Format', isInPerson ? 'In person · Mountain House' : isOnline ? 'Online · Zoom' : formatLabel) : '',
   ].filter(Boolean).join('');
 
   const connect = isOnline && zoomLink ? cZoom(zoomLink) : isInPerson ? cStudio() : '';
 
   const receiptRows = [
     crow('Payment method', 'Card · Stripe'),
-    crow('Status', '<span style="color:#15803d;font-weight:700;">Paid in full ✓</span>'),
+    crow('Status', 'Paid in full', '#15803d'),
   ].join('');
 
   const steps = isInPerson
@@ -816,8 +825,8 @@ export function classPaymentEmail({ firstName, classes = [], totalPaid, format, 
   return clientShell({
     preheader: dateFormatted ? `You're booked for ${dateFormatted}${classTime ? `, ${classTime}` : ''}.` : `Payment received. You're officially booked!`,
     content: `
-      ${clientHero({ emoji: '✓', eyebrow: 'Payment Confirmed', title: "You're officially", titleAccent: 'booked!' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received and your class is scheduled${dateFormatted ? ` for <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}${classTime ? `, <strong style="color:#16110F;">${classTime}</strong>` : ''}. Everything you need is below.`)}
+      ${clientHero({ eyebrow: 'Payment Confirmed', title: "You're officially", titleAccent: 'booked!' })}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your payment has been received and your class is scheduled${dateFormatted ? ` for ${dateFormatted}` : ''}${classTime ? `, ${classTime}` : ''}. Everything you need is below.`)}
       ${cheadline('Total Paid', `$${totalPaid.toLocaleString()}`, 'Paid in full via Stripe')}
       ${cpanel(`${ctitle('Your Class')}${crows(classRows + scheduleRows)}${connect}`)}
       ${cpanel(`${ctitle('Payment Receipt')}${crows(receiptRows)}`)}
@@ -828,31 +837,30 @@ export function classPaymentEmail({ firstName, classes = [], totalPaid, format, 
 }
 
 export function consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated, migrated }) {
-  const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   // `migrated` = a client brought over from the old booking system. It's their
   // first email from the new site, so it welcomes them instead of announcing an
   // "updated time" (nothing changed on their end). Takes precedence over `updated`.
   const isUpdate = updated && !migrated;
   return clientShell({
     preheader: migrated
-      ? `Makeup by Roko has a new home ✦ your consultation is all set.`
+      ? `Makeup by Roko has a new home. Your consultation is all set.`
       : (isUpdate ? `Your consultation time for ${serviceName} has been updated.` : `Your consultation for ${serviceName} is scheduled.`),
     content: `
       ${migrated
-        ? clientHero({ emoji: '', eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your consultation is all set' })
+        ? clientHero({ eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your consultation is all set' })
         : isUpdate
-        ? clientHero({ emoji: '📅', eyebrow: 'Consultation Updated', title: 'New', titleAccent: 'time!', subtitle: 'Your consultation has been rescheduled' })
-        : clientHero({ emoji: '📅', eyebrow: 'Consultation Scheduled', title: "Let's", titleAccent: 'connect!', subtitle: "Can't wait to chat about your look" })}
+        ? clientHero({ eyebrow: 'Consultation Updated', title: 'New', titleAccent: 'time!', subtitle: 'Your consultation has been rescheduled' })
+        : clientHero({ eyebrow: 'Consultation Scheduled', title: "Let's", titleAccent: 'connect!', subtitle: "Can't wait to chat about your look" })}
       ${migrated ? cinfo(`<strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your consultation right along with me. Nothing has changed on your end, the details below are exactly as we planned.`) : ''}
       ${migrated
-        ? cintro(`Here's everything for your consultation for <strong style="color:#16110F;">${serviceName}</strong>, all in one place:`)
+        ? cintro(`Here's everything for your consultation for ${serviceName}, all in one place:`)
         : isUpdate
-        ? cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> has a <strong style="color:#16110F;">new time</strong>. Here are the updated details, please use these going forward:`)
-        : cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for <strong style="color:#16110F;">${serviceName}</strong> is set. Here are your details:`)}
+        ? cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for ${serviceName} has a <strong style="color:#16110F;">new time</strong>. Here are the updated details, please use these going forward:`)
+        : cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! Your consultation for ${serviceName} is set. Here are your details:`)}
       ${cpanel(`${ctitle(isUpdate ? 'Updated Consultation Details' : 'Consultation Details')}${crows(
-        crow('Date', `<strong>${consultationDate}</strong>`) +
-        crow('Time', `<strong>${consultationTime}</strong>`) +
-        crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
+        crow('Date', consultationDate) +
+        crow('Time', consultationTime) +
+        crow('Type', consultationType) +
         (consultationNotes ? crow('Notes', consultationNotes) : '')
       )}${zoomLink ? cZoom(zoomLink) : ''}`)}
       ${cstepsPanel('To Prepare', [
@@ -868,7 +876,6 @@ export function consultationScheduledEmail({ firstName, serviceName, consultatio
 // scheduled consultation, and (when the deposit isn't in yet) the Zelle + photo
 // upload link — so a bride gets a single email instead of three.
 export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, time, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, uploadUrl, depositReceived, updated, migrated, cancelUrl = '' }) {
-  const typeLabel = consultationType === 'Phone' ? '📞 ' : consultationType === 'In-Person' ? '📍 ' : '';
   const showDeposit = !depositReceived && uploadUrl;
   // No consultation yet = the "confirm now, schedule the consultation later"
   // path: same confirmation email, minus the consultation panel.
@@ -879,20 +886,20 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
   const isUpdate = updated && !migrated;
   return clientShell({
     preheader: migrated
-      ? `Makeup by Roko has a new home ✦ your ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} and consultation are all here.`
+      ? `Makeup by Roko has a new home. Your ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} and consultation are all here.`
       : isUpdate
       ? `Your consultation time has been updated. Your ${serviceName} is still confirmed${dateFormatted ? ` for ${dateFormatted}` : ''}.`
       : `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. Keep this email for your appointment${hasConsult ? ' and consultation' : ''} details.`,
     content: `
       ${migrated
-        ? clientHero({ emoji: '', eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your appointment and consultation are all set' })
-        : clientHero({ emoji: '✓', eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day" })}
-      ${cnotice('Important · Keep This Email', hasConsult
-        ? `Everything for your big day lives here: your <strong style="color:#16110F;">consultation call</strong> first, then your <strong style="color:#16110F;">appointment</strong>.`
-        : `This is your confirmed <strong style="color:#16110F;">appointment time</strong>. I'll send your consultation details in a separate email once we set a time.`)}
+        ? clientHero({ eyebrow: 'New Booking Home', title: `Hey ${firstName},`, titleAccent: "we've moved!", subtitle: 'Your appointment and consultation are all set' })
+        : clientHero({ eyebrow: 'Confirmed & Scheduled', title: "You're", titleAccent: 'Confirmed!', subtitle: "I can't wait to be part of your big day" })}
+      ${ckeep(hasConsult
+        ? `Keep this one. Everything for your big day lives here: your consultation call first, then your appointment.`
+        : `Keep this one. It holds your confirmed appointment time. Your consultation details follow in their own email once we set a time.`)}
       ${migrated ? cinfo(`<strong style="color:#16110F;">Welcome to my new booking home!</strong> I've moved Makeup by Roko to a brand-new site and brought your booking right along with me. Nothing has changed on your end, your appointment and consultation are exactly as we planned. Everything now lives in this one email.`) : ''}
       ${isUpdate ? cinfo(`<strong style="color:#16110F;">Heads up, your consultation time has changed.</strong> Your appointment${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''} is still confirmed, only the consultation call has a new time. The updated details are below.`) : ''}
-      ${cintro(`${migrated ? '' : `Hey <strong style="color:#16110F;">${firstName}</strong>! `}You're officially confirmed for <strong style="color:#16110F;">${serviceName}</strong>${dateFormatted ? ` on <strong style="color:#16110F;">${dateFormatted}</strong>` : ''}. ${hasConsult
+      ${cintro(`${migrated ? '' : `Hey <strong style="color:#16110F;">${firstName}</strong>! `}You're officially confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}. ${hasConsult
         ? `I've also set up a quick consultation call beforehand so we can plan your look together. Here's how it goes.`
         : `I'll reach out soon to set up a quick consultation call so we can plan your look together. Your appointment details are below.`}`)}
       ${hasConsult ? cpanel(`${ctitle('How It Goes')}${corder([
@@ -904,19 +911,18 @@ export function bridalConfirmedEmail({ firstName, serviceName, dateFormatted, ti
         ${crows(
         crow('Date', `<strong>${consultationDate}</strong>`) +
         crow('Time', `<strong>${consultationTime}</strong>`) +
-        crow('Type', `${typeLabel}<strong>${consultationType}</strong>`) +
+        crow('Type', consultationType) +
         (consultationNotes ? crow('Notes', consultationNotes) : '')
       )}${zoomLink ? cZoom(zoomLink) : ''}`) : ''}
       ${cpanel(`${ctitle(hasConsult ? 'Then · Your Appointment' : 'Your Appointment')}
         <p style="font-size:13px;color:#857A80;margin:0 0 14px;line-height:1.55;">The day I do your makeup. This is your main booking.</p>
         ${crows(
         crow('Service', serviceName) +
-        (dateFormatted ? crow('Date', `<strong>${dateFormatted}</strong>`) : '') +
-        (time ? crow('Time', `<strong>${time}</strong>`) : '') +
-        crow('Status', '<span style="color:#C4849A;font-weight:700;">✓ Confirmed</span>')
+        (dateFormatted ? crow('Date', dateFormatted) : '') +
+        (time ? crow('Time', time) : '')
       )}`)}
       ${!migrated && showDeposit ? cmoneyBox({ amount: 'Your deposit', dateFormatted, uploadUrl, photos: true }) : ''}
-      ${!migrated && !showDeposit && uploadUrl ? cinfo(`📸 You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
+      ${!migrated && !showDeposit && uploadUrl ? cinfo(`You can still add or update your photos (with &amp; without makeup) anytime using <a href="${uploadUrl}" style="color:#C4849A;text-decoration:none;font-weight:600;">your personal link</a> so I can prep for your consultation.`) : ''}
       ${cstepsPanel('To Prepare', [
         ['1', 'Save your inspiration', 'Screenshots, Pinterest boards, anything you love'],
         ['2', 'Think about your vibe', 'Soft glam, bold, natural, anything goes!'],
@@ -943,12 +949,12 @@ export function enrolledLessonEmail({ firstName, className, lessonDate, lessonTi
   return clientShell({
     preheader: `You're enrolled in ${className}!`,
     content: `
-      ${clientHero({ emoji: '🎉', eyebrow: "You're Enrolled", title: "You're", titleAccent: 'in!', subtitle: 'So excited to work with you ✦' })}
-      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially enrolled in <strong style="color:#16110F;">${className}</strong> and your lesson is all set.`)}
+      ${clientHero({ eyebrow: "You're Enrolled", title: "You're", titleAccent: 'in!', subtitle: 'So excited to work with you' })}
+      ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're officially enrolled in ${className}, and your lesson is all set.`)}
       ${cpanel(`${ctitle('Lesson Details')}${crows(
-        crow('Date', `<strong>${lessonDate}</strong>`) +
-        crow('Time', `<strong>${lessonTime}</strong>`) +
-        crow('Format', `<strong>${fmt}</strong>`) +
+        crow('Date', lessonDate) +
+        crow('Time', lessonTime) +
+        crow('Format', fmt) +
         (notes ? crow('Notes', notes) : '')
       )}${connect}`)}
       ${cstepsPanel('To Prepare', [
@@ -1007,7 +1013,7 @@ export function adminClassPaymentEmail({ reg, classes = [], totalPaid, formatLab
     ${reg.contract_signed ? card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Service Agreement</p>
       <table style="width:100%;border-collapse:collapse;">
-        ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
+        ${row('Status', 'Signed', '#16a34a')}
         ${row('Signed by', reg.contract_signed_name || reg.full_name)}
         ${row('Photo permission', reg.contract_photo_consent ? 'Yes, may post' : 'No, keep private', reg.contract_photo_consent ? '#111111' : '#C4849A')}
       </table>
@@ -1070,7 +1076,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
     ${contractSignedName ? card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Service Agreement</p>
       <table style="width:100%;border-collapse:collapse;">
-        ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
+        ${row('Status', 'Signed', '#16a34a')}
         ${row('Signed by', contractSignedName)}
         ${row('Photo permission', contractPhotoConsent ? 'Yes, may post' : 'No, keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
       </table>
@@ -1149,7 +1155,7 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
     ${contractSignedName ? card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">Service Agreement</p>
       <table style="width:100%;border-collapse:collapse;">
-        ${row('Status', '<strong style="color:#16a34a;">✓ Signed</strong>')}
+        ${row('Status', 'Signed', '#16a34a')}
         ${row('Signed by', contractSignedName)}
         ${row('Photo permission', contractPhotoConsent ? 'Yes, may post' : 'No, keep private', contractPhotoConsent ? '#111111' : '#C4849A')}
       </table>
@@ -1165,11 +1171,10 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
 }
 
 export function adminConsultationEmail({ clientName, clientEmail, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }) {
-  const typeLabel = consultationType === 'Phone' ? '📞' : consultationType === 'In-Person' ? '📍' : '';
   return base(`
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Consultation Sent</p>
-      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">📅 Consultation Scheduled</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">Consultation Scheduled</h2>
       <p style="font-size:13px;color:#444444;margin:0;">Consultation confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${serviceName}</strong>.</p>
     `)}
     <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
@@ -1185,7 +1190,7 @@ export function adminConsultationEmail({ clientName, clientEmail, serviceName, c
       <table style="width:100%;border-collapse:collapse;">
         ${row('Date', `<strong>${consultationDate}</strong>`)}
         ${row('Time', `<strong>${consultationTime}</strong>`)}
-        ${row('Type', `${typeLabel ? typeLabel + ' ' : ''}${consultationType}`)}
+        ${row('Type', consultationType)}
         ${zoomLink ? row('Zoom Link', `<a href="${zoomLink}" style="color:#C4849A;word-break:break-all;">${zoomLink}</a>`) : ''}
         ${consultationNotes ? row('Notes', consultationNotes) : ''}
       </table>
@@ -1230,7 +1235,7 @@ export function adminLessonEmail({ clientName, clientEmail, className, lessonDat
   return base(`
     ${card(`
       <p style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#C4849A;margin:0 0 6px;">Lesson Scheduled</p>
-      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">💄 Makeup Lesson Scheduled</h2>
+      <h2 style="font-family:${EMAIL_FONT};font-size:20px;font-weight:300;color:#111111;margin:0 0 6px;">Makeup Lesson Scheduled</h2>
       <p style="font-size:13px;color:#444444;margin:0;">Lesson confirmed with <strong>${clientName || clientEmail}</strong> for <strong>${className}</strong>.</p>
     `)}
     <div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;border:1px solid #F0E0E9;">
