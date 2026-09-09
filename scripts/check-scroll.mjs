@@ -11,7 +11,7 @@
 //
 // That shipped once: Lenis was watching the sheet's first child for size
 // changes, which is a strip that is hidden on desktop and never changes
-// height, so choosing "Roko travels to me" unfolded an explainer, an address
+// height, so choosing an off-site location unfolded an explainer, an address
 // field and a price breakdown that were all unreachable.
 //
 // So this asserts the one invariant that catches the whole class of bug:
@@ -185,6 +185,14 @@ async function pickADate(page) {
   return false;
 }
 
+// Scope a query to the block that a given field label introduces. "Other" is a
+// choice under BOTH "What's the occasion?" and "Appointment location", so a
+// bare getByRole would be ambiguous. .last() picks the innermost wrapper, since
+// every ancestor div matches the label too.
+function section(page, labelText) {
+  return page.locator('div').filter({ has: page.locator('label', { hasText: labelText }) }).last();
+}
+
 async function runFlow(page, vp) {
   console.log(`\n\x1b[1m${vp.name} (${vp.width}x${vp.height})\x1b[0m`);
 
@@ -198,16 +206,19 @@ async function runFlow(page, vp) {
 
   // Growing the form is the actual regression. Each of these unfolds content
   // BELOW the fold, which is exactly what a stale scroll limit hides.
-  await page.getByRole('button', { name: 'Other' }).click();
-  await expectReachable(page, 'step 2, after "Other" opens its text box');
+  const occasion = section(page, "What's the occasion?");
+  const location = section(page, 'Appointment location');
 
-  await page.getByRole('button', { name: 'Roko travels to me' }).click();
-  await expectReachable(page, 'step 2, after choosing travel');
-  await expectBottomVisible(page, 'step 2, after choosing travel');
+  await occasion.getByRole('button', { name: 'Other', exact: true }).click();
+  await expectReachable(page, 'step 2, after the occasion "Other" box opens');
 
-  // And back down again — shrinking has to re-measure too, or the sheet keeps
-  // a phantom empty space under it.
-  await page.getByRole('button', { name: "Roko's studio" }).click();
+  await location.getByRole('button', { name: 'Other', exact: true }).click();
+  await expectReachable(page, 'step 2, after choosing an off-site location');
+  await expectBottomVisible(page, 'step 2, after choosing an off-site location');
+
+  // And back down again. Shrinking has to re-measure too, or the sheet keeps a
+  // phantom stretch of empty space under it.
+  await location.getByRole('button', { name: "Roko's studio" }).click();
   await expectReachable(page, 'step 2, after switching back to the studio');
 }
 

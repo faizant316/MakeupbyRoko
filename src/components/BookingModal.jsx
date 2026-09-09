@@ -50,6 +50,16 @@ const OCCASIONS = [
   'Other',
 ];
 
+// Pull a number out of a stored price string ("$1,700", "$375 deposit").
+const money = (s) => {
+  const n = parseFloat(String(s || '').replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
+// The stored deposit already carries its own wording ("$375 deposit"), which is
+// how "Deposit amount: $375 deposit" happened. Strip the noun when the number is
+// going somewhere already labelled.
+const bareAmount = (s) => String(s || '').replace(/\s*deposit\s*$/i, '').trim();
+
 // Sized to match the bridal form's fields so non-bridal (photoshoot / other
 // services) inquiries feel just as substantial on desktop, not shrunken.
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
@@ -234,7 +244,6 @@ export default function BookingModal({ service: initialService, onClose }) {
     // exact. If travel ("bridal pricing $750+") or an early-arrival surcharge
     // applies, the real total isn't a clean price − deposit, so we omit it and
     // the upload page shows "due in cash on the day" instead of a wrong number.
-    const money = (s) => { const n = parseFloat(String(s || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
     const priceN = money(service.price);
     const depositN = money(service.deposit);
     const remainingExact = (!hasTravelFee && !isEarlyArrival && priceN != null && depositN != null && priceN > depositN)
@@ -309,6 +318,15 @@ export default function BookingModal({ service: initialService, onClose }) {
     ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
   const selectedYear = selectedDate ? selectedDate.slice(0, 4) : '';
+
+  // What's actually left to bring on the day. Stated only when it is exactly
+  // knowable: travel quotes "$750+" and early arrival stacks on top, and
+  // subtracting a deposit from an estimate would put a number on screen that
+  // nobody has agreed to. Same rule as the confirmation email.
+  const _depositNum = money(service.deposit);
+  const remainingLabel = (!hasTravelFee && !isEarlyArrival && _priceNum != null && _depositNum != null && _priceNum > _depositNum)
+    ? `$${(_priceNum - _depositNum).toLocaleString('en-US')}`
+    : '';
 
   // Filled service agreement for the Review & Sign step.
   const bookingContract = buildContract({
@@ -742,7 +760,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                       <div className="grid grid-cols-2 gap-2.5 mt-1">
                         {[
                           { label: "Roko's studio", value: false },
-                          { label: 'Roko travels to me', value: true },
+                          { label: 'Other', value: true },
                         ].map(opt => (
                           <button
                             key={String(opt.value)}
@@ -913,14 +931,9 @@ export default function BookingModal({ service: initialService, onClose }) {
                         </h3>
                         <p className="font-serif italic text-[#888888] text-[0.9rem]">Can't wait to glam you up ✦</p>
                       </div>
-                      {formData.email && (
-                        <div className="done-step done-step-2 flex items-center gap-2 text-[0.72rem] px-3 py-1.5 rounded-full" style={{ background: 'rgba(196,132,154,0.1)', color: '#A0607A' }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5 flex-shrink-0">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                          </svg>
-                          Receipt sent to {formData.email}
-                        </div>
-                      )}
+                      {/* No "receipt sent to <email>" pill here. The booking
+                          summary's footer says the same thing a few hundred
+                          pixels lower, better, and once is enough. */}
                     </div>
 
                     {/* View submission recap. Wrapped so it can join the cascade
@@ -936,7 +949,11 @@ export default function BookingModal({ service: initialService, onClose }) {
                         { label: 'Phone', value: formData.phone },
                         { label: 'Before 7 AM?', value: formData.early_arrival == null ? '' : formData.early_arrival ? 'Yes (+$100)' : 'No' },
                         { label: 'Ready by', value: formData.ready_by_time },
-                        { label: 'Travel to you?', value: formData.travel_requested == null ? '' : formData.travel_requested ? 'Yes (bridal pricing)' : 'No' },
+                        { label: 'Occasion', value: occasion },
+                        // The place, not a yes/no about travel. "Yes" told her
+                        // nothing she could check, and the address she typed was
+                        // nowhere on her own receipt.
+                        { label: 'Location', value: hasTravelFee ? (formData.location || 'Roko travels to you') : `Roko's studio, ${STUDIO_TOWN}` },
                         { label: 'Notes', value: formData.notes },
                       ]}
                     />
@@ -955,29 +972,28 @@ export default function BookingModal({ service: initialService, onClose }) {
                           <span className="text-[0.78rem] text-[#888888]">Service</span>
                           <span className="text-[0.82rem] font-semibold text-[#111111]">{service.title}</span>
                         </div>
+                        {/* One row per number, and a total only when there is
+                            actually something to total. A travel booking used to
+                            print $750+ as the base price, again as a "travel fee",
+                            and a third time as the estimated total, which reads
+                            like three charges rather than one. */}
                         <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
-                          <span className="text-[0.78rem] text-[#888888]">Base Price</span>
+                          <span className="text-[0.78rem] text-[#888888]">{hasTravelFee ? 'On-location rate' : 'Price'}</span>
                           <span className="text-[0.82rem] font-semibold text-[#111111]">{hasTravelFee ? '$750+' : service.price}</span>
                         </div>
-                        {hasTravelFee && (
-                          <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
-                            <span className="text-[0.78rem] text-[#888888]">Travel fee (bridal pricing)</span>
-                            <span className="text-[0.78rem] font-semibold text-[#888888]">$750+</span>
-                          </div>
-                        )}
                         {isEarlyArrival && (
-                          <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
-                            <span className="text-[0.78rem] text-[#C4849A]">Early arrival (before 7 AM)</span>
-                            <span className="text-[0.78rem] font-semibold text-[#C4849A]">+ $100</span>
-                          </div>
-                        )}
-                        {(isEarlyArrival || hasTravelFee) && (
-                          <div className="flex justify-between py-3 border-b border-[#F5E8EF] bg-[#FDF8FA] -mx-5 px-5">
-                            <span className="text-[0.78rem] font-semibold text-[#111111]">Estimated Total</span>
-                            <span className="text-[0.82rem] font-bold text-[#111111]">
-                              {hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : earlyTotal}
-                            </span>
-                          </div>
+                          <>
+                            <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                              <span className="text-[0.78rem] text-[#C4849A]">Early arrival (before 7 AM)</span>
+                              <span className="text-[0.78rem] font-semibold text-[#C4849A]">+ $100</span>
+                            </div>
+                            <div className="flex justify-between py-3 border-b border-[#F5E8EF] bg-[#FDF8FA] -mx-5 px-5">
+                              <span className="text-[0.78rem] font-semibold text-[#111111]">Estimated Total</span>
+                              <span className="text-[0.82rem] font-bold text-[#111111]">
+                                {hasTravelFee ? '$850+' : earlyTotal}
+                              </span>
+                            </div>
+                          </>
                         )}
                         {occasion && (
                           <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
@@ -991,48 +1007,59 @@ export default function BookingModal({ service: initialService, onClose }) {
                             {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>
-                        <div className="flex justify-between py-3">
-                          <span className="text-[0.78rem] text-[#888888]">Confirmation sent to</span>
-                          <span className="text-[0.78rem] text-[#888888] truncate ml-4 text-right">{formData.email}</span>
-                        </div>
                       </div>
-                      <div className="mx-5 mb-4 px-3.5 py-2.5 bg-[#FDF8FA] rounded-xl border-l-[3px] border-[#E8C4D0]">
-                        <p className="text-[0.72rem] text-[#888888] leading-relaxed">Roko will confirm your appointment time within 24–48 hours</p>
+
+                      {/* The two things she needs after submitting: where the
+                          confirmation went, and when to expect a reply. They were
+                          a faint truncated table row and a separate tinted note;
+                          together they make one footer worth reading. */}
+                      <div className="mt-1 border-t border-[#F5E8EF]" style={{ background: '#FDFBFC' }}>
+                        <div className="flex items-center gap-3 px-5 py-3.5">
+                          <div className="w-8 h-8 rounded-xl bg-[#FDF0F5] flex items-center justify-center flex-shrink-0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-3.5 h-3.5">
+                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[0.62rem] font-semibold tracking-[0.12em] uppercase text-[#C4A9B7] leading-none mb-1">Confirmation sent to</p>
+                            <p className="text-[0.82rem] font-medium text-[#111111] truncate leading-tight">{formData.email}</p>
+                          </div>
+                        </div>
+                        <div className="px-5 pb-3.5 -mt-0.5">
+                          <p className="text-[0.72rem] text-[#888888] leading-relaxed">
+                            Roko will confirm your appointment time within <strong className="text-[#444444]">24–48 hours</strong>.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Zelle deposit */}
+                    {/* Deposit.
+                        This card used to say the word "deposit" six times across
+                        a heading, a subheading, a row, a caption and a footnote,
+                        which buried the only two things that matter: the amount,
+                        and that the details are already in her inbox. The amount
+                        is the hero now and everything else is one line. */}
                     <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] overflow-hidden">
-                      <div className="px-5 pt-4 pb-3 border-b border-[#F5E8EF]">
-                        <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-0.5">Send Your Zelle Deposit</p>
-                        <p className="text-[0.72rem] text-[#888888]">Send your deposit to lock in your date</p>
-                      </div>
-                      <div className="px-5 py-4 flex flex-col gap-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-9 h-9 rounded-xl bg-[#FDF0F5] flex items-center justify-center flex-shrink-0">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-4 h-4">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                              </svg>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[0.82rem] font-medium text-[#111111] leading-tight">Zelle details sent to your email</p>
-                              <p className="text-[0.7rem] text-[#888888] mt-0.5 leading-tight">Check your inbox to send your deposit</p>
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="text-[0.68rem] text-[#888888]">Deposit amount</p>
-                            <p className="text-[1rem] font-semibold text-[#111111]">{service.deposit || 'See email'}</p>
-                          </div>
-                        </div>
-                        <div className="bg-[#FDF8FA] rounded-xl px-4 py-3 border border-[#F0E0E9]">
-                          <p className="text-[0.72rem] text-[#444444] leading-relaxed">
-                            Include your <strong className="text-[#111111]">name</strong> + <strong className="text-[#111111]">appointment date</strong> in the Zelle note
+                      <div className="px-5 pt-4 pb-4 flex items-end justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-1.5">Your deposit</p>
+                          <p className="font-serif text-[2rem] leading-none text-[#111111]">
+                            {bareAmount(service.deposit) || 'See email'}
                           </p>
                         </div>
-                        <p className="text-[0.68rem] text-[#999999] text-center">
-                          Remaining balance due in <strong className="text-[#444444]">cash</strong> on appointment day
+                        <p className="text-[0.72rem] text-[#888888] text-right leading-[1.5] pb-1">
+                          Due now to<br />hold your date
                         </p>
+                      </div>
+                      <div className="px-5 pb-4 flex flex-col gap-2.5">
+                        <div className="flex items-start gap-2.5 rounded-xl px-4 py-3" style={{ background: '#FDF8FA', border: '1px solid #F0E0E9' }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-[1px]">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                          </svg>
+                          <p className="text-[0.76rem] text-[#444444] leading-[1.6]">
+                            Your Zelle details are in your inbox. Add your <strong className="text-[#111111]">name</strong> and <strong className="text-[#111111]">appointment date</strong> to the note.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -1041,12 +1068,56 @@ export default function BookingModal({ service: initialService, onClose }) {
                         and saying it twice in a row read as two separate emails to go
                         find. "What's Next" below carries the one instruction. */}
 
-                    {/* What's next */}
+                    {/* What's next.
+                        This used to restate the deposit card and the summary
+                        footer in one sentence, so it told her nothing she hadn't
+                        just read twice. It is the running order now, and the last
+                        step is the only place the balance is stated — which is
+                        also where it finally gets a number instead of a footnote. */}
                     <div className="done-step done-step-4 bg-white rounded-2xl border border-[#F0E0E9] px-5 py-4">
-                      <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-2">What's Next</p>
-                      <p className="text-[0.82rem] text-[#444444] leading-[1.75]">
-                        Send your Zelle deposit to secure your date. Roko will reach out within <strong className="text-[#111111]">24–48 hours</strong> to confirm your appointment time.
-                      </p>
+                      <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A] mb-3.5">What&apos;s Next</p>
+                      <ol className="flex flex-col gap-3.5">
+                        {[
+                          {
+                            title: 'Send the deposit',
+                            body: "Your date opens back up if it doesn't arrive.",
+                          },
+                          {
+                            title: 'Roko confirms your time',
+                            body: 'By email, within 24–48 hours. Nothing needed from you until then.',
+                          },
+                          {
+                            title: 'On the day',
+                            body: 'Come with clean, moisturized skin.',
+                            money: remainingLabel,
+                          },
+                        ].map((s, i) => (
+                          <li key={s.title} className="flex items-start gap-3">
+                            <span
+                              className="flex-shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center text-[0.62rem] font-semibold mt-[1px]"
+                              style={{ background: '#FDF0F5', color: '#B9788F' }}
+                            >
+                              {i + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-[0.82rem] font-medium text-[#111111] leading-snug">{s.title}</p>
+                              <p className="text-[0.76rem] text-[#888888] leading-[1.6] mt-0.5">{s.body}</p>
+                              {/* The balance was a 0.68rem grey footnote under a
+                                  card about a different payment. It is the last
+                                  thing she owes, so it gets stated like one. */}
+                              {s.money !== undefined && (
+                                <p className="text-[0.78rem] text-[#444444] leading-[1.6] mt-1.5">
+                                  Bring the remaining{' '}
+                                  {s.money
+                                    ? <strong className="text-[#111111]">{s.money} in cash</strong>
+                                    : <strong className="text-[#111111]">balance in cash</strong>}
+                                  {s.money ? '.' : '. Roko confirms the exact amount.'}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
                     </div>
 
                     {/* Sign off */}
