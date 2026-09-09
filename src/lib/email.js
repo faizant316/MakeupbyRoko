@@ -167,6 +167,26 @@ function cpanel(inner) {
   </td></tr>`;
 }
 
+// The running order, numbered, matching the What's Next block on the site's own
+// confirmation screen. It replaces a paragraph that restated the deposit box and
+// the summary above it, so it told the reader nothing they had not just read.
+// Table-based rather than <ol>, because Outlook does not lay out list markers.
+function csteps(steps) {
+  const rows = steps.filter(Boolean).map((st, i) => `
+    <tr>
+      <td width="26" valign="top" style="padding:${i ? '14px' : '0'} 10px 0 0;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td width="22" height="22" align="center" valign="middle" bgcolor="#FDF0F5" style="border-radius:11px;font-size:11px;font-weight:700;color:#B9788F;line-height:22px;">${i + 1}</td>
+        </tr></table>
+      </td>
+      <td valign="top" style="padding:${i ? '14px' : '0'} 0 0;">
+        <p style="font-size:14px;font-weight:600;color:#16110F;margin:0;line-height:1.4;">${st.title}</p>
+        <p style="font-size:13px;color:#8A7F85;margin:3px 0 0;line-height:1.6;">${st.body}</p>
+      </td>
+    </tr>`).join('');
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>`;
+}
+
 function crows(rowsHtml) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>`;
 }
@@ -276,9 +296,7 @@ function cZoom(zoomLink) {
 //
 // `travelFee` on-location only: adds a flat $200 line that rolls into the total
 // and the cash-on-the-day remaining. Studio pickups pass false and never see it.
-function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false, uploadUrl, photos = false }) {
-  const TRAVEL_FEE = 200;
-  const priceN = moneyToNum(price);
+function cmoneyBox({ amount, dateFormatted, uploadUrl, photos = false }) {
   const depositN = moneyToNum(amount);
   // Strip the trailing word "deposit" only from a real money value ("$375
   // deposit" → "$375"); a text label like "Your deposit" is left whole.
@@ -292,48 +310,22 @@ function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false,
   const dateNoWrap = `<span style="white-space:nowrap;">${dateFormatted || 'your date'}</span>`;
   const hero = heroIsMoney
     ? `<p style="font-family:${EMAIL_FONT};font-size:46px;line-height:1;color:#16110F;margin:0;">${depositClean}</p>
-        <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">deposit due now to lock in ${dateNoWrap}</p>`
+        <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">due now to hold ${dateNoWrap}</p>`
     : `<p style="font-family:${EMAIL_FONT};font-size:26px;line-height:1.15;color:#16110F;margin:0;">${depositClean}</p>
         <p style="font-size:13px;color:#8A7F85;margin:9px 0 0;">Send it via Zelle to lock in ${dateNoWrap}</p>`;
 
-  // The receipt. Kept calm on purpose: muted labels, dark values, exactly ONE
-  // pink accent (the deposit due today), and a single hairline before the totals
-  // so it reads like a clean invoice instead of a busy table. Travel is a real
-  // line item only when it applies AND the package price is a firm number.
-  const rrow = (label, value, o = {}) => {
-    const edge = o.top ? 'border-top:1px solid #EFDEE7;padding-top:13px;' : '';
-    return `<tr>
-      <td style="padding:8px 0;${edge}font-size:13px;color:${o.bold ? '#16110F' : '#9A8E94'};${o.bold ? 'font-weight:700;' : ''}">${label}</td>
-      <td align="right" style="padding:8px 0;${edge}font-size:${o.bold ? '15px' : '13px'};font-weight:700;color:${o.accent || '#16110F'};">${value}</td>
-    </tr>`;
-  };
-
-  let receipt = '';
-  if (heroIsMoney && priceN) {
-    const totalN = priceN + (travelFee ? TRAVEL_FEE : 0);
-    const rows = [
-      rrow('Package total', price),
-      travelFee ? rrow('Local travel fee', `+${fmtMoney(TRAVEL_FEE)}`) : '',
-      travelFee ? rrow('Total investment', fmtMoney(totalN), { bold: true, top: true }) : '',
-      rrow('Deposit due today', depositClean, { accent: '#C4849A', top: !travelFee }),
-      rrow('Remaining balance', fmtMoney(totalN - depositN)),
-    ].filter(Boolean).join('');
-    const foot = travelFee
-      ? '*Travel fee applies to locations within approximately one hour of Mountain House, CA. Remaining balance is due in cash on the day.'
-      : 'Remaining balance is due in cash on the day.';
-    receipt = `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #F0E0E9;border-radius:12px;margin:22px 0 0;"><tr><td style="padding:15px 18px;text-align:left;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>
-          <p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:14px 0 0;">${foot}</p>
-        </td></tr></table>`;
-  }
-
+  // No receipt table here any more. It listed the package total, the deposit and
+  // the balance directly under a hero that had just said the deposit in 46px, so
+  // a $400 booking with a $200 deposit printed $200 three times and $400 twice
+  // before the reader reached the summary that said them again. Every figure now
+  // appears exactly once, in the panel where it means something: the price in
+  // Booking Summary, the deposit here, the balance in What's Next. Mirrors the
+  // confirmation screen the client just came from.
   return `<tr><td style="padding:16px 24px 6px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF1F6;border:1px solid #F0D9E6;border-radius:18px;">
       <tr><td style="padding:30px 22px;text-align:center;">
         <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 16px;">Reserve Your Date</p>
         ${hero}
-        ${receipt}
         ${uploadUrl ? cactionButton(uploadUrl, { photos }) : ''}
       </td></tr>
     </table>
@@ -347,8 +339,7 @@ function cmoneyBox({ amount, price, remaining, dateFormatted, travelFee = false,
 function cactionButton(uploadUrl, { photos = false } = {}) {
   const label = photos ? 'Send Deposit &amp; Upload Photos' : 'Send Deposit &amp; Upload';
   return `
-        <p style="font-size:14px;font-weight:600;color:#6B636A;margin:24px 0 14px;">Tap below to send your deposit</p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:26px;"><tr>
           <td align="center" bgcolor="#C4849A" style="border-radius:999px;box-shadow:0 8px 20px rgba(196,132,154,0.3);">
             <a href="${uploadUrl}" style="display:block;padding:19px 18px;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:0.01em;color:#ffffff;text-decoration:none;border-radius:999px;text-align:center;">${label}</a>
           </td>
@@ -455,8 +446,10 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
     occasion ? crow('Occasion', occasion) : '',
     crow('Date', dateFormatted),
     readyByTime ? crow('Ready by', readyByTime) : '',
-    crow('Base price', basePrice),
-    hasTravelFee ? crow('Travel (bridal pricing)', '$750+', '#C4849A') : '',
+    // One row per figure. Travel doesn't get a line of its own: it IS the
+    // price, so listing it separately printed $750+ twice under two headings
+    // and read like two charges.
+    crow(hasTravelFee ? 'On-location rate' : 'Price', basePrice),
     isEarlyArrival ? crow('Early arrival (before 7 AM)', '+$100', '#C4849A') : '',
   ].filter(Boolean).join('');
   const total = estimatedTotal || basePrice;
@@ -475,9 +468,22 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
     content: `
       ${clientHero({ eyebrow: 'Booking Request Received', title: 'Thanks for booking,', titleAccent: firstName, subtitle: "Can't wait to glam you up ✦" })}
       ${cintro(`Your request is in! I'll reach out to confirm your time within <strong style="color:#16110F;">24–48 hours</strong>.`)}
-      ${cmoneyBox({ amount: serviceDeposit || 'Deposit', price: total, remaining, dateFormatted, travelFee: hasTravelFee, uploadUrl })}
-      ${cpanel(`${ctitle('What Happens Next')}<p style="font-size:14px;color:#5A5258;line-height:1.7;margin:0;">Once your deposit lands, Roko confirms your appointment time within <strong style="color:#16110F;">24–48 hours</strong>. Your remaining balance is due in cash on the day.</p>`)}
-      ${cpanel(`${ctitle('Booking Summary')}${crows(summaryRows + ctotalRow('Estimated Total', total))}`)}
+      ${cmoneyBox({ amount: serviceDeposit || 'Deposit', dateFormatted, uploadUrl })}
+      ${cpanel(`${ctitle('Booking Summary')}${crows(
+        summaryRows + (estimatedTotal && estimatedTotal !== basePrice ? ctotalRow('Estimated Total', total) : '')
+      )}`)}
+      ${cpanel(`${ctitle("What's Next")}${csteps([
+        { title: 'Send the deposit', body: 'Your date opens back up if it doesn’t arrive.' },
+        { title: 'Roko confirms your time', body: 'By email, within 24–48 hours. Nothing needed from you until then.' },
+        {
+          title: 'On the day',
+          body: `Come with clean, moisturized skin. Bring the remaining ${
+            remaining
+              ? `<strong style="color:#16110F;">${remaining} in cash</strong>.`
+              : '<strong style="color:#16110F;">balance in cash</strong>. Roko confirms the exact amount.'
+          }`,
+        },
+      ])}`)}
       ${contractSection}
     `,
   });
@@ -508,9 +514,24 @@ export function bridalConfirmationEmail({
   // as studio so we never guess a fee onto an under-filled admin booking.
   const onLocation = !!eventLocation && eventLocation !== STUDIO_READY_VALUE && !isTrialPkg && !isFullDayPkg;
 
+  // The money used to live in a receipt table inside the pink deposit box,
+  // directly under a hero that had just stated the deposit. Each figure now
+  // appears once: the price here, the deposit in the box, the balance in the
+  // last step. The travel fee is a real line item, so it keeps its own row.
+  const LOCAL_TRAVEL_FEE = 200;
+  const bPriceN = moneyToNum(bridalPrice);
+  const bDepositN = moneyToNum(bridalDeposit);
+  const bTotalN = bPriceN ? bPriceN + (onLocation ? LOCAL_TRAVEL_FEE : 0) : null;
+  const bRemaining = (bTotalN && bDepositN && bTotalN > bDepositN)
+    ? fmtMoney(bTotalN - bDepositN)
+    : (bridalRemaining || '');
+
   const inquiryRows = [
     crow('Package', `<strong style="color:#C4849A;">${bridalTitle}</strong>`),
     crow(isTrialPkg ? 'Preferred Date' : 'Wedding Date', `<strong>${bridalDateFormatted}</strong>`),
+    bridalPrice ? crow('Package price', bridalPrice) : '',
+    onLocation && bPriceN ? crow('Local travel fee', `+${fmtMoney(LOCAL_TRAVEL_FEE)}`) : '',
+    onLocation && bTotalN ? crow('Total', `<strong>${fmtMoney(bTotalN)}</strong>`) : '',
     eventLocation ? crow('Location', eventLocation) : '',
     numPeopleGlam ? crow('Getting Glam', numPeopleGlam) : '',
     outOfState !== undefined && outOfState !== null
@@ -536,11 +557,21 @@ export function bridalConfirmationEmail({
     content: `
       ${clientHero({ title: `Hey ${firstName},`, titleAccent: "you're on the list!", subtitle: "I can't wait to be part of your big day ✦" })}
       ${cintro(`Your bridal inquiry is in! Here's everything you sent over, and exactly what happens next. I'll be in touch within <strong style="color:#16110F;">24–48 hours</strong> to confirm and schedule your consultation.`)}
-      ${cmoneyBox({ amount: bridalDeposit, price: bridalPrice, remaining: bridalRemaining, dateFormatted: bridalDateFormatted, travelFee: onLocation, uploadUrl, photos: true })}
-      ${cpanel(`${ctitle('What Happens Next')}<p style="font-size:14px;color:#5A5258;line-height:1.7;margin:0;">Once your deposit lands, Roko confirms your date and schedules your consultation within <strong style="color:#16110F;">24–48 hours</strong>. Your remaining balance is due in cash on the day.</p>`)}
+      ${cmoneyBox({ amount: bridalDeposit, dateFormatted: bridalDateFormatted, uploadUrl, photos: true })}
       ${cpanel(`${ctitle('Your Inquiry')}${crows(inquiryRows)}`)}
+      ${cpanel(`${ctitle("What's Next")}${csteps([
+        { title: 'Send the deposit', body: 'Your date opens back up if it doesn’t arrive.' },
+        { title: 'Roko confirms and schedules your consultation', body: 'By email, within 24–48 hours. Nothing needed from you until then.' },
+        {
+          title: isTrialPkg ? 'On the day' : 'On the wedding day',
+          body: bRemaining
+            ? `Bring the remaining <strong style="color:#16110F;">${bRemaining} in cash</strong>.`
+            : 'Bring the remaining <strong style="color:#16110F;">balance in cash</strong>. Roko confirms the exact amount.',
+        },
+      ])}`)}
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
       ${additionalDetails ? cpanel(`${ctitle('Your Vision')}<p style="font-size:14px;color:#5A5258;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>`) : ''}
+      ${onLocation ? `<tr><td style="padding:2px 30px 10px;"><p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:0;">Travel fee applies to locations within approximately one hour of ${STUDIO_TOWN}.</p></td></tr>` : ''}
       ${contractSection}
     `,
   });

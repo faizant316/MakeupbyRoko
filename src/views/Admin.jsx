@@ -16,7 +16,6 @@ import ServicesList from '../components/admin/ServicesList';
 import ContractSettings from '../components/admin/ContractSettings';
 import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
-import { MonthNav, dayKey } from '../components/admin/MonthCalendar';
 import ClassSignupsCard from '../components/admin/ClassSignupsCard';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
@@ -523,9 +522,10 @@ export default function Admin() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Page title. On the Calendar tab the month arrows ride along here,
-              at the top of the screen, instead of sitting in a small row
-              halfway down the page. */}
+          {/* Page title. The Calendar tab used to hang the month stepper off
+              the right-hand end of this row, which put the date you're looking
+              at in the corner of the screen, small, and a long way from the
+              grid it belongs to. It sits centred above the grid now. */}
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 mt-8 sm:mt-10 mb-5 sm:mb-6">
             <div>
               <h1
@@ -538,15 +538,6 @@ export default function Admin() {
                 Welcome back, <span className="text-[#D4A0B0]">Roqia</span>
               </p>
             </div>
-            {activeTab === 'availability' && !selectedBooking && !selectedClassReg && (
-              <MonthNav
-                month={availMonth}
-                onStep={(n) => setAvailMonth(m => new Date(m.getFullYear(), m.getMonth() + n, 1))}
-                onToday={() => { const t = new Date(); setAvailMonth(t); setAvailDay(dayKey(t)); }}
-                dm={dm}
-                className="w-full sm:w-auto justify-between sm:justify-end"
-              />
-            )}
           </div>
 
         {/* Keyed so every navigation (open/close a card, switch tabs) replays
@@ -595,7 +586,12 @@ export default function Admin() {
                     darkMode={dm} onAddClient={() => setShowAddClient(true)} onBulkImport={() => setShowBulkImport(true)}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
-                    onViewAllCalendar={() => { setActiveTab('availability'); setSelectedBooking(null); setSelectedClassReg(null); }}
+                    onViewAllCalendar={(jumpTo) => {
+                      setActiveTab('availability'); setSelectedBooking(null); setSelectedClassReg(null);
+                      // A day handed over from the list (a closed day, say)
+                      // opens already selected on the Calendar tab.
+                      if (jumpTo) { setAvailDay(jumpTo); setAvailMonth(new Date(jumpTo + 'T00:00:00')); }
+                    }}
                     onBulkUpdate={bulkUpdateBookings}
                     onBulkDelete={bulkDeleteBookings}
                   />

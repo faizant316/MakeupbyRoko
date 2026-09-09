@@ -1,74 +1,44 @@
 import { useRef } from 'react';
 import { STATUS_COLORS, STATUS_COLORS_DM, CONSULT_INK } from './statusColors';
 
-// The one month grid used by every admin calendar: the Calendar tab and the
-// compact Home picker (dense). Keeping a single grid is the point — three
-// different-looking calendars for the same data was the confusing part.
+// The one month grid used by every admin calendar: the Calendar tab (full
+// size) and the compact Home picker (dense). Keeping a single grid is the
+// point — three different-looking calendars for the same data was the
+// confusing part.
 //
-// Two things share each cell and used to get conflated: bookings count toward
-// the day's capacity, consultations and classes do not. So the corner pill
-// counts EVERYTHING on the day, and a separate footer line says how much of
-// the booking capacity is used. Neither number contradicts the other.
+// The two sizes now hold DIFFERENT things on purpose, because they answer
+// different questions:
+//
+//   Full size (Calendar tab) is the whole page, so a cell is wide enough for
+//   real named chips and the reason a day is closed.
+//
+//   Dense (Home) sits in a narrow column beside the Appointments list. A 74px
+//   cell can't hold a name — every chip in it was truncated to "Merc…" — so it
+//   stopped trying. It's a picker: a date you can read, dots for what's on the
+//   day, and the booking count. Tapping it fills the list beside it with the
+//   full detail, which is where the names were always legible anyway.
 //
 // The grid always fits the screen width — no sideways scrolling to reach the
-// 25th. Phones get dots instead of named chips (a 50px column can't hold a
-// name); tapping the day shows the full list in the panel.
+// 25th.
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const pad = (n) => String(n).padStart(2, '0');
 export const OFF_RED = '#EF4444';
 export const CLASS_PINK = '#C76BA6';
+const ACCENT = '#C4849A';
 const DOUBLE_TAP_MS = 340;
 
 export const startTime = (t) => (t ? String(t).split(/[–-]/)[0].trim() : '');
 
 export const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-function Chevron({ dir }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
-      strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
-      <polyline points={dir === 'left' ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} />
-    </svg>
-  );
-}
-
-// The month stepper. It renders up in the page header on the Calendar tab —
-// arrows belong at the top of the screen where you look first, not tucked in a
-// small row halfway down beside the grid.
-export function MonthNav({ month, onStep, onToday, dm, className = '' }) {
-  const label = month.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const btn = 'w-9 h-9 rounded-xl flex items-center justify-center transition-colors flex-shrink-0 active:scale-90';
-  const btnStyle = {
-    background: dm ? '#26262e' : '#fff',
-    border: `1px solid ${dm ? '#34343d' : '#E9E9F0'}`,
-    color: dm ? '#a1a1aa' : '#77777f',
-  };
-  const hoverIn = (e) => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#A0607A'; };
-  const hoverOut = (e) => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#E9E9F0'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#77777f'; };
-  return (
-    <div className={`flex items-center gap-1.5 sm:gap-2 ${className}`}>
-      <button type="button" onClick={() => onStep(-1)} className={btn} style={btnStyle}
-        onMouseEnter={hoverIn} onMouseLeave={hoverOut} aria-label="Previous month">
-        <Chevron dir="left" />
-      </button>
-      <span className="font-serif text-center tabular-nums text-[1rem] sm:text-[1.12rem] flex-1 sm:flex-none min-w-[126px] sm:min-w-[152px]"
-        style={{ color: dm ? '#e4e4e7' : '#111' }}>
-        {label}
-      </span>
-      <button type="button" onClick={() => onStep(1)} className={btn} style={btnStyle}
-        onMouseEnter={hoverIn} onMouseLeave={hoverOut} aria-label="Next month">
-        <Chevron dir="right" />
-      </button>
-      <button type="button" onClick={onToday}
-        className="h-9 px-3 sm:px-3.5 ml-0.5 sm:ml-1 rounded-xl text-[0.64rem] font-semibold tracking-[0.1em] uppercase transition-all flex-shrink-0 active:scale-95"
-        style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F6EEF2', color: dm ? '#d8b4c2' : '#A0607A' }}>
-        Today
-      </button>
-    </div>
-  );
-}
+// Sunday of the week a date falls in — the week view renders from here.
+export const weekStartOf = (d) => {
+  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  s.setDate(s.getDate() - s.getDay());
+  return s;
+};
 
 export const dotOf = (ev, dm) =>
   ev.kind === 'consult' ? CONSULT_INK[dm ? 'dark' : 'light']
@@ -104,6 +74,7 @@ function Checkbox({ on, dm }) {
 
 export default function MonthCalendar({
   cur,                  // Date anywhere in the month to render
+  weekOf = null,        // Date: render only that ONE week instead of the month
   evMap = {},           // 'YYYY-MM-DD' -> [event]
   offMap = {},          // 'YYYY-MM-DD' -> blocked_dates row
   todayKey,
@@ -121,21 +92,23 @@ export default function MonthCalendar({
 }) {
   const lastTap = useRef({ key: null, t: 0 });
 
-  const year = cur.getFullYear();
-  const month = cur.getMonth();
-  const monthPrefix = `${year}-${pad(month + 1)}`;
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
+  // Cells are Dates (or null spacers), so one renderer serves both the month
+  // grid and a single week row that can straddle two months.
   const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
+  if (weekOf) {
+    const s = weekStartOf(weekOf);
+    for (let i = 0; i < 7; i++) cells.push(new Date(s.getFullYear(), s.getMonth(), s.getDate() + i));
+  } else {
+    const year = cur.getFullYear();
+    const month = cur.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+    while (cells.length % 7 !== 0) cells.push(null);
+  }
 
-  // The Home grid is a picker sitting in a narrow column, with the full detail
-  // already listed beside it — so it shows one name and a count of the rest,
-  // in bigger type, instead of cramming the day into a 74px box.
-  const maxChips = dense ? 1 : 4;
+  const maxChips = weekOf ? 6 : 4;
 
   // One handler for both, because a phone has no double-CLICK. A second tap on
   // the same day inside the window counts as a double.
@@ -151,16 +124,10 @@ export default function MonthCalendar({
     selectMode ? onToggleDay?.(key) : onOpenDay?.(key);
   };
 
-  const cellPad = dense ? 'p-2 sm:p-2.5' : 'p-1.5 sm:p-2';
-  // The Calendar tab now spends its vertical budget on the grid instead of on
-  // blurb and stat cards, so the cells get to breathe.
-  //
-  // The Home grid used to be the tighter of the two (56/92px) on the theory
-  // that a side column should stay small. It read as cramped rather than
-  // compact: four lines of 10px type stacked in a 64px-wide box. It is the
-  // calendar Roko actually looks at every morning, so it now gets MORE room
-  // per cell than the full-page one and spends it on fewer, larger things.
-  const cellMinH = dense ? 'min-h-[72px] sm:min-h-[120px]' : 'min-h-[70px] sm:min-h-[114px] xl:min-h-[126px]';
+  const cellPad = dense ? 'px-1 py-2 sm:py-2.5' : 'p-1.5 sm:p-2';
+  const cellMinH = dense
+    ? 'min-h-[66px] sm:min-h-[78px]'
+    : (weekOf ? 'min-h-[104px] sm:min-h-[170px]' : 'min-h-[70px] sm:min-h-[114px] xl:min-h-[126px]');
 
   return (
     <>
@@ -175,11 +142,13 @@ export default function MonthCalendar({
       </div>
 
       <div className="grid grid-cols-7 gap-1 sm:gap-2">
-        {cells.map((day, idx) => {
-          if (day === null) {
-            return <div key={`e-${idx}`} className="rounded-lg sm:rounded-xl" style={{ background: dm ? 'rgba(255,255,255,0.015)' : '#FBFBFD' }} />;
-          }
-          const key = `${monthPrefix}-${pad(day)}`;
+        {cells.map((date, idx) => {
+          // Spacer, not a cell. Deliberately invisible: a filled grey box in
+          // the run-up to the 1st reads as something you can tap.
+          if (date === null) return <div key={`e-${idx}`} aria-hidden="true" />;
+
+          const day = date.getDate();
+          const key = dayKey(date);
           const events = evMap[key] || [];
           const isToday = key === todayKey;
           const offRow = offMap[key];
@@ -190,11 +159,27 @@ export default function MonthCalendar({
           const cap = capFor?.(key);
           const booked = bookedFor?.(key) ?? 0;
           const full = cap != null && cap > 0 && booked >= cap;
+          // A week row can cross a month boundary; those days stay readable but
+          // sit back a little so the week you asked for reads first.
+          const outside = weekOf ? date.getMonth() !== weekOf.getMonth() : false;
 
           const restBorder = picked ? '#E05549'
-            : isActive ? '#D4A0B0'
             : off ? (dm ? 'rgba(153,27,27,0.4)' : '#FECACA')
             : (dm ? '#2e2e38' : '#ECECF1');
+
+          // Selected has to be unmistakable next to today, which is why it gets
+          // a filled date and a ring rather than one more pale outline. Two
+          // near-identical rose borders is exactly what made "which day am I
+          // looking at" a question worth asking.
+          const border = picked ? '#E05549' : isActive || isToday ? ACCENT : restBorder;
+          const ring = picked ? '0 0 0 1px #E05549'
+            : isActive ? `0 0 0 1.5px ${ACCENT}`
+            : isToday ? `0 0 0 1px ${ACCENT}` : 'none';
+
+          const numColor = isActive ? '#fff'
+            : off ? OFF_RED
+            : isToday ? '#A0607A'
+            : dense ? (dm ? '#c4c4cc' : '#55555f') : (dm ? '#a1a1aa' : '#9c9ca4');
 
           return (
             <div
@@ -211,140 +196,159 @@ export default function MonthCalendar({
               title={selectMode
                 ? (off ? 'Already closed · tap to include in reopen' : 'Tap to include in the days you are closing')
                 : `${daySummary(events, booked, cap) || 'Nothing scheduled'}${off ? ` · Day off${reason ? ` (${reason})` : ''}` : ''}${onDoubleActivate ? ' · double-tap to close this day' : ''}`}
-              className={`group rounded-lg sm:rounded-xl ${cellPad} ${cellMinH} flex flex-col gap-0.5 sm:gap-1 cursor-pointer transition-colors outline-none select-none`}
+              className={`group rounded-lg sm:rounded-xl ${cellPad} ${cellMinH} flex flex-col ${dense ? 'items-center gap-1' : 'gap-0.5 sm:gap-1'} cursor-pointer transition-colors outline-none select-none`}
               style={{
                 touchAction: 'manipulation', // kills the iOS double-tap zoom
+                opacity: outside ? 0.5 : 1,
                 background: picked ? (dm ? 'rgba(224,85,73,0.16)' : '#FFF4F2')
                   : off ? (dm ? 'rgba(153,27,27,0.16)' : '#FEF5F4')
                   : (dm ? '#26262e' : '#fff'),
-                border: `1px solid ${isToday && !picked ? '#D4A0B0' : restBorder}`,
-                boxShadow: picked ? '0 0 0 1px #E05549' : isToday ? '0 0 0 1px #D4A0B0' : 'none',
+                border: `1px solid ${border}`,
+                boxShadow: ring,
               }}
-              onMouseEnter={e => { if (!isToday && !picked) e.currentTarget.style.borderColor = off ? OFF_RED : 'rgba(212,160,176,0.5)'; }}
-              onMouseLeave={e => { if (!isToday && !picked) e.currentTarget.style.borderColor = restBorder; }}
+              onMouseEnter={e => { if (!isToday && !picked && !isActive) e.currentTarget.style.borderColor = off ? OFF_RED : 'rgba(212,160,176,0.5)'; }}
+              onMouseLeave={e => { if (!isToday && !picked && !isActive) e.currentTarget.style.borderColor = restBorder; }}
             >
-              <div className="flex items-center justify-between gap-0.5 sm:gap-1 px-0.5">
-                <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                  {selectMode && <Checkbox on={picked} dm={dm} />}
-                  <span className={`${dense ? 'text-[0.85rem] sm:text-[0.98rem]' : 'text-[0.68rem] sm:text-[0.72rem]'} font-semibold tabular-nums leading-none flex-shrink-0`}
-                    style={{ color: isToday ? '#A0607A' : off ? OFF_RED : dense ? (dm ? '#c4c4cc' : '#6b6b76') : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
-                </span>
-                {/* Counts EVERY item on the day, so it never disagrees with the
-                    booking line below. Not on the Home grid at any width: the
-                    chip and its "+N more" say it there on a laptop, the dots
-                    say it on a phone, and on a phone it was also stealing the
-                    line the date needs. */}
-                {events.length > 0 && !dense && (
-                  <span className="text-[0.52rem] sm:text-[0.58rem] font-semibold tabular-nums px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{events.length}</span>
-                )}
-              </div>
-
-              {/* Day off, with the reason she typed. Phones get the ✕ alone. */}
-              {off && (
-                <div className="flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded-md min-w-0"
-                  style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1' }}>
-                  <span className="text-[0.55rem] sm:text-[0.6rem] leading-none flex-shrink-0" style={{ color: OFF_RED }}>✕</span>
-                  <span className={`hidden sm:block ${dense ? 'text-[0.58rem]' : 'text-[0.53rem]'} font-bold tracking-[0.08em] uppercase truncate`}
-                    style={{ color: dm ? '#fca5a5' : '#C0392B' }} title={reason || 'Day off'}>
-                    {reason || 'Day off'}
-                  </span>
-                </div>
-              )}
-
-              {/* Phones: coloured dots. Names never fit a 7-column phone grid,
-                  and tapping the day lists them all in full underneath. */}
-              {events.length > 0 && (
-                <div className={`flex sm:hidden flex-wrap px-0.5 ${dense ? 'gap-1' : 'gap-[3px]'}`}>
-                  {events.slice(0, 6).map(ev => (
-                    <span key={ev.id} className={dense ? 'w-1.5 h-1.5 rounded-full' : 'w-[5px] h-[5px] rounded-full'} style={{ background: dotOf(ev, dm) }} />
-                  ))}
-                </div>
-              )}
-
-              {/* Everything wider than a phone: the named chips */}
-              <div className="hidden sm:flex flex-col gap-1 min-w-0">
-                {events.slice(0, maxChips).map(ev => {
-                  const dot = dotOf(ev, dm);
-                  const cancelled = ev.kind === 'appt' && ev.status === 'cancelled';
-                  return (
-                    <div
-                      key={ev.id}
-                      role={onEventClick && !selectMode ? 'button' : undefined}
-                      tabIndex={onEventClick && !selectMode ? 0 : undefined}
-                      onClick={(e) => { e.stopPropagation(); if (!onEventClick || selectMode) return; onEventClick(ev); }}
-                      onKeyDown={(e) => {
-                        if (!onEventClick || selectMode) return;
-                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onEventClick(ev); }
-                      }}
-                      className={`w-full rounded-md text-left transition-colors outline-none ${dense ? 'px-2 py-1.5' : 'flex items-center gap-1.5 px-1.5 py-1'}`}
+              {dense ? (
+                <>
+                  {/* The date, in a badge big enough to tap and to read. Filled
+                      when it's the day you picked, ringed when it's today. */}
+                  <span className="flex items-center gap-1">
+                    {selectMode && <Checkbox on={picked} dm={dm} />}
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-[0.88rem] font-semibold tabular-nums leading-none"
                       style={{
-                        // A dot, not a coloured bar welded to the left edge.
-                        // The bar was the same decoration the booking rows
-                        // carried, and it fought the chip's own rounded corner
-                        // every time. A dot states the status just as clearly
-                        // and lets the chip keep its shape.
-                        background: dm ? '#2e2e38' : '#F5F5F9',
-                        opacity: cancelled ? 0.55 : 1,
-                        cursor: onEventClick && !selectMode ? 'pointer' : 'inherit',
-                      }}
-                      onMouseEnter={e => { if (onEventClick && !selectMode) e.currentTarget.style.background = dm ? '#3a3a44' : '#EBEBF3'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = dm ? '#2e2e38' : '#F5F5F9'; }}
-                      title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
-                    >
-                      {/* Home stacks time over name. One line could only ever
-                          fit the time plus a mystery badge in a 64px column --
-                          the name, the one thing that makes a day
-                          recognisable, was always what got truncated away.
-                          Two lines fit both at a size worth reading. */}
-                      <div className={dense ? 'flex items-center gap-1.5 min-w-0' : 'contents'}>
-                        <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
-                        {startTime(ev.time) && (
-                          <span className={`${dense ? 'text-[0.68rem]' : 'text-[0.62rem]'} font-semibold tabular-nums flex-shrink-0`} style={{ color: dm ? '#8b8b95' : '#8e8e99' }}>
-                            {startTime(ev.time)}
-                          </span>
-                        )}
-                        {!dense && (
-                          <>
-                            <span className="text-[0.68rem] font-medium truncate flex-1 min-w-0"
-                              style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
-                              {ev.name}
-                              {ev.bridal && <span className="ml-1" style={{ color: '#A0607A' }} title="Bridal">·</span>}
-                            </span>
-                            {ev.source === 'booksy' && (
-                              <span className="text-[0.5rem] font-bold tracking-[0.06em] uppercase px-1 py-px rounded flex-shrink-0"
-                                style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}>B</span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                      {dense && (
-                        <span className="block text-[0.76rem] font-medium truncate mt-0.5"
-                          style={{ color: dm ? '#e4e4e7' : '#2c2c34', textDecoration: cancelled ? 'line-through' : 'none' }}>
-                          {ev.name}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-                {events.length > maxChips && (
-                  <span className={`${dense ? 'text-[0.66rem] pl-2' : 'text-[0.58rem] pl-1.5'} font-semibold`} style={{ color: dm ? '#8e8e99' : '#9a9aa6' }}>
-                    +{events.length - maxChips} more
+                        color: numColor,
+                        background: isActive ? ACCENT : 'transparent',
+                        border: `1.5px solid ${isToday && !isActive ? ACCENT : 'transparent'}`,
+                      }}>
+                      {day}
+                    </span>
                   </span>
-                )}
-              </div>
 
-              {/* Booking capacity, spelled out. Consultations and classes are
-                  deliberately NOT in this number, which is why it says
-                  "booked" rather than sitting bare as "0/4". On Home an empty
-                  day stays empty: thirty grey "0/4 booked" lines were most of
-                  what made that grid look busy. */}
-              {cap != null && !off && (!dense || booked > 0) && (
-                <span className={`mt-auto pl-0.5 ${dense ? 'text-[0.58rem] sm:text-[0.62rem]' : 'text-[0.5rem] sm:text-[0.56rem]'} font-semibold tabular-nums tracking-wide whitespace-nowrap`}
-                  style={{ color: full ? '#E0795B' : booked > 0 ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#7a7a84' : '#c2c2cb') }}>
-                  {full ? <><span className="hidden sm:inline">Fully booked</span><span className="sm:hidden">Full</span></>
-                        : <>{booked}/{cap}<span className="hidden sm:inline"> booked</span></>}
-                </span>
+                  {/* What's on the day. Dots, not names: a name never fit this
+                      column, and the list beside the calendar spells the day
+                      out in full the moment you tap it. Fixed height, so an
+                      empty day is the same size as a busy one. */}
+                  <span className="flex items-center justify-center gap-[3px] h-[7px]">
+                    {off && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke={OFF_RED} strokeWidth="4" strokeLinecap="round" className="w-[9px] h-[9px]">
+                        <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+                      </svg>
+                    )}
+                    {events.slice(0, 4).map(ev => (
+                      <span key={ev.id} className="w-[6px] h-[6px] rounded-full" style={{ background: dotOf(ev, dm) }} />
+                    ))}
+                  </span>
+
+                  {/* One line of words, and only when it has something to say:
+                      how much of the day is spoken for, or that it's closed. */}
+                  <span className="text-[0.6rem] font-semibold tabular-nums leading-none h-[9px]"
+                    style={{ color: off ? OFF_RED : full ? '#E0795B' : (dm ? '#a1a1aa' : '#8a8a94') }}>
+                    {off ? 'Off' : (cap != null && booked > 0) ? `${booked}/${cap}` : ''}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-0.5 sm:gap-1 px-0.5">
+                    <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                      {selectMode && <Checkbox on={picked} dm={dm} />}
+                      <span className="text-[0.68rem] sm:text-[0.72rem] font-semibold tabular-nums leading-none flex-shrink-0"
+                        style={{ color: off ? OFF_RED : isToday || isActive ? '#A0607A' : (dm ? '#a1a1aa' : '#9c9ca4') }}>{day}</span>
+                    </span>
+                    {/* Counts EVERY item on the day, so it never disagrees with
+                        the booking line below. */}
+                    {events.length > 0 && (
+                      <span className="text-[0.52rem] sm:text-[0.58rem] font-semibold tabular-nums px-1 sm:px-1.5 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{events.length}</span>
+                    )}
+                  </div>
+
+                  {/* Day off, with the reason she typed. Phones get the ✕ alone. */}
+                  {off && (
+                    <div className="flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded-md min-w-0"
+                      style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke={OFF_RED} strokeWidth="4" strokeLinecap="round" className="w-[7px] h-[7px] flex-shrink-0">
+                        <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+                      </svg>
+                      <span className="hidden sm:block text-[0.53rem] font-bold tracking-[0.08em] uppercase truncate"
+                        style={{ color: dm ? '#fca5a5' : '#C0392B' }} title={reason || 'Day off'}>
+                        {reason || 'Day off'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Phones: coloured dots. Names never fit a 7-column phone
+                      grid, and tapping the day lists them all in full. */}
+                  {events.length > 0 && (
+                    <div className="flex sm:hidden flex-wrap px-0.5 gap-[3px]">
+                      {events.slice(0, 6).map(ev => (
+                        <span key={ev.id} className="w-[5px] h-[5px] rounded-full" style={{ background: dotOf(ev, dm) }} />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Everything wider than a phone: the named chips */}
+                  <div className="hidden sm:flex flex-col gap-1 min-w-0">
+                    {events.slice(0, maxChips).map(ev => {
+                      const dot = dotOf(ev, dm);
+                      const cancelled = ev.kind === 'appt' && ev.status === 'cancelled';
+                      return (
+                        <div
+                          key={ev.id}
+                          role={onEventClick && !selectMode ? 'button' : undefined}
+                          tabIndex={onEventClick && !selectMode ? 0 : undefined}
+                          onClick={(e) => { e.stopPropagation(); if (!onEventClick || selectMode) return; onEventClick(ev); }}
+                          onKeyDown={(e) => {
+                            if (!onEventClick || selectMode) return;
+                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onEventClick(ev); }
+                          }}
+                          className="w-full rounded-md text-left transition-colors outline-none flex items-center gap-1.5 px-1.5 py-1"
+                          style={{
+                            // A dot, not a coloured bar welded to the left edge.
+                            background: dm ? '#2e2e38' : '#F5F5F9',
+                            opacity: cancelled ? 0.55 : 1,
+                            cursor: onEventClick && !selectMode ? 'pointer' : 'inherit',
+                          }}
+                          onMouseEnter={e => { if (onEventClick && !selectMode) e.currentTarget.style.background = dm ? '#3a3a44' : '#EBEBF3'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = dm ? '#2e2e38' : '#F5F5F9'; }}
+                          title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
+                        >
+                          <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
+                          {startTime(ev.time) && (
+                            <span className="text-[0.62rem] font-semibold tabular-nums flex-shrink-0" style={{ color: dm ? '#8b8b95' : '#8e8e99' }}>
+                              {startTime(ev.time)}
+                            </span>
+                          )}
+                          <span className="text-[0.68rem] font-medium truncate flex-1 min-w-0"
+                            style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
+                            {ev.name}
+                            {ev.bridal && <span className="ml-1" style={{ color: '#A0607A' }} title="Bridal">·</span>}
+                          </span>
+                          {ev.source === 'booksy' && (
+                            <span className="text-[0.5rem] font-bold tracking-[0.06em] uppercase px-1 py-px rounded flex-shrink-0"
+                              style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}>B</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {events.length > maxChips && (
+                      <span className="text-[0.58rem] pl-1.5 font-semibold" style={{ color: dm ? '#8e8e99' : '#9a9aa6' }}>
+                        +{events.length - maxChips} more
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Booking capacity, spelled out. Consultations and classes
+                      are deliberately NOT in this number, which is why it says
+                      "booked" rather than sitting bare as "0/4". */}
+                  {cap != null && !off && (
+                    <span className="mt-auto pl-0.5 text-[0.5rem] sm:text-[0.56rem] font-semibold tabular-nums tracking-wide whitespace-nowrap"
+                      style={{ color: full ? '#E0795B' : booked > 0 ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#7a7a84' : '#c2c2cb') }}>
+                      {full ? <><span className="hidden sm:inline">Fully booked</span><span className="sm:hidden">Full</span></>
+                            : <>{booked}/{cap}<span className="hidden sm:inline"> booked</span></>}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           );

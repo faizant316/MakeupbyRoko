@@ -2,7 +2,9 @@ import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
-import MonthCalendar, { OFF_RED, CLASS_PINK, startTime, dotOf } from './MonthCalendar';
+import MonthCalendar, { OFF_RED, CLASS_PINK, startTime, dotOf, weekStartOf } from './MonthCalendar';
+import CalendarHeader from './CalendarHeader';
+import ScheduleView from './ScheduleView';
 import BlockDaysSheet from './BlockDaysSheet';
 import { Check, Cross } from './Glyphs';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
@@ -105,6 +107,13 @@ export default function AvailabilityTab({
   // Days waiting on the confirm sheet. Nothing is written until she confirms.
   const [pendingBlock, setPendingBlock] = useState(null);
   const [showAllDaysOff, setShowAllDaysOff] = useState(false);
+  // Day / Week / Month, the same three the Home calendar has. The Calendar tab
+  // used to be month-only, which meant the one page devoted to the calendar
+  // could show less than the picker on the home screen.
+  const [view, setView] = useState(() => {
+    if (typeof window === 'undefined') return 'month';
+    return localStorage.getItem('admin-calendar-view') || 'month';
+  });
   const panelRef = useRef(null);
 
   // ── Data ──
@@ -266,6 +275,42 @@ export default function AvailabilityTab({
   const jumpTo = (key) => { setSelectedDate(key); setMonth(new Date(key + 'T00:00:00')); };
   const openDay = (key) => setSelectedDate(prev => (prev === key ? null : key));
 
+  // ── View plumbing ──
+  // `month` is the cursor for every view: the month in Month, the week it falls
+  // in for Week, the day itself for Day. So switching views never loses your
+  // place, and the arrows always step the unit you're actually looking at.
+  const changeView = (v) => {
+    setView(v);
+    if (typeof window !== 'undefined') localStorage.setItem('admin-calendar-view', v);
+    if (selectMode) exitSelect();
+    if (v === 'day') {
+      const key = selectedDate || keyOf(month);
+      setSelectedDate(key);
+      setMonth(new Date(key + 'T00:00:00'));
+    } else if (selectedDate) {
+      setMonth(new Date(selectedDate + 'T00:00:00'));
+    }
+  };
+  const stepBy = (n) => {
+    if (view === 'month') { setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1)); return; }
+    const d = new Date(month); d.setDate(d.getDate() + n * 7); setMonth(d);
+  };
+  const goToday = () => { const t = new Date(); setMonth(t); if (view === 'day') setSelectedDate(keyOf(t)); };
+  const goDay = (key) => { setSelectedDate(key); setMonth(new Date(key + 'T00:00:00')); };
+
+  const weekStart = weekStartOf(month);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+  const headerTitle = view === 'week'
+    ? `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : month.toLocaleString('default', { month: 'long' });
+  const headerSubtitle = view === 'week' && weekStart.getFullYear() !== weekEnd.getFullYear()
+    ? `${weekStart.getFullYear()} – ${weekEnd.getFullYear()}`
+    : String(month.getFullYear());
+  const now = new Date();
+  const headerIsToday = view === 'week'
+    ? (keyOf(now) >= keyOf(weekStart) && keyOf(now) <= keyOf(weekEnd))
+    : (now.getFullYear() === month.getFullYear() && now.getMonth() === month.getMonth());
+
   // Double-click on desktop, double-tap on a phone. A closed day reopens
   // straight away (nothing to confirm, it's not destructive); an open one goes
   // through the same confirm sheet as a bulk close.
@@ -342,50 +387,94 @@ export default function AvailabilityTab({
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4 xl:gap-5 items-start">
         {/* ── Calendar ── */}
         <div className="rounded-xl p-3 sm:p-4 min-w-0" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
-          {/* Glance numbers and Select days share one line, so the grid starts
-              near the top of the card instead of a third of the way down. */}
+          {/* View switcher and Select days share one line, so the date and the
+              grid start near the top of the card. */}
           <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-            <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap min-w-0">
-              {stats.map((s, i) => (
-                <Fragment key={s.label}>
-                  {i > 0 && <span className="hidden sm:block w-px h-3" style={{ background: dm ? '#3a3a48' : '#E8E8EF' }} />}
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="text-[0.88rem] font-semibold tabular-nums leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</span>
-                    <span className="text-[0.56rem] font-semibold tracking-[0.11em] uppercase whitespace-nowrap" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{s.label}</span>
-                  </span>
-                </Fragment>
-              ))}
+            <div className="flex items-center gap-1">
+              {['Day', 'Week', 'Month'].map(v => {
+                const key = v.toLowerCase();
+                const active = view === key;
+                return (
+                  <button key={v} onClick={() => changeView(key)}
+                    className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
+                    style={active
+                      ? { background: dm ? '#34343d' : '#EBEBF1', color: dm ? '#ECEDF1' : '#1a1a1a' }
+                      : { background: 'transparent', color: dm ? '#6f6f78' : '#a8a8b1' }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#83838d'; }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#a8a8b1'; }}>
+                    {v}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Select — the whole point: pick days by tapping them */}
-            <button
-              onClick={() => (selectMode ? exitSelect() : (setSelectMode(true), setSelectedDate(null)))}
-              className="text-[0.68rem] font-semibold tracking-[0.06em] px-3.5 py-1.5 rounded-lg transition-all flex-shrink-0 active:scale-95"
-              style={selectMode
-                ? { background: '#E05549', color: '#fff' }
-                : { background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
-              {selectMode ? 'Cancel' : 'Select days'}
-            </button>
+            {/* Select — the whole point: pick days by tapping them. A single
+                day in Day view is already selected, so there's nothing to pick. */}
+            {view !== 'day' && (
+              <button
+                onClick={() => (selectMode ? exitSelect() : (setSelectMode(true), setSelectedDate(null)))}
+                className="text-[0.68rem] font-semibold tracking-[0.06em] px-3.5 py-1.5 rounded-lg transition-all flex-shrink-0 active:scale-95"
+                style={selectMode
+                  ? { background: '#E05549', color: '#fff' }
+                  : { background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
+                {selectMode ? 'Cancel' : 'Select days'}
+              </button>
+            )}
           </div>
 
-          {/* No min-width and no sideways scrolling: the grid fits whatever
-              screen it's on, so today is always visible without swiping. */}
-          <MonthCalendar
-            cur={month}
-            evMap={evMap}
-            offMap={offMap}
-            todayKey={tk}
-            dm={dm}
-            capFor={capFor}
-            bookedFor={bookedFor}
-            activeDay={selectedDate}
-            onOpenDay={openDay}
-            onDoubleActivate={doubleActivate}
-            selectMode={selectMode}
-            selectedDays={picked}
-            onToggleDay={togglePick}
-            onEventClick={openEvent}
-          />
+          {view === 'day' ? (
+            /* The real time grid, the same one Home and the client card use.
+               It brings its own centred header, so this view doesn't add a
+               second one above it. */
+            <ScheduleView
+              bookings={bookings}
+              classRegs={classRegs}
+              dateKey={selectedDate || tk}
+              onChangeDate={goDay}
+              onSelectBooking={onSelect}
+              onSelectClassReg={onSelectClassReg}
+              dm={dm}
+            />
+          ) : (
+            <>
+              {/* The date, centred and large, directly above the grid it names
+                  — and tappable, so a month six months out is two taps rather
+                  than six presses of an arrow. */}
+              <CalendarHeader
+                title={headerTitle}
+                subtitle={headerSubtitle}
+                onStep={stepBy}
+                stepUnit={view}
+                jumpDate={month}
+                onJump={(m, y) => setMonth(new Date(y, m, view === 'week' ? Math.min(month.getDate(), new Date(y, m + 1, 0).getDate()) : 1))}
+                onToday={goToday}
+                isToday={headerIsToday}
+                big
+                dm={dm}
+                className="mb-3"
+              />
+
+              {/* No min-width and no sideways scrolling: the grid fits whatever
+                  screen it's on, so today is always visible without swiping. */}
+              <MonthCalendar
+                cur={month}
+                weekOf={view === 'week' ? month : null}
+                evMap={evMap}
+                offMap={offMap}
+                todayKey={tk}
+                dm={dm}
+                capFor={capFor}
+                bookedFor={bookedFor}
+                activeDay={selectedDate}
+                onOpenDay={openDay}
+                onDoubleActivate={doubleActivate}
+                selectMode={selectMode}
+                selectedDays={picked}
+                onToggleDay={togglePick}
+                onEventClick={openEvent}
+              />
+            </>
+          )}
 
           {/* Action bar for the tapped days. Replaces the old typed date range. */}
           {selectMode ? (
@@ -416,12 +505,29 @@ export default function AvailabilityTab({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3.5 flex-wrap mt-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-              {LEGEND.map(l => (
-                <span key={l.label} className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: l.c }} /> {l.label}
-                </span>
-              ))}
+            /* The numbers and the key, under the calendar rather than over it:
+               they're context for the grid, not the headline. */
+            <div className="flex flex-col gap-2.5 mt-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
+              <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap min-w-0">
+                {stats.map((s, i) => (
+                  <Fragment key={s.label}>
+                    {i > 0 && <span className="hidden sm:block w-px h-3" style={{ background: dm ? '#3a3a48' : '#E8E8EF' }} />}
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="text-[0.88rem] font-semibold tabular-nums leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</span>
+                      <span className="text-[0.56rem] font-semibold tracking-[0.11em] uppercase whitespace-nowrap" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{s.label}</span>
+                    </span>
+                  </Fragment>
+                ))}
+              </div>
+              {view !== 'day' && (
+                <div className="flex items-center gap-3.5 flex-wrap">
+                  {LEGEND.map(l => (
+                    <span key={l.label} className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
+                      <span className="w-2 h-2 rounded-full inline-block" style={{ background: l.c }} /> {l.label}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
