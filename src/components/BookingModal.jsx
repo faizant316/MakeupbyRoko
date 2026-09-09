@@ -622,7 +622,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                       columns on a phone, three on a desktop, everything aligned. */}
                   <div className="mb-8">
                     <label className={labelClass}>What&apos;s the occasion? *</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {OCCASIONS.map(opt => {
                         const active = formData.event_type === opt;
                         return (
@@ -688,17 +688,20 @@ export default function BookingModal({ service: initialService, onClose }) {
 
                     <div>
                       <label className={labelClass}>Do you need your look done before 7:00 AM?</label>
-                      <div className="flex gap-3 mt-1">
+                      {/* Same grid treatment as the occasion and location
+                          choices below, so every choice on this step is the
+                          same shape instead of three different ones. */}
+                      <div className="grid grid-cols-2 gap-2.5 mt-1">
                         {[{ label: 'Yes', value: true }, { label: 'No', value: false }].map(opt => (
                           <button
                             key={String(opt.value)}
                             type="button"
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => setFormData({ ...formData, early_arrival: opt.value })}
-                            className={`flex-1 py-2.5 rounded-xl text-[0.78rem] font-medium border transition-all ${
+                            className={`flex items-center justify-center px-3 py-3 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
                               formData.early_arrival === opt.value
-                                ? 'bg-[#111] text-white border-[#111]'
-                                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                                ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
+                                : 'bg-white text-[#6E6660] border-gray-200 hover:border-[#D4A0B0] hover:text-[#111]'
                             }`}
                           >
                             {opt.label}
