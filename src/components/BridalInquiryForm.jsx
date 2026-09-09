@@ -580,8 +580,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       ? `$${(_priceN - _depositN).toLocaleString('en-US')}`
       : '';
     const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(bridalPrice || '')}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
+    // Year included — the emailed date is the client's last chance to catch a
+    // wrong one, and without it a booking a year out reads as this year's.
     const bridalDateFormatted = selectedDate
-      ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+      ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
       : 'your requested date';
     const brideFirst = (form.bride_name || '').split(' ')[0] || 'there';
 
@@ -818,7 +820,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 and it no longer competes with the heading above it. */}
             <div className="relative z-10 pl-3" style={{ borderLeft: '2px solid #E7C3D1' }}>
               <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
-                Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest {isTrial ? 'trial' : 'wedding'} date: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest {isTrial ? 'trial' : 'wedding'} date: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
               </p>
             </div>
 
@@ -1457,6 +1459,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               submitting={submitting}
               ctaLabel="Sign & Submit Bridal Inquiry"
               busyLabel="Sending your inquiry…"
+              confirmSummary={{
+                date: selectedDateLong,
+                year: selectedDate ? selectedDate.slice(0, 4) : '',
+                service: bridalTitle,
+                rows: [
+                  { label: 'Package', value: bridalTitle },
+                  { label: isTrial ? 'Preferred time' : 'Ready by', value: isTrial ? form.event_start_time : form.makeup_ready_by_time },
+                  { label: isTrial ? 'Location' : 'Getting ready', value: form.event_location },
+                ],
+                confirmLabel: 'Yes, send my inquiry',
+              }}
               onSign={handleSubmit}
             />
           </div>
