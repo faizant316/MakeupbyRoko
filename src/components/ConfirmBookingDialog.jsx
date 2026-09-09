@@ -52,10 +52,21 @@ export default function ConfirmBookingDialog({
   return (
     <div
       // Above the booking sheet (z-500). The sheet already holds the body
-      // scroll lock, so this adds none of its own — a second lock would fight
+      // scroll lock, so this adds none of its own: a second lock would fight
       // the reference count on close.
-      className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center sm:px-6"
-      style={{ background: 'rgba(28,18,22,0.5)', backdropFilter: 'blur(4px)' }}
+      //
+      // touch-action:none and data-lenis-prevent are what stop the booking sheet
+      // behind this from scrolling under a thumb. Without them the page kept
+      // moving behind the dialog, which makes a confirmation feel dismissable
+      // when it isn't.
+      data-lenis-prevent
+      className="fixed inset-0 z-[600] flex items-stretch sm:items-center justify-center sm:px-6"
+      style={{
+        background: 'rgba(28,18,22,0.5)',
+        backdropFilter: 'blur(4px)',
+        touchAction: 'none',
+        overscrollBehavior: 'contain',
+      }}
       onClick={(e) => { if (e.target === e.currentTarget && !submitting) onCancel?.(); }}
     >
       <div
@@ -65,19 +76,27 @@ export default function ConfirmBookingDialog({
         aria-labelledby="confirm-booking-title"
         tabIndex={-1}
         data-lenis-prevent
-        className="w-full sm:max-w-[400px] bg-white rounded-t-[22px] sm:rounded-[22px] outline-none max-h-[92dvh] overflow-y-auto overscroll-contain"
+        // Full height on a phone, a centred card on a desktop. It used to be a
+        // bottom sheet that stopped at roughly three quarters of the screen,
+        // which reads as a half-open panel rather than a decision to make.
+        className="w-full sm:max-w-[400px] bg-white rounded-none sm:rounded-[22px] outline-none min-h-[100dvh] sm:min-h-0 sm:max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col"
         style={{
           animation: 'slideUpSheet 0.32s cubic-bezier(0.22, 1, 0.36, 1)',
           boxShadow: '0 -8px 50px rgba(28,18,22,0.22), 0 2px 10px rgba(28,18,22,0.08)',
           WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
         }}
       >
-        {/* Grab handle — mobile only, where this arrives as a bottom sheet. */}
-        <div className="sm:hidden flex justify-center pt-2.5 pb-1">
-          <span className="w-9 h-1 rounded-full" style={{ background: '#E8DDE3' }} />
-        </div>
-
-        <div className="px-6 pt-4 sm:pt-7 pb-6" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}>
+        {/* m-auto, not justify-center: auto margins centre this in the sheet AND
+            still let it scroll from the top when the content is taller than the
+            screen, which centring alone clips. */}
+        <div
+          className="px-6 w-full m-auto"
+          style={{
+            paddingTop: 'max(1.75rem, env(safe-area-inset-top, 0px))',
+            paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom, 0px))',
+          }}
+        >
           <div className="text-center mb-5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(196,132,154,0.1)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-[18px] h-[18px]">

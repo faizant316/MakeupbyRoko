@@ -320,7 +320,9 @@ export function buildContract({
         { label: 'Service', value: values.serviceName },
         dateKnown ? { label: 'Date', value: values.date } : null,
         priceText ? { label: 'Service price', value: values.price } : null,
-        depositText ? { label: 'Deposit to book', value: values.deposit } : null,
+        // "today" because the next line says what is due on the day, and the
+        // two were previously distinguishable only by reading both.
+        depositText ? { label: 'Deposit to book today', value: values.deposit } : null,
         balanceN != null
           ? { label: 'Due in cash on the day', value: values.balance, strong: true, note: 'plus any travel fee or add-ons' }
           : null,
