@@ -26,6 +26,7 @@ export default function CalendarHeader({
   right = null,          // view-specific buttons (Block day)
   onToday,
   isToday = true,        // hides the Today chip when you're already there
+  big = false,           // full-page calendar: bigger date, bigger arrows
   dm,
   className = '',
 }) {
@@ -46,11 +47,11 @@ export default function CalendarHeader({
 
   const arrow = (dir) => (
     <button type="button" onClick={() => onStep(dir)} aria-label={`${dir < 0 ? 'Previous' : 'Next'} ${stepUnit}`}
-      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors active:scale-90"
+      className={`${big ? 'w-10 h-10' : 'w-8 h-8'} rounded-lg flex items-center justify-center flex-shrink-0 transition-colors active:scale-90`}
       style={{ color: muted, background: 'transparent' }}
       onMouseEnter={e => { e.currentTarget.style.background = chipBg; e.currentTarget.style.color = accent; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = muted; }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={big ? 'w-[18px] h-[18px]' : 'w-4 h-4'}>
         {dir < 0 ? <polyline points="15 18 9 12 15 6" /> : <polyline points="9 18 15 12 9 6" />}
       </svg>
     </button>
@@ -66,22 +67,22 @@ export default function CalendarHeader({
         <div className="flex items-center gap-0.5 sm:gap-1 min-w-0 justify-center">
           {arrow(-1)}
           <button type="button" onClick={openJump} disabled={!canJump}
-            className="flex flex-col items-center min-w-0 px-1.5 py-0.5 rounded-lg transition-opacity hover:opacity-70"
+            className={`flex flex-col items-center min-w-0 rounded-xl transition-opacity hover:opacity-70 ${big ? 'px-3 py-1.5' : 'px-1.5 py-0.5'}`}
             style={{ WebkitTapHighlightColor: 'transparent', cursor: canJump ? 'pointer' : 'default' }}>
             <span className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[1.06rem] sm:text-[1.2rem] font-medium leading-tight truncate"
+              <span className={`font-medium leading-tight truncate ${big ? 'font-serif text-[1.45rem] sm:text-[1.7rem]' : 'text-[1.06rem] sm:text-[1.2rem]'}`}
                 style={{ color: ink, letterSpacing: '-0.01em' }}>
                 {title}
               </span>
               {canJump && (
-                <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0"
+                <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`flex-shrink-0 ${big ? 'w-3.5 h-3.5' : 'w-3 h-3'}`}
                   style={{ transition: 'transform 200ms ease', transform: showJump ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               )}
             </span>
             {subtitle && (
-              <span className="text-[0.66rem] leading-tight tabular-nums mt-[1px]" style={{ color: muted }}>{subtitle}</span>
+              <span className={`leading-tight tabular-nums mt-[1px] ${big ? 'text-[0.74rem]' : 'text-[0.66rem]'}`} style={{ color: muted }}>{subtitle}</span>
             )}
           </button>
           {arrow(1)}
@@ -105,7 +106,7 @@ export default function CalendarHeader({
           <div className="fixed inset-0 z-40" onClick={() => setShowJump(false)} aria-hidden="true" />
           <div className="absolute z-50 rounded-xl p-3 left-1/2 -translate-x-1/2 w-[min(320px,100%)]"
             style={{
-              top: '3.1rem',
+              top: big ? '3.9rem' : '3.1rem',
               background: dm ? '#27272a' : '#fff',
               border: `1px solid ${dm ? '#3f3f46' : '#eadfe4'}`,
               boxShadow: dm ? '0 16px 40px rgba(0,0,0,0.5)' : '0 16px 40px rgba(60,30,45,0.14)',
