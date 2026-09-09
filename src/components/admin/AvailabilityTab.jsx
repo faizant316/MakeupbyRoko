@@ -176,6 +176,14 @@ export default function AvailabilityTab({
   const effForSelected = selectedDate ? capFor(selectedDate) : 0;
   const selEvents = selectedDate ? (evMap[selectedDate] || []) : [];
 
+  // Day view IS a selection: the day on screen is the day the panel beside it
+  // should be describing. Coming back to the tab with Day remembered left the
+  // schedule showing today while the panel still said "Pick a day".
+  useEffect(() => {
+    if (view === 'day' && !selectedDate) setSelectedDate(todayKeyOf());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
   useEffect(() => { setDefaultEdit(defaultCap); }, [defaultCap]);
   useEffect(() => { if (selectedDate) setEditCap(effForSelected || defaultCap); }, [selectedDate, effForSelected, defaultCap]);
 
