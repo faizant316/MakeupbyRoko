@@ -48,3 +48,5 @@ booksy-capture*.json
 
 # Preview dev server build dir (see NEXT_DIST_DIR in next.config.mjs)
 .next-preview
+# Same idea, for the server `npm run test:scroll` starts for itself
+.next-e2e
