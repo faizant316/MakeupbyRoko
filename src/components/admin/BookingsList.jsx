@@ -252,6 +252,17 @@ export default function BookingsList({
   const showZellePanel = openRail === 'deposit';
   const [lightbox, setLightbox] = useState(null);
   const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or '' for all
+
+  // Days off, so a closed day can say so. Tapping the 22nd on the calendar and
+  // reading "No appointments found" answered the wrong question: the day isn't
+  // empty, it's shut, and the reason she shut it is the thing worth showing.
+  // Same query key as the calendars, so it's already in cache.
+  const { data: blockedDates = [] } = useQuery({
+    queryKey: ['blocked-dates'],
+    queryFn: () => api.entities.BlockedDate.list(),
+    staleTime: 30000,
+  });
+  const dayOff = selectedDate ? blockedDates.find(b => b.date === selectedDate) : null;
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   // On load only "This Week" (and urgent Past Due) is open — "This Month" and
   // "Later" start folded so the list lands clean; Roko can open them herself.
@@ -825,6 +836,44 @@ export default function BookingsList({
         </div>
       )}
 
+      {/* Closed day. A big ✕ and the reason, in place of a list that would
+          otherwise read as "nothing here" — the calendar cell can only fit a
+          truncated word, so this is where the reason actually gets read. */}
+      {dayOff && (() => {
+        const reason = (dayOff.reason || '').trim();
+        const onDay = (bookings || []).filter(b => b.date === selectedDate && b.status !== 'cancelled').length;
+        return (
+          <div className="mb-6 rounded-2xl px-5 py-6 flex flex-col items-center text-center"
+            style={{
+              background: dm ? 'rgba(153,27,27,0.12)' : '#FEF6F5',
+              border: `1px solid ${dm ? 'rgba(239,68,68,0.32)' : '#F6D8D4'}`,
+            }}>
+            <span className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+              style={{ background: dm ? 'rgba(239,68,68,0.18)' : '#FBE3E0' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#E05549" strokeWidth="2.6" strokeLinecap="round" className="w-6 h-6">
+                <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+              </svg>
+            </span>
+            <p className="text-[1.05rem] font-semibold" style={{ color: dm ? '#f4b8b2' : '#B33A2B' }}>Day off</p>
+            <p className="text-[0.85rem] font-medium mt-1" style={{ color: dm ? '#e4e4e7' : '#5c4f52' }}>
+              {reason || 'Closed to bookings'}
+            </p>
+            <p className="text-[0.75rem] mt-2 leading-relaxed max-w-[280px]" style={{ color: dm ? '#a1a1aa' : '#9a8e91' }}>
+              Clients can't book {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.
+              {onDay > 0 ? ` The ${onDay === 1 ? 'appointment' : onDay + ' appointments'} already on it still stand.` : ''}
+            </p>
+            {onViewAllCalendar && (
+              <button
+                onClick={() => onViewAllCalendar(selectedDate)}
+                className="mt-4 px-4 py-2 rounded-full text-[0.72rem] font-semibold transition-all active:scale-95"
+                style={{ background: dm ? '#34343d' : '#fff', color: dm ? '#e4e4e7' : '#6b5b60', border: `1px solid ${dm ? '#4a4a58' : '#EEDDE0'}` }}>
+                Reopen in Calendar
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Consultations on selected date */}
       {selectedDate && consultationsOnDate.length > 0 && (() => {
         // Deduplicate — don't show bookings already listed as regular appointments
@@ -1149,11 +1198,13 @@ export default function BookingsList({
           <div className="w-6 h-6 border-2 border-[#E5E7EB] border-t-[#71717a] rounded-full animate-spin" />
         </div>
       ) : visibleActiveCount === 0 && visibleCompleted.length === 0 ? (
+        dayOff ? null : (
         <div className="text-center py-20">
           <p className="text-[#a3a3ad] text-[0.85rem]">
             No {typeFilter === 'bridal' ? 'bridal ' : typeFilter === 'nonbridal' ? 'non-bridal ' : ''}appointments found
           </p>
         </div>
+        )
       ) : (
         <div className="flex flex-col gap-8">
           {visibleActiveCount === 0 ? (

@@ -343,13 +343,15 @@ export default function AvailabilityTab({
   // used to leave "Close this day off" off-screen. Go through Lenis, which
   // owns the scroll position (a bare scrollIntoView gets undone by its RAF).
   useEffect(() => {
-    if (!selectedDate || selectMode || typeof window === 'undefined') return;
+    // Day view changes the date in place; jumping the page to the panel under
+    // the schedule every time she steps a day would be motion sickness.
+    if (!selectedDate || selectMode || view === 'day' || typeof window === 'undefined') return;
     if (window.matchMedia('(min-width: 1280px)').matches) return; // side by side already
     const id = requestAnimationFrame(() => {
       if (panelRef.current) scrollToTarget(panelRef.current, { offset: -72 });
     });
     return () => cancelAnimationFrame(id);
-  }, [selectedDate, selectMode]);
+  }, [selectedDate, selectMode, view]);
 
   const card = { background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` };
   const spotsLeft = effForSelected - selBooked;
@@ -431,8 +433,8 @@ export default function AvailabilityTab({
               classRegs={classRegs}
               dateKey={selectedDate || tk}
               onChangeDate={goDay}
-              onSelectBooking={onSelect}
-              onSelectClassReg={onSelectClassReg}
+              onSelectBooking={(b) => openEvent({ kind: 'appt', raw: b })}
+              onSelectClassReg={(r) => openEvent({ kind: 'class', raw: r })}
               dm={dm}
             />
           ) : (

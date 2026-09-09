@@ -127,7 +127,7 @@ export default function MonthCalendar({
   const cellPad = dense ? 'px-1 py-2 sm:py-2.5' : 'p-1.5 sm:p-2';
   const cellMinH = dense
     ? 'min-h-[66px] sm:min-h-[78px]'
-    : (weekOf ? 'min-h-[104px] sm:min-h-[170px]' : 'min-h-[70px] sm:min-h-[114px] xl:min-h-[126px]');
+    : (weekOf ? 'min-h-[104px] sm:min-h-[150px]' : 'min-h-[70px] sm:min-h-[118px] xl:min-h-[132px]');
 
   return (
     <>
@@ -167,14 +167,20 @@ export default function MonthCalendar({
             : off ? (dm ? 'rgba(153,27,27,0.4)' : '#FECACA')
             : (dm ? '#2e2e38' : '#ECECF1');
 
-          // Selected has to be unmistakable next to today, which is why it gets
-          // a filled date and a ring rather than one more pale outline. Two
-          // near-identical rose borders is exactly what made "which day am I
-          // looking at" a question worth asking.
-          const border = picked ? '#E05549' : isActive || isToday ? ACCENT : restBorder;
+          // Selected has to be unmistakable NEXT TO today, and it wasn't:
+          // both wore a rose border and today wore the heavier one, so the day
+          // she had just tapped looked like the less important of the two.
+          //
+          // Only the selected day gets the ring now, and today says today from
+          // inside the cell — a ringed date badge in the dense grid, a rose
+          // date in the full one. Two different signals instead of two weights
+          // of the same one.
+          const border = picked ? '#E05549'
+            : isActive ? ACCENT
+            : isToday ? (dm ? '#4a3a42' : '#F0DCE4')
+            : restBorder;
           const ring = picked ? '0 0 0 1px #E05549'
-            : isActive ? `0 0 0 1.5px ${ACCENT}`
-            : isToday ? `0 0 0 1px ${ACCENT}` : 'none';
+            : isActive ? `0 0 0 1.5px ${ACCENT}` : 'none';
 
           const numColor = isActive ? '#fff'
             : off ? OFF_RED
@@ -202,6 +208,7 @@ export default function MonthCalendar({
                 opacity: outside ? 0.5 : 1,
                 background: picked ? (dm ? 'rgba(224,85,73,0.16)' : '#FFF4F2')
                   : off ? (dm ? 'rgba(153,27,27,0.16)' : '#FEF5F4')
+                  : isActive ? (dm ? 'rgba(196,132,154,0.09)' : '#FDF8FA')
                   : (dm ? '#26262e' : '#fff'),
                 border: `1px solid ${border}`,
                 boxShadow: ring,
@@ -264,14 +271,17 @@ export default function MonthCalendar({
                   </div>
 
                   {/* Day off, with the reason she typed. Phones get the ✕ alone. */}
+                  {/* The reason WRAPS. It used to truncate, which turned five
+                      closed days into five cells reading "BOOKSY TIM...", with
+                      the one word that would have explained them cut off. */}
                   {off && (
-                    <div className="flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded-md min-w-0"
+                    <div className="flex items-start gap-1 px-1 sm:px-1.5 py-1 rounded-md min-w-0"
                       style={{ background: dm ? 'rgba(153,27,27,0.3)' : '#FDE4E1' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke={OFF_RED} strokeWidth="4" strokeLinecap="round" className="w-[7px] h-[7px] flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke={OFF_RED} strokeWidth="4" strokeLinecap="round" className="w-[7px] h-[7px] flex-shrink-0 mt-[3px]">
                         <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
                       </svg>
-                      <span className="hidden sm:block text-[0.53rem] font-bold tracking-[0.08em] uppercase truncate"
-                        style={{ color: dm ? '#fca5a5' : '#C0392B' }} title={reason || 'Day off'}>
+                      <span className="hidden sm:block text-[0.53rem] font-bold tracking-[0.06em] uppercase leading-[1.35] min-w-0"
+                        style={{ color: dm ? '#fca5a5' : '#C0392B', overflowWrap: 'anywhere' }} title={reason || 'Day off'}>
                         {reason || 'Day off'}
                       </span>
                     </div>
@@ -302,7 +312,7 @@ export default function MonthCalendar({
                             if (!onEventClick || selectMode) return;
                             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onEventClick(ev); }
                           }}
-                          className="w-full rounded-md text-left transition-colors outline-none flex items-center gap-1.5 px-1.5 py-1"
+                          className="w-full rounded-md text-left transition-colors outline-none px-1.5 py-1"
                           style={{
                             // A dot, not a coloured bar welded to the left edge.
                             background: dm ? '#2e2e38' : '#F5F5F9',
@@ -313,21 +323,33 @@ export default function MonthCalendar({
                           onMouseLeave={e => { e.currentTarget.style.background = dm ? '#2e2e38' : '#F5F5F9'; }}
                           title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
                         >
-                          <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
-                          {startTime(ev.time) && (
-                            <span className="text-[0.62rem] font-semibold tabular-nums flex-shrink-0" style={{ color: dm ? '#8b8b95' : '#8e8e99' }}>
-                              {startTime(ev.time)}
+                          {/* Name on its own line, time under it. Sharing one
+                              line with a time and two badges left the name about
+                              sixty pixels, which is why every client in the grid
+                              read as "Merc...". The name is what makes a day
+                              recognisable, so it gets the width and the rest
+                              goes on the line below. */}
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
+                            <span className="text-[0.68rem] font-medium truncate min-w-0"
+                              style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
+                              {ev.name}
                             </span>
-                          )}
-                          <span className="text-[0.68rem] font-medium truncate flex-1 min-w-0"
-                            style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
-                            {ev.name}
-                            {ev.bridal && <span className="ml-1" style={{ color: '#A0607A' }} title="Bridal">·</span>}
+                            {/* Bridal mark: a drawn dot, so it can't be read
+                                as a full stop typed after the name. */}
+                            {ev.bridal && <span className="w-[3px] h-[3px] rounded-full flex-shrink-0" style={{ background: '#A0607A' }} title="Bridal" />}
                           </span>
-                          {ev.source === 'booksy' && (
-                            <span className="text-[0.5rem] font-bold tracking-[0.06em] uppercase px-1 py-px rounded flex-shrink-0"
-                              style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}>B</span>
-                          )}
+                          <span className="flex items-center gap-1 pl-[13px]">
+                            {startTime(ev.time) && (
+                              <span className="text-[0.6rem] font-semibold tabular-nums" style={{ color: dm ? '#8b8b95' : '#94949e' }}>
+                                {startTime(ev.time)}
+                              </span>
+                            )}
+                            {ev.source === 'booksy' && (
+                              <span className="text-[0.5rem] font-bold tracking-[0.06em] uppercase px-1 py-px rounded flex-shrink-0"
+                                style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}>B</span>
+                            )}
+                          </span>
                         </div>
                       );
                     })}
