@@ -28,6 +28,7 @@ import { NON_BRIDAL_LEAD_DAYS } from '@/lib/bookingLeadTime';
 import { cityFromLocation } from '@/lib/location';
 import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_TOWN } from '@/lib/studio';
+import { TRAVEL_PRICE, TRAVEL_LABEL, TRAVEL_EXPLAINER, TRAVEL_NOTE } from '@/lib/travelPricing';
 
 // Stable stand-in for "counts haven't arrived yet" — see where it's used below.
 const NO_COUNTS = {};
@@ -196,7 +197,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     // row, so it reads as a real field on Roko's side, not as note text.
     const occasionNote = occasion ? ` | Event: ${occasion}` : '';
     const readyByNote = formData.ready_by_time ? ` | Ready by: ${formData.ready_by_time}` : '';
-    const travelNote = hasTravelFee ? ' | ✈️ Travel requested · bridal pricing ($750+) applies' : '';
+    const travelNote = hasTravelFee ? ` | ${TRAVEL_NOTE}` : '';
     const signedContractNote = ` | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`;
     const token = newUploadToken();
     let newBooking;
@@ -269,7 +270,7 @@ export default function BookingModal({ service: initialService, onClose }) {
         readyByTime: formData.ready_by_time,
         occasion,
         notes: formData.notes,
-        estimatedTotal: hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : isEarlyArrival ? earlyTotal : null,
+        estimatedTotal: hasTravelFee && isEarlyArrival ? `${TRAVEL_PRICE} + $100` : hasTravelFee ? TRAVEL_PRICE : isEarlyArrival ? earlyTotal : null,
         contractSignedName: sig.name,
         contractSignedAt: sig.signedAt,
         contractPhotoConsent: sig.photoConsent,
@@ -306,8 +307,8 @@ export default function BookingModal({ service: initialService, onClose }) {
   const stepAnim = `${direction === 'back' ? 'stepInLeft' : 'stepInRight'} 0.4s cubic-bezier(0.22, 1, 0.36, 1)`;
 
   // Pinned footer CTA total (form step)
-  const footerTotal = hasTravelFee && isEarlyArrival ? '$850+'
-    : hasTravelFee ? '$750+'
+  const footerTotal = hasTravelFee && isEarlyArrival ? `${TRAVEL_PRICE} + $100`
+    : hasTravelFee ? TRAVEL_PRICE
     : isEarlyArrival ? earlyTotal
     : service.price;
 
@@ -815,13 +816,13 @@ export default function BookingModal({ service: initialService, onClose }) {
                                 <span className="text-[0.82rem] text-gray-400 line-through">{service.price}</span>
                               </div>
                               <div className="flex items-center justify-between py-2.5">
-                                <span className="text-[0.78rem] font-medium text-[#111]">Roko travels to you</span>
-                                <span className="text-[0.95rem] font-semibold" style={{ color: '#B06883' }}>$750+</span>
+                                <span className="text-[0.78rem] font-medium text-[#111]">{TRAVEL_LABEL}</span>
+                                <span className="text-[0.95rem] font-semibold" style={{ color: '#B06883' }}>{TRAVEL_PRICE}</span>
                               </div>
                             </div>
                             <div className="px-4 py-3" style={{ background: '#FDFBFC', borderTop: '1px solid #F5E8EF' }}>
                               <p className="text-[0.76rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                                On-location appointments are charged at Roko&apos;s travel rate, the same rate as her bridal work, whatever the service. She confirms the exact amount once she has your address.
+                                {TRAVEL_EXPLAINER}
                               </p>
                             </div>
                           </div>
@@ -862,8 +863,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                         )}
                         {hasTravelFee && (
                           <div className={`flex items-center justify-between px-4 py-2.5 bg-[#FBF4F7]${isEarlyArrival ? ' border-b border-[#EDD5E2]' : ''}`}>
-                            <span className="text-[0.72rem] text-[#B0708A]">Bridal pricing applies (travel)</span>
-                            <span className="text-[0.72rem] text-[#B0708A] font-semibold">$750+</span>
+                            <span className="text-[0.72rem] text-[#B0708A]">{TRAVEL_LABEL}</span>
+                            <span className="text-[0.72rem] text-[#B0708A] font-semibold">{TRAVEL_PRICE}</span>
                           </div>
                         )}
                         {isEarlyArrival && (
@@ -876,7 +877,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                           <div className="flex items-center justify-between px-4 py-2.5 bg-white">
                             <span className="text-[0.72rem] text-[#111] font-semibold">Estimated Total</span>
                             <span className="text-[0.72rem] text-[#111] font-bold">
-                              {hasTravelFee ? '$850+' : earlyTotal}
+                              {hasTravelFee ? `${TRAVEL_PRICE} + $100` : earlyTotal}
                             </span>
                           </div>
                         )}
@@ -994,8 +995,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                             and a third time as the estimated total, which reads
                             like three charges rather than one. */}
                         <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
-                          <span className="text-[0.78rem] text-[#888888]">{hasTravelFee ? 'On-location rate' : 'Price'}</span>
-                          <span className="text-[0.82rem] font-semibold text-[#111111]">{hasTravelFee ? '$750+' : service.price}</span>
+                          <span className="text-[0.78rem] text-[#888888]">{hasTravelFee ? TRAVEL_LABEL : 'Price'}</span>
+                          <span className="text-[0.82rem] font-semibold text-[#111111]">{hasTravelFee ? TRAVEL_PRICE : service.price}</span>
                         </div>
                         {isEarlyArrival && (
                           <>
@@ -1006,7 +1007,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                             <div className="flex justify-between py-3 border-b border-[#F5E8EF] bg-[#FDF8FA] -mx-5 px-5">
                               <span className="text-[0.78rem] font-semibold text-[#111111]">Estimated Total</span>
                               <span className="text-[0.82rem] font-bold text-[#111111]">
-                                {hasTravelFee ? '$850+' : earlyTotal}
+                                {hasTravelFee ? `${TRAVEL_PRICE} + $100` : earlyTotal}
                               </span>
                             </div>
                           </>

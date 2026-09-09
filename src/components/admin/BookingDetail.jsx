@@ -19,6 +19,7 @@ import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS, EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
 import { isDepositUnseen, daysSince, shortDateTime } from './depositState';
+import { STUDIO_TOWN } from '@/lib/studio';
 
 // The whole Zelle deposit section, deliberately one line.
 //
@@ -311,6 +312,47 @@ function fmtShort(d) {
 }
 
 // One label/value pair in the bridal details "spec sheet" grid.
+// The one money figure Roko types by hand, and the only thing that can put a
+// number in a travel client's confirmation email. Saved on blur so it behaves
+// like every other quiet field on this card; blank clears it back to null,
+// which returns the email to "Roko will confirm the exact amount".
+function CashDueField({ booking, onUpdateBooking, dm }) {
+  const [draft, setDraft] = useState(booking.cash_due == null ? '' : String(booking.cash_due));
+  useEffect(() => { setDraft(booking.cash_due == null ? '' : String(booking.cash_due)); }, [booking.id, booking.cash_due]);
+
+  const commit = () => {
+    const raw = draft.replace(/[^0-9.]/g, '').trim();
+    const next = raw === '' ? null : Number(raw);
+    if (next !== null && !Number.isFinite(next)) return;
+    if (next === (booking.cash_due == null ? null : Number(booking.cash_due))) return;
+    onUpdateBooking({ cash_due: next });
+  };
+
+  return (
+    <div className="min-w-0">
+      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+        Cash on the day
+      </p>
+      <div className="flex items-center gap-1">
+        <span className="text-[0.86rem]" style={{ color: dm ? '#8f8a93' : '#A89098' }}>$</span>
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          inputMode="decimal"
+          placeholder="not set"
+          className="w-full bg-transparent outline-none text-[0.86rem] font-medium border-b transition-colors"
+          style={{ color: PLUM, borderColor: dm ? '#3a3a48' : '#EFE3E9' }}
+        />
+      </div>
+      <p className="text-[0.62rem] mt-1 leading-snug" style={{ color: dm ? '#6f6a73' : '#B3A7AD' }}>
+        Goes in their confirmation email
+      </p>
+    </div>
+  );
+}
+
 function BField({ label, value, dm, accent = false, href }) {
   if (value === null || value === undefined || value === '') return null;
   const valueColor = accent ? PLUM : (dm ? '#e4e4e7' : '#1E1E27');
@@ -2058,6 +2100,42 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             )}
           </div>
         </div>
+
+        {/* Non-bridal appointment details.
+            A bride's card has a whole panel built from her inquiry; a non-bridal
+            client had nothing but a service name and a couple of chips buried
+            further down, so "what is this booking actually for" was a question
+            you answered by reading a notes string. Same shape as the bridal
+            panel, built from what a non-bridal booking actually carries.
+
+            The cash figure is editable here because this is where Roko settles
+            it. A travel job is priced from $750 and lands wherever the drive
+            puts it, so nothing can compute it, and until she writes it down the
+            client's confirmation email can only say "Roko will confirm the
+            exact amount". Typing it here is what puts a number in that email. */}
+        {!isBridal && (
+          <div className="mb-6 pb-6" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
+            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
+              Appointment Details
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5">
+              <BField dm={dm} label="Service" value={booking.service} />
+              <BField dm={dm} label="Occasion" value={notes.occasion} accent />
+              <BField dm={dm} label="Ready by (requested)" value={notes.readyBy} accent />
+              <BField dm={dm} label="Where" value={booking.location || `Roko's studio · ${STUDIO_TOWN}`} />
+              {notes.flags.map((f, i) => (
+                <BField key={i} dm={dm} label={/early|⏰/i.test(f) ? 'Early arrival' : 'Travel'} value={f} />
+              ))}
+              <CashDueField booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
+            </div>
+            {notes.comment && (
+              <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F5EDF1'}` }}>
+                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>What they told you</p>
+                <p className="text-[0.86rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#e4e4e7' : '#1E1E27' }}>{notes.comment}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Client location (0015). Only shown when there IS one: a blank here
             means a studio appointment or an import with nothing on file, and
