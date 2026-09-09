@@ -31,6 +31,24 @@ import LocationAutocomplete from './LocationAutocomplete';
 // Stable stand-in for "counts haven't arrived yet" — see where it's used below.
 const NO_COUNTS = {};
 
+// What the appointment is actually FOR. Non-bridal covers everything from a
+// henna night to a maternity shoot, and the rest of the form (ready-by times,
+// hairstylist, photographer) reads wedding-ish enough that Roko couldn't tell
+// one booking from another — or tell a deliberate two-event booking from a
+// client double-submitting by mistake. Quick picks, because this has to cost
+// one tap, not a sentence.
+const OCCASIONS = [
+  'Engagement',
+  'Henna / Mehndi',
+  'Nikkah / Walima',
+  'Baby shower',
+  'Photoshoot',
+  'Birthday',
+  'Graduation',
+  'Party / night out',
+  'Other',
+];
+
 // Sized to match the bridal form's fields so non-bridal (photoshoot / other
 // services) inquiries feel just as substantial on desktop, not shrunken.
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
@@ -58,12 +76,17 @@ export default function BookingModal({ service: initialService, onClose }) {
   const [selectedDate, setSelectedDate] = useState(null);
   // Mobile-only focus mode: fold everything but the calendar and the pinned CTA.
   const [calFocus, setCalFocus] = useState(false);
-  const [formData, setFormData] = useState({ fname: '', lname: '', email: '', phone: '', notes: '', early_arrival: null, travel_requested: null, location: '' });
+  const [formData, setFormData] = useState({ fname: '', lname: '', email: '', phone: '', notes: '', early_arrival: null, travel_requested: null, location: '', event_type: '', event_type_other: '' });
   const [newBookingId, setNewBookingId] = useState(null);
   const [uploadToken, setUploadToken] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const isBridal = service.category === 'bridal';
+  // "Other" is only an answer once she's said what it is, so the resolved
+  // occasion is the free text in that case and the picked chip otherwise.
+  const occasion = formData.event_type === 'Other'
+    ? formData.event_type_other.trim()
+    : formData.event_type;
   const isEarlyArrival = formData.early_arrival === true;
   const hasTravelFee = formData.travel_requested === true;
   const contractOverrides = useContractOverrides();
@@ -142,6 +165,7 @@ export default function BookingModal({ service: initialService, onClose }) {
   const handleGoToSign = () => {
     if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
+    if (!occasion) { alert('Please let Roko know what the occasion is.'); return; }
     if (!formData.ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
     if (hasTravelFee && !formData.location?.trim()) { alert('Please add the address or venue Roko should travel to.'); return; }
     goStep('sign');
@@ -155,6 +179,10 @@ export default function BookingModal({ service: initialService, onClose }) {
     if (!sig || !sig.name) { alert('Please sign the agreement to continue.'); return; }
     setSubmitting(true);
     const earlySurcharge = isEarlyArrival ? ' | ⏰ Early arrival surcharge: +$100 (before 7 AM)' : '';
+    // Rides in notes rather than its own column, the same as ready-by and travel
+    // above it. parseBookingNotes in the admin splits it back out into a labelled
+    // row, so it reads as a real field on Roko's side, not as note text.
+    const occasionNote = occasion ? ` | Event: ${occasion}` : '';
     const readyByNote = formData.ready_by_time ? ` | Ready by: ${formData.ready_by_time}` : '';
     const travelNote = hasTravelFee ? ' | ✈️ Travel requested · bridal pricing ($750+) applies' : '';
     const signedContractNote = ` | ✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`;
@@ -168,7 +196,7 @@ export default function BookingModal({ service: initialService, onClose }) {
         service: service.title,
         date: selectedDate,
         time: '',
-        notes: `${formData.notes}${earlySurcharge}${readyByNote}${travelNote}${signedContractNote}`.trim(),
+        notes: `${formData.notes}${occasionNote}${earlySurcharge}${readyByNote}${travelNote}${signedContractNote}`.trim(),
         status: 'pending',
         // Only set for travel bookings. A studio appointment has no client
         // address to record, and writing one would make the admin list claim
@@ -191,7 +219,10 @@ export default function BookingModal({ service: initialService, onClose }) {
     setUploadToken(token);
 
     // Send confirmation email via backend function (keeps payload small, avoids Gmail clipping)
-    const dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    // Year included: this is the last chance the client has to spot a wrong
+    // date, and without it the email confirms "Saturday, April 3" for a booking
+    // that might be a year away.
+    const dateFormatted = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     // Always build the upload link from the stable public production URL, never
     // window.location.origin. A visitor (or owner testing) may submit from a
     // deployment-specific *.vercel.app URL that has Vercel Deployment Protection,
@@ -225,6 +256,7 @@ export default function BookingModal({ service: initialService, onClose }) {
         isEarlyArrival,
         hasTravelFee,
         readyByTime: formData.ready_by_time,
+        occasion,
         notes: formData.notes,
         estimatedTotal: hasTravelFee && isEarlyArrival ? '$850+' : hasTravelFee ? '$750+' : isEarlyArrival ? earlyTotal : null,
         contractSignedName: sig.name,
@@ -268,9 +300,13 @@ export default function BookingModal({ service: initialService, onClose }) {
     : isEarlyArrival ? earlyTotal
     : service.price;
 
+  // The YEAR is not decoration here. A client picked a date a full year out and
+  // never saw it again after the calendar header, because every echo of the date
+  // stopped at the day. It stays in from here to the confirmation email.
   const selectedDateLong = selectedDate
-    ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
+  const selectedYear = selectedDate ? selectedDate.slice(0, 4) : '';
 
   // Filled service agreement for the Review & Sign step.
   const bookingContract = buildContract({
@@ -503,7 +539,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                       getting first call on the near-term calendar. */}
                   <div className={`${calFocus ? 'hidden sm:block' : 'block'} relative z-10 pl-3 mb-4`} style={{ borderLeft: '2px solid #E7C3D1' }}>
                     <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
-                      Bookable at least <strong className="text-[#444] font-semibold">1 month out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</strong>
+                      Bookable at least <strong className="text-[#444] font-semibold">1 month out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
                     </p>
                     <p className="text-[0.72rem] lg:text-[0.76rem] leading-[1.5] text-[#9a918b] mt-1">
                       Roko keeps the next few weeks open for brides.
@@ -574,6 +610,46 @@ export default function BookingModal({ service: initialService, onClose }) {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><polyline points="9 18 15 12 9 6"/></svg>
                     </span>
                   </button>
+
+                  {/* What the appointment is FOR — asked before anything else,
+                      because it frames every answer under it. Sits above "Your
+                      Details" rather than inside it: an occasion isn't a personal
+                      detail, it's what the booking is. */}
+                  <div className="mb-7 relative pl-3.5">
+                    <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
+                    <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: '#C4849A' }}>What&apos;s the occasion? *</label>
+                    <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mb-3 leading-[1.6]">
+                      So Roko knows what she&apos;s getting you ready for.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {OCCASIONS.map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => setFormData({ ...formData, event_type: opt, ...(opt === 'Other' ? {} : { event_type_other: '' }) })}
+                          className={`px-3.5 py-2 rounded-full text-[0.78rem] font-medium border transition-all ${
+                            formData.event_type === opt
+                              ? 'bg-[#111] text-white border-[#111]'
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                    {formData.event_type === 'Other' && (
+                      <div className="mt-4">
+                        <label className={labelClass}>Tell Roko what it&apos;s for *</label>
+                        <input
+                          value={formData.event_type_other}
+                          onChange={e => setFormData({ ...formData, event_type_other: e.target.value })}
+                          placeholder="Anniversary dinner, headshots, prom…"
+                          className={inputClass}
+                        />
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mb-5">
                     <h3 className="font-serif text-[1.7rem] lg:text-[1.9rem] text-[#111] mb-1 leading-tight">Your <em className="text-[#D4A0B0] not-italic">Details</em></h3>
@@ -752,6 +828,18 @@ export default function BookingModal({ service: initialService, onClose }) {
                   submitting={submitting}
                   ctaLabel="Sign & Confirm Booking"
                   busyLabel="Confirming your booking…"
+                  confirmSummary={{
+                    date: selectedDateLong,
+                    year: selectedYear,
+                    service: service.title,
+                    rows: [
+                      { label: 'Service', value: service.title },
+                      { label: 'Occasion', value: occasion },
+                      { label: 'Ready by', value: formData.ready_by_time },
+                      { label: 'Where', value: hasTravelFee ? (formData.location || 'Roko travels to you') : "Roko's studio, Mountain House" },
+                    ],
+                    confirmLabel: 'Yes, confirm this booking',
+                  }}
                   onSign={handleSubmit}
                 />
               )}
@@ -856,10 +944,16 @@ export default function BookingModal({ service: initialService, onClose }) {
                             </span>
                           </div>
                         )}
+                        {occasion && (
+                          <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
+                            <span className="text-[0.78rem] text-[#888888]">Occasion</span>
+                            <span className="text-[0.82rem] font-semibold text-[#111111] truncate ml-4 text-right">{occasion}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between py-3 border-b border-[#F5E8EF]">
                           <span className="text-[0.78rem] text-[#888888]">Requested Date</span>
                           <span className="text-[0.82rem] font-semibold text-[#111111]">
-                            {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>
                         <div className="flex justify-between py-3">
