@@ -17,6 +17,9 @@ import ConfirmBookingDialog from './ConfirmBookingDialog';
 //                 present, signing opens that dialog instead of submitting
 //                 straight away. Every flow that books a real date passes it;
 //                 see ConfirmBookingDialog for why.
+//   onEdit      - where "no, let me change it" goes. Someone who says the date is
+//                 wrong needs the form back, not the agreement they were already
+//                 looking at, so the flow hands us its own step navigation.
 //   onSign      - ({ name, photoConsent, signedAt, version }) => void
 export default function ContractSign({
   contract,
@@ -25,6 +28,7 @@ export default function ContractSign({
   ctaLabel = 'Sign & Confirm Booking',
   busyLabel = 'Submitting…',
   confirmSummary = null,
+  onEdit,
   onSign,
 }) {
   const [name, setName] = useState(clientName || '');
@@ -175,19 +179,11 @@ export default function ContractSign({
         </span>
       </button>
 
-      {/* Standing reminder, right where the thumb already is. The dialog below
-          is the hard stop; this is the quiet one that gets read on the way in. */}
-      {confirmSummary?.date && (
-        <div className="mb-4 relative pl-3.5">
-          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-          <p className="text-[0.78rem] leading-[1.6]" style={{ color: '#6E6058' }}>
-            Please double-check the <strong style={{ color: '#4A423E' }}>date and year</strong> before you send:{' '}
-            <strong style={{ color: '#4A423E' }}>{confirmSummary.date}</strong>
-          </p>
-        </div>
-      )}
+      {/* No standing "check your date" line here. The dialog that opens on the
+          button below already stops them with the date in full, and a warning
+          nobody has to act on is just another line to scroll past.
 
-      {/* While saving, the button keeps its dark treatment and becomes its own
+          While saving, the button keeps its dark treatment and becomes its own
           progress indicator via .btn-busy (a rose sheen sweeping across it).
           Falling through to the gray disabled style here would read as "broken"
           at the exact moment the client is waiting on us. The label sits above
@@ -227,9 +223,10 @@ export default function ContractSign({
           busyLabel={busyLabel}
           submitting={submitting}
           onConfirm={doSign}
-          // Backing out returns her to the signature step with everything she
-          // typed intact, so "let me change it" costs her nothing.
-          onCancel={() => setConfirming(false)}
+          // "Let me change it" means the details are wrong, so it goes back to
+          // the form rather than dropping her on the agreement she just read.
+          // Everything she typed is still there, signature included.
+          onCancel={() => { setConfirming(false); onEdit?.(); }}
         />
       )}
     </div>

@@ -39,6 +39,27 @@ export function useModalLenis(ref) {
     });
     wrapper.__modalLenis = lenis;
 
+    // Lenis only watches the ONE element it was handed as `content`, and a modal
+    // scroller has several children (identity strip, price strip, step body).
+    // So when a form grew — answering "travel to me" unfolds an explainer, an
+    // address field and a price breakdown — the child that grew wasn't the one
+    // being observed, the cached scroll height stayed at its old value, and the
+    // sheet refused to scroll past where the content used to end. That was the
+    // "I can't scroll past the travel question" bug.
+    //
+    // Watch every direct child instead, and re-subscribe when the set of
+    // children changes (steps swap whole subtrees in and out). Any growth deeper
+    // in the tree still changes a direct child's height, so this catches it.
+    const ro = new ResizeObserver(() => lenis.resize());
+    const watchChildren = () => {
+      ro.disconnect();
+      ro.observe(wrapper);
+      for (const child of wrapper.children) ro.observe(child);
+    };
+    watchChildren();
+    const mo = new MutationObserver(() => { watchChildren(); lenis.resize(); });
+    mo.observe(wrapper, { childList: true });
+
     let raf = 0;
     const loop = (time) => {
       lenis.raf(time);
@@ -48,6 +69,8 @@ export function useModalLenis(ref) {
 
     return () => {
       cancelAnimationFrame(raf);
+      ro.disconnect();
+      mo.disconnect();
       delete wrapper.__modalLenis;
       lenis.destroy();
     };
