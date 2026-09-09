@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg, regTotal, startWindows } from '@/lib/classCatalog';
 import { STUDIO_DISPLAY, STUDIO_MAPS_URL } from '@/lib/studio';
+import ConfirmDialog from './ConfirmDialog';
 import { Check, Cross, Undo } from './Glyphs';
 import { FORMAT_META } from './ClassRegistrationsList';
 import { parseRange } from '@/lib/timeWindow';
@@ -535,41 +536,23 @@ function normalizePaymentStatus(raw) {
   return 'unpaid';
 }
 
+// The registration card's confirmations run through the shared dialog, so a
+// "cancel this class?" here looks like a "cancel this appointment?" on the
+// booking card. `modal.color` used to double as the button colour; tone now
+// says destructive-or-not and the dialog owns the palette.
 function ConfirmModal({ modal, onCancel, onConfirm, dm }) {
   if (!modal) return null;
   return (
-    <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}
-      onClick={onCancel}
-    >
-      <div
-        className="rounded-xl shadow-2xl p-7 max-w-[340px] w-full text-center"
-        style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="w-10 h-10 rounded-full mx-auto mb-4 flex items-center justify-center"
-          style={{ background: modal.color + '22', border: `1.5px solid ${modal.color}44` }}>
-          {modal.icon === 'cross' ? <Cross className="w-4 h-4" strokeWidth={3} style={{ color: modal.color }} />
-            : modal.icon === 'undo' ? <Undo className="w-4 h-4" strokeWidth={2.2} style={{ color: modal.color }} />
-            : <Check className="w-4 h-4" strokeWidth={3} style={{ color: modal.color }} />}
-        </div>
-        <p className="text-[1.05rem] font-serif mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>{modal.title}</p>
-        <p className="text-[0.78rem] mb-6" style={{ color: dm ? '#8e8e99' : '#999' }}>{modal.body}</p>
-        <div className="flex gap-3 justify-center">
-          <button onClick={onCancel}
-            className="px-5 py-2 text-[0.75rem] font-medium rounded-lg transition-all"
-            style={{ color: dm ? '#a1a1aa' : '#777', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
-            Never Mind
-          </button>
-          <button onClick={onConfirm}
-            className="px-5 py-2 text-[0.75rem] font-semibold text-white rounded-lg"
-            style={{ background: modal.color }}>
-            {modal.confirmLabel || 'Yes, Update'}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      dm={dm}
+      tone={modal.icon === 'cross' ? 'danger' : 'default'}
+      icon={modal.icon || 'check'}
+      title={modal.title}
+      body={modal.body}
+      confirmLabel={modal.confirmLabel || 'Yes, update'}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
   );
 }
 

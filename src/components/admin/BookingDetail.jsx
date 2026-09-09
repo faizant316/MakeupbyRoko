@@ -13,6 +13,7 @@ import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 import { Check, Cross } from './Glyphs';
+import ConfirmDialog from './ConfirmDialog';
 import ScheduleView from './ScheduleView';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
@@ -2227,17 +2228,22 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   My Schedule
                 </button>
-                {/* Clear. She asked for this to stand on its own rather than
-                    only existing inside the picker: a time can go on by mistake
-                    and the fix is "there shouldn't be one", not "pick another". */}
+                {/* Clear. It stands on its own rather than only existing
+                    inside the picker: a time can go on by mistake and the fix
+                    is "there shouldn't be one", not "pick another".
+                    Icon only, because a labelled pill made a small corrective
+                    action look like a third headline button and, on a phone,
+                    took a quarter of the row to say a word she doesn't need
+                    read to her every time she opens the card. */}
                 {!showTimePicker && booking.time && (
-                  <button type="button" onClick={clearTime} title="Remove the time from this appointment"
-                    className="inline-flex items-center gap-1.5 h-9 sm:h-[30px] px-3 sm:px-2.5 rounded-full text-[0.78rem] font-medium whitespace-nowrap transition-colors flex-shrink-0"
-                    style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-3.5 h-3.5 flex-shrink-0">
+                  <button type="button" onClick={clearTime} aria-label="Clear the time" title="Clear the time"
+                    className="inline-flex items-center justify-center w-9 h-9 sm:w-[30px] sm:h-[30px] rounded-full transition-colors flex-shrink-0 active:scale-90"
+                    style={{ background: 'transparent', color: dm ? '#8e8e99' : '#a3a3ad', border: `1px solid ${dm ? '#3a3a48' : '#E9E9EF'}` }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#C4849A'; e.currentTarget.style.borderColor = dm ? '#5c4550' : '#EAD3DC'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = dm ? '#8e8e99' : '#a3a3ad'; e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E9E9EF'; }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="w-[15px] h-[15px]">
                       <circle cx="12" cy="12" r="9" /><line x1="8.6" y1="8.6" x2="15.4" y2="15.4" />
                     </svg>
-                    Clear<span className="hidden sm:inline">&nbsp;time</span>
                   </button>
                 )}
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
@@ -2262,26 +2268,26 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 just changed, not a toast that's already gone by the time she
                 realises she picked the wrong hour. */}
             {undoTime && !showTimePicker && (
-              <div className="flex items-center gap-2.5 px-4 py-2.5"
-                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}`, background: dm ? '#232329' : '#FAF7F8' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#8f8a93' : '#A89098'} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
+              <div className="flex items-center gap-2 px-4 py-2"
+                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}`, background: dm ? '#232329' : '#FBF8F9' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#7d7881' : '#B7A9AF'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0">
                   <polyline points="9 14 4 9 9 4" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" />
                 </svg>
-                <p className="text-[0.72rem] leading-snug flex-1 min-w-0" style={{ color: dm ? '#a8a2ab' : '#8b7f85' }}>
+                <p className="text-[0.7rem] leading-snug flex-1 min-w-0 truncate" style={{ color: dm ? '#9a949d' : '#988c92' }}>
                   Was {undoWasLabel}
                   {undoTime.emailed && <span> · {firstName} was emailed the new time</span>}
                 </p>
                 <button type="button" onClick={undoTimeChange}
-                  className="flex-shrink-0 h-7 px-3 rounded-full text-[0.74rem] font-semibold transition-colors active:scale-95"
-                  style={{ background: dm ? '#3a3a48' : '#fff', color: dm ? '#e4e4e7' : '#6B4055', border: `1px solid ${dm ? '#4a4a58' : '#e2cdd6'}` }}>
+                  className="flex-shrink-0 text-[0.72rem] font-semibold transition-opacity hover:opacity-70 active:scale-95"
+                  style={{ color: '#A0607A' }}>
                   Undo
                 </button>
                 {/* Dismiss: she's happy with the change and doesn't want the row
                     sitting there for the rest of the day. */}
                 <button type="button" onClick={() => { setUndoTime(null); clearUndo(booking.id); }} aria-label="Dismiss"
-                  className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full transition-colors active:scale-90"
-                  style={{ color: dm ? '#7a7480' : '#b3a8ae' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full transition-colors active:scale-90"
+                  style={{ color: dm ? '#6b656f' : '#c2b7bc' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
             )}
@@ -3354,104 +3360,77 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       )}
 
       {/* Status change confirmation */}
-      {pendingStatus && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4" style={{ background: dm ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)', backdropFilter: 'blur(7px)' }}>
-          <div className="rounded-[26px] p-8 max-w-[380px] w-full text-center"
-            style={{
-              background: dm ? '#26262b' : '#fff',
-              border: `1px solid ${dm ? '#3a3a42' : '#ededf0'}`,
-              boxShadow: dm ? '0 26px 64px rgba(0,0,0,0.55)' : '0 26px 64px rgba(0,0,0,0.14)',
-              animation: 'fadeSlideDown 0.25s ease-out',
-            }}>
-            {(() => {
-              const isReconfirm = pendingStatus === 'reconfirm';
-              const statusKey = isReconfirm ? 'confirmed' : pendingStatus;
-              const accent = STATUS_COLORS[statusKey];
-              return (
-                <>
-                  <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
-                    style={{ background: accent + '1f', border: `1.5px solid ${accent}3d` }}>
-                    <span style={{ color: accent, fontSize: '18px', fontWeight: 700, lineHeight: 1 }}>
-                      {statusKey === 'cancelled' ? <Cross className="w-3 h-3" strokeWidth={3.2} /> : <Check className="w-3 h-3" strokeWidth={3.2} />}
-                    </span>
+      {pendingStatus && (() => {
+        const isReconfirm = pendingStatus === 'reconfirm';
+        const statusKey = isReconfirm ? 'confirmed' : pendingStatus;
+        const cancelling = statusKey === 'cancelled';
+        return (
+          <ConfirmDialog
+            dm={dm}
+            tone={cancelling ? 'danger' : 'default'}
+            icon={cancelling ? 'cross' : 'check'}
+            title={isReconfirm ? 'Reconfirm appointment?' : cancelling ? 'Cancel this appointment?' : `Mark as ${statusKey}?`}
+            body={isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
+              : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
+              : cancelling ? 'A cancellation email will be sent to the client. Add an optional reason below.'
+              : statusKey === 'completed' ? 'This will archive the appointment as complete.'
+              : 'This will update the appointment status.'}
+            confirmLabel={isReconfirm ? 'Yes, reconfirm' : cancelling ? 'Yes, cancel it' : 'Yes, update'}
+            onCancel={() => setPendingStatus(null)}
+            onConfirm={executeStatusChange}
+          >
+            {cancelling && (
+              <>
+                <div className="flex items-center justify-between mb-2.5">
+                  <div>
+                    <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
+                      REASON FOR THE CLIENT
+                    </p>
+                    <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
+                      {includeReason ? 'Optional. On, added to their email.' : 'Optional. Off, no reason sent.'}
+                    </p>
                   </div>
-                  <p className="text-[1.18rem] font-serif mb-2" style={{ color: dm ? '#ececf0' : '#1b1519' }}>
-                    {isReconfirm ? 'Reconfirm appointment?' : statusKey === 'cancelled' ? 'Cancel this appointment?' : `Mark as ${statusKey}?`}
+                  <button type="button" onClick={() => setIncludeReason(v => !v)}
+                    aria-pressed={includeReason}
+                    className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
+                    style={{ background: includeReason ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
+                    <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
+                      style={{ background: '#fff', transform: includeReason ? 'translateX(20px)' : 'translateX(0px)' }} />
+                  </button>
+                </div>
+                {includeReason ? (
+                  <>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      onFocus={() => setReasonFocus(true)}
+                      onBlur={() => setReasonFocus(false)}
+                      rows={3}
+                      placeholder={DEFAULT_CANCEL_REASON}
+                      className="w-full text-[0.85rem] leading-relaxed rounded-[16px] px-3.5 py-3 resize-none outline-none"
+                      style={{
+                        background: dm ? '#1f1f24' : '#FBF7F8',
+                        color: dm ? '#e8e8ec' : '#3a3238',
+                        border: `1px solid ${reasonFocus ? (dm ? '#C4849A' : '#D4A0B0') : (dm ? '#3a3a42' : '#ECE0E4')}`,
+                        boxShadow: reasonFocus ? `0 0 0 3px ${dm ? 'rgba(196,132,154,0.16)' : 'rgba(212,160,176,0.16)'}` : 'none',
+                        transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
+                      }}
+                    />
+                    <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
+                      This appears in their email. Edit it, or leave it as is.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[0.75rem] leading-snug rounded-[16px] px-3.5 py-3"
+                    style={{ background: dm ? '#1f1f24' : '#FBF7F8', border: `1px dashed ${dm ? '#3a3a42' : '#ECE0E4'}`, color: dm ? '#8f8f99' : '#a99ca1' }}>
+                    No reason will be included. The email still reads warmly, just without a specific reason.
                   </p>
-                  <p className="text-[0.82rem] leading-relaxed mb-6 mx-auto max-w-[300px]" style={{ color: dm ? '#8f8f99' : '#9a8d92' }}>
-                    {isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
-                     : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
-                     : statusKey === 'cancelled' ? 'A cancellation email will be sent to the client. Add an optional reason below.'
-                     : statusKey === 'completed' ? 'This will archive the appointment as complete.'
-                     : 'This will update the appointment status.'}
-                  </p>
-                  {statusKey === 'cancelled' && (
-                    <div className="text-left mb-6">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div>
-                          <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
-                            REASON FOR THE CLIENT
-                          </p>
-                          <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
-                            {includeReason ? 'Optional. On, added to their email.' : 'Optional. Off, no reason sent.'}
-                          </p>
-                        </div>
-                        <button type="button" onClick={() => setIncludeReason(v => !v)}
-                          aria-pressed={includeReason}
-                          className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
-                          style={{ background: includeReason ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
-                          <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
-                            style={{ background: '#fff', transform: includeReason ? 'translateX(20px)' : 'translateX(0px)' }} />
-                        </button>
-                      </div>
-                      {includeReason ? (
-                        <>
-                          <textarea
-                            value={cancelReason}
-                            onChange={(e) => setCancelReason(e.target.value)}
-                            onFocus={() => setReasonFocus(true)}
-                            onBlur={() => setReasonFocus(false)}
-                            rows={3}
-                            placeholder={DEFAULT_CANCEL_REASON}
-                            className="w-full text-[0.85rem] leading-relaxed rounded-[16px] px-3.5 py-3 resize-none outline-none"
-                            style={{
-                              background: dm ? '#1f1f24' : '#FBF7F8',
-                              color: dm ? '#e8e8ec' : '#3a3238',
-                              border: `1px solid ${reasonFocus ? (dm ? '#C4849A' : '#D4A0B0') : (dm ? '#3a3a42' : '#ECE0E4')}`,
-                              boxShadow: reasonFocus ? `0 0 0 3px ${dm ? 'rgba(196,132,154,0.16)' : 'rgba(212,160,176,0.16)'}` : 'none',
-                              transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
-                            }}
-                          />
-                          <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
-                            This appears in their email. Edit it, or leave it as is.
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-[0.75rem] leading-snug rounded-[16px] px-3.5 py-3"
-                          style={{ background: dm ? '#1f1f24' : '#FBF7F8', border: `1px dashed ${dm ? '#3a3a42' : '#ECE0E4'}`, color: dm ? '#8f8f99' : '#a99ca1' }}>
-                          No reason will be included. The email still reads warmly, just without a specific reason.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex gap-3 justify-center">
-                    <button onClick={() => setPendingStatus(null)}
-                      className="px-6 py-2.5 text-[0.8rem] font-medium rounded-full transition-all"
-                      style={{ color: dm ? '#a1a1aa' : '#8a8188', border: `1px solid ${dm ? '#3f3f46' : '#EAE2E5'}`, background: dm ? 'transparent' : '#fff' }}>
-                      Never Mind
-                    </button>
-                    <button onClick={executeStatusChange}
-                      className="px-6 py-2.5 text-[0.8rem] font-semibold text-white rounded-full transition-all"
-                      style={{ background: accent, boxShadow: `0 8px 20px ${accent}40` }}>
-                      {isReconfirm ? 'Yes, Reconfirm' : statusKey === 'cancelled' ? 'Yes, Cancel' : 'Yes, Update'}
-                    </button>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+                )}
+              </>
+            )}
+          </ConfirmDialog>
+        );
+      })()}
 
       {/* Celebration confetti only */}
 
