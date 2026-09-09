@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ConfirmBookingDialog from './ConfirmBookingDialog';
 
 // Reusable "Review & Sign" step. Flow-agnostic: pass in a built contract
 // object (from buildContract) and get back the signature via onSign.
@@ -12,6 +13,10 @@ import { useState } from 'react';
 //   ctaLabel    - button text (default "Sign & Confirm Booking")
 //   busyLabel   - button text while submitting; say what is happening, since this
 //                 is the longest wait in the flow (money + a date are on the line)
+//   confirmSummary - { date, year, service, rows } for the last-look dialog. When
+//                 present, signing opens that dialog instead of submitting
+//                 straight away. Every flow that books a real date passes it;
+//                 see ConfirmBookingDialog for why.
 //   onSign      - ({ name, photoConsent, signedAt, version }) => void
 export default function ContractSign({
   contract,
@@ -19,11 +24,13 @@ export default function ContractSign({
   submitting = false,
   ctaLabel = 'Sign & Confirm Booking',
   busyLabel = 'Submitting…',
+  confirmSummary = null,
   onSign,
 }) {
   const [name, setName] = useState(clientName || '');
   const [photoConsent, setPhotoConsent] = useState(null); // null | true | false
   const [agreed, setAgreed] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const nameOk = name.trim().length >= 2;
   const consentChosen = photoConsent === true || photoConsent === false;
@@ -34,14 +41,21 @@ export default function ContractSign({
     month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
   });
 
-  const submit = () => {
-    if (!canSign) return;
+  const doSign = () => {
     onSign({
       name: name.trim(),
       photoConsent,
       signedAt: now.toISOString(),
       version: contract.version,
     });
+  };
+
+  // The signature button no longer submits directly when there's a date to
+  // re-check: it opens the last-look dialog, and that dialog submits.
+  const submit = () => {
+    if (!canSign) return;
+    if (confirmSummary) { setConfirming(true); return; }
+    doSign();
   };
 
   return (
@@ -161,6 +175,18 @@ export default function ContractSign({
         </span>
       </button>
 
+      {/* Standing reminder, right where the thumb already is. The dialog below
+          is the hard stop; this is the quiet one that gets read on the way in. */}
+      {confirmSummary?.date && (
+        <div className="mb-4 relative pl-3.5">
+          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+          <p className="text-[0.78rem] leading-[1.6]" style={{ color: '#6E6058' }}>
+            Please double-check the <strong style={{ color: '#4A423E' }}>date and year</strong> before you send:{' '}
+            <strong style={{ color: '#4A423E' }}>{confirmSummary.date}</strong>
+          </p>
+        </div>
+      )}
+
       {/* While saving, the button keeps its dark treatment and becomes its own
           progress indicator via .btn-busy (a rose sheen sweeping across it).
           Falling through to the gray disabled style here would read as "broken"
@@ -189,6 +215,22 @@ export default function ContractSign({
             : !agreed ? 'Check the box to agree'
             : ''}
         </p>
+      )}
+
+      {confirming && (
+        <ConfirmBookingDialog
+          date={confirmSummary.date}
+          year={confirmSummary.year}
+          service={confirmSummary.service}
+          rows={confirmSummary.rows}
+          confirmLabel={confirmSummary.confirmLabel || 'Yes, this is correct'}
+          busyLabel={busyLabel}
+          submitting={submitting}
+          onConfirm={doSign}
+          // Backing out returns her to the signature step with everything she
+          // typed intact, so "let me change it" costs her nothing.
+          onCancel={() => setConfirming(false)}
+        />
       )}
     </div>
   );
