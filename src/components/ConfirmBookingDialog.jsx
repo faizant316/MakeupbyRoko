@@ -87,7 +87,7 @@ export default function ConfirmBookingDialog({
           {/* The date, restated large. The year gets its own line under it
               because a mis-picked year is the exact mistake this exists to
               catch, and it hides inside a long date string. */}
-          <div className="rounded-2xl border border-[#EFDDE6] bg-[#FDFBFC] px-5 py-4 text-center mb-3">
+          <div className={`rounded-2xl border border-[#EFDDE6] bg-[#FDFBFC] px-5 py-4 text-center ${facts.length > 0 ? 'mb-3' : 'mb-5'}`}>
             <p className="text-[0.55rem] font-bold tracking-[0.18em] uppercase text-[#C4A9B7] mb-1.5">Your requested date</p>
             <p className="font-serif text-[1.15rem] leading-snug text-[#111]">{date}</p>
             {year && (
@@ -108,8 +108,6 @@ export default function ConfirmBookingDialog({
               ))}
             </dl>
           )}
-
-          {service && facts.length === 0 && <div className="mb-5" />}
 
           <div className="flex flex-col gap-2.5">
             <button
