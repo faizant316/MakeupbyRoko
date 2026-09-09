@@ -2,6 +2,7 @@ import StatusBadge from './StatusBadge';
 import { relativeDate } from './timeline';
 import { depositState, depositTone } from './depositState';
 import { openZoomRoom } from '@/lib/zoomHost';
+import { bookingOccasion } from './bookingNotes';
 
 // A consultation or a class rendered in the same list as the appointments. The
 // tag is what tells them apart; everything else about the row stays identical,
@@ -53,6 +54,7 @@ export default function BookingRow({
   // whichever list is rendering us. City first, then the street, so scanning a
   // day tells her where she is going before it tells her the house number.
   const locationCity = booking.location_city;
+  const occasion = bookingOccasion(booking.notes);
   // First segment of the address is the street, which is all that fits and all
   // that adds anything once the city is already shown.
   const locationStreet = booking.location?.split(',')[0]?.trim();
@@ -178,8 +180,18 @@ export default function BookingRow({
             </span>
           )}
         </div>
+        {/* Service, then what it's for. Two non-bridal bookings from the same
+            client used to be the same line twice over, which is how a deliberate
+            two-event booking and an accidental double-submit became impossible
+            to tell apart from the list. The occasion is what separates them. */}
         <p className="text-[0.72rem] truncate mt-0.5" style={{ color: mutedColor }}>
           {agendaLabel || booking.service || 'Service not set'}
+          {!agenda && occasion && (
+            <>
+              <span style={{ opacity: 0.45 }}> · </span>
+              <span style={{ color: dm ? '#e5aec0' : '#B0708A', fontWeight: 500 }}>{occasion}</span>
+            </>
+          )}
         </p>
         {/* Where she's driving, on the row itself. Before this the only way to
             find out was opening the card, which is useless for the actual

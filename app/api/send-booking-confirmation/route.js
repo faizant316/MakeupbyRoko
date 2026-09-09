@@ -26,7 +26,7 @@ export async function POST(req) {
     const body = await req.json();
     const {
       bookingId, bookingType, to, firstName, lastName, serviceName, servicePrice, serviceDeposit,
-      dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, notes,
+      dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, occasion, notes,
       bridalTitle, bridalDeposit, bridalPrice, bridalRemaining, bridalDateFormatted, makeupReadyByTime,
       phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
       photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, weddingDate, additionalDetails, howHeard,
@@ -80,7 +80,7 @@ export async function POST(req) {
           hairstylistArriveBy: readyByTime, makeupReadyByTime, photographerArrival, photographer, hairstylist,
           additionalDetails, contractSection,
         })
-      : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection });
+      : bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, occasion, contractSection });
 
     // Every subject carries the date. Gmail threads messages that share a
     // subject line and then hides the repeated part of the body behind a "..."
@@ -105,7 +105,7 @@ export async function POST(req) {
       : adminBookingEmail({
           name: clientName,
           service: serviceName, date: dateFormatted, email: recipient, phone,
-          servicePrice, deposit: serviceDeposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes,
+          servicePrice, deposit: serviceDeposit, readyByTime, occasion, isEarlyArrival, hasTravelFee, estimatedTotal, notes,
           contractSignedName, contractSignedAt, contractPhotoConsent,
         });
 

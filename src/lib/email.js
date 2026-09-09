@@ -448,10 +448,11 @@ export async function sendEmailPair(emails) {
   await Promise.allSettled(emails.map(e => sendEmail(e)));
 }
 
-export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, contractSection = '' }) {
+export function bookingConfirmationEmail({ firstName, serviceName, servicePrice, serviceDeposit, dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, occasion, contractSection = '' }) {
   const basePrice = hasTravelFee ? '$750+' : servicePrice;
   const summaryRows = [
     crow('Service', serviceName),
+    occasion ? crow('Occasion', occasion) : '',
     crow('Date', dateFormatted),
     readyByTime ? crow('Ready by', readyByTime) : '',
     crow('Base price', basePrice),
@@ -991,9 +992,12 @@ export function adminClassPaymentEmail({ reg, classes = [], totalPaid, formatLab
   `);
 }
 
-export function adminBookingEmail({ name, service, date, email, phone, servicePrice, deposit, readyByTime, isEarlyArrival, hasTravelFee, estimatedTotal, notes, contractSignedName, contractSignedAt, contractPhotoConsent }) {
+export function adminBookingEmail({ name, service, date, email, phone, servicePrice, deposit, readyByTime, occasion, isEarlyArrival, hasTravelFee, estimatedTotal, notes, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const bookingRows = [
     row('Service', `<strong style="color:#C4849A;">${service}</strong>`),
+    // What the appointment is for, right under the service. Two bookings from
+    // one client are only tellable apart by this line.
+    occasion ? row('Occasion', `<strong style="color:#C4849A;">${occasion}</strong>`) : '',
     row('Requested Date', `<strong>${date}</strong>`),
     readyByTime ? row('Ready by (preference)', readyByTime) : '',
     row('Location', hasTravelFee ? '✈️ Travel to client' : "Roko's studio", hasTravelFee ? '#C4849A' : '#111111'),

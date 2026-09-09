@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import StatusBadge from './StatusBadge';
 import { timeAgo, shortDate } from './depositState';
 import { localDateKey } from './todayItems';
+import { bookingOccasion } from './bookingNotes';
 
 // "Did anyone book?" and "who booked a couple of days ago?" are the same
 // question asked at two different distances, so this answers both.
@@ -121,7 +122,7 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, d
     return `booked ${shortDate(iso)}`;
   };
 
-  const matches = (b) => !search || [b.name, b.service, b.email].some(f => f?.toLowerCase().includes(search.toLowerCase()));
+  const matches = (b) => !search || [b.name, b.service, b.email, bookingOccasion(b.notes)].some(f => f?.toLowerCase().includes(search.toLowerCase()));
   const shown = recent.filter(matches);
   const grouped = GROUPS
     .map(([key, label]) => ({ key, label, rows: shown.filter(b => bucketOf(b) === key) }))
@@ -243,6 +244,9 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, d
                     <p className="text-[0.875rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.name}</p>
                     <p className="text-[0.72rem] truncate mt-0.5" style={{ color: dm ? '#8e8e99' : '#a3a3ad' }}>
                       {b.service}
+                      {bookingOccasion(b.notes) && (
+                        <span style={{ color: dm ? '#e5aec0' : '#B0708A' }}>{' · '}{bookingOccasion(b.notes)}</span>
+                      )}
                       {b.date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{' · '}{new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                     </p>
                   </div>
