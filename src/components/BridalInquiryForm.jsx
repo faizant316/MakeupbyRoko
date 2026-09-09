@@ -1470,6 +1470,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 ],
                 confirmLabel: 'Yes, send my inquiry',
               }}
+              onEdit={() => goStep('form', 'back')}
               onSign={handleSubmit}
             />
           </div>

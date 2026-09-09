@@ -27,6 +27,7 @@ import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
 import { NON_BRIDAL_LEAD_DAYS } from '@/lib/bookingLeadTime';
 import { cityFromLocation } from '@/lib/location';
 import LocationAutocomplete from './LocationAutocomplete';
+import { STUDIO_TOWN } from '@/lib/studio';
 
 // Stable stand-in for "counts haven't arrived yet" — see where it's used below.
 const NO_COUNTS = {};
@@ -166,6 +167,7 @@ export default function BookingModal({ service: initialService, onClose }) {
     if (!formData.fname || !formData.lname || !formData.email) { alert('Please fill in required fields.'); return; }
     if (!selectedDate) { alert('Please select a date.'); return; }
     if (!occasion) { alert('Please let Roko know what the occasion is.'); return; }
+    if (formData.travel_requested == null) { alert('Please choose where the appointment should be.'); return; }
     if (!formData.ready_by_time) { alert('Please select what time you\'d like to be ready by.'); return; }
     if (hasTravelFee && !formData.location?.trim()) { alert('Please add the address or venue Roko should travel to.'); return; }
     goStep('sign');
@@ -614,40 +616,42 @@ export default function BookingModal({ service: initialService, onClose }) {
                   {/* What the appointment is FOR — asked before anything else,
                       because it frames every answer under it. Sits above "Your
                       Details" rather than inside it: an occasion isn't a personal
-                      detail, it's what the booking is. */}
-                  <div className="mb-7 relative pl-3.5">
-                    <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-                    <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-1" style={{ color: '#C4849A' }}>What&apos;s the occasion? *</label>
-                    <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mb-3 leading-[1.6]">
-                      So Roko knows what she&apos;s getting you ready for.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {OCCASIONS.map(opt => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => setFormData({ ...formData, event_type: opt, ...(opt === 'Other' ? {} : { event_type_other: '' }) })}
-                          className={`px-3.5 py-2 rounded-full text-[0.78rem] font-medium border transition-all ${
-                            formData.event_type === opt
-                              ? 'bg-[#111] text-white border-[#111]'
-                              : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
+                      detail, it's what the booking is.
+                      An even grid, not a ragged wrap: nine options set loose on a
+                      flex-wrap break into uneven rows that read as clutter. Two
+                      columns on a phone, three on a desktop, everything aligned. */}
+                  <div className="mb-8">
+                    <label className={labelClass}>What&apos;s the occasion? *</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {OCCASIONS.map(opt => {
+                        const active = formData.event_type === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => setFormData({ ...formData, event_type: opt, ...(opt === 'Other' ? {} : { event_type_other: '' }) })}
+                            className={`relative flex items-center justify-center text-center px-3 py-3 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
+                              active
+                                ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
+                                : 'bg-white text-[#6E6660] border-gray-200 hover:border-[#D4A0B0] hover:text-[#111]'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
                     </div>
                     {formData.event_type === 'Other' && (
-                      <div className="mt-4">
-                        <label className={labelClass}>Tell Roko what it&apos;s for *</label>
-                        <input
-                          value={formData.event_type_other}
-                          onChange={e => setFormData({ ...formData, event_type_other: e.target.value })}
-                          placeholder="Anniversary dinner, headshots, prom…"
-                          className={inputClass}
-                        />
-                      </div>
+                      // No second label. The question above already asked it, and
+                      // repeating it as an instruction just adds a line to read.
+                      <input
+                        value={formData.event_type_other}
+                        onChange={e => setFormData({ ...formData, event_type_other: e.target.value })}
+                        placeholder="Anniversary, headshots, prom…"
+                        autoFocus
+                        className={`${inputClass} mt-4`}
+                      />
                     )}
                   </div>
 
@@ -725,48 +729,75 @@ export default function BookingModal({ service: initialService, onClose }) {
                       </p>
                     </div>
 
-                    {/* Travel Question */}
+                    {/* Where the appointment happens.
+                        This used to ask "do you need Roko to travel to you?",
+                        which reads as asking a favour and buries the fact that
+                        it changes the price. It's a location choice, so it asks
+                        like one, and each answer explains itself underneath. */}
                     <div className="mt-4">
-                      <label className={labelClass}>Do you need Roko to travel to you?</label>
-                      <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mb-2 leading-[1.6]">
-                        Appointments are at Roko's studio by default.
-                      </p>
-                      <div className="flex gap-3 mt-1">
-                        {[{ label: 'Yes', value: true }, { label: 'No', value: false }].map(opt => (
+                      <label className={labelClass}>Appointment location *</label>
+                      <div className="grid grid-cols-2 gap-2.5 mt-1">
+                        {[
+                          { label: "Roko's studio", value: false },
+                          { label: 'Roko travels to me', value: true },
+                        ].map(opt => (
                           <button
                             key={String(opt.value)}
                             type="button"
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => setFormData({ ...formData, travel_requested: opt.value })}
-                            className={`flex-1 py-2.5 rounded-xl text-[0.78rem] font-medium border transition-all ${
+                            className={`flex items-center justify-center text-center px-3 py-3 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
                               formData.travel_requested === opt.value
-                                ? 'bg-[#111] text-white border-[#111]'
-                                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                                ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
+                                : 'bg-white text-[#6E6660] border-gray-200 hover:border-[#D4A0B0] hover:text-[#111]'
                             }`}
                           >
                             {opt.label}
                           </button>
                         ))}
                       </div>
+
+                      {formData.travel_requested === false && (
+                        <p className="text-[0.78rem] text-gray-400 mt-3 leading-[1.65]">
+                          All non-bridal appointments are held at Roko&apos;s studio in {STUDIO_TOWN}.
+                        </p>
+                      )}
+
                       {hasTravelFee && (
                         <>
-                          <div className="mt-3 relative pl-3.5">
-                            <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                            <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel · bridal pricing $750+</p>
-                            <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                              Non-bridal bookings that need travel move to bridal pricing, <strong style={{ color: '#4A423E' }}>$750+</strong>. Roko confirms the exact rate.
-                            </p>
+                          {/* The old note said travel "moves to bridal pricing",
+                              which meant nothing to someone booking a birthday.
+                              Two numbers side by side say it in one glance. */}
+                          <div className="mt-4 rounded-2xl border border-[#EFDDE6] overflow-hidden">
+                            <div className="px-4 py-2.5 border-b border-[#F5E8EF]" style={{ background: '#FDF8FA' }}>
+                              <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase" style={{ color: '#B06883' }}>Travel changes the price</p>
+                            </div>
+                            <div className="px-4 py-1 bg-white">
+                              <div className="flex items-center justify-between py-2.5 border-b border-[#F7F1F4]">
+                                <span className="text-[0.78rem] text-gray-400">At the studio</span>
+                                <span className="text-[0.82rem] text-gray-400 line-through">{service.price}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2.5">
+                                <span className="text-[0.78rem] font-medium text-[#111]">Roko travels to you</span>
+                                <span className="text-[0.95rem] font-semibold" style={{ color: '#B06883' }}>$750+</span>
+                              </div>
+                            </div>
+                            <div className="px-4 py-3" style={{ background: '#FDFBFC', borderTop: '1px solid #F5E8EF' }}>
+                              <p className="text-[0.76rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                                On-location appointments are charged at Roko&apos;s travel rate, the same rate as her bridal work, whatever the service. She confirms the exact amount once she has your address.
+                              </p>
+                            </div>
                           </div>
 
                           {/* Asking "travel?" without asking "where?" is how every
                               travel booking before this arrived with no address.
                               Required, because the rate depends on the answer. */}
-                          <div className="mt-4">
-                            <label className={labelClass}>Where should Roko come to? *</label>
+                          <div className="mt-5">
+                            <label className={labelClass}>Address or venue *</label>
                             <LocationAutocomplete
                               value={formData.location}
                               onChange={v => setFormData({ ...formData, location: v })}
-                              placeholder="Address or venue, with city"
+                              placeholder="Street address or venue, with city"
                             />
                             <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                               The city sets the rate. An approximate address is fine.
@@ -836,10 +867,11 @@ export default function BookingModal({ service: initialService, onClose }) {
                       { label: 'Service', value: service.title },
                       { label: 'Occasion', value: occasion },
                       { label: 'Ready by', value: formData.ready_by_time },
-                      { label: 'Where', value: hasTravelFee ? (formData.location || 'Roko travels to you') : "Roko's studio, Mountain House" },
+                      { label: 'Where', value: hasTravelFee ? (formData.location || 'Roko travels to you') : `Roko's studio, ${STUDIO_TOWN}` },
                     ],
                     confirmLabel: 'Yes, confirm this booking',
                   }}
+                  onEdit={() => goStep('form', 'back')}
                   onSign={handleSubmit}
                 />
               )}
