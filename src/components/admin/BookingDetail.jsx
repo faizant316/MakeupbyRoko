@@ -392,21 +392,26 @@ function StepDot({ n, state, dm, color = '#C4849A' }) {
 
 // The notes field mashes several things into one string, in two formats:
 //   bridal:      "Ready by: 11 AM. <free-text comment>"
-//   non-bridal:  "<comment> | ⏰ surcharge | Ready by: 9 AM | ✈️ travel"
+//   non-bridal:  "<comment> | Event: Baby shower | ⏰ surcharge | Ready by: 9 AM | ✈️ travel"
 // Split it back out so each piece can be laid out (and labeled) on its own.
 function parseBookingNotes(raw) {
-  const empty = { readyBy: '', comment: '', flags: [] };
+  const empty = { readyBy: '', occasion: '', comment: '', flags: [] };
   if (!raw) return empty;
   const text = raw.replace(/^\s*\|\s*/, '').trim();
   if (!text) return empty;
 
   if (text.includes('|')) {
     let readyBy = '';
+    let occasion = '';
     const flags = [];
     const rest = [];
     for (const seg of text.split('|').map(s => s.trim()).filter(Boolean)) {
       const m = seg.match(/^Ready by:\s*(.+)$/i);
+      // What the appointment is for. Lifted out so it can be labelled on the
+      // card and chipped on the list, which is the whole reason it's collected.
+      const ev = seg.match(/^Event:\s*(.+)$/i);
       if (m) readyBy = /not specified/i.test(m[1]) ? '' : m[1].trim();
+      else if (ev) occasion = ev[1].trim();
       // The signed-agreement chip has its own "Service Agreement" section below,
       // so it must never leak into the free-text comment.
       else if (/^✍️/.test(seg) || /Agreement\s+\S+\s+signed by/i.test(seg)) continue;
@@ -414,7 +419,7 @@ function parseBookingNotes(raw) {
       else if (/travel/i.test(seg) || seg.includes('✈️')) flags.push(seg.replace(/^✈️\s*/, '').trim());
       else rest.push(seg);
     }
-    return { readyBy, comment: rest.join(' ').trim(), flags };
+    return { readyBy, occasion, comment: rest.join(' ').trim(), flags };
   }
 
   // bridal / plain: "Ready by: X. <comment>" — greedy [^.]+ stops at the first
@@ -423,9 +428,9 @@ function parseBookingNotes(raw) {
   const m = text.match(/^Ready by:\s*([^.]+)\.?\s*([\s\S]*)$/i);
   if (m) {
     const readyBy = /not specified/i.test(m[1]) ? '' : m[1].trim();
-    return { readyBy, comment: (m[2] || '').trim(), flags: [] };
+    return { readyBy, occasion: '', comment: (m[2] || '').trim(), flags: [] };
   }
-  return { readyBy: '', comment: text, flags: [] };
+  return { readyBy: '', occasion: '', comment: text, flags: [] };
 }
 
 function parseConsultNotes(raw) {
@@ -2419,9 +2424,22 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   </div>
                 )}
 
-                {/* Travel / early-arrival flags */}
-                {notes.flags.length > 0 && (
+                {/* What it's for, then travel / early-arrival flags.
+                    The occasion is a fact about the booking, not a warning, so
+                    it gets the plum treatment rather than the amber one — two
+                    engagements and a baby shower on the same page should read
+                    as three different mornings at a glance. */}
+                {(notes.occasion || notes.flags.length > 0) && (
                   <div className="px-4 pb-4 -mt-1 flex flex-wrap gap-2">
+                    {notes.occasion && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
+                        style={{ background: dm ? 'rgba(196,132,154,0.14)' : '#FBF1F5', border: `1px solid ${dm ? 'rgba(196,132,154,0.3)' : '#F0DCE5'}`, color: dm ? '#e5aec0' : '#B0708A' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-3 h-3 flex-shrink-0">
+                          <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                        </svg>
+                        {notes.occasion}
+                      </span>
+                    )}
                     {notes.flags.map((f, i) => (
                       <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
                         style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#C76BA6' }}>
