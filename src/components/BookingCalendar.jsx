@@ -539,6 +539,16 @@ export default function BookingCalendar({
     });
   }, []);
 
+  // Anchoring alone is not enough now that the board can be taller than the grid
+  // it sits over: near the bottom of the screen it would hang off the edge. Nudge
+  // it back up after it has laid out, and only when it actually overflows.
+  useIsoLayoutEffect(() => {
+    const el = boardRef.current;
+    if (!el || !boardRect) return;
+    const maxTop = window.innerHeight - el.offsetHeight - 8;
+    el.style.top = `${Math.max(8, Math.min(boardRect.top, maxTop))}px`;
+  }, [boardRect]);
+
   // Closing runs its own animation, so the board stays mounted for the length of
   // it. Without this it vanished between frames, which after an entrance that
   // pops open read as the board being yanked away rather than put back.
@@ -647,10 +657,13 @@ export default function BookingCalendar({
           onClick={() => stepMonth('prev')}
           disabled={!canGoPrev}
           aria-label="Previous month"
-          className={`flex w-9 h-9 items-center justify-center transition-all text-xl flex-shrink-0 ${
+          // Same rounded highlight the month title carries, so the three
+          // controls on this row read as one set, and a target big enough to
+          // hit with a thumb instead of a chevron you have to aim at.
+          className={`flex w-11 h-11 items-center justify-center rounded-lg transition-all text-[1.6rem] leading-none flex-shrink-0 ${
             canGoPrev
-              ? 'text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90'
-              : 'text-gray-100 cursor-not-allowed'
+              ? 'text-[#b9a8b0] hover:text-[#D4A0B0] hover:bg-[#F6EEF1] active:bg-[#F6EEF1] active:scale-90'
+              : 'text-gray-200 cursor-not-allowed'
           }`}
         >
           ‹
@@ -681,7 +694,7 @@ export default function BookingCalendar({
           type="button"
           onClick={() => stepMonth('next')}
           aria-label="Next month"
-          className="flex w-9 h-9 items-center justify-center text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90 transition-all text-xl flex-shrink-0"
+          className="flex w-11 h-11 items-center justify-center rounded-lg text-[#b9a8b0] hover:text-[#D4A0B0] hover:bg-[#F6EEF1] active:bg-[#F6EEF1] active:scale-90 transition-all text-[1.6rem] leading-none flex-shrink-0"
         >
           ›
         </button>
@@ -805,12 +818,18 @@ export default function BookingCalendar({
           />
           <div
             ref={boardRef}
-            className="fixed z-[9999] bg-white rounded-2xl border border-[#F2E6EC] flex flex-col justify-center px-2 overflow-hidden"
+            className="fixed z-[9999] bg-white rounded-2xl border border-[#F2E6EC] flex flex-col justify-start px-2 pt-4 pb-3"
             style={{
               left: boardRect.left,
               top: boardRect.top,
               width: boardRect.width,
-              height: boardRect.height,
+              // A MINIMUM, not a fixed height. The board is anchored over the day
+              // grid and used to be pinned to exactly its height, so once the year
+              // row grew the last row of months was cropped off the bottom with
+              // nothing to say it was there.
+              minHeight: boardRect.height,
+              maxHeight: 'calc(100dvh - 16px)',
+              overflowY: 'auto',
               boxShadow: '0 26px 64px rgba(40,40,45,0.26)',
               animation: `${exiting
                 ? 'calBoardOut 0.15s cubic-bezier(0.4, 0, 1, 1)'
@@ -820,30 +839,30 @@ export default function BookingCalendar({
             {/* Year. Steppers for a mouse, a swipe for a thumb — the year was
                 reachable only by tapping an arrow, which on a phone is the one
                 thing a calendar is never operated with. */}
-            <div className="flex items-center justify-center gap-1 mb-4">
+            <div className="flex items-center justify-center gap-2 mb-4 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => stepYear('prev')}
                 disabled={pickYear <= yearRange.min}
                 aria-label="Previous year"
-                className={`w-9 h-9 flex items-center justify-center text-xl transition-all ${
+                className={`w-12 h-12 flex items-center justify-center rounded-xl text-[1.75rem] leading-none transition-all ${
                   pickYear > yearRange.min
-                    ? 'text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90'
-                    : 'text-gray-100 cursor-not-allowed'
+                    ? 'text-[#b9a8b0] hover:text-[#D4A0B0] hover:bg-[#F6EEF1] active:bg-[#F6EEF1] active:scale-90'
+                    : 'text-gray-200 cursor-not-allowed'
                 }`}
               >
                 ‹
               </button>
-              <span className="font-serif text-[1.15rem] text-[#111] tracking-tight w-[4.25rem] text-center tabular-nums">{pickYear}</span>
+              <span className="font-serif text-[1.6rem] text-[#111] tracking-tight w-[5rem] text-center tabular-nums leading-none">{pickYear}</span>
               <button
                 type="button"
                 onClick={() => stepYear('next')}
                 disabled={pickYear >= yearRange.max}
                 aria-label="Next year"
-                className={`w-9 h-9 flex items-center justify-center text-xl transition-all ${
+                className={`w-12 h-12 flex items-center justify-center rounded-xl text-[1.75rem] leading-none transition-all ${
                   pickYear < yearRange.max
-                    ? 'text-gray-300 hover:text-[#D4A0B0] active:text-[#D4A0B0] active:scale-90'
-                    : 'text-gray-100 cursor-not-allowed'
+                    ? 'text-[#b9a8b0] hover:text-[#D4A0B0] hover:bg-[#F6EEF1] active:bg-[#F6EEF1] active:scale-90'
+                    : 'text-gray-200 cursor-not-allowed'
                 }`}
               >
                 ›
@@ -894,6 +913,13 @@ export default function BookingCalendar({
                 })}
               </div>
             </div>
+
+            {/* The three-year track has always been swipeable; nothing said so.
+                On a phone the steppers are the only visible way to move, and a
+                thumb reaches for a drag first. */}
+            <p className="sm:hidden text-center text-[0.62rem] tracking-[0.06em] mt-3 flex-shrink-0" style={{ color: '#c9bcc3' }}>
+              Swipe to change year
+            </p>
           </div>
         </>,
         document.body
