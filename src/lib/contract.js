@@ -130,7 +130,11 @@ const money = (v) => cleanAmount(v) || null;
 // "$1,700" → 1700. Returns null for anything that isn't one exact figure
 // ("See Classes", "$200+", "starting at $200", "50% via Zelle"), so the
 // contract falls back to generic wording rather than printing a wrong number.
-const amountValue = (v) => {
+// Exported because the confirmed-appointment email needs the SAME strictness the
+// agreement uses. Three money parsers of three different strictnesses already
+// exist in this codebase; a fourth is how "$750+" becomes 750 and a client is
+// told to bring the wrong cash.
+export const amountValue = (v) => {
   const s = cleanAmount(v);
   if (!s || !s.includes('$') || /[+%]|starting|from|varies/i.test(s)) return null;
   const n = parseFloat(s.replace(/[^0-9.]/g, ''));

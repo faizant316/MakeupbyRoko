@@ -92,7 +92,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
     <tr><td style="padding:20px 28px;border-bottom:1px solid #F0E6EC;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
         <td align="left" style="font-family:${EMAIL_FONT};font-size:19px;color:#16110F;letter-spacing:0.01em;">Makeup by <span style="color:#C4849A;font-style:italic;">Roko</span></td>
-        <td align="right" style="font-size:12px;color:#A99FA4;white-space:nowrap;">${todayStr()}</td>
+        <td align="right" style="font-size:12px;color:#A99FA4;white-space:nowrap;">Sent ${todayStr()}</td>
       </tr></table>
     </td></tr>
     ${content}
@@ -593,27 +593,47 @@ export function bridalConfirmationEmail({
 // not appear (it would send them to the wrong place). Everyone else is coming to
 // Mountain House, and this is the email they'll dig up the morning of, so the
 // address belongs here rather than in a follow-up.
-export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false, cancelUrl = '' }) {
+// `balanceDue` is the cash owed on the day, and it is OPTIONAL on purpose. The
+// route that sends this can only work it out for a plain studio booking whose
+// service still matches a priced service row; travel is quoted as "$750+", an
+// early-arrival surcharge exists only as prose in the notes, and a tenth of the
+// booking rows name a service that no longer exists. Every one of those cases
+// leaves this blank and the email keeps saying that Roko confirms the amount,
+// which is the same rule the contract, the booking email and the site already
+// follow. An absent figure is correct; a guessed one is a client turning up
+// with the wrong cash.
+export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels = false, cancelUrl = '', balanceDue = '' }) {
   const locationValue = travels ? 'Roko travels to you' : STUDIO_TOWN;
 
   return clientShell({
-    preheader: `You're confirmed for ${serviceName} on ${dateFormatted}. Keep this email for your appointment details.`,
+    // The visible save-this line says "keep this email", so the preheader must
+    // not: the two render back to back in an inbox snippet. It carries the time
+    // instead, which is the one thing worth seeing before opening.
+    preheader: `You're confirmed for ${serviceName} on ${dateFormatted}${time ? ` at ${time}` : ''}.`,
     content: `
-      ${clientHero({ eyebrow: 'Appointment Confirmed', title: "You're", titleAccent: 'Confirmed!', subtitle: "Can't wait to see you" })}
-      ${ckeep(`Keep this one. Your time${travels ? '' : ' and the address'} live here, and it's the email to find again on the day.`)}
+      ${clientHero({ title: "You're", titleAccent: 'Confirmed!' })}
+      ${ckeep('Save this email. Your appointment details are in it.')}
       ${cintro(`Hey <strong style="color:#16110F;">${firstName}</strong>! You're all set. I'm so excited, see you then.`)}
       ${cpanel(`${ctitle('Appointment Details')}${crows(
         crow('Service', serviceName) +
         crow('Date', dateFormatted) +
         (time ? crow('Time', time) : '') +
-        crow('Location', locationValue)
+        crow('Location', locationValue) +
+        (balanceDue ? crow('Cash on the day', `<strong>${balanceDue}</strong>`, '#C4849A') : '')
       )}${travels ? '' : cStudio()}`)}
       ${travels ? cinfo(`I'll be coming to you, and I'll confirm the exact address with you before the day.`) : ''}
-      ${cinfo(`Your remaining balance is due in cash on the day.`)}
+      ${balanceDue ? '' : cinfo(`Your remaining balance is due in cash on the day.`)}
       ${cstepsPanel('What to Expect', [
         ['1', travels ? 'Be ready for me' : 'Arrive on time', time ? `We start at ${time}` : 'At your confirmed time'],
         ['2', 'Bring your inspiration', 'Photos of the look you want are always welcome'],
-        ['3', 'Bring cash for the balance', 'Roko will confirm the exact amount beforehand'],
+        // Never a hard figure above and "Roko will confirm the exact amount"
+        // below. Whichever of the two is true has to be the only one said.
+        // The amount itself is stated ONCE, up in the details panel with the
+        // date and the address, which is the block someone reopens on the
+        // morning. This step points at it rather than printing it again.
+        balanceDue
+          ? ['3', 'Bring cash for the balance', 'The amount is in your appointment details above']
+          : ['3', 'Bring cash for the balance', 'Roko will confirm the exact amount beforehand'],
       ])}
       ${ccancel(cancelUrl, 'Need to cancel? You can do that here,')}
     `,
