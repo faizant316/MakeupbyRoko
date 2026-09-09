@@ -69,7 +69,39 @@ export default function ContractSign({
         <p className="text-[0.8rem] text-gray-400">Please read your service agreement and sign to confirm.</p>
       </div>
 
-      {/* Scrollable contract body.
+      {/* What they're agreeing to, stated in the open.
+          This used to live INSIDE the scrolling agreement box, which is the one
+          place on the page you have to go looking for something. The numbers are
+          the part a client actually needs at a glance, so they sit on the page
+          and the box below is only the agreement itself. */}
+      {contract.summary?.length > 0 && (
+        <dl className="rounded-2xl border border-[#F0E0E9] overflow-hidden mb-4" style={{ background: '#FDFBFC' }}>
+          {contract.summary.map((row, i) => (
+            <div
+              key={row.label}
+              className="flex items-baseline justify-between gap-4 px-4 py-3"
+              style={{
+                borderTop: i > 0 ? '1px solid #F5E8EF' : 'none',
+                // The last line is the one they hand over on the day, so it gets
+                // the weight and a tint instead of being the quietest row.
+                background: row.strong ? '#FBF4F7' : 'transparent',
+              }}
+            >
+              <dt className={row.strong ? 'text-[0.76rem] font-medium text-[#111] flex-shrink-0' : 'text-[0.74rem] text-[#9A8E94] flex-shrink-0'}>
+                {row.label}
+              </dt>
+              <dd className="text-right">
+                <span className={row.strong ? 'text-[1rem] font-semibold text-[#111]' : 'text-[0.8rem] text-[#444]'}>
+                  {row.value}
+                </span>
+                {row.note && <span className="block text-[0.62rem] text-[#B3A7AD] mt-0.5">{row.note}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {/* Scrollable contract body — the agreement, and nothing else.
           data-lenis-prevent lets this inner box scroll natively with the wheel:
           the modal's own Lenis instance would otherwise capture the wheel and
           scroll the whole sheet instead of this box.
@@ -81,32 +113,10 @@ export default function ContractSign({
           className="rounded-2xl border border-[#F0E0E9] bg-[#FDFBFC] px-5 py-4 max-h-[42vh] overflow-y-auto overscroll-contain"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {/* Header: what this is, then the money at a glance, then the intro.
-              A client should be able to answer "what do I pay, and when?"
-              without reading a single clause. */}
           <div className="flex items-baseline justify-between gap-3 mb-3">
             <p className="text-[0.62rem] font-semibold tracking-[0.16em] uppercase text-[#C4849A]">{contract.title}</p>
             <p className="text-[0.56rem] tracking-[0.12em] uppercase text-[#CBBDC4]">{contract.version}</p>
           </div>
-
-          {contract.summary?.length > 0 && (
-            <dl className="rounded-xl border border-[#F3E7EE] bg-white px-3.5 py-2.5 mb-3.5">
-              {contract.summary.map((row, i) => (
-                <div
-                  key={row.label}
-                  className={`flex items-baseline justify-between gap-4 py-1.5 ${i > 0 ? 'border-t border-[#FAF3F6]' : ''}`}
-                >
-                  <dt className="text-[0.7rem] text-[#9A8E94] flex-shrink-0">{row.label}</dt>
-                  <dd className="text-right">
-                    <span className={row.strong ? 'text-[0.82rem] font-semibold text-[#111]' : 'text-[0.74rem] text-[#444]'}>
-                      {row.value}
-                    </span>
-                    {row.note && <span className="block text-[0.6rem] text-[#B3A7AD] mt-0.5">{row.note}</span>}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          )}
 
           <p className="text-[0.78rem] text-[#444] leading-[1.7] mb-4">{contract.intro}</p>
 

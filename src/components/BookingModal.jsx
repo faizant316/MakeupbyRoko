@@ -643,18 +643,34 @@ export default function BookingModal({ service: initialService, onClose }) {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {OCCASIONS.map(opt => {
                         const active = formData.event_type === opt;
+                        // Nine options divide evenly into three columns but not
+                        // two, so on a phone the last one was stranded alone on
+                        // its own row. "Other" takes the whole width there, which
+                        // reads as the escape hatch it is rather than a leftover.
+                        const isOther = opt === 'Other';
                         return (
                           <button
                             key={opt}
                             type="button"
                             onMouseDown={e => e.preventDefault()}
-                            onClick={() => setFormData({ ...formData, event_type: opt, ...(opt === 'Other' ? {} : { event_type_other: '' }) })}
-                            className={`relative flex items-center justify-center text-center px-3 py-3 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
+                            onClick={() => setFormData({ ...formData, event_type: opt, ...(isOther ? {} : { event_type_other: '' }) })}
+                            className={`relative flex items-center justify-center text-center px-3 py-3.5 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
+                              isOther ? 'col-span-2 sm:col-span-1' : ''
+                            } ${
                               active
                                 ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
-                                : 'bg-white text-[#6E6660] border-gray-200 hover:border-[#D4A0B0] hover:text-[#111]'
+                                : 'bg-[#FDFBFC] text-[#6E6660] border-[#EFE9EC] hover:border-[#D4A0B0] hover:bg-white hover:text-[#111]'
                             }`}
                           >
+                            {/* A tick, not a colour change alone: the selected
+                                state has to survive being read at a glance on a
+                                phone in daylight. Absolutely placed so picking an
+                                option never nudges the label off centre. */}
+                            {active && (
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="absolute left-3 w-3 h-3 opacity-80">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
                             {opt}
                           </button>
                         );
@@ -716,10 +732,10 @@ export default function BookingModal({ service: initialService, onClose }) {
                             type="button"
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => setFormData({ ...formData, early_arrival: opt.value })}
-                            className={`flex items-center justify-center px-3 py-3 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
+                            className={`flex items-center justify-center px-3 py-3.5 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
                               formData.early_arrival === opt.value
                                 ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
-                                : 'bg-white text-[#6E6660] border-gray-200 hover:border-[#D4A0B0] hover:text-[#111]'
+                                : 'bg-[#FDFBFC] text-[#6E6660] border-[#EFE9EC] hover:border-[#D4A0B0] hover:bg-white hover:text-[#111]'
                             }`}
                           >
                             {opt.label}
@@ -767,10 +783,10 @@ export default function BookingModal({ service: initialService, onClose }) {
                             type="button"
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => setFormData({ ...formData, travel_requested: opt.value })}
-                            className={`flex items-center justify-center text-center px-3 py-3 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
+                            className={`flex items-center justify-center text-center px-3 py-3.5 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
                               formData.travel_requested === opt.value
                                 ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
-                                : 'bg-white text-[#6E6660] border-gray-200 hover:border-[#D4A0B0] hover:text-[#111]'
+                                : 'bg-[#FDFBFC] text-[#6E6660] border-[#EFE9EC] hover:border-[#D4A0B0] hover:bg-white hover:text-[#111]'
                             }`}
                           >
                             {opt.label}
