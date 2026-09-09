@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '@/api/apiClient';
 import { cityFromLocation } from '@/lib/location';
+import { isBridalService } from '@/components/admin/statusColors';
 import { isScrollLocked } from '@/lib/useScrollLock';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -114,18 +115,38 @@ export default function Admin() {
   const bookings = useMemo(() => {
     if (!inquiries.length) return rawBookings;
     // upload_token is the exact 1:1 link between a booking and its inquiry;
-    // email is the fallback for older rows booked before tokens existed.
+    // email is a fallback for older rows booked before tokens existed.
+    //
+    // The email fallback has to be kept on a short leash. One address can carry
+    // any number of inquiries over the years, and it once put a wedding venue
+    // from a bridal inquiry onto a studio appointment made months later, under
+    // the heading "Client Location" — an address nobody typed, telling Roko to
+    // drive somewhere she isn't going. So it now applies only to bridal
+    // bookings, and picks the inquiry for THIS wedding rather than whichever
+    // one happened to land last in the map.
     const byToken = new Map(), byEmail = new Map();
     for (const q of inquiries) {
       if (q.upload_token) byToken.set(q.upload_token, q);
-      if (q.email) byEmail.set(q.email.toLowerCase(), q);
+      if (q.email) {
+        const key = q.email.toLowerCase();
+        if (!byEmail.has(key)) byEmail.set(key, []);
+        byEmail.get(key).push(q);
+      }
     }
+    // Of several inquiries from one address, the one whose wedding date is the
+    // booking's date is certainly the right one. Failing that, take the most
+    // recent, which is the list's own order.
+    const pickByEmail = (b) => {
+      const list = byEmail.get(b.email.toLowerCase());
+      if (!list?.length) return null;
+      return (b.date && list.find(q => q.wedding_date === b.date)) || list[0];
+    };
     return rawBookings.map(b => {
       // A location on the booking itself always wins: it is where she is
       // actually going, whereas the inquiry is what the bride typed months ago.
       if (b.location || b.location_city) return b;
       const q = (b.upload_token && byToken.get(b.upload_token))
-        || (b.email && byEmail.get(b.email.toLowerCase()));
+        || (isBridalService(b.service) && b.email ? pickByEmail(b) : null);
       if (!q?.event_location) return b;
       return { ...b, location: q.event_location, location_city: cityFromLocation(q.event_location) };
     });

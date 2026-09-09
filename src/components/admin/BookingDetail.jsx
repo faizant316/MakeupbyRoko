@@ -1638,8 +1638,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         if (byToken[0]) return byToken[0];
       }
       if (booking.email) {
+        // One address can carry several inquiries: a bride who enquired twice,
+        // or anyone who ever tested the form. Taking whichever came back first
+        // attached the wrong wedding. Prefer the one whose wedding date IS this
+        // booking's date, and only then fall back to the most recent.
         const byEmail = await api.entities.BridalInquiry.filter({ email: booking.email });
-        if (byEmail[0]) return byEmail[0];
+        if (byEmail.length) {
+          const exact = booking.date && byEmail.find(q => q.wedding_date === booking.date);
+          if (exact) return exact;
+          const newest = [...byEmail].sort(
+            (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))
+          );
+          return newest[0];
+        }
       }
       return null;
     },
