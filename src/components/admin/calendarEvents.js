@@ -9,11 +9,20 @@ const startTime = (t) => (t ? String(t).split(/[–-]/)[0].trim() : '');
 //
 // A booking lands on its appointment date, or on its consultation date when
 // it is consult-only, so nothing is listed twice.
+//
+// Cancelled bookings are left out entirely. The calendar answers "what is
+// happening that day", and a called-off appointment is not happening: it holds
+// no slot (buildBookedMap has always agreed) and there is nothing to get ready
+// for. It was still drawing a dot on the month grid and still taking a line in
+// the Calendar tab's day list, which is how a cancelled wedding could keep
+// occupying a Saturday on screen. The archive on the appointments list is
+// where it lives now.
 export function buildEventMap(bookings = [], classRegs = []) {
   const evMap = {};
   const push = (key, ev) => { if (!key) return; (evMap[key] ||= []).push(ev); };
 
   (bookings || []).forEach(b => {
+    if (b.status === 'cancelled') return;
     const key = b.date || b.consultation_date;
     if (!key) return;
     const consultOnly = !b.date && !!b.consultation_date;

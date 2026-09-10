@@ -318,9 +318,17 @@ export default function BookingsList({
     return (a.created_date || '').localeCompare(b.created_date || '');
   });
 
-  // Separate completed from active
-  const activeBookings = sorted.filter(b => b.status !== 'completed');
-  const completedBookings = sorted.filter(b => b.status === 'completed');
+  // Separate the working list from the archive.
+  //
+  // Cancelled joins completed in the archive rather than sitting in the
+  // timeline. A cancelled appointment is not on her day: it has no time to
+  // keep, nobody to get ready for and nothing left to decide, so leaving it in
+  // the run of days meant reading past appointments that were not happening to
+  // find the ones that were. It is filed, not deleted, and the Cancelled chip
+  // in the filter list still pulls every one of them straight back up.
+  const isArchived = (b) => b.status === 'completed' || b.status === 'cancelled';
+  const activeBookings = sorted.filter(b => !isArchived(b));
+  const archivedBookings = sorted.filter(isArchived);
 
   const bridalBookings = activeBookings.filter(isBridalBooking);
   const nonBridalBookings = activeBookings.filter(b => !isBridalBooking(b));
@@ -329,7 +337,9 @@ export default function BookingsList({
   const showBridal = typeFilter !== 'nonbridal';
   const showNonBridal = typeFilter !== 'bridal';
   const visibleActiveCount = (showBridal ? bridalBookings.length : 0) + (showNonBridal ? nonBridalBookings.length : 0);
-  const visibleCompleted = completedBookings.filter(b => (isBridalBooking(b) ? showBridal : showNonBridal));
+  const visibleArchived = archivedBookings.filter(b => (isBridalBooking(b) ? showBridal : showNonBridal));
+  const archivedCancelled = visibleArchived.filter(b => b.status === 'cancelled').length;
+  const archivedCompleted = visibleArchived.length - archivedCancelled;
 
   // Active bookings the type filter lets through, bridal first within the same day.
   const visibleActive = activeBookings
@@ -384,15 +394,15 @@ export default function BookingsList({
 
   const today = new Date().toISOString().split('T')[0];
 
-  // When the "Completed" status chip is active, the whole point of the view is
-  // the archive, so we skip the empty "No active appointments" state and just
-  // show the completed list, expanded.
-  const completedOnly = statusFilter === 'completed';
+  // When the Completed or Cancelled chip is active, the whole point of the view
+  // is the archive, so we skip the empty "No active appointments" state and
+  // just show the archived list, expanded.
+  const archiveOnly = statusFilter === 'completed' || statusFilter === 'cancelled';
 
-  // Whenever there are no active appointments to show, the completed list IS
-  // the content, so it renders flat and expanded (no collapsible chrome, no
+  // Whenever there are no active appointments to show, the archive IS the
+  // content, so it renders flat and expanded (no collapsible chrome, no
   // dashed divider) right where the empty-state placeholder used to sit.
-  const flatCompleted = completedOnly || visibleActiveCount === 0;
+  const flatArchive = archiveOnly || visibleActiveCount === 0;
 
   const consultationBookings = (allBookings || [])
     .filter(b => b.consultation_date && b.consultation_date >= today && (!search || [b.name, b.email, b.service].some(f => f?.toLowerCase().includes(search.toLowerCase()))))
@@ -404,7 +414,7 @@ export default function BookingsList({
 
   // ── Multi-select plumbing (appointments list) ────────────────────────────
   // Every booking the list is currently showing, for select-all + counts.
-  const selectableIds = [...visibleActive, ...visibleCompleted].map(b => b.id);
+  const selectableIds = [...visibleActive, ...visibleArchived].map(b => b.id);
   const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id));
   const selectedCount = selectedIds.size;
 
@@ -429,6 +439,12 @@ export default function BookingsList({
   };
   const bulkSetStatus = (status) => runBulk((ids) => onBulkUpdate?.(ids, { status }));
   const bulkDelete = () => runBulk((ids) => onBulkDelete?.(ids));
+
+  // Confirming an appointment with no working window on it is the one thing
+  // this bar must not let through. The client card already refuses it; doing it
+  // four at a time here would have been the way straight around that.
+  const selectedRows = [...visibleActive, ...visibleArchived].filter(b => selectedIds.has(b.id));
+  const timelessSelected = selectedRows.filter(b => !b.time);
 
   // Leave select mode whenever the list context changes out from under it.
   useEffect(() => { if (viewType !== 'appointments') exitSelect(); /* eslint-disable-next-line */ }, [viewType]);
@@ -489,7 +505,7 @@ export default function BookingsList({
             </button>
           )}
           {/* Select toggle — appointments only, when there's something to pick */}
-          {viewType === 'appointments' && (activeBookings.length > 0 || completedBookings.length > 0) && (
+          {viewType === 'appointments' && (activeBookings.length > 0 || archivedBookings.length > 0) && (
             <button
               onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
               className="flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 sm:py-2 rounded-lg text-[0.72rem] font-semibold tracking-[0.04em] transition-all"
@@ -1183,7 +1199,7 @@ export default function BookingsList({
       )}
 
       {/* Type + Month filters — appointments list (separate from the calendar above) */}
-      {viewType === 'appointments' && !selectedDate && !loading && (activeBookings.length > 0 || completedBookings.length > 0) && (
+      {viewType === 'appointments' && !selectedDate && !loading && (activeBookings.length > 0 || archivedBookings.length > 0) && (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <TypeSegment value={typeFilter} onChange={setTypeFilter} dm={dm} />
           {monthOptions.length > 1 && (
@@ -1197,7 +1213,7 @@ export default function BookingsList({
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-[#E5E7EB] border-t-[#71717a] rounded-full animate-spin" />
         </div>
-      ) : visibleActiveCount === 0 && visibleCompleted.length === 0 ? (
+      ) : visibleActiveCount === 0 && visibleArchived.length === 0 ? (
         dayOff ? null : (
         <div className="text-center py-20">
           <p className="text-[#a3a3ad] text-[0.85rem]">
@@ -1301,29 +1317,39 @@ export default function BookingsList({
             </div>
           )}
 
-          {/* Completed Archive */}
-          {visibleCompleted.length > 0 && (
-            <div className={flatCompleted ? '' : 'border-t border-dashed border-[#E5E7EB] pt-6'}>
+          {/* Archive — everything that's over, done or called off. It used to
+              hold only the completed ones, and its name said so; cancelled
+              appointments stayed up in the timeline instead, which is how a
+              wedding nobody was going to could still take a row in her week. */}
+          {visibleArchived.length > 0 && (
+            <div className={flatArchive ? '' : 'border-t border-dashed border-[#E5E7EB] pt-6'}>
               <button
-                onClick={() => { if (!flatCompleted) setShowArchive(v => !v); }}
+                onClick={() => { if (!flatArchive) setShowArchive(v => !v); }}
                 className="flex items-center gap-3 mb-4 group"
-                style={flatCompleted ? { cursor: 'default' } : undefined}
+                style={flatArchive ? { cursor: 'default' } : undefined}
               >
                 <div className="flex items-center gap-2">
                   <Archive className="w-4 h-4" style={{ color: dm ? '#7a7a84' : '#b4b4bd' }} />
-                  <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#7a7a84' : '#999' }}>Completed Archive</h3>
+                  <h3 className="font-serif text-[1.1rem] transition-colors" style={{ color: dm ? '#7a7a84' : '#999' }}>Archive</h3>
                 </div>
-                <span className="text-[0.65rem] text-[#bbb]">({visibleCompleted.length})</span>
-                {!flatCompleted && (
+                {/* Names what's inside rather than just counting it, so the
+                    fold never hides the fact that something was cancelled. */}
+                <span className="text-[0.65rem] text-[#bbb]">
+                  {[
+                    archivedCompleted > 0 ? `${archivedCompleted} completed` : null,
+                    archivedCancelled > 0 ? `${archivedCancelled} cancelled` : null,
+                  ].filter(Boolean).join(' · ')}
+                </span>
+                {!flatArchive && (
                   <svg viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"
                     className={`w-4 h-4 transition-transform duration-300 ${showArchive ? 'rotate-180' : ''}`}>
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 )}
               </button>
-              <Collapse open={showArchive || flatCompleted}>
+              <Collapse open={showArchive || flatArchive}>
                 <div className="flex flex-col gap-2 pb-1">
-                  {visibleCompleted.map(b => (
+                  {visibleArchived.map(b => (
                     <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)}
                       onClick={() => (selectMode ? toggleSelect(b.id) : onSelect(b))}
                       selectable={selectMode} selected={selectedIds.has(b.id)} darkMode={dm} dimmed />
@@ -1370,10 +1396,25 @@ export default function BookingsList({
               </div>
             </div>
 
+            {/* Why Confirm is greyed out. Said here rather than on tap, so the
+                answer is on screen before she reaches for the button. */}
+            {timelessSelected.length > 0 && (
+              <div className="flex items-start gap-2 px-4 py-2.5" style={{ borderBottom: `1px solid ${dm ? '#33333d' : '#F0F0F4'}`, background: dm ? 'rgba(245,158,11,0.10)' : '#FEF9EF' }}>
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[6px]" style={{ background: '#F59E0B' }} />
+                <span className="text-[0.72rem] leading-snug" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>
+                  {timelessSelected.length === 1
+                    ? `${timelessSelected[0].name || 'One of these'} has no time set yet, so these can't be confirmed here.`
+                    : `${timelessSelected.length} of these have no time set yet, so they can't be confirmed here.`}
+                  {' '}Open the card and set the time first.
+                </span>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="grid grid-cols-4 gap-1 p-2">
               {[
                 { key: 'confirm',  label: 'Confirm',  color: '#2563EB', onClick: () => bulkSetStatus('confirmed'),
+                  blocked: timelessSelected.length > 0,
                   icon: <><path d="M20 6 9 17l-5-5" /></> },
                 { key: 'complete', label: 'Complete', color: dm ? '#A7B2C4' : '#475569', onClick: () => bulkSetStatus('completed'),
                   icon: <><path d="M21 8v13H3V8" /><path d="M1 3h22v5H1z" /><path d="M10 12h4" /></> },
@@ -1382,7 +1423,7 @@ export default function BookingsList({
                 { key: 'delete',   label: 'Delete',   color: '#DC2626', onClick: () => setConfirmBulkDelete(true),
                   icon: <><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></> },
               ].map(a => {
-                const disabled = selectedCount === 0 || bulkBusy;
+                const disabled = selectedCount === 0 || bulkBusy || !!a.blocked;
                 return (
                   <button
                     key={a.key}
