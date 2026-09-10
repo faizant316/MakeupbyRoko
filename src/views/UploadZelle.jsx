@@ -141,7 +141,7 @@ function HowStep({ n, children }) {
   );
 }
 
-function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, remaining }) {
+function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, farTravel, total, remaining }) {
   return (
     <div className="bg-white overflow-hidden h-full flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
       <CardHead>Booking Summary</CardHead>
@@ -149,7 +149,9 @@ function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, r
         <div className="divide-y" style={{ borderColor: DIVIDER }}>
           <SummaryRow label="Client" value={booking?.name} />
           <SummaryRow label="Service" value={booking?.service} />
-          <SummaryRow label="Service Price" value={servicePrice} />
+          <SummaryRow label={farTravel ? "Package price" : "Service Price"} value={servicePrice} />
+          {farTravel && <SummaryRow label="Far travel (venue over 2 hrs)" value={`+${farTravel}`} />}
+          {farTravel && total && <SummaryRow label="Total" value={total} highlight />}
           <SummaryRow label="Date" value={dateFormatted || 'TBD'} />
           <SummaryRow label="Zelle deposit" value={depositAmount} highlight />
         </div>
@@ -363,6 +365,13 @@ export default function UploadZelle() {
   // Links may pass the deposit as "$375 deposit"; show just the amount in the hero.
   const depositDisplay = depositAmount ? depositAmount.replace(/\s*deposit\s*$/i, '').trim() : null;
   const servicePrice = params.get('price') || null;
+  // Only ever on a bridal booking more than about two hours from the studio.
+  // Absent means there is nothing extra, and the summary reads as it always did.
+  const farTravel = (params.get('far') || '').trim() || null;
+  const money = (v) => { const n = parseFloat(String(v || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
+  const _priceN = money(servicePrice);
+  const _farN = money(farTravel);
+  const farTotal = _priceN != null && _farN != null ? `$${(_priceN + _farN).toLocaleString('en-US')}` : null;
   // Exact remaining balance, computed at link-build time only when it's truthful
   // (no travel fee / early-arrival surcharge). Absent → the summary falls back to
   // "due in cash on the day".
@@ -636,7 +645,7 @@ export default function UploadZelle() {
           <div className="flex-1 max-w-5xl mx-auto w-full px-5 pb-10">
             {/* Desktop layout */}
             <div className="hidden lg:grid grid-cols-3 gap-5 items-stretch">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} remaining={remaining} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} farTravel={farTravel} total={farTotal} remaining={remaining} />
 
               {booking?.screenshot_url && (
                 <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
@@ -672,7 +681,7 @@ export default function UploadZelle() {
 
             {/* Mobile layout */}
             <div className="lg:hidden flex flex-col gap-4">
-              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} remaining={remaining} />
+              <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} farTravel={farTravel} total={farTotal} remaining={remaining} />
 
               {booking?.screenshot_url && (
                 <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>

@@ -21,6 +21,14 @@ export const NON_BRIDAL_LEAD_DAYS = 30;
 // Bridal party add-ons (bridesmaids, mother of the bride). More chairs means
 // more hours and more product, which is not something she can absorb on short
 // notice even when the bride herself is already on the books.
+//
+// Separate from, and longer than, the window for booking the wedding itself.
+// A Full Day can be booked two weeks out; the party on it still cannot. That
+// gap is the whole reason this constant exists rather than reusing the bridal
+// one, and it is why the "book a month ahead" notice is reachable at all.
+//
+// Since 2026-09-09 party glam is sold only with the Full Day Service, so the
+// Luxury form never asks the question and never shows that notice.
 export const PARTY_LEAD_DAYS = 30;
 
 // What each window is called in client-facing copy, so the calendar note, the
