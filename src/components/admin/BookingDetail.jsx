@@ -166,7 +166,11 @@ const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 
 // Pre-fills the cancel dialog so even a one-click cancel reads warmly instead of
 // abruptly. Roko can edit or replace it; whatever's in the box goes to the email.
-const DEFAULT_CANCEL_REASON = "Unfortunately, this didn't work out with Roko's schedule.";
+//
+// First person, because the email prints it under "Note from Roko". It used to
+// say "Roko's schedule", which put her in the third person inside her own
+// signed message.
+const DEFAULT_CANCEL_REASON = "Unfortunately, this no longer works with my schedule.";
 
 // " · Jul 22, 4:54 PM" for the client-cancel banners. Empty string when unset.
 function fmtCancelStamp(iso) {
@@ -3570,10 +3574,10 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 <div className="flex items-center justify-between mb-2.5">
                   <div>
                     <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
-                      REASON FOR THE CLIENT
+                      NOTE FROM YOU
                     </p>
                     <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
-                      {includeReason ? 'Optional. On, added to their email.' : 'Optional. Off, no reason sent.'}
+                      {includeReason ? 'Optional. On, printed in their email.' : 'Optional. Off, no note sent.'}
                     </p>
                   </div>
                   <button type="button" onClick={() => setIncludeReason(v => !v)}
@@ -3603,13 +3607,13 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       }}
                     />
                     <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
-                      This appears in their email. Edit it, or leave it as is.
+                      Prints in their email under &ldquo;Note from Roko&rdquo;. Edit it, or leave it as is.
                     </p>
                   </>
                 ) : (
                   <p className="text-[0.75rem] leading-snug rounded-[16px] px-3.5 py-3"
                     style={{ background: dm ? '#1f1f24' : '#FBF7F8', border: `1px dashed ${dm ? '#3a3a42' : '#ECE0E4'}`, color: dm ? '#8f8f99' : '#a99ca1' }}>
-                    No reason will be included. The email still reads warmly, just without a specific reason.
+                    No note will be included. The email still reads warmly, it just says the booking is cancelled.
                   </p>
                 )}
               </>

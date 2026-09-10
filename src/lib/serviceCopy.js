@@ -8,7 +8,7 @@
 // no. Both now come from here.
 
 import { BRIDAL_LEAD_DAYS, NON_BRIDAL_LEAD_DAYS, LEAD_LABEL, leadDate } from './bookingLeadTime';
-import { TRAVEL_HOUR_MINUTES } from './travel';
+import { TRAVEL_HOUR_MINUTES, FAR_TRAVEL_MINUTES, LOCAL_TRAVEL_FEE } from './travel';
 import { STUDIO_TOWN } from './studio';
 import { AVAILABLE_DAYS } from '@/components/BookingCalendar';
 
@@ -81,41 +81,42 @@ export function placeLine(svc) {
   return PLACE[svc?.title] || null;
 }
 
-// The mobile card's one-line stand-in for the bullet list.
+// The two or three facts that actually decide something, shown on the card as
+// chips rather than as a shortened ingredient list.
 //
-// A phone card that carries three bullets, a distance line, three figures and
-// two buttons is a page, not a card, and a first-time bride has to read all of
-// it before she can scroll to the package that is actually hers. So on a phone
-// the list collapses to the few words that say "this is a real package" and the
-// full list stays one tap away in the detail sheet, which the card body already
-// opens. Desktop keeps the bullets: there is room for them there.
+// This line used to read "Lashes, touch-up kit, Zoom call", which every bridal
+// package can more or less claim, so it gave a bride nothing to choose with.
+// Roko's note (2026-09-09) was that the card should carry what people phone her
+// about before booking: whether the bridesmaids can be added, whether travel
+// costs extra, whether a second look is included. Those are the differences
+// between the packages, so those are what the card says.
 //
-// Written out rather than trimmed from svc.includes because the DB sentences do
-// not shorten mechanically ("Lash application included" wants to be "lashes").
-// A service with no entry falls back to its own first two bullets, so adding one
-// in Supabase still gets a line instead of a blank.
+// Bridal party add-ons became Full Day only on 2026-09-09, and it is the single
+// most asked question, so it leads that card. It is absent from Luxury rather
+// than negated there: a card is not the place to list what a package can't do.
 //
-// Lower case and whole words on purpose. The first pass wrote these as clipped
-// title-case labels ("Lashes, Touch-up kit, Zoom consult") which read as three
-// unrelated tags rather than one sentence about the package, and abbreviated a
-// word ("consult") the reader has no reason to meet abbreviated. The card joins
-// them into an ordinary phrase, so they have to behave like ordinary words.
-const HIGHLIGHTS = {
-  'Luxury Bridal Look': ['lashes', 'touch-up kit', 'Zoom call'],
-  'Full Day Service':   ['lashes', 'touch-up kit', 'second look'],
-  'Bridal Trial':       ['consultation', 'full trial look'],
+// Short enough to sit on one line as a chip at any width. Anything needing a
+// sentence belongs in the detail sheet, which the card body already opens.
+const FAR_LABEL = FAR_TRAVEL_MINUTES % 60 === 0
+  ? `${FAR_TRAVEL_MINUTES / 60} hrs`
+  : `${FAR_TRAVEL_MINUTES} min`;
+
+const CARD_FACTS = {
+  'Luxury Bridal Look': ['Lashes + touch-up kit', '30 min Zoom call', `Travel from ${LOCAL_TRAVEL_FEE}`],
+  'Full Day Service':   ['Bridal party add-ons', `Travel included within ${FAR_LABEL}`, 'Second look included'],
+  'Bridal Trial':       ['Full trial look', 'Book 1 to 3 months ahead'],
+  'Non-Bridal Makeup':  ['Lashes included', 'Long-wear finish'],
+  'Photoshoot Makeup':  ['Built for camera', 'HD foundation'],
 };
 
-export function highlights(svc) {
-  const total = svc?.includes?.length || 0;
-  const items = HIGHLIGHTS[svc?.title]
-    || (svc?.includes || []).slice(0, 2).map((s) => s.split(/[,(]/)[0].trim().toLowerCase());
-  if (!items.length) return null;
-  return {
-    lead: items.join(', ').replace(/^./, (c) => c.toUpperCase()),
-    more: Math.max(0, total - items.length),
-  };
+/** Short decisive facts for the card's chip row. Never empty for a real service. */
+export function cardFacts(svc) {
+  const facts = CARD_FACTS[svc?.title];
+  if (facts?.length) return facts;
+  // A service Roko adds later still gets chips rather than a hole in the card.
+  return (svc?.includes || []).slice(0, 2).map(s => s.split(/[,(]/)[0].trim()).filter(Boolean);
 }
+
 
 // How far out this service can be booked, and what the calendar will call it.
 export function leadDaysFor(svc) {

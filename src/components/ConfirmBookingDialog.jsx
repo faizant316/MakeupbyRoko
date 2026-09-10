@@ -15,6 +15,11 @@ import { useEffect, useRef } from 'react';
 //               reads as its own fact rather than as the tail of a long line.
 //   service   - what they're booking
 //   rows      - [{ label, value }] the other facts worth re-checking
+//   notice    - { title, body } warning shown under those facts. Used for the
+//               getting-ready address: Roko's second recurring problem is a
+//               client who submits, then phones to move the location, then
+//               submits the form again to try to fix it herself, which is how
+//               one booking becomes three rows (2026-09-09).
 //   confirmLabel / busyLabel
 //   submitting - true while the booking is saving
 //   onConfirm / onCancel
@@ -23,6 +28,7 @@ export default function ConfirmBookingDialog({
   year,
   service,
   rows = [],
+  notice = null,
   confirmLabel = 'Yes, this is correct',
   busyLabel = 'Sending…',
   submitting = false,
@@ -126,7 +132,7 @@ export default function ConfirmBookingDialog({
           </div>
 
           {facts.length > 0 && (
-            <dl className="rounded-2xl overflow-hidden mb-5" style={{ border: '1px solid #F0E7EC' }}>
+            <dl className={`rounded-2xl overflow-hidden ${notice ? 'mb-2.5' : 'mb-5'}`} style={{ border: '1px solid #F0E7EC' }}>
               {facts.map((r, i) => (
                 <div
                   key={r.label}
@@ -138,6 +144,21 @@ export default function ConfirmBookingDialog({
                 </div>
               ))}
             </dl>
+          )}
+
+          {/* Deliberately no "email us to change it" line. The whole point is
+              to make the address the client's job while it is still free to
+              fix, so an escape hatch here would just move the phone call. */}
+          {notice && (
+            <div className="rounded-2xl px-4 py-3.5 mb-5 flex items-start gap-2.5" style={{ background: 'rgba(196,132,154,0.07)', border: '1px solid #F0DCE4' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#B06883" strokeWidth="1.7" strokeLinecap="round" className="w-[15px] h-[15px] flex-shrink-0 mt-[1px]" aria-hidden="true">
+                <path d="M12 9v4" /><path d="M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+              </svg>
+              <div>
+                <p className="text-[0.74rem] font-semibold mb-1" style={{ color: '#B06883' }}>{notice.title}</p>
+                <p className="text-[0.76rem] leading-[1.6]" style={{ color: '#6E6058' }}>{notice.body}</p>
+              </div>
+            </div>
           )}
 
           <div className="flex flex-col gap-2">

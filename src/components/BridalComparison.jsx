@@ -20,7 +20,6 @@ function buildSections(luxury, fullday) {
         { label: 'Price', luxury: luxury.price, fullday: fullday.price },
         { label: 'Deposit (Zelle)', luxury: cleanDeposit(luxury.deposit), fullday: cleanDeposit(fullday.deposit) },
         { label: 'Remaining balance', luxury: 'Cash day-of', fullday: 'Cash day-of' },
-        { label: 'Bridesmaid add-ons', luxury: 'Available', fullday: 'Available' },
       ],
     },
     {
@@ -44,21 +43,29 @@ function buildSections(luxury, fullday) {
       rows: [
         // Full Day is always on-location (Roko doesn't do full days at the
         // studio), which is why it has no studio row and no travel line: travel
-        // is already priced into the package.
+        // is already priced into the package, up to the two-hour line below.
         { label: 'Studio (Mountain House, CA)', luxury: true, fullday: null },
         { label: 'Travels to your venue', luxury: true, fullday: true },
         { label: 'On-location travel fee', luxury: 'From +$200', fullday: 'Included' },
+        // The Full Day's travel is included only up to a point. Past roughly two
+        // hours Roko is booking a hotel the night before and losing a day to the
+        // drive, so a flat $750 is added (see FAR_TRAVEL_FEE in lib/travel).
+        // Luxury never reaches this row: over an hour it is already a Full Day.
+        { label: 'Venue over 2 hrs from the studio', luxury: null, fullday: '+$750' },
       ],
     },
     {
       // The heading carries the rule, so a dash in the Luxury column reads as
       // "not available on this package" without repeating "Full Day required"
-      // on every row. These three triggers are the policy (see ServiceFAQ).
+      // on every row. These triggers are the policy (see ServiceFAQ).
       category: 'When Full Day is required',
       rows: [
         { label: 'Venue over 1 hr from the studio', luxury: null, fullday: true },
         { label: 'Start time before 7 AM', luxury: null, fullday: true },
         { label: 'Second look on the day', luxury: null, fullday: true },
+        // Moved here from Pricing on 2026-09-09. Party glam used to read as an
+        // extra both packages sold; it is now a reason to book the Full Day.
+        { label: 'Bridesmaid / MOB add-ons', luxury: null, fullday: true },
       ],
     },
   ];

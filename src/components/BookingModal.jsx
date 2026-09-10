@@ -908,6 +908,13 @@ export default function BookingModal({ service: initialService, onClose }) {
                       { label: 'Where', value: hasTravelFee ? (formData.location || 'Roko travels to you') : `Roko's studio, ${STUDIO_TOWN}` },
                     ],
                     confirmLabel: 'Yes, confirm this booking',
+                    // Only when Roko is travelling. A studio booking's address
+                    // is Roko's own, so there is nothing for the client to get
+                    // wrong and a warning would just be noise.
+                    notice: hasTravelFee && formData.location ? {
+                      title: 'Check this address',
+                      body: "Once you submit, this location is locked in. Please make sure it's right before you send.",
+                    } : null,
                   }}
                   onEdit={() => goStep('form', 'back')}
                   onSign={handleSubmit}
