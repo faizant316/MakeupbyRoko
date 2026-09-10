@@ -607,7 +607,7 @@ function DayPeek({ dateKey, bookings = [], classRegs = [], dm, excludeConsultOf,
   );
 }
 
-function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, confirmed, dateFormatted, expanded, setExpanded, onDraftChange, renderDayPeek }) {
+function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, confirmed, dateFormatted, expanded, setExpanded, onDraftChange, renderDayPeek, onBlockedByTime }) {
   const hasConsult = !!booking.consultation_date;
   // Bridal booking already confirmed (via "confirm now, schedule later") but
   // with no consultation yet: send just the consultation email, don't re-send
@@ -616,6 +616,9 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
   // Unconfirmed bridal: this row IS step 2's only action, so it gets filled-
   // button styling instead of the quiet dashed placeholder.
   const leadStep = bridal && !confirmed;
+  // Sending this is what confirms an unconfirmed bridal booking, so it can't go
+  // out before the appointment has a working window on it.
+  const confirmBlocked = bridal && !consultOnly && !booking.time;
   const parsed = parseConsultNotes(booking.consultation_notes);
   // First-ever email to a Booksy-imported client (no link stored yet) is a
   // "welcome to the new site" message, not a "your time changed" one.
@@ -685,6 +688,11 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
   };
 
   const handleSend = async () => {
+    // This send is also the bridal confirmation (it flips status to confirmed
+    // below), so it obeys the same rule the status pills do: not until the
+    // appointment itself has a time. Checked here rather than only in the
+    // button, because this scheduler renders in two different places.
+    if (confirmBlocked) { onBlockedByTime?.(); return; }
     if (!form.date || !form.time) { alert('Please select a date and time.'); return; }
     setSaving(true);
     try {
@@ -937,15 +945,19 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 
             {/* CTA */}
             {!showConfirmSend ? (
-              <button onClick={() => { if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date}
+              <button onClick={() => { if (confirmBlocked) { onBlockedByTime?.(); return; } if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date && !confirmBlocked}
                 className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
                 style={{
                   minHeight: '50px', fontSize: '14px',
-                  ...(!form.date
-                    ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
-                    : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
+                  ...(confirmBlocked
+                    ? { background: dm ? 'rgba(245,158,11,0.10)' : '#FEF9EF', color: dm ? '#F5B83C' : '#B26A04', border: `1px dashed ${dm ? 'rgba(245,158,11,0.32)' : '#F0DDBC'}` }
+                    : !form.date
+                      ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
+                      : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
                 }}>
-                {migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : consultOnly ? 'Schedule & Notify Client' : 'Confirm & Notify Client'}
+                {confirmBlocked
+                  ? 'Set the appointment time first'
+                  : migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : consultOnly ? 'Schedule & Notify Client' : 'Confirm & Notify Client'}
               </button>
             ) : (
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
@@ -1181,6 +1193,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [reasonFocus, setReasonFocus] = useState(false);
   const [includeReason, setIncludeReason] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  // Set for a few seconds when something was blocked for want of a time, so the
+  // Appointment box she's just been scrolled to says which box it meant.
+  const [timeHighlight, setTimeHighlight] = useState(false);
   const [pendingWindow, setPendingWindow] = useState(booking.time || '');
   const [showReconfirmBanner, setShowReconfirmBanner] = useState(false);
   // What Roko just changed (time / date / service), so the notify message can
@@ -1564,8 +1579,29 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     };
   }, [pendingStatus]);
 
+  // ── The one rule the card enforces ────────────────────────────────────────
+  // Nothing is confirmed until step 1 is actually finished.
+  //
+  // Confirming and setting the time were two independent controls that happened
+  // to sit near each other, and the status pills at the bottom of the card were
+  // reachable without ever answering "does 3:00 PM work?". So a real bride was
+  // confirmed on a day with no time on it, and the only copy of that time was
+  // in Roko's head. The status pills now refuse, the bridal consultation send
+  // refuses, "confirm now, schedule later" refuses, and the bulk bar on the
+  // list refuses. Every route to Confirmed runs through a time.
+  //
+  // Completed and Cancelled stay open: a timeless booking that never happened
+  // still has to be closable.
+  const refuseConfirm = () => {
+    setTimeHighlight(true);
+    showToast('Set the appointment time first', '#B26A04');
+    setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 40);
+    setTimeout(() => setTimeHighlight(false), 3000);
+  };
+
   const handleStatusChange = (s) => {
     if (booking.status === s) return;
+    if (s === 'confirmed' && !booking.time) { refuseConfirm(); return; }
     // Bridal: confirming happens by scheduling the consultation, which sends one
     // combined email. Tapping "Confirmed" just opens the scheduler — no status
     // change and no email until "Confirm & Notify Client" is pressed.
@@ -1600,7 +1636,12 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         }).catch(err => console.error('confirmed email error:', err));
       }
     } else if (s === 'cancelled') {
-      showToast('Appointment cancelled', '#ef4444');
+      showToast('Cancelled and filed away', '#ef4444');
+      // Cancelling is the end of this card, so it closes itself and hands her
+      // back the list the appointment has just left. Staying on a red card that
+      // no longer appears anywhere else was the half-finished version of this:
+      // the booking was gone from the list behind her and nothing said so.
+      setTimeout(() => onBack?.(), 1100);
       if (booking.email) {
         // Reason is optional: toggle off sends none (email stays warm, no reason
         // line); toggle on falls back to the friendly default if she cleared it.
@@ -1782,6 +1823,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const [confirmLaterSending, setConfirmLaterSending] = useState(false);
   const confirmNowScheduleLater = async () => {
     if (confirmLaterSending) return;
+    // Same rule as everywhere else: this one confirms too.
+    if (!booking.time) { setConfirmLaterOpen(false); refuseConfirm(); return; }
     setConfirmLaterSending(true);
     try {
       const res = await fetch('/api/confirm-bridal', {
@@ -1816,6 +1859,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       expanded={consultExpanded}
       setExpanded={setConsultExpanded}
       onDraftChange={handleConsultDraft}
+      onBlockedByTime={refuseConfirm}
       renderDayPeek={(d, t) => (!showSchedule && d ? (
         <DayPeek
           dateKey={d}
@@ -2283,10 +2327,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             so there's no separate time section further down the card. */}
         <div ref={timeSectionRef} className="mb-6 flex flex-col gap-3">
           {/* Appointment / ready-by card */}
+          {/* The amber ring only appears for a few seconds, and only right after
+              something was refused for want of a time. She has just been
+              scrolled here from somewhere else on the card, so the box has to
+              say "this one" without her hunting for it. */}
           <div className="rounded-[14px] overflow-hidden" style={{
-            border: `1px solid ${needsTime ? (dm ? '#5c4550' : '#E7C6D3') : (dm ? '#3a3a48' : '#E5E5EC')}`,
+            border: `1px solid ${timeHighlight ? '#F59E0B' : needsTime ? (dm ? '#5c4550' : '#E7C6D3') : (dm ? '#3a3a48' : '#E5E5EC')}`,
             background: dm ? '#1e1e24' : '#fff',
-            boxShadow: needsTime ? (dm ? 'none' : '0 2px 14px rgba(196,132,154,0.13)') : 'none',
+            boxShadow: timeHighlight
+              ? `0 0 0 4px ${dm ? 'rgba(245,158,11,0.20)' : 'rgba(245,158,11,0.16)'}`
+              : needsTime ? (dm ? 'none' : '0 2px 14px rgba(196,132,154,0.13)') : 'none',
+            transition: 'border-color 240ms ease, box-shadow 240ms ease',
           }}>
             {/* Narrow screens stack the label above the buttons: side by side,
                 the label plus two pills overflow and the pill text wraps mid
@@ -3086,17 +3137,46 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {STATUSES.map(s => {
               const isActive = booking.status === s;
+              // Confirmed is off the table until there's a time on the booking.
+              // Still tappable on purpose: tapping it is how she finds out why,
+              // and it scrolls her to the box that fixes it.
+              const locked = s === 'confirmed' && !booking.time && !isActive;
               return (
                 <button key={s} onClick={() => handleStatusChange(s)}
-                  className="py-2.5 px-3 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90 truncate"
+                  aria-disabled={locked}
+                  title={locked ? 'Set the appointment time first' : undefined}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90"
                   style={isActive
                     ? { background: STATUS_COLORS[s], color: '#fff' }
-                    : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
+                    : locked
+                      ? { background: dm ? '#26262e' : '#FAFAFB', color: dm ? '#5a5a63' : '#c9c9d1', border: `1px dashed ${dm ? '#3a3a48' : '#E4E4EC'}` }
+                      : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
                   }
-                >{s}</button>
+                >
+                  {locked && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 flex-shrink-0">
+                      <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                    </svg>
+                  )}
+                  <span className="truncate">{s}</span>
+                </button>
               );
             })}
           </div>
+
+          {/* Why Confirmed is locked, said in the same place it's locked. */}
+          {!booking.time && booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+            <button type="button"
+              onClick={refuseConfirm}
+              className="w-full flex items-start gap-2 mt-3 px-3 py-2.5 rounded-[10px] text-left transition-opacity hover:opacity-80"
+              style={{ background: dm ? 'rgba(245,158,11,0.10)' : '#FEF9EF', border: `1px solid ${dm ? 'rgba(245,158,11,0.26)' : '#F3E4C8'}` }}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[7px]" style={{ background: '#F59E0B' }} />
+              <span className="text-[0.72rem] leading-snug" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>
+                No appointment time set yet, so this can&rsquo;t be confirmed.{' '}
+                <span className="font-semibold underline underline-offset-2">Set the time in the Appointment panel</span>, then come back.
+              </span>
+            </button>
+          )}
 
           {/* The client cancelled this themselves, from their email link. Shows
               who + when + their reason, so a cancelled booking is never a mystery. */}
@@ -3114,7 +3194,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             </div>
           )}
 
-          {isBridal && !schedulerInHub && booking.status !== 'confirmed' && !booking.consultation_date && (
+          {isBridal && !schedulerInHub && booking.time && booking.status !== 'confirmed' && !booking.consultation_date && (
             <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
               Tap <span className="font-semibold" style={{ color: '#2563EB' }}>Confirmed</span> or schedule below. One email goes out with their confirmation, consultation details &amp; upload link.
             </p>
@@ -3133,15 +3213,38 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           {/* Consultation scheduler lives under status only when not in the hub.
               Bridal-only: consultations are part of the bridal pipeline, and the
               isBridal check was missing here, so every non-bridal card offered
-              to schedule one it would never have. */}
+              to schedule one it would never have.
+              An unconfirmed bride with no time gets sent back to step 1 instead,
+              because scheduling her consultation is also what confirms her. */}
           {isBridal && !schedulerInHub && (
             <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECECF0'}` }}>
-              {consultScheduler}
+              {!booking.time && booking.status === 'pending' ? (
+                <button type="button" onClick={refuseConfirm}
+                  className="w-full flex items-center gap-3 px-4 py-4 rounded-[12px] text-left transition-opacity hover:opacity-85"
+                  style={{ background: dm ? '#1e1e24' : '#FBF8F9', border: `1px dashed ${dm ? '#3a3a48' : '#E7DDE1'}` }}>
+                  <StepDot n={1} state="active" dm={dm} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>
+                      Set the appointment time first
+                    </span>
+                    <span className="block text-[0.72rem] leading-snug mt-0.5" style={{ color: dm ? '#8e8e99' : '#9A8E92' }}>
+                      Booking the consultation is what confirms {firstName}, and her email carries the appointment time. It has to exist first.
+                    </span>
+                  </span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#7a7a84' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0">
+                    <polyline points="18 15 12 9 6 15" />
+                  </svg>
+                </button>
+              ) : consultScheduler}
             </div>
           )}
         </div>
 
-        {/* Delete */}
+        {/* Delete. Cancelling already takes a booking off the calendar and out
+            of the list, so this is only for a row that should never have
+            existed — a test, a duplicate, a wrong number. The line under it is
+            there because the two now look like the same action from a
+            distance, and only one of them is recoverable. */}
         <div className="pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
@@ -3160,6 +3263,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 style={{ color: dm ? '#8e8e99' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>Cancel</button>
             </div>
           )}
+          <p className="text-[0.68rem] leading-relaxed mt-2.5 max-w-[440px]" style={{ color: dm ? '#7a7a84' : '#a8a0a4' }}>
+            Deleting erases this booking for good. To call one off, use{' '}
+            <span className="font-semibold" style={{ color: dm ? '#f0918a' : '#C0473B' }}>Cancelled</span>{' '}
+            above: it emails the client, takes the day back and files the booking in the archive, where you can still find it.
+          </p>
         </div>
       </div>
 
@@ -3450,7 +3558,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             title={isReconfirm ? 'Reconfirm appointment?' : cancelling ? 'Cancel this appointment?' : `Mark as ${statusKey}?`}
             body={isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
               : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
-              : cancelling ? 'A cancellation email will be sent to the client. Add an optional reason below.'
+              : cancelling ? `${booking.email ? 'A cancellation email goes out, and it' : 'It'} comes off your calendar and out of your appointments straight away. It stays in the archive if you need it back.`
               : statusKey === 'completed' ? 'This will archive the appointment as complete.'
               : 'This will update the appointment status.'}
             confirmLabel={isReconfirm ? 'Yes, reconfirm' : cancelling ? 'Yes, cancel it' : 'Yes, update'}
