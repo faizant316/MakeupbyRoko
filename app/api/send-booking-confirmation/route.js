@@ -29,7 +29,7 @@ export async function POST(req) {
       dateFormatted, uploadUrl, isEarlyArrival, hasTravelFee, estimatedTotal, readyByTime, occasion, notes,
       bridalTitle, bridalDeposit, bridalPrice, bridalRemaining, bridalDateFormatted, makeupReadyByTime,
       phone, instagram, eventLocation, eventStartTime, venueAccessTime, photographerArrival,
-      photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, weddingDate, additionalDetails, howHeard,
+      photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, farTravelFee, farTravelDrive, weddingDate, additionalDetails, howHeard,
       contractSignedName, contractSignedAt, contractPhotoConsent,
     } = body;
 
@@ -64,6 +64,10 @@ export async function POST(req) {
         // Pass the bridal price too: the emailed copy has to state the same
         // numbers the bride actually signed on site, not "the quoted amount".
         priceAmount: isBridal ? bridalPrice : servicePrice,
+        // Only ever set on a far-travel bridal booking. buildContract folds it
+        // into {price} and {balance}, so the emailed agreement quotes the same
+        // total she signed on site.
+        farTravelFee: isBridal ? farTravelFee : undefined,
         locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
         kind: 'appointment',
         overrides,
@@ -75,7 +79,7 @@ export async function POST(req) {
 
     const clientHtml = isBridal
       ? bridalConfirmationEmail({
-          firstName, bridalTitle, bridalDateFormatted, bridalDeposit, bridalPrice, bridalRemaining, uploadUrl,
+          firstName, bridalTitle, bridalDateFormatted, bridalDeposit, bridalPrice, bridalRemaining, farTravelFee, farTravelDrive, uploadUrl,
           eventLocation, numPeopleGlam, outOfState, destinationLocation, eventStartTime, venueAccessTime,
           hairstylistArriveBy: readyByTime, makeupReadyByTime, photographerArrival, photographer, hairstylist,
           additionalDetails, contractSection,
@@ -99,7 +103,7 @@ export async function POST(req) {
       ? adminBridalEmail({
           firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email: recipient, phone, instagram,
           eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy: readyByTime, makeupReadyByTime, photographerArrival,
-          photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, additionalDetails, howHeard,
+          photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, farTravelFee, farTravelDrive, additionalDetails, howHeard,
           contractSignedName, contractSignedAt, contractPhotoConsent,
         })
       : adminBookingEmail({

@@ -28,7 +28,7 @@ import { STUDIO_READY_VALUE } from '@/lib/studio';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
 import { BRIDAL_LEAD_DAYS, canAddParty, daysUntil } from '@/lib/bookingLeadTime';
 import { useTravelDistance } from '@/lib/useTravelDistance';
-import { LOCAL_TRAVEL_FEE, formatDriveTime, isOutsideCalifornia, needsFullDay } from '@/lib/travel';
+import { FAR_TRAVEL_FEE, LOCAL_TRAVEL_FEE, addMoney, formatDriveTime, isOutsideCalifornia, needsFarTravelFee, needsFullDay } from '@/lib/travel';
 
 // The two-part bridal flow (plan it, then wear it). Desktop only — on a phone
 // step one carries the one-line version of this next to the lead-time note.
@@ -47,6 +47,23 @@ const CONSULT_STEPS = [
 
 // Stable stand-in for "counts haven't arrived yet" — see where it's used below.
 const NO_COUNTS = {};
+
+const moneyNum = (v) => {
+  const n = parseFloat(String(v ?? '').replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
+const fmtMoney = (n) => `$${n.toLocaleString('en-US')}`;
+
+// One line of the far-travel breakdown. A plain table rather than prose: she is
+// checking arithmetic here, and prose makes people take the total on trust.
+function MoneyRow({ label, value, strong }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5" style={{ borderTop: '1px solid #F6EBF0' }}>
+      <span className="text-[0.76rem]" style={{ color: strong ? '#4A423E' : '#8A7F79' }}>{label}</span>
+      <span className={`text-[0.82rem] tabular-nums ${strong ? 'font-semibold' : ''}`} style={{ color: strong ? '#2C1A14' : '#6E6058' }}>{value}</span>
+    </div>
+  );
+}
 
 const inputClass = "w-full px-0 py-3 border-0 border-b border-gray-200 text-base sm:text-[0.95rem] focus:border-[#D4A0B0] outline-none transition-all bg-transparent text-[#111] placeholder:text-gray-300 rounded-none touch-manipulation";
 const labelClass = "block text-[0.68rem] font-semibold tracking-[0.14em] text-[#6E6660] uppercase mb-2";
@@ -277,7 +294,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const isTrial = /trial/i.test(activeService?.title || '');
   const bridalPrice = activeService?.price || '$750';
   const bridalDeposit = activeService?.deposit || '$375 deposit';
-  const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','Professional touch-up kit','30-min Zoom consultation included','Bridesmaid add-ons available'];
+  const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','Professional touch-up kit','30-min Zoom consultation included'];
   const bridalTitle = activeService?.title || 'Bridal Package';
 
   // For the Bridal Trial, the date being picked is the trial date, not the
@@ -363,6 +380,45 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     && needsFullDay(travel.minutes)
     && !isOutsideCalifornia(travel.matched);
   const driveTimeLabel = formatDriveTime(travel.minutes);
+
+  // The two-hour rule. The hour rule above decides which package she books; this
+  // one decides what it costs. Full Day includes travel, but only so far: past
+  // roughly two hours Roko books a hotel the night before so she can start on
+  // time, and the day costs her the drive both ways on top of the wedding. Flat
+  // fee, any distance past the line (Roko, 2026-09-09).
+  //
+  // Same fail-open contract as the hour rule: an unmeasurable venue is never
+  // charged $750 on a guess, and a destination wedding is quoted per trip.
+  const farTravel = isFullDay
+    && !isTrial
+    && form.out_of_state !== true
+    && needsFarTravelFee(travel.minutes)
+    && !isOutsideCalifornia(travel.matched);
+  const farTravelTotal = (farTravel && addMoney(bridalPrice, FAR_TRAVEL_FEE)) || bridalPrice;
+  // The deposit does not move. Roko's call (2026-09-09): the $750 is remaining
+  // balance, cash on the day, not something she collects up front.
+  // The services table bakes the word into the value ("$850 deposit"), which
+  // reads wrong mid-sentence.
+  const depositOnly = (bridalDeposit || '').replace(/s*deposits*$/i, '').trim();
+  const _farTotalN = moneyNum(farTravelTotal);
+  const _farDepositN = moneyNum(bridalDeposit);
+  const farTravelCash = farTravel && _farTotalN != null && _farDepositN != null && _farTotalN > _farDepositN
+    ? fmtMoney(_farTotalN - _farDepositN)
+    : '';
+
+  // She has to say yes to the $750 where it is explained, not meet it for the
+  // first time at Review & Sign. Cleared whenever the venue changes, so a bride
+  // who accepts San Diego and then types a closer address is never carrying an
+  // acknowledgement of a fee that no longer applies to her.
+  const [farTravelAck, setFarTravelAck] = useState(false);
+  useEffect(() => { setFarTravelAck(false); }, [form.event_location]);
+
+  // A bride the hour rule pushes to Full Day may ALSO be past two hours. The
+  // switch button has to quote what she will actually owe: being shown $1,700,
+  // tapping, and landing on a $750 box is the same bait the measured gate was
+  // built to remove.
+  const gateFarTravel = travelGated && needsFarTravelFee(travel.minutes);
+  const gatePrice = (gateFarTravel && addMoney(fullDayService?.price, FAR_TRAVEL_FEE)) || fullDayService?.price;
   // What the extra costs her, said in her terms. Roko asked for this directly
   // (2026-09-05): the old switch said only "travel included", so a bride watched
   // the price go from $750 to $1,700 with no idea what the difference bought.
@@ -374,18 +430,26 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     'A switch look between ceremony and reception',
     'Professional lash application',
     'All travel to your venue',
-  ]).slice(0, 5);
+  ]).filter(item => !(gateFarTravel && /travel/i.test(item))).slice(0, 5);
 
   // Party add-ons need a month. Derived from the date the bride actually picked,
   // so it re-evaluates if she goes back and moves her date.
-  const partyAllowed = canAddParty(selectedDate);
+  // Full Day only as of 2026-09-09. More chairs means more hours and more
+  // product, which is a full day's work whatever the bride booked, so Roko sells
+  // it with the day rather than as an add-on to a two-hour package. The Luxury
+  // form does not ask the question at all rather than asking and refusing.
+  const partyAllowed = isFullDay && canAddParty(selectedDate);
   const daysToDate = daysUntil(selectedDate);
 
   // One human-readable answer for "who needs glam", stored + emailed so Roko always
   // sees either the bridal-party count or an explicit "Just the bride". When the
   // date is inside the party window Roko never asked the question, so the record
   // says exactly that instead of implying the bride chose to come alone.
-  const glamSummary = !partyAllowed
+  const glamSummary = isTrial
+    ? ''
+    : !isFullDay
+    ? 'Just the bride (party glam is Full Day only)'
+    : !partyAllowed
     ? 'Just the bride (inside 1 month, party glam not offered)'
     : form.bridal_party_glam === true
       ? (form.num_people_glam.trim() || 'Yes, final count to confirm')
@@ -475,6 +539,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       alert(`That venue is about ${driveTimeLabel} from the studio, which is over an hour away, so it books as the Full Day Service. Tap "Continue with Full Day" to switch.`);
       return;
     }
+    // The $750 is a third of the booking again, so it is not something she can
+    // scroll past. The box explains it and she taps to accept it there; this is
+    // only the backstop for scrolling straight to the footer.
+    if (farTravel && !farTravelAck) {
+      alert(`That venue is about ${driveTimeLabel} from the studio. Over two hours there's a flat ${FAR_TRAVEL_FEE} on top of the package, so please confirm the ${farTravelTotal} total before continuing.`);
+      return;
+    }
     // She has a venue on screen and no verdict for it yet: either the debounce
     // has not fired or Google has not answered. A second of waiting beats
     // letting the wrong package through in the gap.
@@ -544,6 +615,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
           isTrial
             ? `Preferred time: ${form.event_start_time || 'Flexible'}`
             : `Ready by: ${form.makeup_ready_by_time || 'Not specified'}`,
+          farTravel ? `Far travel: +${FAR_TRAVEL_FEE} (venue ~${driveTimeLabel} out) · total ${farTravelTotal}` : null,
           form.additional_details?.trim() || null,
           `✍️ Agreement ${sig.version} signed by ${sig.name} · Photos: ${sig.photoConsent ? 'YES' : 'NO'}`,
         ].filter(Boolean).join(' | '),
@@ -572,14 +644,17 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     // the bare difference there would under-state what she brings in cash. Full
     // Day is priced with travel included, so it always gets an exact figure.
     const money = (s) => { const n = parseFloat(String(s || '').replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : null; };
-    const _priceN = money(bridalPrice);
+    // The total she owes, far travel included. Quoting the bare package
+    // price here would under-state the cash by $750 on the deposit page and
+    // in the confirmation email, which is the one number she plans around.
+    const _priceN = money(farTravelTotal);
     const _depositN = money(bridalDeposit);
     const _hasTravelFee = !isFullDay && !isTrial
       && !!form.event_location && form.event_location !== STUDIO_READY_VALUE;
     const bridalRemaining = (!_hasTravelFee && _priceN != null && _depositN != null && _priceN > _depositN)
       ? `$${(_priceN - _depositN).toLocaleString('en-US')}`
       : '';
-    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(bridalPrice || '')}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
+    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(farTravelTotal || '')}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
     // Year included — the emailed date is the client's last chance to catch a
     // wrong one, and without it a booking a year out reads as this year's.
     const bridalDateFormatted = selectedDate
@@ -615,6 +690,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
           bridalTitle,
           bridalDeposit,
           bridalPrice,
+          farTravelFee: farTravel ? FAR_TRAVEL_FEE : '',
+          farTravelDrive: farTravel ? driveTimeLabel : '',
           bridalRemaining,
           bridalDateFormatted,
           uploadUrl,
@@ -656,6 +733,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Phone', value: form.phone },
       { label: 'Instagram / TikTok', value: form.instagram_handle },
       { label: isTrial ? 'Location' : 'Getting ready', value: form.event_location },
+      { label: 'Far travel', value: farTravel ? `+${FAR_TRAVEL_FEE}` : '' },
+      { label: 'Total', value: farTravel ? farTravelTotal : '' },
       { label: 'Preferred time', value: isTrial ? form.event_start_time : '' },
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
@@ -687,6 +766,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     dateFormatted: selectedDateLong || 'your wedding date',
     depositAmount: bridalDeposit,
     priceAmount: bridalPrice,
+    // Folded into {price} and {balance} by buildContract, so every clause
+    // does its arithmetic on what she actually owes. Without it she would
+    // sign an agreement quoting a balance $750 short of the real one.
+    farTravelFee: farTravel ? FAR_TRAVEL_FEE : undefined,
     locationType: 'onlocation',
     overrides: contractOverrides,
   });
@@ -1065,7 +1148,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   <div className="mb-4 rounded-xl px-3.5 py-3" style={{ background: 'rgba(196,132,154,0.08)', border: '1px solid #EBC4D2', animation: 'fadeSlideDown 0.2s ease-out' }}>
                     <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: '#B06883' }}>Package switched</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#4A423E' }}>
-                      Now booking the <strong>{bridalTitle}</strong>{activeService?.price ? <>, <strong>{activeService.price}</strong></> : null}. Travel included, and everything you'd filled in was kept.
+                      Now booking the <strong>{bridalTitle}</strong>{activeService?.price ? <>, <strong>{activeService.price}</strong></> : null}.{farTravel ? null : <> Travel included,</>} {farTravel ? 'Everything' : 'and everything'} you&apos;d filled in was kept.
                     </p>
                   </div>
                 )}
@@ -1073,13 +1156,102 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Hotel, home or venue. Roko travels to you.</p>
                 <LocationAutocomplete value={form.event_location} onChange={v => set('event_location', v)} />
                 <DriveTime status={travel.status} label={driveTimeLabel} />
-                <div className="mt-3 relative pl-3.5">
-                  <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                  <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
-                  <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                    Your balance (the price minus your deposit) is cash on the day.
-                  </p>
-                </div>
+                {/* Full Day quotes "travel included" at any distance, which was
+                    true of a ninety-minute drive and untrue of a seven-hour one.
+                    Past two hours the day is an overnight, and this box is where
+                    she finds that out: at the venue field, while the address is
+                    still free to change, rather than at Review & Sign or in an
+                    email afterwards. Same shape as the hour-rule gate on the
+                    Luxury form, because it is the same kind of moment. */}
+                {farTravel ? (
+                  <div
+                    className="mt-3.5 rounded-2xl border"
+                    style={{
+                      borderColor: '#DCA9BE',
+                      background: 'linear-gradient(180deg, rgba(196,132,154,0.075), rgba(196,132,154,0.025))',
+                      animation: 'fadeSlideDown 0.2s ease-out',
+                    }}
+                  >
+                    <div className="px-4 pt-4 pb-4">
+                      <p className="inline-block text-[0.55rem] font-bold tracking-[0.16em] uppercase mb-2.5 px-2 py-1 rounded-md text-white" style={{ background: '#B06883' }}>
+                        Far travel
+                      </p>
+                      <p className="text-[0.86rem] leading-[1.7]" style={{ color: '#4A423E' }}>
+                        Your venue is about <strong className="font-semibold">{driveTimeLabel}</strong> from the studio. Past two hours there&apos;s a flat <strong className="font-semibold">{FAR_TRAVEL_FEE}</strong> on top of the package.
+                      </p>
+
+                      {/* What the fee buys, in her terms. Roko's own reasons for
+                          it (2026-09-09), because "far travel fee" on its own
+                          reads as a surcharge rather than as real costs. */}
+                      <ul className="mt-3.5 flex flex-col gap-[0.35rem]">
+                        {[
+                          'A hotel the night before, so Roko starts on time and rested',
+                          'Transportation there and back',
+                          'The extra day, since a venue this far is a two-day job',
+                        ].map(item => (
+                          <li key={item} className="flex items-start gap-2 text-[0.78rem] leading-[1.55]" style={{ color: '#6E6058' }}>
+                            <span className="mt-[0.42rem] w-[3px] h-[3px] rounded-full flex-shrink-0" style={{ background: '#C4849A' }} aria-hidden="true" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* The arithmetic, shown rather than summarised. The
+                          deposit deliberately does not move: the fee is remaining
+                          balance, cash on the day (Roko, 2026-09-09). */}
+                      <div className="mt-4 rounded-xl overflow-hidden bg-white" style={{ border: '1px solid #EBD3DD' }}>
+                        <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
+                          <span className="text-[0.76rem]" style={{ color: '#8A7F79' }}>{bridalTitle}</span>
+                          <span className="text-[0.82rem] tabular-nums" style={{ color: '#6E6058' }}>{bridalPrice}</span>
+                        </div>
+                        <MoneyRow label="Far travel" value={`+${FAR_TRAVEL_FEE}`} />
+                        <MoneyRow label="Total" value={farTravelTotal} strong />
+                      </div>
+                      {farTravelCash && (
+                        <p className="text-[0.76rem] leading-[1.6] mt-2.5" style={{ color: '#6E6058' }}>
+                          Your deposit stays <strong style={{ color: '#4A423E' }}>{depositOnly}</strong>, so <strong style={{ color: '#4A423E' }}>{farTravelCash}</strong> is cash on the day.
+                        </p>
+                      )}
+
+                      {/* Tapped once, here, where it is explained. Not a second
+                          popup: the flow already ends with the double-check
+                          dialog, and two dialogs for one booking teaches people
+                          to tap through both. */}
+                      {farTravelAck ? (
+                        <div className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[0.8rem] font-medium" style={{ background: 'rgba(196,132,154,0.14)', color: '#8A5468' }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px]" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Added to your booking
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setFarTravelAck(true)}
+                          className="mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-[0.82rem] font-semibold text-white transition-all active:scale-[0.985] touch-manipulation"
+                          style={{ background: '#111' }}
+                        >
+                          Yes, continue at {farTravelTotal}
+                          <span aria-hidden="true">&rarr;</span>
+                        </button>
+                      )}
+                      {/* Never a dead end, and never a bride who typed the
+                          reception venue by mistake with no idea she can fix it
+                          by changing the address. */}
+                      <p className="text-[0.72rem] text-center mt-2.5 leading-[1.6]" style={{ color: '#A2968F' }}>
+                        Or get ready somewhere closer to the studio.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 relative pl-3.5">
+                    <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                    <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
+                    <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
+                      Your balance (the price minus your deposit) is cash on the day.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div>
@@ -1150,8 +1322,19 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                             Full Day Service
                           </p>
                           <p className="text-[0.86rem] leading-[1.7]" style={{ color: '#4A423E' }}>
-                            Your venue is about <strong className="font-semibold">{driveTimeLabel}</strong> from the studio. Over an hour, Roko books the whole day as the <strong className="font-semibold">Full Day Service</strong>, travel included.
+                            Your venue is about <strong className="font-semibold">{driveTimeLabel}</strong> from the studio. Over an hour, Roko books the whole day as the <strong className="font-semibold">Full Day Service</strong>{gateFarTravel ? null : <>, travel included</>}.
                           </p>
+
+                          {/* Two rules can fire on one venue: over an hour it
+                              becomes a Full Day, and over two hours that Full
+                              Day costs more. Saying only the first, then
+                              meeting her with the second on the next screen,
+                              is the bait the measured gate exists to remove. */}
+                          {gateFarTravel && (
+                            <p className="text-[0.86rem] leading-[1.7] mt-2" style={{ color: '#4A423E' }}>
+                              It&apos;s also past two hours, so a flat <strong className="font-semibold">{FAR_TRAVEL_FEE}</strong> covers the hotel the night before and the drive. That makes it <strong className="font-semibold">{gatePrice}</strong> in total.
+                            </p>
+                          )}
 
                           {/* What the extra actually buys. The old switch said only
                               "travel included", so she watched the price more than
@@ -1171,7 +1354,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                             className="mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-[0.82rem] font-semibold text-white transition-all active:scale-[0.985] touch-manipulation"
                             style={{ background: '#111' }}
                           >
-                            Continue with Full Day{fullDayService?.price ? ` · ${fullDayService.price}` : ''}
+                            Continue with Full Day{gatePrice ? ` · ${gatePrice}` : ''}
                             <span aria-hidden="true">&rarr;</span>
                           </button>
                           {/* Never a dead end. Both of these are genuinely open to
@@ -1275,11 +1458,19 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
 
-            {/* A bridal party needs a month's notice: more chairs means more
-                hours and more product than Roko can absorb late. Inside that
-                window the question isn't asked at all rather than asked and
-                then refused, so a bride is never offered something that gets
-                taken back. She can still book herself, which is the point. */}
+            {/* Two separate rules, and the form only ever shows one question.
+
+                Which package: party glam is Full Day only as of 2026-09-09,
+                so the Luxury form does not ask at all. A bride is never shown
+                a choice that would be taken away from her later, and the
+                Luxury card, the comparison table and the FAQs no longer offer
+                it either, so nothing sends her here expecting it.
+
+                How far out: a party still needs a month even on a Full Day.
+                More chairs means more hours and more product than Roko can
+                absorb late. Inside that window she is told the rule outright
+                rather than asked and then refused, and she can still book
+                herself, which is the point. */}
             {partyAllowed ? (
               <div>
                 <label className={labelClass}>Does your bridal party need glam too? *</label>
@@ -1320,7 +1511,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   </div>
                 )}
               </div>
-            ) : (
+            ) : isFullDay ? (
               <div>
                 <label className={labelClass}>Bridal party glam</label>
                 <div className="relative pl-3.5 mt-1.5">
@@ -1331,14 +1522,14 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                       ahead. Her own date comes second, as the reason it doesn't
                       apply to her. */}
                   <p className="text-[0.88rem] font-semibold mb-1" style={{ color: '#B06883' }}>
-                    Must be booked 30+ days in advance
+                    Must be booked at least one month in advance
                   </p>
                   <p className="text-[0.82rem] leading-[1.6]" style={{ color: '#6E6058' }}>
                     Your {dateNoun} is {daysToDate != null ? `${daysToDate} ${daysToDate === 1 ? 'day' : 'days'} away` : 'sooner than that'}, so this covers you only. Want your party glammed? Add a note below.
                   </p>
                 </div>
               </div>
-            )}
+            ) : null}
 
             <div className="w-full h-px bg-gray-100" />
 
@@ -1467,8 +1658,23 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                   { label: 'Package', value: bridalTitle },
                   { label: isTrial ? 'Preferred time' : 'Ready by', value: isTrial ? form.event_start_time : form.makeup_ready_by_time },
                   { label: isTrial ? 'Location' : 'Getting ready', value: form.event_location },
+                  // Restated because it is a third of the booking again and
+                  // she agreed to it several screens ago. Rows with no value
+                  // are dropped by the dialog, so these vanish on a normal
+                  // booking rather than printing empty lines.
+                  { label: 'Far travel', value: farTravel ? `+${FAR_TRAVEL_FEE}` : '' },
+                  { label: 'Total', value: farTravel ? farTravelTotal : '' },
                 ],
                 confirmLabel: 'Yes, send my inquiry',
+                // Roko's second recurring problem (2026-09-09): a bride
+                // submits, phones to move the venue, then re-submits the form
+                // herself to try to fix it, which is how one wedding becomes
+                // three rows. Deliberately no "email us to change it" line:
+                // an escape hatch here would just move the phone call.
+                notice: (!isTrial && form.event_location && form.event_location !== STUDIO_READY_VALUE) ? {
+                  title: 'Check this address',
+                  body: "Once you submit, this location is locked in. Please make sure it's right before you send.",
+                } : null,
               }}
               onEdit={() => goStep('form', 'back')}
               onSign={handleSubmit}

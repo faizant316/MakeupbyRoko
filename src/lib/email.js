@@ -185,6 +185,26 @@ function cpanel(inner) {
   </td></tr>`;
 }
 
+// A short aside in the reader's flow: the reason a booking was cancelled, a
+// line about a deposit. One small tracked label and the sentence, set between
+// two hairlines.
+//
+// It used to be a cpanel, which is a bordered, rounded, white-on-white box —
+// the same container the receipt tables live in. On a cancellation that put a
+// rounded pill around a single sentence, floating in the middle of the email
+// with nothing in it to justify a frame, and it read as an error notice rather
+// than a note from a person. The rules do the separating now.
+function cnote(label, html) {
+  return `<tr><td style="padding:22px 30px 4px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #F0E6EC;border-bottom:1px solid #F0E6EC;">
+      <tr><td style="padding:20px 4px;text-align:center;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C4849A;margin:0 0 10px;">${label}</p>
+        <p style="font-size:15px;color:#5A5258;line-height:1.7;margin:0;">${html}</p>
+      </td></tr>
+    </table>
+  </td></tr>`;
+}
+
 // The running order, numbered, matching the What's Next block on the site's own
 // confirmation screen. It replaces a paragraph that restated the deposit box and
 // the summary above it, so it told the reader nothing they had not just read.
@@ -228,10 +248,13 @@ function ctotalRow(label, value) {
   </tr>`;
 }
 
-function clientButton(href, label, dark) {
+// `big` is for an email whose whole point is the one action at the bottom of
+// it — a cancellation has nothing else to do, so its Book Again shouldn't be
+// the same quiet size as a link tucked under a confirmed appointment.
+function clientButton(href, label, dark, big) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;"><tr>
-    <td align="center" bgcolor="${dark ? '#16110F' : '#C4849A'}" style="border-radius:12px;">
-      <a href="${href}" style="display:inline-block;padding:15px 34px;font-size:14px;font-weight:700;letter-spacing:0.02em;color:#ffffff;text-decoration:none;border-radius:12px;">${label}</a>
+    <td align="center" bgcolor="${dark ? '#16110F' : '#C4849A'}" style="border-radius:${big ? 14 : 12}px;">
+      <a href="${href}" style="display:inline-block;padding:${big ? '18px 52px' : '15px 34px'};font-size:${big ? 15.5 : 14}px;font-weight:700;letter-spacing:0.02em;color:#ffffff;text-decoration:none;border-radius:${big ? 14 : 12}px;">${label}</a>
     </td>
   </tr></table>`;
 }
@@ -522,6 +545,7 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
 // optional so a sparse admin-entered booking degrades to the short version.
 export function bridalConfirmationEmail({
   firstName, bridalTitle, bridalDateFormatted, bridalDeposit, bridalPrice, bridalRemaining,
+  farTravelFee, farTravelDrive,
   uploadUrl, eventLocation, numPeopleGlam, outOfState, destinationLocation, eventStartTime, venueAccessTime,
   hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist,
   additionalDetails, contractSection = '',
@@ -530,8 +554,12 @@ export function bridalConfirmationEmail({
   // time, not an "event start". Same rule adminBridalEmail uses.
   const isTrialPkg = /trial/i.test(bridalTitle || '');
   // Full Day is priced with travel already in it, so it must never get the
-  // travel line even though it's always on-location. Only Luxury (and any other
-  // per-service bridal booking) that leaves the studio pays it.
+  // $200 travel line even though it's always on-location. Only Luxury (and any
+  // other per-service bridal booking) that leaves the studio pays that one.
+  //
+  // Its travel is only included so far, though: past roughly two hours the
+  // booking carries a flat far-travel charge instead, passed in per booking
+  // because only the form knows how far the venue actually is.
   const isFullDayPkg = /full.?day/i.test(bridalTitle || '');
 
   // Travel fee applies only when she's getting ready ON-LOCATION. Studio pickups
@@ -547,7 +575,8 @@ export function bridalConfirmationEmail({
   const LOCAL_TRAVEL_FEE = 200;
   const bPriceN = moneyToNum(bridalPrice);
   const bDepositN = moneyToNum(bridalDeposit);
-  const bTotalN = bPriceN ? bPriceN + (onLocation ? LOCAL_TRAVEL_FEE : 0) : null;
+  const bFarN = moneyToNum(farTravelFee);
+  const bTotalN = bPriceN ? bPriceN + (onLocation ? LOCAL_TRAVEL_FEE : 0) + (bFarN || 0) : null;
   const bRemaining = (bTotalN && bDepositN && bTotalN > bDepositN)
     ? fmtMoney(bTotalN - bDepositN)
     : (bridalRemaining || '');
@@ -557,7 +586,8 @@ export function bridalConfirmationEmail({
     crow(isTrialPkg ? 'Preferred Date' : 'Wedding Date', bridalDateFormatted),
     bridalPrice ? crow('Package price', bridalPrice) : '',
     onLocation && bPriceN ? crow('Local travel fee', `+${fmtMoney(LOCAL_TRAVEL_FEE)}`) : '',
-    onLocation && bTotalN ? crow('Total', `<strong>${fmtMoney(bTotalN)}</strong>`) : '',
+    bFarN ? crow(farTravelDrive ? `Far travel (venue ~${farTravelDrive} out)` : 'Far travel (venue over 2 hrs)', `+${fmtMoney(bFarN)}`) : '',
+    (onLocation || bFarN) && bTotalN ? crow('Total', `<strong>${fmtMoney(bTotalN)}</strong>`) : '',
     eventLocation ? crow('Location', eventLocation) : '',
     numPeopleGlam ? crow('Getting Glam', numPeopleGlam) : '',
     outOfState !== undefined && outOfState !== null
@@ -598,6 +628,7 @@ export function bridalConfirmationEmail({
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
       ${additionalDetails ? cpanel(`${ctitle('Your Vision')}<p style="font-size:14px;color:#5A5258;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>`) : ''}
       ${onLocation ? `<tr><td style="padding:2px 30px 10px;"><p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:0;">Travel fee applies to locations within approximately one hour of ${STUDIO_TOWN}.</p></td></tr>` : ''}
+      ${bFarN ? `<tr><td style="padding:2px 30px 10px;"><p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:0;">Your venue is more than approximately two hours from ${STUDIO_TOWN}, so a flat ${fmtMoney(bFarN)} covers the hotel the night before, transportation and the extra day. It is part of the cash balance, not the deposit.</p></td></tr>` : ''}
       ${contractSection}
     `,
   });
@@ -705,24 +736,31 @@ export function adminContractResignedEmail({ name, service, date, time, signedNa
   `);
 }
 
+// Roko cancelled this one herself.
+//
+// It used to open with "I'm so sorry, but your appointment has to be
+// cancelled", drop the reason into a rounded pill, and close on "I'd genuinely
+// love to still make it work another time". Three problems in four lines: the
+// apology made the fact hard to find, the pill framed one sentence like an
+// error, and the closer was a stock phrase, which is exactly the thing a
+// person reading a cancellation notices. So: state it, attribute the reason to
+// her, say what happens next, and give them the one button.
 export function bookingCancelledEmail({ name, service, date, reason }) {
   // The reason is optional (Roko can toggle it off in the admin cancel dialog).
   // When present, escape it so a stray < & > can't break the email markup and
-  // keep any line breaks she added; when absent, the reason panel is dropped and
-  // the surrounding copy still keeps the email warm.
+  // keep any line breaks she added; when absent, the note is dropped and the
+  // rest of the email still stands on its own.
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const hasReason = reason && String(reason).trim();
-  const reasonBlock = hasReason
-    ? cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${esc(reason.trim()).replace(/\n/g, '<br>')}</p>`)
-    : '';
+  const on = date ? ` on <strong style="color:#16110F;">${date}</strong>` : '';
   return clientShell({
-    preheader: `An update about your ${service} appointment.`,
+    preheader: `Your ${service} appointment${date ? ` on ${date}` : ''} has been cancelled.`,
     content: `
       ${clientHero({ eyebrow: 'Booking Update', title: 'Booking', titleAccent: 'Cancelled' })}
-      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, I'm so sorry, but your ${service} appointment on ${date} has to be cancelled.`)}
-      ${reasonBlock}
-      ${cintro(`I'd genuinely love to still make it work another time. You can rebook anytime below, or just hit the Reply button in your email app.`)}
-      <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
+      ${cintro(`Hello <strong style="color:#16110F;">${name}</strong>, your <strong style="color:#16110F;">${service}</strong> appointment${on} has been cancelled.`)}
+      ${hasReason ? cnote('Note from Roko', esc(reason.trim()).replace(/\n/g, '<br>')) : ''}
+      ${cintro(`There's nothing else you need to do. Whenever you'd like a new date, you can book it here.`)}
+      <tr><td style="padding:10px 24px 28px;text-align:center;">${clientButton(SITE_URL, 'Book Again', false, true)}</td></tr>
     `,
   });
 }
@@ -735,16 +773,16 @@ export function bookingCancelledEmail({ name, service, date, reason }) {
 export function clientCancelledEmail({ name, service, date, kind = 'appointment' }) {
   const isClass = kind === 'class';
   const moneyLine = isClass
-    ? `If you're due a refund, Roko will take care of it and email you the details. Nothing else is needed from you.`
-    : `As a reminder, your deposit is non-refundable, but there's nothing else you need to do.`;
+    ? `If you're due a refund, Roko will take care of it and email you the details.`
+    : `Your deposit is non-refundable, as set out in your agreement.`;
   return clientShell({
-    preheader: `Your ${service} ${isClass ? 'class' : 'appointment'} has been cancelled.`,
+    preheader: `Your ${service} ${isClass ? 'class' : 'appointment'}${date ? ` on ${date}` : ''} has been cancelled.`,
     content: `
-      ${clientHero({ eyebrow: isClass ? 'Class Cancelled' : 'Appointment Cancelled', title: 'All', titleAccent: 'done' })}
-      ${cintro(`Hi <strong style="color:#16110F;">${name}</strong>, your ${service}${date ? ` on ${date}` : ''} has been cancelled.`)}
-      ${cpanel(`<p style="font-size:14px;color:#5A5258;line-height:1.65;margin:0;text-align:center;">${moneyLine}</p>`)}
-      ${cintro(`I'd genuinely love to work with you another time. You can rebook whenever you're ready, or just hit the Reply button in your email app.`)}
-      <tr><td style="padding:4px 24px 18px;text-align:center;">${clientButton(SITE_URL, 'Book Again')}</td></tr>
+      ${clientHero({ eyebrow: 'Cancellation Confirmed', title: isClass ? 'Class' : 'Booking', titleAccent: 'Cancelled' })}
+      ${cintro(`Hello <strong style="color:#16110F;">${name}</strong>, your <strong style="color:#16110F;">${service}</strong>${date ? ` on <strong style="color:#16110F;">${date}</strong>` : ''} has been cancelled, as you asked.`)}
+      ${cnote('Good to know', moneyLine)}
+      ${cintro(`There's nothing else you need to do. Whenever you'd like a new date, you can book it here.`)}
+      <tr><td style="padding:10px 24px 28px;text-align:center;">${clientButton(SITE_URL, 'Book Again', false, true)}</td></tr>
     `,
   });
 }
@@ -1131,7 +1169,7 @@ export function adminBookingEmail({ name, service, date, email, phone, servicePr
   `);
 }
 
-export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
+export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate, bridalDateFormatted, email, phone, instagram, eventLocation, eventStartTime, venueAccessTime, hairstylistArriveBy, makeupReadyByTime, photographerArrival, photographer, hairstylist, numPeopleGlam, outOfState, destinationLocation, farTravelFee, farTravelDrive, additionalDetails, howHeard, contractSignedName, contractSignedAt, contractPhotoConsent }) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || firstName;
   // A trial is a studio appointment, so its one time field is the bride's
   // preferred time, not an "event start" — label it accordingly for Roko.
@@ -1157,6 +1195,9 @@ export function adminBridalEmail({ firstName, lastName, bridalTitle, weddingDate
     // be quoted without it.
     destinationLocation ? row('Destination', destinationLocation, '#C4849A') : '',
     numPeopleGlam ? row('People Getting Glam', numPeopleGlam) : '',
+    // Accented: this is money Roko has to plan a hotel and two days around, and
+    // it is the one line on this email that changes what the booking costs her.
+    farTravelFee ? row('Far Travel', `${farTravelFee}${farTravelDrive ? ` (venue ~${farTravelDrive} out)` : ''}`, '#C4849A') : '',
   ].filter(Boolean).join('');
 
   const timingRows = [

@@ -17,6 +17,8 @@
 // signatures stay tied to what was actually agreed.
 // ============================================================
 
+import { FAR_TRAVEL_FEE, LOCAL_TRAVEL_FEE } from './travel';
+
 export const CONTRACT_VERSION = 'v1';
 
 // app_settings key holding Roko's editable contract (values + full wording).
@@ -31,7 +33,8 @@ export const BUSINESS_NAME = 'Makeup by Roko';
 // can reference the same numbers and never drift out of sync again.
 export const CONTRACT_POLICIES = {
   cancellationNoticeDays: 14,
-  travelFeeStart: '$200',
+  travelFeeStart: LOCAL_TRAVEL_FEE,
+  farTravelFee: FAR_TRAVEL_FEE,
   studioLocation: 'Mountain House, CA',
 };
 
@@ -48,7 +51,8 @@ export const CONTRACT_PLACEHOLDERS = [
   { token: '{price}', label: 'Service price', sample: '$750' },
   { token: '{balance}', label: 'Balance left after the deposit', sample: '$375' },
   { token: '{days}', label: 'Cancellation notice (days)', sample: '14' },
-  { token: '{travelFee}', label: 'Travel fee starts at', sample: '$200' },
+  { token: '{travelFee}', label: 'Travel fee starts at', sample: LOCAL_TRAVEL_FEE },
+  { token: '{farTravelFee}', label: 'Far-travel charge (venue over 2 hrs)', sample: FAR_TRAVEL_FEE },
   { token: '{artistName}', label: 'Your business name', sample: ARTIST_NAME },
   { token: '{businessName}', label: 'Brand name', sample: BUSINESS_NAME },
   { token: '{studioLocation}', label: 'Studio location', sample: CONTRACT_POLICIES.studioLocation },
@@ -73,6 +77,7 @@ const SUPERSEDED_SECTION_BODIES = {
   travel: [
     `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance.`,
     `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance. The Full Day Service is an exception: travel is included in its package price and no additional travel fee is charged.`,
+    `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee} within approximately one hour of the studio. Beyond that, the booking is made as the Full Day Service, whose package price includes travel and to which no additional travel fee is charged.`,
   ],
 };
 
@@ -194,7 +199,7 @@ export function defaultContractTemplate({ kind = 'appointment' } = {}) {
         { id: 'booking', heading: 'Booking & Confirmation', body: `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.` },
         { id: 'payment', heading: 'Deposit & Payment', body: `Your service price is {price}. A non-refundable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due in cash on the day of your appointment, plus any travel fee or add-ons. No digital payments are accepted for the balance.` },
         { id: 'cancellation', heading: 'Cancellation & Rescheduling', body: `The Client must give at least 24 hours notice to cancel or reschedule. The deposit is non-refundable and non-transferable. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.` },
-        { id: 'travel', heading: 'Travel Fee', body: `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee} within approximately one hour of the studio. Beyond that, the booking is made as the Full Day Service, whose package price includes travel and to which no additional travel fee is charged.` },
+        { id: 'travel', heading: 'Travel Fee', body: `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee} within approximately one hour of the studio. Beyond one hour, the booking is made as the Full Day Service, whose package price includes travel. Where the venue is more than approximately two hours from the studio, a flat far-travel charge of {farTravelFee} is added to the Full Day Service to cover overnight lodging, transportation and the additional day. That charge is part of the balance due in cash on the day, not part of the deposit.` },
         shared.health,
         { id: 'punctuality', heading: 'Punctuality', body: `Please arrive on time. Arrivals more than 15 minutes late may result in a shortened service or cancellation at the Artist's discretion, without a refund.` },
         shared.photography,
@@ -229,6 +234,7 @@ export function buildContract({
   time = '',
   depositAmount,
   priceAmount,
+  farTravelFee,
   locationType = 'studio', // eslint-disable-line no-unused-vars
   kind = 'appointment',
   overrides = {},
@@ -247,8 +253,13 @@ export function buildContract({
   // figure isn't an exact number, {balance} degrades to the bare word "balance"
   // so the sentence still reads correctly ("the remaining balance is due…").
   const priceN = amountValue(priceAmount);
+  // Folded into the price rather than left as a footnote. Every clause below
+  // does arithmetic on {price} and {balance}, so a $750 that lived outside them
+  // would have the agreement quoting a balance the client does not actually owe.
+  const farN = amountValue(farTravelFee);
   const depositN = amountValue(depositAmount);
-  const balanceN = priceN != null && depositN != null && priceN > depositN ? priceN - depositN : null;
+  const totalN = priceN != null ? priceN + (farN || 0) : null;
+  const balanceN = totalN != null && depositN != null && totalN > depositN ? totalN - depositN : null;
 
   // Only ever print a figure that reads as money. A catalogue label like
   // "See Classes" or "50% deposit via Zelle" degrades to generic wording so the
@@ -259,6 +270,9 @@ export function buildContract({
     return s && s.includes('$') ? s : fallback;
   };
   const priceText = asMoneyText(priceAmount, null);
+  const farText = asMoneyText(farTravelFee, null);
+  // What {price} resolves to: the whole figure the client is agreeing to pay.
+  const totalText = farN && totalN != null ? formatMoney(totalN) : priceText;
   const depositText = asMoneyText(depositAmount, null);
 
   const values = {
@@ -272,7 +286,10 @@ export function buildContract({
     date: timeText ? `${dateText} at ${timeText}` : dateText,
     time: timeText,
     deposit: depositText || 'the required amount',
-    price: priceText || 'the quoted amount',
+    price: totalText || 'the quoted amount',
+    // Always a number, even on a booking with no far travel: the clause states
+    // the policy, so it has to read correctly on every agreement.
+    farTravelFee: farText || CONTRACT_POLICIES.farTravelFee,
     balance: balanceN != null ? formatMoney(balanceN) : 'balance',
     days: String(days),
     travelFee: travelStart,
@@ -323,7 +340,9 @@ export function buildContract({
     : [
         { label: 'Service', value: values.serviceName },
         dateKnown ? { label: 'Date', value: values.date } : null,
-        priceText ? { label: 'Service price', value: values.price } : null,
+        priceText ? { label: farText ? 'Package price' : 'Service price', value: priceText } : null,
+        farText ? { label: 'Far travel (venue over 2 hrs)', value: `+${farText}` } : null,
+        farText && totalText ? { label: 'Total', value: totalText } : null,
         // "today" because the next line says what is due on the day, and the
         // two were previously distinguishable only by reading both.
         depositText ? { label: 'Deposit to book today', value: values.deposit } : null,

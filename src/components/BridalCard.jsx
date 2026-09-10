@@ -1,4 +1,4 @@
-import { bestFor, ctaLabel, placeLine, highlights } from '@/lib/serviceCopy';
+import { bestFor, cardFacts, ctaLabel, placeLine } from '@/lib/serviceCopy';
 import ServiceSpecs from './ServiceSpecs';
 import CtaArrow from './CtaArrow';
 
@@ -19,7 +19,7 @@ const CARD_CLASS =
 export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
   const remaining = svc.includes.length - 3;
   const place = placeLine(svc);
-  const hl = highlights(svc);
+  const facts = cardFacts(svc);
 
   return (
     <div
@@ -119,26 +119,41 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
               <ServiceSpecs svc={svc} />
             </div>
 
-            {/* Top 3 inline, the rest in the detail sheet. The trial used to
-                hide its list entirely to keep three equal columns the same
-                height; two to a row it just left a hole in the card, and the
-                CTA is pinned to the bottom by justify-between either way.
-                Policy fine print (travel fee, Full Day requirements) still
-                lives in the detail sheet — it was pushing the CTA down. */}
+            {/* The facts that decide between packages, as chips.
+                Loud enough to read at a glance, which the old grey one-line
+                summary was not (Roko, 2026-09-09). It also stopped being an
+                ingredient list: "lashes, touch-up kit, Zoom call" is true of
+                nearly every package here, so it never helped anyone choose.
+                See cardFacts() in serviceCopy for what replaced it.
+
+                Shown at every width. This is the part a bride actually chooses
+                with, so on a phone it is the last thing to cut, not the first. */}
+            {facts.length > 0 && (
+              <ul className="flex flex-wrap gap-1.5 mb-4">
+                {facts.map((f) => (
+                  <li
+                    key={f}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[0.72rem] font-medium leading-none"
+                    style={{ background: 'rgba(196,132,154,0.09)', color: '#8A5468' }}
+                  >
+                    <span className="w-[3px] h-[3px] rounded-full flex-shrink-0" style={{ background: '#C4849A' }} aria-hidden="true" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* The full includes list stays on desktop, under the chips, where
+                there is room for both. On a phone the chips are the whole
+                summary and the rest is one tap away in the detail sheet, which
+                the card body already opens.
+                Policy fine print (travel fee, Full Day requirements) lives in
+                that sheet too — on the card it was pushing the CTA down. */}
             {!svc.includes?.length ? (
               <div className="mb-4 text-[0.8rem] text-[#D4A0B0] font-medium">
                 See what's included →
               </div>
             ) : (
-              <>
-              {/* Phone: one line instead of three bullets. See highlights() in
-                  serviceCopy for why the list comes off the card at this width. */}
-              {hl && (
-                <div className="lg:hidden mb-4 text-[0.8rem] text-[#6d6460] leading-[1.5]">
-                  {hl.lead}
-                  {hl.more > 0 && <span className="text-[#D4A0B0]">, and {hl.more} more</span>}
-                </div>
-              )}
               <ul className="hidden lg:flex flex-col gap-1.5 mb-4">
                 {svc.includes.slice(0, 3).map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[0.84rem] text-[#6d6460] leading-[1.45]">
@@ -153,7 +168,6 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
                   <li className="text-[0.76rem] text-[#D4A0B0] pl-4">+{remaining} more</li>
                 )}
               </ul>
-              </>
             )}
           </div>
 

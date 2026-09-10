@@ -143,11 +143,10 @@ const CONTENT_OVERRIDES = {
       'Touch-up kit to take with you',
       '30 minute Zoom call before the day',
       'Airbrush on request',
-      'Bridesmaid add-ons available',
     ],
   },
   'Full Day Service': {
-    desc: "Roko stays with you for up to four hours, so she's there for an early start, a second look, or a venue further out. Travel is included, so there's no separate fee.",
+    desc: "Roko stays with you for up to four hours, so she's there for an early start, a second look, or a venue further out. Travel is included within about two hours of the studio, and past that a flat $750 covers the hotel the night before and the drive.",
     includes: [
       'Up to four hours reserved for you',
       'Full bridal makeup, including chest and back',
@@ -158,8 +157,9 @@ const CONTENT_OVERRIDES = {
       'Touch-ups before photos and the ceremony',
       'Help with your dress and finishing touches',
       '30 minute Zoom call before the day',
-      'Travel included, no extra fee',
-      'Bridesmaid add-ons available',
+      'Travel included within 2 hours of the studio',
+      'Past 2 hours, a flat $750 covers the hotel and the drive',
+      'Bridesmaid and mother-of-the-bride add-ons available',
     ],
   },
   'Non-Bridal Makeup': {

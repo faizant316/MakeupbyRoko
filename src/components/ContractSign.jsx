@@ -13,7 +13,7 @@ import ConfirmBookingDialog from './ConfirmBookingDialog';
 //   ctaLabel    - button text (default "Sign & Confirm Booking")
 //   busyLabel   - button text while submitting; say what is happening, since this
 //                 is the longest wait in the flow (money + a date are on the line)
-//   confirmSummary - { date, year, service, rows } for the last-look dialog. When
+//   confirmSummary - { date, year, service, rows, notice } for the last-look dialog. When
 //                 present, signing opens that dialog instead of submitting
 //                 straight away. Every flow that books a real date passes it;
 //                 see ConfirmBookingDialog for why.
@@ -229,6 +229,7 @@ export default function ContractSign({
           year={confirmSummary.year}
           service={confirmSummary.service}
           rows={confirmSummary.rows}
+          notice={confirmSummary.notice}
           confirmLabel={confirmSummary.confirmLabel || 'Yes, this is correct'}
           busyLabel={busyLabel}
           submitting={submitting}

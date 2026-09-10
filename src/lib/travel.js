@@ -87,3 +87,55 @@ export function formatDriveTime(minutes) {
   const mins = shown % 60;
   return mins ? `${hrs} hr ${mins} min` : `${hrs} hr`;
 }
+
+// ── The two-hour rule ──────────────────────────────────────────────────────
+//
+// The hour rule above decides WHICH package a bride books. This one decides
+// what that package costs. Past roughly two hours the Full Day stops being a
+// drive and becomes an overnight: Roko books a hotel the night before so she
+// can start on time, and the day costs her the travel there and back on top of
+// the wedding itself. Until now the Full Day quoted "travel included" at any
+// distance, so a San Diego wedding (about seven hours out) and one in Sacramento
+// (about ninety minutes) were the same $1,700.
+//
+// Roko's decision, 2026-09-09: a flat $750 at any distance past two hours,
+// covering the hotel, the transportation and the extra day. Flat rather than
+// per-mile on purpose — she quotes it the same way she says it out loud, and a
+// sliding scale would need a number nobody can defend for a seven-hour drive.
+
+// What the copy says the limit is. See TRAVEL_HOUR_MINUTES for why the number
+// in the sentence is kept apart from the number the gate fires on.
+export const FAR_TRAVEL_MINUTES = 120;
+
+// Where it actually fires. Same five minutes of slack as TRAVEL_GATE_MINUTES,
+// and for the same reason: drive times are estimates, and charging $750 more
+// over a two-minute rounding difference is indefensible to the bride who calls.
+export const FAR_TRAVEL_GATE_MINUTES = 125;
+
+// The flat surcharge. Quoted in the form, the confirmation email, the deposit
+// page and the contract, so it lives here rather than being retyped in each.
+export const FAR_TRAVEL_FEE = '$750';
+
+/**
+ * Does a measured drive time add the far-travel fee?
+ *
+ * Fails open exactly like needsFullDay: an unmeasurable venue is never charged
+ * $750 on a guess. Roko settles those on the consultation call, which is what
+ * she does today for every venue.
+ */
+export function needsFarTravelFee(minutes) {
+  const shown = displayMinutes(minutes);
+  return shown !== null && shown > FAR_TRAVEL_GATE_MINUTES;
+}
+
+/** "$1,700" + "$750" → "$2,450". Null when either side isn't one clean figure. */
+export function addMoney(a, b) {
+  const num = (v) => {
+    const n = parseFloat(String(v ?? '').replace(/[^0-9.]/g, ''));
+    return Number.isFinite(n) ? n : null;
+  };
+  const x = num(a);
+  const y = num(b);
+  if (x === null || y === null) return null;
+  return `$${(x + y).toLocaleString('en-US')}`;
+}
