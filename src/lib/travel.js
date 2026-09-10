@@ -107,9 +107,15 @@ export function formatDriveTime(minutes) {
 // in the sentence is kept apart from the number the gate fires on.
 export const FAR_TRAVEL_MINUTES = 120;
 
-// Where it actually fires. Same five minutes of slack as TRAVEL_GATE_MINUTES,
-// and for the same reason: drive times are estimates, and charging $750 more
-// over a two-minute rounding difference is indefensible to the bride who calls.
+// Where it actually fires. Same slack as TRAVEL_GATE_MINUTES, and for the same
+// reason: drive times are estimates, and charging $750 more over a two-minute
+// rounding difference is indefensible to the bride who phones about it.
+//
+// The gate decides on the DISPLAYED figure, which is rounded to five minutes,
+// so in practice the fee starts around 2 hr 10 rather than exactly here. That
+// is deliberate and identical to the hour rule: if it decided on the raw
+// number, two venues both reading "2 hr 5 min" on screen could be charged
+// differently, and Roko would have no way to explain the difference.
 export const FAR_TRAVEL_GATE_MINUTES = 125;
 
 // The flat surcharge. Quoted in the form, the confirmation email, the deposit

@@ -654,7 +654,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     const bridalRemaining = (!_hasTravelFee && _priceN != null && _depositN != null && _priceN > _depositN)
       ? `$${(_priceN - _depositN).toLocaleString('en-US')}`
       : '';
-    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(farTravelTotal || '')}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
+    const uploadUrl = `${siteBase}/upload-zelle?id=${newBooking.id}&token=${token}&bridal=1&deposit=${encodeURIComponent(bridalDeposit || '')}&price=${encodeURIComponent(bridalPrice || '')}${farTravel ? `&far=${encodeURIComponent(FAR_TRAVEL_FEE)}` : ''}${bridalRemaining ? `&remaining=${encodeURIComponent(bridalRemaining)}` : ''}`;
     // Year included — the emailed date is the client's last chance to catch a
     // wrong one, and without it a booking a year out reads as this year's.
     const bridalDateFormatted = selectedDate
@@ -841,7 +841,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <div className="w-px h-8 bg-gray-200" />
               <div className="text-center">
                 <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase text-[#b5a99a]">Travel</p>
-                <p className="text-[0.78rem] font-medium text-[#111] leading-tight">Included</p>
+                {/* Sits directly above the venue field, so a flat "Included"
+                    here would be arguing with the far-travel box the moment
+                    she types a venue past two hours. */}
+                <p className="text-[0.78rem] font-medium leading-tight" style={{ color: farTravel ? '#B06883' : '#111' }}>
+                  {farTravel ? `+${FAR_TRAVEL_FEE}` : 'Included'}
+                </p>
               </div>
             </div>
             <p className="hidden sm:block text-[0.68rem] text-gray-400">Confirmed within 24–48 hrs · Private consultation 1 month before</p>
