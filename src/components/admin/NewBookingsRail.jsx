@@ -4,6 +4,7 @@ import { timeAgo, shortDate } from './depositState';
 import { localDateKey } from './todayItems';
 import { bookingOccasion } from './bookingNotes';
 import { STATUS_COLORS } from './statusColors';
+import { displayLocation } from '@/lib/location';
 
 // "Did anyone book?" and "who booked a couple of days ago?" are the same
 // question asked at two different distances, so this answers both.
@@ -83,13 +84,16 @@ const apptDate = (d) => {
   return dt.toLocaleDateString('en-US', opts);
 };
 
-// City if there is one, else the first line of the address. Same rule the
-// appointment rows use, so a place reads the same wherever it shows up.
-const placeOf = (b) => {
-  const city = b.location_city;
-  const street = b.location?.split(',')[0]?.trim();
-  return city || street || '';
-};
+// Where Roko is going, in full.
+//
+// This used to print `location_city` alone, which answered "roughly where" when
+// the question she opens the rail to answer is "where do I have to be". Worse,
+// for a bride getting ready at the studio the stored value is the bracketed
+// label "Roko's Studio (Mountain House, CA)", and deriving a city off that gave
+// a chip reading "CA)" — a fragment of a state, printed where an address goes.
+// The whole address now, tidied by displayLocation, with the city kept as the
+// fallback for a Booksy row that only ever had one.
+const placeOf = (b) => displayLocation(b.location) || (b.location_city || '').trim();
 
 export default function NewBookingsRail({ bookings, loading = false, onSelect, darkMode: dm, className = '' }) {
   const [open, setOpen] = useState(false);
@@ -393,13 +397,25 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, d
                             <span style={{ color: dm ? '#e5aec0' : '#B0708A' }}>{' · '}{occasion}</span>
                           )}
                         </p>
-                        {/* When it is, when she starts and where. The three
-                            things that used to need the card opened to learn. */}
+                        {/* When it is and when she starts. */}
                         <p className="text-[0.72rem] truncate mt-1 tabular-nums" style={{ color: c.meta }}>
                           {b.date ? apptDate(b.date) : 'No date'}
                           {b.time && <span>{' · '}{b.time}</span>}
-                          {place && <span style={{ color: c.place }}>{' · '}{place}</span>}
                         </p>
+                        {/* Where she has to be, on its own line. An address is
+                            the longest thing on the row and the one she is most
+                            likely to want in full, so it doesn't share a line
+                            with the date and get truncated by it. The title
+                            carries the whole string for a long venue name. */}
+                        {place && (
+                          <p className="flex items-start gap-1.5 text-[0.72rem] mt-1" style={{ color: c.place }} title={place}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+                              className="w-3 h-3 flex-shrink-0 mt-[3px]">
+                              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" /><circle cx="12" cy="10" r="2.6" />
+                            </svg>
+                            <span className="min-w-0 flex-1 truncate">{place}</span>
+                          </p>
+                        )}
                         {noTime && (
                           <span className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded-full text-[0.63rem] font-semibold"
                             style={{ background: dm ? 'rgba(245,158,11,0.16)' : 'rgba(245,158,11,0.13)', color: dm ? '#F5B83C' : '#B26A04' }}>

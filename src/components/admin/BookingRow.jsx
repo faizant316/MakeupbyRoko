@@ -3,6 +3,7 @@ import { relativeDate } from './timeline';
 import { depositState, depositTone } from './depositState';
 import { openZoomRoom } from '@/lib/zoomHost';
 import { bookingOccasion } from './bookingNotes';
+import { displayLocation, isStudioLocation } from '@/lib/location';
 
 // A consultation or a class rendered in the same list as the appointments. The
 // tag is what tells them apart; everything else about the row stays identical,
@@ -55,12 +56,19 @@ export default function BookingRow({
   // day tells her where she is going before it tells her the house number.
   const locationCity = booking.location_city;
   const occasion = bookingOccasion(booking.notes);
+  // The studio says so and stops. A bride getting ready there is stored as the
+  // label "Roko's Studio (Mountain House, CA)", so splitting it on commas gave
+  // a street of "Roko's Studio (Mountain House" beside a city of "CA)".
+  const place = displayLocation(booking.location);
+  const atStudio = isStudioLocation(booking.location);
   // First segment of the address is the street, which is all that fits and all
   // that adds anything once the city is already shown.
-  const locationStreet = booking.location?.split(',')[0]?.trim();
-  const locationLine = locationCity && locationStreet && locationStreet !== locationCity
-    ? `${locationCity} · ${locationStreet}`
-    : locationCity || locationStreet || null;
+  const locationStreet = atStudio ? null : place.split(',')[0]?.trim();
+  const locationLine = atStudio
+    ? place
+    : locationCity && locationStreet && locationStreet !== locationCity
+      ? `${locationCity} · ${locationStreet}`
+      : locationCity || locationStreet || null;
   const locationColor = dm ? '#8fb3d9' : '#6a7f99';
 
   // Bridal rows carry a rose wash so the list sorts itself at a glance: in a
