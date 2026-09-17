@@ -44,6 +44,7 @@ export const api = {
     ClassRegistration: makeEntity('class-registrations'),
     DayCapacity: makeEntity('day-capacities'),
     BlockedDate: makeEntity('blocked-dates'),
+    TimeBlock: makeEntity('time-blocks'),
     AppSettings: makeEntity('app-settings'),
   },
 

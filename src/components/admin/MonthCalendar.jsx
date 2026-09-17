@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { STATUS_COLORS, STATUS_COLORS_DM, CONSULT_INK } from './statusColors';
+import { STATUS_COLORS, STATUS_COLORS_DM, CONSULT_INK, BLOCK_INK, blockHatch } from './statusColors';
 
 // The one month grid used by every admin calendar: the Calendar tab (full
 // size) and the compact Home picker (dense). Keeping a single grid is the
@@ -41,7 +41,8 @@ export const weekStartOf = (d) => {
 };
 
 export const dotOf = (ev, dm) =>
-  ev.kind === 'consult' ? CONSULT_INK[dm ? 'dark' : 'light']
+  ev.kind === 'block' ? BLOCK_INK[dm ? 'dark' : 'light']
+  : ev.kind === 'consult' ? CONSULT_INK[dm ? 'dark' : 'light']
   : ev.kind === 'class' ? CLASS_PINK
   : (dm ? STATUS_COLORS_DM : STATUS_COLORS)[ev.status] || (dm ? '#52525b' : '#b6b6bf');
 
@@ -51,8 +52,10 @@ export function daySummary(events, booked, cap) {
   if (cap != null) parts.push(`${booked} of ${cap} booked`);
   const consults = events.filter(e => e.kind === 'consult').length;
   const classes = events.filter(e => e.kind === 'class').length;
+  const blocks = events.filter(e => e.kind === 'block').length;
   if (consults) parts.push(`${consults} consultation${consults === 1 ? '' : 's'}`);
   if (classes) parts.push(`${classes} class${classes === 1 ? '' : 'es'}`);
+  if (blocks) parts.push(`${blocks} blocked`);
   return parts.join(' · ');
 }
 
@@ -242,8 +245,10 @@ export default function MonthCalendar({
                         <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
                       </svg>
                     )}
+                    {/* Blocked time is a small square, not a dot, so it can't be
+                        mistaken for a completed client in a similar grey. */}
                     {events.slice(0, 4).map(ev => (
-                      <span key={ev.id} className="w-[6px] h-[6px] rounded-full" style={{ background: dotOf(ev, dm) }} />
+                      <span key={ev.id} className={`w-[6px] h-[6px] ${ev.kind === 'block' ? 'rounded-[1.5px]' : 'rounded-full'}`} style={{ background: dotOf(ev, dm) }} />
                     ))}
                   </span>
 
@@ -292,7 +297,7 @@ export default function MonthCalendar({
                   {events.length > 0 && (
                     <div className="flex sm:hidden flex-wrap px-0.5 gap-[3px]">
                       {events.slice(0, 6).map(ev => (
-                        <span key={ev.id} className="w-[5px] h-[5px] rounded-full" style={{ background: dotOf(ev, dm) }} />
+                        <span key={ev.id} className={`w-[5px] h-[5px] ${ev.kind === 'block' ? 'rounded-[1px]' : 'rounded-full'}`} style={{ background: dotOf(ev, dm) }} />
                       ))}
                     </div>
                   )}
@@ -302,6 +307,10 @@ export default function MonthCalendar({
                     {events.slice(0, maxChips).map(ev => {
                       const dot = dotOf(ev, dm);
                       const cancelled = ev.kind === 'appt' && ev.status === 'cancelled';
+                      const isBlock = ev.kind === 'block';
+                      const chipBg = isBlock
+                        ? `${blockHatch(dm)}, ${dm ? '#26262e' : '#FAF9FA'}`
+                        : (dm ? '#2e2e38' : '#F5F5F9');
                       return (
                         <div
                           key={ev.id}
@@ -315,12 +324,13 @@ export default function MonthCalendar({
                           className="w-full rounded-md text-left transition-colors outline-none px-1.5 py-1"
                           style={{
                             // A dot, not a coloured bar welded to the left edge.
-                            background: dm ? '#2e2e38' : '#F5F5F9',
+                            background: chipBg,
+                            boxShadow: isBlock ? `inset 0 0 0 1px ${dm ? '#403a45' : '#E4DFE6'}` : 'none',
                             opacity: cancelled ? 0.55 : 1,
                             cursor: onEventClick && !selectMode ? 'pointer' : 'inherit',
                           }}
                           onMouseEnter={e => { if (onEventClick && !selectMode) e.currentTarget.style.background = dm ? '#3a3a44' : '#EBEBF3'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = dm ? '#2e2e38' : '#F5F5F9'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = chipBg; }}
                           title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
                         >
                           {/* Name on its own line, time under it. Sharing one
@@ -330,9 +340,9 @@ export default function MonthCalendar({
                               recognisable, so it gets the width and the rest
                               goes on the line below. */}
                           <span className="flex items-center gap-1.5 min-w-0">
-                            <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
+                            <span className={`w-[6px] h-[6px] flex-shrink-0 ${isBlock ? 'rounded-[1.5px]' : 'rounded-full'}`} style={{ background: dot }} />
                             <span className="text-[0.68rem] font-medium truncate min-w-0"
-                              style={{ color: dm ? '#e4e4e7' : '#333', textDecoration: cancelled ? 'line-through' : 'none' }}>
+                              style={{ color: isBlock ? (dm ? '#c9c2cc' : '#6f6873') : (dm ? '#e4e4e7' : '#333'), textDecoration: cancelled ? 'line-through' : 'none' }}>
                               {ev.name}
                             </span>
                             {/* Bridal mark: a drawn dot, so it can't be read
@@ -340,9 +350,9 @@ export default function MonthCalendar({
                             {ev.bridal && <span className="w-[3px] h-[3px] rounded-full flex-shrink-0" style={{ background: '#A0607A' }} title="Bridal" />}
                           </span>
                           <span className="flex items-center gap-1 pl-[13px]">
-                            {startTime(ev.time) && (
+                            {(startTime(ev.time) || isBlock) && (
                               <span className="text-[0.6rem] font-semibold tabular-nums" style={{ color: dm ? '#8b8b95' : '#94949e' }}>
-                                {startTime(ev.time)}
+                                {startTime(ev.time) || 'All day'}
                               </span>
                             )}
                             {ev.source === 'booksy' && (

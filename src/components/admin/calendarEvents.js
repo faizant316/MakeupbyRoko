@@ -1,5 +1,6 @@
 import { isBridalService } from './statusColors';
 import { timeToMinutes } from './timeline';
+import { blockLabel } from '@/lib/timeBlocks';
 
 const startTime = (t) => (t ? String(t).split(/[–-]/)[0].trim() : '');
 
@@ -17,7 +18,11 @@ const startTime = (t) => (t ? String(t).split(/[–-]/)[0].trim() : '');
 // the Calendar tab's day list, which is how a cancelled wedding could keep
 // occupying a Saturday on screen. The archive on the appointments list is
 // where it lives now.
-export function buildEventMap(bookings = [], classRegs = []) {
+//
+// Blocked time (Roko's own "time reservations", migration 0021) rides along as
+// kind 'block', so a concert or a family event sits on the same day as the
+// clients around it instead of living on a separate screen.
+export function buildEventMap(bookings = [], classRegs = [], timeBlocks = []) {
   const evMap = {};
   const push = (key, ev) => { if (!key) return; (evMap[key] ||= []).push(ev); };
 
@@ -64,6 +69,18 @@ export function buildEventMap(bookings = [], classRegs = []) {
       detail: 'Makeup Class',
       status: r.status,
       raw: r,
+    });
+  });
+
+  (timeBlocks || []).forEach(t => {
+    if (!t.date) return;
+    push(t.date, {
+      id: `block-${t.id}`,
+      kind: 'block',
+      name: blockLabel(t),
+      time: t.time || '',
+      detail: t.time ? 'Blocked time' : 'Blocked all day',
+      raw: t,
     });
   });
 

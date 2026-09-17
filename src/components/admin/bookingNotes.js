@@ -10,3 +10,12 @@ export function bookingOccasion(notes) {
   const m = String(notes || '').match(/(?:^|\|)\s*Event:\s*([^|]+)/i);
   return m ? m[1].trim() : '';
 }
+
+// A row that came in through a bulk Booksy migration rather than being added by
+// hand. Both import scripts stamp their notes with a "Booksy appointment (...)"
+// or "Booksy history:" first line, which a note Roko types never starts with.
+// Bookings she adds herself from Booksy are real new bookings and belong in
+// Recent bookings; a hundred rows backfilled in one afternoon do not.
+export function isBooksyImport(b) {
+  return b?.source === 'booksy' && /^Booksy (appointment \(|history:)/.test(String(b.notes || ''));
+}
