@@ -36,7 +36,7 @@ const INFO_CONTENT = {
       },
       {
         title: 'Remaining Balance',
-        body: 'The remaining balance is due in cash on the day of your appointment. Please bring it in an envelope labeled with your name and the amount. No digital payments are accepted for the balance.'
+        body: 'The remaining balance is your service price minus your deposit, plus any travel fee or add-ons. It is due on the day of your appointment.'
       },
       {
         title: 'Confirmation',

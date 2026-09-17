@@ -3,7 +3,6 @@ import { useState } from 'react';
 const GENERAL_FAQ = [
   { q: "How do I book an appointment?", a: "Book right here on the site: pick your service, choose an available date, and fill out the booking form. Once you submit, you'll get a confirmation email with the Zelle deposit details and a private link to upload your screenshot. Roko confirms within 24–48 hours." },
   { q: "How do I pay the deposit?", a: "Deposits are accepted through Zelle. After you book, the Zelle details arrive in your confirmation email. Send your deposit, include your full name and appointment date in the Zelle note, then upload a screenshot using the private link in that email to receive your booking confirmation." },
-  { q: "How do I pay the remaining balance?", a: "The remaining balance must be paid in CASH. Please bring it in an envelope labeled with your name and the payment amount." },
   { q: "When is my appointment confirmed?", a: "Appointments are first come, first serve and are NOT confirmed until: the deposit is sent, a screenshot is received, and you receive a confirmation text/email." },
   { q: "What is the cancellation policy?", a: "Deposits are non-refundable and non-transferable. If you cancel, the deposit will not be refunded. If Roko cancels due to an emergency, you will be refunded." },
   { q: "How should I prepare for my appointment?", a: "Arrive with clean, moisturized skin: no heavy foundation or skincare treatments the night before. Come with dry, styled hair. Bring any inspiration photos and let me know about allergies or sensitivities in advance." },
@@ -16,7 +15,7 @@ const BRIDAL_FAQ = [
   { q: "When is a Full Day Service required?", a: "The Full Day Service ($1,700, $850 deposit) is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a start time before 7 AM." },
   { q: "Can you do makeup for my bridesmaids too?", a: "Bridesmaid and mother-of-the-bride add-ons are part of the Full Day Service rather than the Luxury Bridal Look. Book the Full Day Service and let me know how many people need glam in your inquiry, so timing can be planned accordingly. Party glam also has to be booked at least one month ahead." },
   { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
-  ...GENERAL_FAQ.slice(0, 3),
+  ...GENERAL_FAQ.slice(0, 2),
 ];
 
 const FULL_DAY_FAQ = [
@@ -25,7 +24,7 @@ const FULL_DAY_FAQ = [
   { q: "Is there a travel fee?", a: "No. Roko travels to you for full-day coverage and that travel is already included in the $1,700 price, so there's no separate travel fee within about 2 hours of the studio. Past that, a flat $750 is added to cover the hotel the night before, the transportation and the extra day, making the booking $2,450. (The $200+ travel fee is a different thing: it applies to the Luxury Bridal Look and trials when they're held somewhere other than the studio.)" },
   { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid and mother-of-the-bride add-ons are available on the Full Day Service. Let me know how many people need glam in your inquiry so timing can be planned accordingly. Party glam has to be booked at least one month ahead, since more chairs means more hours and more product." },
   { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
-  ...GENERAL_FAQ.slice(0, 3),
+  ...GENERAL_FAQ.slice(0, 2),
 ];
 
 const EVENT_FAQ = [
@@ -55,7 +54,7 @@ const BRIDAL_TRIAL_FAQ = [
   { q: "What should I bring to my trial?", a: "Bring inspiration photos (close-up makeup shots and full-face references), photos of your gown and accessories, and any skin concerns or allergies noted in advance. Come with clean, moisturized skin and no heavy makeup on." },
   { q: "Can I make changes after the trial?", a: "Absolutely. The trial is specifically designed for that. Bring notes and any updated inspiration photos and all adjustments will be applied on your wedding day." },
   { q: "What is the travel fee?", a: "Trials are held at the studio in Mountain House, CA, so there's no travel fee. If Roko travels to you instead, a $200+ travel fee is added." },
-  ...GENERAL_FAQ.slice(1, 5),
+  ...GENERAL_FAQ.slice(1, 4),
 ];
 
 function getFAQs(service) {

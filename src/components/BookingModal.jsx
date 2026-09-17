@@ -1131,11 +1131,11 @@ export default function BookingModal({ service: initialService, onClose }) {
                                   thing she owes, so it gets stated like one. */}
                               {s.money !== undefined && (
                                 <p className="text-[0.78rem] text-[#444444] leading-[1.6] mt-1.5">
-                                  Bring the remaining{' '}
+                                  The remaining{' '}
                                   {s.money
-                                    ? <strong className="text-[#111111]">{s.money} in cash</strong>
-                                    : <strong className="text-[#111111]">balance in cash</strong>}
-                                  {s.money ? '.' : '. Roko confirms the exact amount.'}
+                                    ? <strong className="text-[#111111]">{s.money}</strong>
+                                    : <strong className="text-[#111111]">balance</strong>}
+                                  {s.money ? ' is due that day.' : ' is due that day. Roko confirms the exact amount.'}
                                 </p>
                               )}
                             </div>

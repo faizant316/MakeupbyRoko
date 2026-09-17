@@ -19,7 +19,7 @@ function buildSections(luxury, fullday) {
       rows: [
         { label: 'Price', luxury: luxury.price, fullday: fullday.price },
         { label: 'Deposit (Zelle)', luxury: cleanDeposit(luxury.deposit), fullday: cleanDeposit(fullday.deposit) },
-        { label: 'Remaining balance', luxury: 'Cash day-of', fullday: 'Cash day-of' },
+        { label: 'Remaining balance', luxury: 'Due on the day', fullday: 'Due on the day' },
       ],
     },
     {

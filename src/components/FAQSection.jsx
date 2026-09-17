@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: 'How do I secure my booking?',
-    a: 'A deposit via Zelle is required to lock in your date. Once your booking request is received, Roko will confirm within 24–48 hours. The remaining balance is due in cash on the day of your appointment.',
+    a: 'A deposit via Zelle is required to lock in your date. Once your booking request is received, Roko will confirm within 24–48 hours. The remaining balance is due on the day of your appointment.',
   },
   {
     q: 'Do you offer touch-up kits?',

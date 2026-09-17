@@ -158,16 +158,16 @@ function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, f
       </div>
       {/* Remaining balance — its own clean footer band so it reads as the bottom
           line. Show the exact dollar figure whenever the link carries one (package
-          price − deposit); otherwise a tidy "cash on the day" chip. Either way the
-          caption keeps it honest: paid in cash on the appointment day. */}
+          price − deposit); otherwise a "To be confirmed" chip. Either way the
+          caption says when it is due, never how it is paid (Roko, 2026-09-17). */}
       <div className="flex items-center justify-between gap-3 px-5 py-4 bg-white" style={{ borderTop: `1px solid ${DIVIDER}` }}>
         <div className="min-w-0">
           <p className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase" style={{ color: PLUM }}>Remaining Balance</p>
-          <p className="text-[0.62rem] font-medium mt-1" style={{ color: LABEL }}>Due in cash on the day</p>
+          <p className="text-[0.62rem] font-medium mt-1" style={{ color: LABEL }}>Due on the day</p>
         </div>
         {remaining
           ? <span className="flex-shrink-0 text-[1.4rem] font-bold leading-none whitespace-nowrap" style={{ color: VALUE }}>{remaining}</span>
-          : <span className="flex-shrink-0 text-[0.78rem] font-semibold px-3 py-1.5 rounded-full whitespace-nowrap" style={{ background: HEAD_BG, border: `1px solid ${HEAD_BORDER}`, color: PLUM_DARK }}>Cash on the day</span>}
+          : <span className="flex-shrink-0 text-[0.78rem] font-semibold px-3 py-1.5 rounded-full whitespace-nowrap" style={{ background: HEAD_BG, border: `1px solid ${HEAD_BORDER}`, color: PLUM_DARK }}>To be confirmed</span>}
       </div>
     </div>
   );
@@ -374,7 +374,7 @@ export default function UploadZelle() {
   const farTotal = _priceN != null && _farN != null ? `$${(_priceN + _farN).toLocaleString('en-US')}` : null;
   // Exact remaining balance, computed at link-build time only when it's truthful
   // (no travel fee / early-arrival surcharge). Absent → the summary falls back to
-  // "due in cash on the day".
+  // "To be confirmed".
   const remaining = (params.get('remaining') || '').trim() || null;
 
   const [booking, setBooking] = useState(null);
@@ -663,7 +663,7 @@ export default function UploadZelle() {
                     Roko has been notified and will reach out to confirm your appointment time within <strong style={{ color: VALUE }}>24–48 hours</strong>.
                   </p>
                   <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${DIVIDER}` }}>
-                    <p className="text-[0.72rem]" style={{ color: LABEL }}>Remaining balance due in <strong style={{ color: PLUM_DARK }}>cash</strong> on appointment day.</p>
+                    <p className="text-[0.72rem]" style={{ color: LABEL }}>Remaining balance due on appointment day.</p>
                   </div>
                 </div>
                 <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
@@ -698,7 +698,7 @@ export default function UploadZelle() {
                   Roko will confirm within <strong style={{ color: VALUE }}>24–48 hours</strong>.
                 </p>
                 <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${DIVIDER}` }}>
-                  <p className="text-[0.72rem]" style={{ color: LABEL }}>Remaining balance due in <strong style={{ color: PLUM_DARK }}>cash</strong> on appointment day.</p>
+                  <p className="text-[0.72rem]" style={{ color: LABEL }}>Remaining balance due on appointment day.</p>
                 </div>
               </div>
 

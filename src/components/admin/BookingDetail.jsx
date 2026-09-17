@@ -153,7 +153,7 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
               </button>
             )}
             <span className="text-[0.68rem]" style={{ color: dm ? '#7a7a84' : '#b0b0b8' }}>
-              {isIn ? 'Only if the screenshot turned out to be wrong.' : 'For cash, Venmo, or anything paid outside the site.'}
+              {isIn ? 'Only if the screenshot turned out to be wrong.' : 'For anything paid outside the site.'}
             </span>
           </div>
         </div>
@@ -335,7 +335,7 @@ function CashDueField({ booking, onUpdateBooking, dm }) {
   return (
     <div className="min-w-0">
       <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-        Cash on the day
+        Balance on the day
       </p>
       <div className="flex items-center gap-1">
         <span className="text-[0.86rem]" style={{ color: dm ? '#8f8a93' : '#A89098' }}>$</span>

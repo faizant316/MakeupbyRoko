@@ -1203,7 +1203,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
                       {/* The arithmetic, shown rather than summarised. The
                           deposit deliberately does not move: the fee is remaining
-                          balance, cash on the day (Roko, 2026-09-09). */}
+                          balance, due on the day (Roko, 2026-09-09). Never name
+                          how the balance is paid (Roko, 2026-09-17). */}
                       <div className="mt-4 rounded-xl overflow-hidden bg-white" style={{ border: '1px solid #EBD3DD' }}>
                         <div className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
                           <span className="text-[0.76rem]" style={{ color: '#8A7F79' }}>{bridalTitle}</span>
@@ -1214,7 +1215,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                       </div>
                       {farTravelCash && (
                         <p className="text-[0.76rem] leading-[1.6] mt-2.5" style={{ color: '#6E6058' }}>
-                          Your deposit stays <strong style={{ color: '#4A423E' }}>{depositOnly}</strong>, so <strong style={{ color: '#4A423E' }}>{farTravelCash}</strong> is cash on the day.
+                          Your deposit stays <strong style={{ color: '#4A423E' }}>{depositOnly}</strong>, so <strong style={{ color: '#4A423E' }}>{farTravelCash}</strong> is due on the day.
                         </p>
                       )}
 
@@ -1253,7 +1254,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                     <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                      Your balance (the price minus your deposit) is cash on the day.
+                      Your balance (the price minus your deposit) is due on the day.
                     </p>
                   </div>
                 )}
@@ -1378,7 +1379,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                           <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
                           <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
                           <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
-                            <strong style={{ color: '#4A423E' }}>{LOCAL_TRAVEL_FEE}</strong>, added to your balance. Cash on the day.
+                            <strong style={{ color: '#4A423E' }}>{LOCAL_TRAVEL_FEE}</strong>, added to your balance. Due on the day.
                           </p>
 
                           {/* The old soft nudge, kept for the one case that still
