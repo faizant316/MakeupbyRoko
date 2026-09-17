@@ -526,10 +526,10 @@ export function bookingConfirmationEmail({ firstName, serviceName, servicePrice,
         { title: 'Roko confirms your time', body: 'By email, within 24–48 hours. Nothing needed from you until then.' },
         {
           title: 'On the day',
-          body: `Come with clean, moisturized skin. Bring the remaining ${
+          body: `Come with clean, moisturized skin. The remaining ${
             remaining
-              ? `<strong style="color:#16110F;">${remaining} in cash</strong>.`
-              : '<strong style="color:#16110F;">balance in cash</strong>. Roko confirms the exact amount.'
+              ? `<strong style="color:#16110F;">${remaining}</strong> is due that day.`
+              : '<strong style="color:#16110F;">balance</strong> is due that day. Roko confirms the exact amount.'
           }`,
         },
       ])}`)}
@@ -621,14 +621,14 @@ export function bridalConfirmationEmail({
         {
           title: isTrialPkg ? 'On the day' : 'On the wedding day',
           body: bRemaining
-            ? `Bring the remaining <strong style="color:#16110F;">${bRemaining} in cash</strong>.`
-            : 'Bring the remaining <strong style="color:#16110F;">balance in cash</strong>. Roko confirms the exact amount.',
+            ? `The remaining <strong style="color:#16110F;">${bRemaining}</strong> is due that day.`
+            : 'The remaining <strong style="color:#16110F;">balance</strong> is due that day. Roko confirms the exact amount.',
         },
       ])}`)}
       ${timingRows ? cpanel(`${ctitle('Timing &amp; Vendors')}${crows(timingRows)}`) : ''}
       ${additionalDetails ? cpanel(`${ctitle('Your Vision')}<p style="font-size:14px;color:#5A5258;margin:0;line-height:1.7;white-space:pre-wrap;">${additionalDetails}</p>`) : ''}
       ${onLocation ? `<tr><td style="padding:2px 30px 10px;"><p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:0;">Travel fee applies to locations within approximately one hour of ${STUDIO_TOWN}.</p></td></tr>` : ''}
-      ${bFarN ? `<tr><td style="padding:2px 30px 10px;"><p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:0;">Your venue is more than approximately two hours from ${STUDIO_TOWN}, so a flat ${fmtMoney(bFarN)} covers the hotel the night before, transportation and the extra day. It is part of the cash balance, not the deposit.</p></td></tr>` : ''}
+      ${bFarN ? `<tr><td style="padding:2px 30px 10px;"><p style="font-size:11px;color:#B3A6AC;line-height:1.5;margin:0;">Your venue is more than approximately two hours from ${STUDIO_TOWN}, so a flat ${fmtMoney(bFarN)} covers the hotel the night before, transportation and the extra day. It is part of the remaining balance, not the deposit.</p></td></tr>` : ''}
       ${contractSection}
     `,
   });
@@ -671,9 +671,9 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
         crow('Date', dateFormatted) +
         (time ? crow('Time', time) : '') +
         crow('Location', locationValue) +
-        (balanceDue ? crow('Cash on the day', `<strong>${balanceDue}</strong>`, '#C4849A') : '')
+        (balanceDue ? crow('Remaining balance', `<strong>${balanceDue}</strong>`, '#C4849A') : '')
       )}${travels ? '' : cStudio()}`)}
-      ${balanceDue ? '' : cinfo(`Your remaining balance is due in cash on the day.`)}
+      ${balanceDue ? '' : cinfo(`Your remaining balance is due on the day.`)}
       ${cstepsPanel('What to Expect', [
         ['1', travels ? 'Be ready for me' : 'Arrive on time', time ? `We start at ${time}` : 'At your confirmed time'],
         ['2', 'Bring your inspiration', 'Photos of the look you want are always welcome'],
@@ -683,8 +683,8 @@ export function bookingConfirmedEmail({ firstName, serviceName, dateFormatted, t
         // date and the address, which is the block someone reopens on the
         // morning. This step points at it rather than printing it again.
         balanceDue
-          ? ['3', 'Bring cash for the balance', 'The amount is in your appointment details above']
-          : ['3', 'Bring cash for the balance', 'Roko will confirm the exact amount beforehand'],
+          ? ['3', 'Balance due on the day', 'The amount is in your appointment details above']
+          : ['3', 'Balance due on the day', 'Roko will confirm the exact amount beforehand'],
       ])}
       ${ccancel(cancelUrl, 'Need to cancel? You can do that here,')}
     `,
