@@ -173,6 +173,93 @@ function BookingSummary({ booking, dateFormatted, depositAmount, servicePrice, f
   );
 }
 
+// Most a client can attach to one deposit. Two or three is the real case (a
+// bank's daily Zelle limit splits the payment); the cap just stops a whole
+// camera roll going up by accident.
+const MAX_SHOTS = 6;
+
+// The deposit screenshots she has picked but not sent yet. Screenshots are tall,
+// so they sit as portrait tiles three to a row, shown whole (contain, not
+// cover) so she can see it is the right confirmation. The last tile adds more,
+// unless the row is full: then a tile would sit alone on an empty row, so it
+// becomes a slim button under the grid instead.
+function ZelleShots({ items, onAdd, onRemove }) {
+  const canAdd = items.length < MAX_SHOTS;
+  const rowFull = items.length % 3 === 0;
+  const picker = <input type="file" accept="image/*" multiple className="hidden" onChange={onAdd} />;
+  return (
+    <div className="uz-rise">
+      <div className="flex items-center gap-2 mb-2.5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#3FA66A" strokeWidth="3" className="w-3 h-3 flex-shrink-0">{ICON.check}</svg>
+        <p className="text-[0.72rem] font-semibold" style={{ color: VALUE }}>
+          {items.length} screenshot{items.length > 1 ? 's' : ''} added
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2.5">
+        {items.map((it, i) => (
+          <div key={it.preview} className="relative aspect-[3/4] rounded-xl overflow-hidden uz-pop" style={{ border: `1px solid ${HEAD_BORDER}`, background: '#FBF7F9' }}>
+            <img src={it.preview} alt={`Zelle screenshot ${i + 1}`} className="w-full h-full object-contain" />
+            <button
+              type="button"
+              onClick={() => onRemove(i)}
+              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/55 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+              aria-label={`Remove screenshot ${i + 1}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.8" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
+          </div>
+        ))}
+        {canAdd && !rowFull && (
+          <label
+            className="aspect-[3/4] rounded-xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors touch-manipulation"
+            style={{ border: `1.5px dashed ${HEAD_BORDER}`, background: '#FEFCFD' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.8" className="w-4 h-4">{ICON.plus}</svg>
+            <span className="text-[0.62rem] font-semibold text-center leading-tight px-1" style={{ color: PLUM_DARK }}>Add another</span>
+            {picker}
+          </label>
+        )}
+      </div>
+      {canAdd && rowFull && (
+        <label
+          className="mt-2.5 flex items-center justify-center gap-1.5 py-3 rounded-xl cursor-pointer transition-colors touch-manipulation"
+          style={{ border: `1.5px dashed ${HEAD_BORDER}`, background: '#FEFCFD' }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.8" className="w-3.5 h-3.5">{ICON.plus}</svg>
+          <span className="text-[0.68rem] font-semibold" style={{ color: PLUM_DARK }}>Add another screenshot</span>
+          {picker}
+        </label>
+      )}
+      <p className="mt-2.5 text-[0.68rem] leading-[1.5]" style={{ color: LABEL }}>
+        Sent it in more than one payment? Add a screenshot of each.
+      </p>
+    </div>
+  );
+}
+
+// The screenshots she sent, on the success screen. One fills the card the way
+// it always did; several sit two to a row.
+function ScreenshotsCard({ urls }) {
+  if (!urls.length) return null;
+  const many = urls.length > 1;
+  return (
+    <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
+      <CardHead icon={ICON.upload}>{many ? `Your Screenshots (${urls.length})` : 'Your Screenshot'}</CardHead>
+      <div className={`p-4 flex-1 ${many ? 'grid grid-cols-2 gap-2 content-start' : 'flex items-center justify-center'}`}>
+        {urls.map((url, i) => (
+          <img
+            key={url}
+            src={url}
+            alt={`Zelle screenshot ${i + 1}`}
+            className={`w-full rounded-xl object-contain ${many ? 'max-h-[240px]' : 'max-h-[300px]'}`}
+            style={many ? { background: '#FBF7F9' } : undefined}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Progress dots in the card footer — active dot stretches into a plum pill.
 function Dots({ count, active, onJump }) {
   if (count < 2) return null;
@@ -389,8 +476,7 @@ export default function UploadZelle() {
   const [submitting, setSubmitting] = useState(false);
 
   // Deferred uploads — held in state, committed together on final submit.
-  const [zelleFile, setZelleFile] = useState(null);
-  const [zellePreview, setZellePreview] = useState(null);
+  const [zelleItems, setZelleItems] = useState([]); // [{ file, preview }], one per screenshot
   const [withoutItems, setWithoutItems] = useState([]); // [{ file, preview }]
   const [withItems, setWithItems] = useState([]);
 
@@ -458,18 +544,14 @@ export default function UploadZelle() {
   const pageBg = { background: 'linear-gradient(180deg, #FFFFFF 0%, #FBF6F8 100%)' };
 
   // ── File handlers (deferred — nothing uploads until final submit) ──
-  const pickZelle = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (zellePreview) URL.revokeObjectURL(zellePreview);
-    setZelleFile(f);
-    setZellePreview(URL.createObjectURL(f));
+  const addZelle = (e) => {
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
-  };
-  const clearZelle = () => {
-    if (zellePreview) URL.revokeObjectURL(zellePreview);
-    setZelleFile(null);
-    setZellePreview(null);
+    if (!files.length) return;
+    setZelleItems(prev => [
+      ...prev,
+      ...files.slice(0, MAX_SHOTS - prev.length).map(f => ({ file: f, preview: URL.createObjectURL(f) })),
+    ]);
   };
   const addPhotos = (setter) => (e) => {
     const files = Array.from(e.target.files || []);
@@ -490,27 +572,48 @@ export default function UploadZelle() {
   const jumpTo = (i) => { if (i === step) return; setDir(i > step ? 'fwd' : 'back'); setStep(i); };
 
   const handleSubmitAll = async () => {
-    if (!zelleFile || submitting) return;
+    if (!zelleItems.length || submitting) return;
     setSubmitting(true);
     try {
-      // 1) Deposit screenshot — the critical, required upload. This is the ONLY
-      // thing the client waits on, so the confirmation appears in seconds
+      // 1) Deposit screenshots — the critical, required upload. These are the
+      // ONLY thing the client waits on, so the confirmation appears in seconds
       // instead of after every photo has finished.
-      const shot = await compressImage(zelleFile);
-      const fd = new FormData();
-      fd.append('file', shot);
-      fd.append('token', token);
-      const res = await fetch('/api/zelle-upload', { method: 'POST', body: fd });
-      const raw = await res.text();
-      let data = {};
-      try { data = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
-      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      //
+      // One request per screenshot, in order, for the same two reasons as the
+      // photos below: Vercel's body limit, and the route adds each one to the
+      // end of a stored list.
+      const sent = [];
+      try {
+        for (const it of zelleItems) {
+          const shot = await compressImage(it.file);
+          const fd = new FormData();
+          fd.append('file', shot);
+          fd.append('token', token);
+          const res = await fetch('/api/zelle-upload', { method: 'POST', body: fd });
+          const raw = await res.text();
+          let data = {};
+          try { data = raw ? JSON.parse(raw) : {}; } catch { /* not JSON */ }
+          if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+          sent.push(it);
+          setBooking(b => ({ ...b, screenshot_urls: [...(b?.screenshot_urls || []), data.url].filter(Boolean) }));
+        }
+      } catch (err) {
+        // Some made it and one didn't. Keep only the ones still to send, so
+        // tapping the button again doesn't upload the others a second time.
+        if (sent.length) {
+          setZelleItems(prev => prev.filter(x => !sent.includes(x)));
+          alert(`${sent.length} of your ${zelleItems.length} screenshots went through, but the rest didn't. Tap the button again to send the rest.`);
+          setSubmitting(false);
+          return;
+        }
+        throw err;
+      }
 
       // Deposit is saved — reveal the success screen right away. The bridal
       // photos then upload in the background and pop onto the card as they land,
       // so the client is never stuck on a spinner while several phone photos
       // compress and upload (which was taking ~a minute on mobile).
-      setBooking(b => ({ ...b, zelle_screenshot: 'uploaded', screenshot_url: data.url }));
+      setBooking(b => ({ ...b, zelle_screenshot: 'uploaded' }));
       setUploaded(true);
       setSubmitting(false);
 
@@ -623,6 +726,11 @@ export default function UploadZelle() {
 
   // ── SUCCESS STATE (post-submit + return visits) ──
   if (uploaded) {
+    // Every screenshot she sent. A return visit gets the list from the server;
+    // straight after submitting it is built up one upload at a time.
+    const shotUrls = booking?.screenshot_urls?.length
+      ? booking.screenshot_urls
+      : (booking?.screenshot_url ? [booking.screenshot_url] : []);
     return (
       <div className="min-h-screen flex flex-col" style={pageBg}>
         <Style />
@@ -637,7 +745,7 @@ export default function UploadZelle() {
             </div>
             <p className="text-[0.6rem] font-bold tracking-[0.2em] uppercase mb-1.5" style={{ color: PLUM }}>Deposit Received</p>
             <h1 className="font-serif text-[1.9rem] lg:text-[2.4rem] font-light leading-tight" style={{ color: VALUE }}>
-              Screenshot <em className="italic" style={{ color: PLUM }}>Submitted!</em>
+              {shotUrls.length > 1 ? 'Screenshots' : 'Screenshot'} <em className="italic" style={{ color: PLUM }}>Submitted!</em>
             </h1>
             <p className="text-[0.82rem] mt-2" style={{ color: LABEL }}>Roko will confirm your appointment within 24–48 hours.</p>
           </div>
@@ -647,14 +755,7 @@ export default function UploadZelle() {
             <div className="hidden lg:grid grid-cols-3 gap-5 items-stretch">
               <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} farTravel={farTravel} total={farTotal} remaining={remaining} />
 
-              {booking?.screenshot_url && (
-                <div className="bg-white overflow-hidden flex flex-col" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
-                  <CardHead icon={ICON.upload}>Your Screenshot</CardHead>
-                  <div className="p-4 flex items-center justify-center flex-1">
-                    <img src={booking.screenshot_url} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[300px]" />
-                  </div>
-                </div>
-              )}
+              <ScreenshotsCard urls={shotUrls} />
 
               <div className="flex flex-col gap-4">
                 <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
@@ -683,14 +784,7 @@ export default function UploadZelle() {
             <div className="lg:hidden flex flex-col gap-4">
               <BookingSummary booking={booking} dateFormatted={dateFormatted} depositAmount={depositDisplay} servicePrice={servicePrice} farTravel={farTravel} total={farTotal} remaining={remaining} />
 
-              {booking?.screenshot_url && (
-                <div className="bg-white overflow-hidden" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
-                  <CardHead icon={ICON.upload}>Your Screenshot</CardHead>
-                  <div className="p-4">
-                    <img src={booking.screenshot_url} alt="Zelle screenshot" className="w-full rounded-xl object-contain max-h-[280px]" />
-                  </div>
-                </div>
-              )}
+              <ScreenshotsCard urls={shotUrls} />
 
               <div className="bg-white p-5" style={{ borderRadius: 12, border: `1px solid ${CARD_BORDER}` }}>
                 <p className="text-[0.58rem] font-semibold tracking-[0.16em] uppercase mb-2.5" style={{ color: PLUM }}>What's Next</p>
@@ -725,7 +819,7 @@ export default function UploadZelle() {
   }
 
   // ── FIRST-TIME WIZARD ──
-  const primaryDisabled = submitting || !zelleFile || (isLast && isBridal && !photosComplete);
+  const primaryDisabled = submitting || !zelleItems.length || (isLast && isBridal && !photosComplete);
   const primaryLabel = isLast
     ? (submitting ? 'Submitting…' : (isBridal ? 'Submit & reserve my date' : 'Reserve my date'))
     : 'Continue';
@@ -811,23 +905,10 @@ export default function UploadZelle() {
                       </div>
                     </div>
 
-                    {/* Screenshot dropzone */}
-                    {zellePreview ? (
-                      <div className="relative overflow-hidden uz-rise" style={{ borderRadius: 12, border: `1px solid ${HEAD_BORDER}` }}>
-                        <img src={zellePreview} alt="Zelle screenshot" className="w-full object-contain max-h-[260px]" style={{ background: '#FBF7F9' }} />
-                        <button
-                          type="button"
-                          onClick={clearZelle}
-                          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/55 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                          aria-label="Remove screenshot"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                        </button>
-                        <div className="absolute bottom-0 inset-x-0 px-3 py-2 flex items-center gap-1.5" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent)' }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" className="w-3 h-3">{ICON.check}</svg>
-                          <span className="text-[0.62rem] font-semibold text-white tracking-wide">Screenshot added</span>
-                        </div>
-                      </div>
+                    {/* Screenshot dropzone. Takes several at once, and once one is
+                        in, the tiles take over with a tile for adding more. */}
+                    {zelleItems.length > 0 ? (
+                      <ZelleShots items={zelleItems} onAdd={addZelle} onRemove={removePhoto(setZelleItems)} />
                     ) : (
                       <label
                         className="flex flex-col items-center gap-3 px-5 py-8 cursor-pointer transition-all"
@@ -837,10 +918,10 @@ export default function UploadZelle() {
                           <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-5 h-5">{ICON.upload}</svg>
                         </div>
                         <div className="text-center">
-                          <p className="text-[0.82rem] font-semibold" style={{ color: PLUM_DARK }}>Upload your Zelle screenshot</p>
-                          <p className="text-[0.62rem] mt-1" style={{ color: LABEL }}>Tap to choose · PNG or JPG</p>
+                          <p className="text-[0.82rem] font-semibold" style={{ color: PLUM_DARK }}>Upload your Zelle screenshots</p>
+                          <p className="text-[0.62rem] mt-1" style={{ color: LABEL }}>Tap to choose · you can pick more than one</p>
                         </div>
-                        <input type="file" accept="image/*" className="hidden" onChange={pickZelle} />
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={addZelle} />
                       </label>
                     )}
                   </div>
@@ -887,10 +968,10 @@ export default function UploadZelle() {
 
             {/* Footer: buttons + dots */}
             <div className="px-6 sm:px-7 pb-6 pt-1">
-              {!zelleFile && (
+              {!zelleItems.length && (
                 <p className="text-center text-[0.66rem] mb-3" style={{ color: LABEL }}>Add your Zelle screenshot to continue</p>
               )}
-              {isLast && isBridal && zelleFile && !photosComplete && (
+              {isLast && isBridal && zelleItems.length > 0 && !photosComplete && (
                 <p className="text-center text-[0.66rem] mb-3" style={{ color: LABEL }}>Add at least one photo to each section to submit</p>
               )}
               <div className="flex items-center gap-3">

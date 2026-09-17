@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
+import { signScreenshots } from '../../../src/lib/zelleScreenshots';
 
+// Signing failures are swallowed: the upload page still has to open for a
+// client whose screenshots can't be shown, it just shows them no pictures.
 async function withScreenshotUrl(supabase, booking) {
   if (!booking?.zelle_screenshot) return booking;
-  const { data } = await supabase.storage
-    .from('zelle-screenshots')
-    .createSignedUrl(booking.zelle_screenshot, 3600);
-  return { ...booking, screenshot_url: data?.signedUrl || null };
+  const urls = await signScreenshots(supabase, booking).catch(() => []);
+  return { ...booking, screenshot_url: urls[0] || null, screenshot_urls: urls };
 }
 
 // Friendly label for a class registration built from its boolean columns, so the

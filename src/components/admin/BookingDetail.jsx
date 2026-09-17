@@ -31,7 +31,7 @@ import { STUDIO_TOWN } from '@/lib/studio';
 // path can't cover (cash, Venmo, a screenshot that's clearly wrong).
 function DepositStrip({ booking, onUpdateBooking, dm }) {
   const [expanded, setExpanded] = useState(false);
-  const [signedUrl, setSignedUrl] = useState(null);
+  const [signedUrls, setSignedUrls] = useState([]);
   const [loadingUrl, setLoadingUrl] = useState(false);
 
   const hasProof = !!booking.zelle_screenshot;
@@ -49,8 +49,12 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
     ? { fg: dm ? '#86efac' : '#16a34a', bg: dm ? 'rgba(34,197,94,0.10)' : '#F4FBF6', line: dm ? 'rgba(34,197,94,0.24)' : '#DCEFE3', key: '#22c55e' }
     : { fg: dm ? '#F5B83C' : '#A9660B', bg: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', line: dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9', key: '#F59E0B' };
 
+  // How many screenshots are on file. The list is on the row itself, so the
+  // count is right before the strip is ever opened.
+  const shotCount = booking.zelle_screenshots?.length || (hasProof ? 1 : 0);
+
   const headline = isIn
-    ? (hasProof ? 'Zelle screenshot received' : 'Deposit received')
+    ? (hasProof ? (shotCount > 1 ? `${shotCount} Zelle screenshots received` : 'Zelle screenshot received') : 'Deposit received')
     : (hasProof ? 'Screenshot on file, marked not received' : 'Waiting on deposit');
 
   const detail = isIn
@@ -63,7 +67,7 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
   const handleExpand = async () => {
     const next = !expanded;
     setExpanded(next);
-    if (next && hasProof && !signedUrl) {
+    if (next && hasProof && !signedUrls.length) {
       setLoadingUrl(true);
       try {
         const res = await fetch('/api/screenshot-url', {
@@ -72,7 +76,7 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
           body: JSON.stringify({ id: booking.id, table: 'bookings' }),
         });
         const data = await res.json();
-        setSignedUrl(data.url);
+        setSignedUrls(data.urls?.length ? data.urls : (data.url ? [data.url] : []));
       } finally {
         setLoadingUrl(false);
       }
@@ -117,16 +121,23 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
           {hasProof && loadingUrl && (
             <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#8e8e99' : '#aaa' }}>Loading…</p>
           )}
-          {hasProof && signedUrl && (
+          {hasProof && signedUrls.length > 0 && (
             <div>
-              <img
-                src={signedUrl}
-                alt="Zelle screenshot"
-                className="w-full rounded-lg object-contain max-h-[400px] cursor-pointer"
-                onClick={() => window.open(signedUrl, '_blank')}
-                title="Click to open full size"
-              />
-              <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#7a7a84' : '#bbb' }}>Click image to open full size</p>
+              {/* One screenshot fills the strip; several sit two to a row. */}
+              <div className={signedUrls.length > 1 ? 'grid grid-cols-2 gap-2' : ''}>
+                {signedUrls.map((url, i) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt={`Zelle screenshot ${i + 1}`}
+                    className={`w-full rounded-lg object-contain cursor-pointer ${signedUrls.length > 1 ? 'max-h-[320px]' : 'max-h-[400px]'}`}
+                    style={signedUrls.length > 1 ? { background: dm ? '#26262e' : '#F7F7F9' } : undefined}
+                    onClick={() => window.open(url, '_blank')}
+                    title="Click to open full size"
+                  />
+                ))}
+              </div>
+              <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#7a7a84' : '#bbb' }}>Click {signedUrls.length > 1 ? 'a screenshot' : 'image'} to open full size</p>
             </div>
           )}
 

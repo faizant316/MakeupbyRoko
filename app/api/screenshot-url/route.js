@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../src/lib/supabase/server';
 import { requireAdmin } from '../../../src/lib/requireAdmin';
+import { signScreenshots } from '../../../src/lib/zelleScreenshots';
 
 // The only tables that carry a zelle_screenshot column.
 const DEPOSIT_TABLES = ['bookings', 'bridal_inquiries'];
@@ -23,18 +24,16 @@ export async function POST(req) {
 
     const { data: record } = await supabase
       .from(table)
-      .select('zelle_screenshot')
+      .select('zelle_screenshot, zelle_screenshots')
       .eq('id', id)
       .maybeSingle();
 
-    if (!record?.zelle_screenshot) return NextResponse.json({ url: null });
+    if (!record?.zelle_screenshot) return NextResponse.json({ url: null, urls: [] });
 
-    const { data, error } = await supabase.storage
-      .from('zelle-screenshots')
-      .createSignedUrl(record.zelle_screenshot, 3600);
-    if (error) throw error;
-
-    return NextResponse.json({ url: data.signedUrl });
+    // `url` is the first screenshot, for anything that only shows one; `urls`
+    // is all of them, in the order the client sent them.
+    const urls = await signScreenshots(supabase, record);
+    return NextResponse.json({ url: urls[0] || null, urls });
   } catch (err) {
     console.error('screenshot-url:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
