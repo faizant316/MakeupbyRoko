@@ -160,9 +160,12 @@ function BridalSuccess({ onClose, brideName, email, bookingId, uploadToken, reca
             <p className="text-[0.82rem] text-[#6E6058] leading-[1.75]">
               Your bridal inquiry has been received. I'll be in touch within <strong className="text-[#2C1A14]">24–48 hours</strong> to confirm everything and schedule your consultation.
             </p>
-            <div className="mt-3 px-3.5 py-3 bg-[#F7F3F0] rounded-lg border-l-2 border-[#D4A0B0]">
-              <p className="text-[0.72rem] font-semibold text-[#A0785A] mb-1">Check your email for your secure upload link</p>
-              <p className="text-[0.72rem] text-[#6E6058] leading-[1.65]">
+            {/* The upload link, set off from the paragraph above by a hairline.
+                It was a beige panel with a pink bar down its left edge and a tan
+                title, which read as a generated-site callout, not part of the card. */}
+            <div className="mt-4 pt-4 border-t border-[#F0EAE4]">
+              <p className="text-[0.8rem] font-semibold text-[#2C1A14] mb-1">Check your email for your secure upload link</p>
+              <p className="text-[0.76rem] text-[#6E6058] leading-[1.65]">
                 One private link to send your <strong className="text-[#2C1A14]">Zelle deposit screenshot</strong> and your <strong className="text-[#2C1A14]">with &amp; without makeup photos</strong>, all in one place, whenever you're ready.
               </p>
             </div>
@@ -903,10 +906,10 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </div>
             </div>
 
-            {/* Lead-time notice — a quiet rule-and-line instead of the old
-                heavy 2px-bordered box. Same information, roughly half the height,
-                and it no longer competes with the heading above it. */}
-            <div className="relative z-10 pl-3" style={{ borderLeft: '2px solid #E7C3D1' }}>
+            {/* Lead-time notice — plain text under the heading. It was a heavy
+                2px-bordered box, then a line with a pink rule down its left
+                edge; both were decoration the sentence doesn't need. */}
+            <div className="relative z-10">
               <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
                 Bookable at least <strong className="text-[#444] font-semibold">2 weeks out</strong>. Earliest {isTrial ? 'trial' : 'wedding'} date: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
               </p>
@@ -1093,10 +1096,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
                 {/* Preferred trial time — her preference; Roko sets + can move it
                     with the clean time picker in admin. The one timing field a
-                    trial needs, so it gets the soft pink "about you" accent. */}
-                <div className="relative pl-3.5">
-                  <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-                  <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time works best for you? *</label>
+                    trial needs. */}
+                <div>
+                  <label className={labelClass}>What time works best for you? *</label>
                   <TimePicker value={form.event_start_time} onChange={v => set('event_start_time', v)} placeholder="Select time" />
                   <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                     Roko confirms the final time with you.
@@ -1250,9 +1252,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-3 relative pl-3.5">
-                    <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                    <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel included</p>
+                  <div className="mt-3">
+                    <p className="text-[0.82rem] font-semibold mb-0.5" style={{ color: '#2C1A14' }}>Travel included</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                       Your balance (the price minus your deposit) is due on the day.
                     </p>
@@ -1302,9 +1303,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                       /* Destination travel is quoted per trip, so neither the flat
                          fee nor the hour rule applies. Leaving the fee up for a
                          destination bride quotes her a number that was never hers. */
-                      <div className="mt-3 relative pl-3.5">
-                        <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                        <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Destination event</p>
+                      <div className="mt-3">
+                        <p className="text-[0.82rem] font-semibold mb-0.5" style={{ color: '#2C1A14' }}>Destination event</p>
                         <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                           Roko quotes destination travel per trip, see below. The {LOCAL_TRAVEL_FEE} local fee doesn't apply.
                         </p>
@@ -1375,9 +1375,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     ) : (
                       <>
                         <DriveTime status={travel.status} label={driveTimeLabel} />
-                        <div className="mt-3 relative pl-3.5">
-                          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                          <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Travel fee</p>
+                        <div className="mt-3">
+                          <p className="text-[0.82rem] font-semibold mb-0.5" style={{ color: '#2C1A14' }}>Travel fee</p>
                           <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                             <strong style={{ color: '#4A423E' }}>{LOCAL_TRAVEL_FEE}</strong>, added to your balance. Due on the day.
                           </p>
@@ -1411,9 +1410,8 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                 )}
 
                 {form.ready_location_type === 'studio' && (
-                  <div className="mt-3 relative pl-3.5" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
-                    <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                    <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>You're all set</p>
+                  <div className="mt-3" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
+                    <p className="text-[0.82rem] font-semibold mb-0.5" style={{ color: '#2C1A14' }}>You're all set</p>
                     <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                       No travel fee. Exact address once your date is confirmed.
                     </p>
@@ -1423,11 +1421,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             )}
 
             {/* The bride's own ready-by preference, leading the three times now
-                that the location question no longer sits between them. Soft pink
-                accent bar + plum label so it reads as hers, not a vendor's. */}
-            <div className="relative pl-3.5">
-              <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-              <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
+                that the location question no longer sits between them. */}
+            <div>
+              <label className={labelClass}>What time would you like to be ready by? *</label>
               <TimePicker value={form.makeup_ready_by_time} onChange={v => set('makeup_ready_by_time', v)} placeholder="Select time" />
               <p className="text-[0.75rem] sm:text-[0.8rem] text-gray-400 mt-1.5 leading-[1.6]">
                 Roko builds your timeline around this.
@@ -1444,11 +1440,12 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <TimePicker value={form.ready_by_time} onChange={v => set('ready_by_time', v)} placeholder="Select time" />
             </div>
 
-            {/* Heads-up note — subtle: a thin pink accent line + a small pink tag,
-                no filled box. */}
-            <div className="relative pl-3.5">
-              <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-              <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Heads up</p>
+            {/* Heads-up note. A dark label over the sentence and nothing else:
+                no box, no pink bar down the side, no tinted tag. That bar-and-tag
+                callout is the stock look of generated sites, so notes across the
+                forms are set as plain type. */}
+            <div>
+              <p className="text-[0.82rem] font-semibold mb-0.5" style={{ color: '#2C1A14' }}>Heads up</p>
               <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                 Roko won't glam alongside another hairstylist, so she works around yours. (Unless it's <a href="https://instagram.com/hairbyshak_" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2" style={{ color: '#C4849A', textDecorationColor: '#E8C4D0' }}>@hairbyshak_</a>.)
               </p>
@@ -1520,14 +1517,13 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
             ) : isFullDay ? (
               <div>
                 <label className={labelClass}>Bridal party glam</label>
-                <div className="relative pl-3.5 mt-1.5">
-                  <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
+                <div className="mt-1.5">
                   {/* Lead with the RULE, not the arithmetic. "14 days out ·
                       needs 30" made the bride solve for the rule herself; she
                       has to be told outright that party glam is booked a month
                       ahead. Her own date comes second, as the reason it doesn't
                       apply to her. */}
-                  <p className="text-[0.88rem] font-semibold mb-1" style={{ color: '#B06883' }}>
+                  <p className="text-[0.88rem] font-semibold mb-1" style={{ color: '#2C1A14' }}>
                     Must be booked at least one month in advance
                   </p>
                   <p className="text-[0.82rem] leading-[1.6]" style={{ color: '#6E6058' }}>

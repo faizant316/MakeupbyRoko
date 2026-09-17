@@ -78,10 +78,10 @@ export default function ClassFormatStep({ format, onFormat, onClose, onNext }) {
           <div className="text-center">
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-1.5" style={{ color: PLUM.rose }}>Step 1 of 3</p>
             <h2 className="font-serif text-[1.7rem] sm:text-[2.1rem] text-[#111] mb-4">How would you like to learn?</h2>
-            {/* Note — bridal travel-fee style: left rose bar, soft pink wash */}
-            <div className="max-w-[540px] mx-auto text-left px-4 py-3 rounded-r-lg"
-              style={{ background: PLUM.noteBg, borderLeft: `3px solid ${PLUM.rose}` }}>
-              <p className="text-[0.78rem] leading-[1.6]" style={{ color: PLUM.deep }}>
+            {/* Plain subtitle under the heading. It was a pink-washed note with
+                a rose bar down its left edge, the stock callout of generated sites. */}
+            <div className="max-w-[540px] mx-auto">
+              <p className="text-[0.85rem] leading-[1.6]" style={{ color: PLUM.deep }}>
                 Every class is <strong className="text-[#111]">private</strong>, one client per Wednesday. Take yours live on Zoom, or come into the studio in Mountain House.
               </p>
             </div>

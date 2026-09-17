@@ -554,11 +554,11 @@ export default function BookingModal({ service: initialService, onClose }) {
                     </div>
                   </div>
 
-                  {/* Lead-time notice — quiet rule-and-line, matching bridal.
+                  {/* Lead-time notice — plain text, matching bridal.
                       Says WHY as well as what: without the reason, a month out
                       reads as Roko being hard to book rather than as brides
                       getting first call on the near-term calendar. */}
-                  <div className={`${calFocus ? 'hidden sm:block' : 'block'} relative z-10 pl-3 mb-4`} style={{ borderLeft: '2px solid #E7C3D1' }}>
+                  <div className={`${calFocus ? 'hidden sm:block' : 'block'} relative z-10 mb-4`}>
                     <p className="text-[0.76rem] lg:text-[0.82rem] leading-[1.5] text-[#7a726c]">
                       Bookable at least <strong className="text-[#444] font-semibold">1 month out</strong>. Earliest available: <strong className="text-[#444] font-semibold">{minDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
                     </p>
@@ -744,9 +744,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                         ))}
                       </div>
                       {isEarlyArrival && (
-                        <div className="mt-3 relative pl-3.5">
-                          <span className="absolute left-0 top-0.5 bottom-0.5 w-[2px] rounded-full" style={{ background: '#EBC4D2' }} />
-                          <p className="inline-block text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1.5 px-1.5 py-0.5 rounded" style={{ color: '#B06883', background: 'rgba(196,132,154,0.1)' }}>Early arrival · +$100</p>
+                        <div className="mt-3">
+                          <p className="text-[0.82rem] font-semibold mb-0.5" style={{ color: '#2C1A14' }}>Early arrival · +$100</p>
                           <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#6E6058' }}>
                             Anything before 7:00 AM adds <strong style={{ color: '#4A423E' }}>$100</strong> to your total.
                           </p>
@@ -754,9 +753,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                       )}
                     </div>
 
-                    <div className="relative pl-3.5">
-                      <span className="absolute left-0 top-1 bottom-2 w-[3px] rounded-full" style={{ background: 'linear-gradient(180deg,#E8B4C6,#C4849A)' }} />
-                      <label className="block text-[0.68rem] font-semibold tracking-[0.14em] uppercase mb-2" style={{ color: '#C4849A' }}>What time would you like to be ready by? *</label>
+                    <div>
+                      <label className={labelClass}>What time would you like to be ready by? *</label>
                       <TimePicker
                         value={formData.ready_by_time || ''}
                         onChange={v => setFormData({ ...formData, ready_by_time: v })}

@@ -88,8 +88,8 @@ export default function TermsOfService() {
 
         <div className="flex flex-col gap-10">
           {SECTIONS.map((s, i) => (
-            <div key={i} className="border-l-2 border-[#E8D5C4] pl-6">
-              <h2 className="text-[0.7rem] font-semibold tracking-[0.14em] uppercase text-[#A0785A] mb-3">{s.title}</h2>
+            <div key={i}>
+              <h2 className="text-[1rem] font-semibold text-[#111] mb-2">{s.title}</h2>
               <p className="text-[0.875rem] text-[#555] leading-[1.85]">{s.body}</p>
             </div>
           ))}

@@ -784,7 +784,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
       {/* Scheduled state */}
       {hasConsult && !expanded && (
         <div className="flex items-center justify-between px-4 py-4 rounded-2xl transition-all"
-          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, borderLeft: `3px solid ${CONSULT_COLOR}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
+          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2874,7 +2874,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               {notes.comment && (
                 <div>
                   <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: PLUM }}>From the client</p>
-                  <div className="px-4 py-3" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
+                  <div className="px-4 py-3" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7' }}>
                     <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{notes.comment}</p>
                   </div>
                 </div>
@@ -3005,7 +3005,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               {/* Makeup vision note */}
               {bridalInquiry.additional_details && (
-                <div className="mt-5 px-4 py-3.5" style={{ borderRadius: 4, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7', borderLeft: '2px solid #C4849A' }}>
+                <div className="mt-5 px-4 py-3.5" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7' }}>
                   <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: PLUM }}>Makeup Vision &amp; Additional Details</p>
                   <p className="text-[0.84rem] leading-[1.7]" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{bridalInquiry.additional_details}</p>
                 </div>
