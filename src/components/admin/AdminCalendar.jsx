@@ -6,7 +6,8 @@ import ScheduleView from './ScheduleView';
 import MonthCalendar, { CLASS_PINK, OFF_RED } from './MonthCalendar';
 import CalendarHeader from './CalendarHeader';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
-import { STATUS_COLORS, STATUS_COLORS_DM, EVENT_COLORS, CONSULT_INK } from './statusColors';
+import { useTimeBlocks } from './useTimeBlocks';
+import { STATUS_COLORS, STATUS_COLORS_DM, EVENT_COLORS, CONSULT_INK, BLOCK_INK } from './statusColors';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -111,7 +112,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   );
 }
 
-export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm, onSelectBooking, onSelectClassReg, defaultDay = false }) {
+export default function AdminCalendar({ bookings, classRegs = [], currentMonth, setCurrentMonth, selectedDate, setSelectedDate, setStatusFilter, maxPerDay = 3, dayCapacityMap = {}, darkMode: dm, onSelectBooking, onSelectClassReg, onSelectTimeBlock, defaultDay = false }) {
   // The Home page lands on the day grid (matches the Booksy app: today's
   // appointments front and center), but remembers Roko's last choice if she
   // switches to Week/Month. The Availability tab always opens on Month.
@@ -179,10 +180,12 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
   });
 
   // Shared with the Calendar tab so both surfaces agree on what a day holds.
-  const evMap = buildEventMap(bookings, classRegs);
+  const timeBlocks = useTimeBlocks();
+  const evMap = buildEventMap(bookings, classRegs, timeBlocks);
   const bookedMap = buildBookedMap(bookings);
   const openEvent = (ev) => {
-    if (ev.kind === 'class') onSelectClassReg?.(ev.raw);
+    if (ev.kind === 'block') onSelectTimeBlock?.(ev.raw);
+    else if (ev.kind === 'class') onSelectClassReg?.(ev.raw);
     else onSelectBooking?.(ev.raw);
   };
 
@@ -337,6 +340,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           onChangeDate={goKey}
           onSelectBooking={onSelectBooking}
           onSelectClassReg={onSelectClassReg}
+          onSelectTimeBlock={onSelectTimeBlock}
           dm={dm}
           headerRight={blockBtn}
         />
@@ -409,6 +413,9 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           </span>
           <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
             <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: view === 'month' ? CLASS_PINK : '#D4A0B0' }} /> Makeup Class
+          </span>
+          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
+            <span className="w-2.5 h-2.5 rounded-[2px] inline-block" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} /> Blocked time
           </span>
           {view === 'week' && (
             <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>

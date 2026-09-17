@@ -45,7 +45,10 @@ export default function Admin() {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showNavFab, setShowNavFab] = useState(false);
-  const [showAddClient, setShowAddClient] = useState(false);
+  // The Add Client panel, which also blocks off time. Null when closed;
+  // otherwise which side it opens on, the day it starts on, and the blocked
+  // time being edited (when she tapped one on a calendar).
+  const [entryPanel, setEntryPanel] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
@@ -567,6 +570,7 @@ export default function Admin() {
                     <AdminCalendar bookings={bookings} classRegs={classRegs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setStatusFilter={setStatusFilter} maxPerDay={maxPerDay} dayCapacityMap={dayCapacityMap} darkMode={dm}
                       defaultDay
                       onSelectBooking={setSelectedBooking}
+                      onSelectTimeBlock={(t) => setEntryPanel({ mode: 'block', editBlock: t })}
                       onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
                   </div>
                   {/* Class Sign-Ups quick access */}
@@ -589,7 +593,8 @@ export default function Admin() {
                     selectedDate={selectedDate} setSelectedDate={setSelectedDate}
                     onSelect={setSelectedBooking} currentMonth={currentMonth}
                     allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
-                    darkMode={dm} onAddClient={() => setShowAddClient(true)} onBulkImport={() => setShowBulkImport(true)}
+                    darkMode={dm} onAddClient={() => setEntryPanel({ mode: 'client', date: selectedDate })}
+                    onSelectTimeBlock={(t) => setEntryPanel({ mode: 'block', editBlock: t })} onBulkImport={() => setShowBulkImport(true)}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
                     onViewAllCalendar={(jumpTo) => {
@@ -604,24 +609,6 @@ export default function Admin() {
                 </div>
               }
             />
-            {showAddClient && (
-              <AddClientModal
-                onSave={(record, kind) => {
-                  setShowAddClient(false);
-                  if (kind === 'class') {
-                    queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
-                    queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
-                    setActiveTab('classes');
-                    setSelectedClassReg(record);
-                  } else {
-                    queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-                    setSelectedBooking(record);
-                  }
-                }}
-                onClose={() => setShowAddClient(false)}
-                darkMode={dm}
-              />
-            )}
             {showBulkImport && (
               <BulkImportModal
                 onClose={() => setShowBulkImport(false)}
@@ -674,6 +661,8 @@ export default function Admin() {
             setSelectedDate={setAvailDay}
             onSelect={setSelectedBooking}
             onSelectClassReg={setSelectedClassReg}
+            onSelectTimeBlock={(t) => setEntryPanel({ mode: 'block', editBlock: t })}
+            onBlockTime={(d) => setEntryPanel({ mode: 'block', date: d })}
           />
         )}
 
@@ -734,6 +723,40 @@ export default function Admin() {
           <ReportsTab darkMode={dm} />
         )}
         </div> {/* /animated tab content */}
+
+        {/* Outside the keyed tab wrapper, so switching tabs underneath can't
+            remount it, and the Calendar tab can open it as well as Home. */}
+        {entryPanel && (
+          <AddClientModal
+            initialMode={entryPanel.mode}
+            initialDate={entryPanel.date || entryPanel.editBlock?.date || null}
+            editBlock={entryPanel.editBlock || null}
+            bookings={bookings}
+            classRegs={classRegs}
+            onSave={(record, kind) => {
+              setEntryPanel(null);
+              if (kind === 'class') {
+                queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
+                queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
+                setActiveTab('classes');
+                setSelectedClassReg(record);
+              } else if (kind === 'booking') {
+                queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+                setSelectedBooking(record);
+              } else {
+                // Blocked time or a day off: refresh both, then land on the day
+                // it went on, so she sees it arrive.
+                queryClient.invalidateQueries({ queryKey: ['time-blocks'] });
+                queryClient.invalidateQueries({ queryKey: ['blocked-dates'] });
+                const d = record?.date;
+                if (d && activeTab === 'availability') { setAvailDay(d); setAvailMonth(new Date(d + 'T00:00:00')); }
+                else if (d) { setSelectedDate(d); setCurrentMonth(new Date(d + 'T00:00:00')); }
+              }
+            }}
+            onClose={() => setEntryPanel(null)}
+            darkMode={dm}
+          />
+        )}
         </div> {/* /main content */}
       </div> {/* /flex row */}
     </div>

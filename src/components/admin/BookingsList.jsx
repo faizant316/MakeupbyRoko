@@ -11,7 +11,9 @@ import { todayItems, localDateKey } from './todayItems';
 import { openZoomRoom, zoomRoomUrl, parseMeetingId, meetingIdFromUrl } from '@/lib/zoomHost';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
-import { CONSULT_INK } from './statusColors';
+import { CONSULT_INK, BLOCK_INK, blockHatch } from './statusColors';
+import { useTimeBlocks } from './useTimeBlocks';
+import { blockLabel } from '@/lib/timeBlocks';
 import { isDepositUnseen, depositTone, timeAgo as depositTimeAgo, daysSince } from './depositState';
 
 // Thumbnail of the client's uploaded Zelle screenshot, so a deposit can be
@@ -238,7 +240,7 @@ export default function BookingsList({
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
   allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient, onBulkImport,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
-  onBulkUpdate, onBulkDelete, onViewAllCalendar,
+  onBulkUpdate, onBulkDelete, onViewAllCalendar, onSelectTimeBlock,
 }) {
   const [showArchive, setShowArchive] = useState(false);
   // iOS-style multi-select for the appointments list. `selectMode` flips rows
@@ -275,6 +277,12 @@ export default function BookingsList({
     staleTime: 30000,
   });
   const dayOff = selectedDate ? blockedDates.find(b => b.date === selectedDate) : null;
+  // Her own blocked time on the picked day ("Concert 2 to 7:30"), earliest first,
+  // whole-day notes on top.
+  const timeBlocks = useTimeBlocks();
+  const blocksOnDay = selectedDate
+    ? timeBlocks.filter(t => t.date === selectedDate).sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time))
+    : [];
   const [typeFilter, setTypeFilter] = useState('both'); // 'both' | 'bridal' | 'nonbridal'
   // On load only "This Week" (and urgent Past Due) is open — "This Month" and
   // "Later" start folded so the list lands clean; Roko can open them herself.
@@ -909,6 +917,38 @@ export default function BookingsList({
           </div>
         );
       })()}
+
+      {/* Blocked time on the selected date. Hatched and grey, the same way the
+          day schedule draws it, so it reads as "taken, not a client". */}
+      {blocksOnDay.length > 0 && (
+        <div className="mb-5 flex flex-col gap-1.5">
+          {blocksOnDay.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onSelectTimeBlock?.(t)}
+              className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left transition-opacity hover:opacity-80"
+              style={{ background: `${blockHatch(dm)}, ${dm ? '#222027' : '#FAF9FA'}`, border: `1px solid ${dm ? '#3d3842' : '#E6E1E8'}` }}
+            >
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: dm ? 'rgba(171,163,174,0.14)' : 'rgba(133,124,136,0.12)' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={BLOCK_INK[dm ? 'dark' : 'light']} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <circle cx="12" cy="12" r="9" /><line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+                </svg>
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[0.85rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#2a252c' }}>{blockLabel(t)}</span>
+                <span className="block text-[0.72rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#8f8793' }}>
+                  Blocked · {t.time || 'All day'}
+                </span>
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 flex-shrink-0" style={{ color: dm ? '#6f6f78' : '#b8b0bb' }}>
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Consultations on selected date */}
       {selectedDate && consultationsOnDate.length > 0 && (() => {

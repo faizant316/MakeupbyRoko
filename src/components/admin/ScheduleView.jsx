@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
-import { EVENT_COLORS, isBridalService } from './statusColors';
+import { EVENT_COLORS, BLOCK_INK, blockHatch, isBridalService } from './statusColors';
 import { classesOfReg } from '@/lib/classCatalog';
+import { blockLabel } from '@/lib/timeBlocks';
 import CalendarHeader from './CalendarHeader';
+import { useTimeBlocks } from './useTimeBlocks';
 
 // Booksy-style schedule. Day is a real time grid, Week is a 7-column grid you
 // read as a shape (a busy day is visibly dense, a free day is visibly empty, no
@@ -28,7 +30,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SHORT_LABELS = { bridal: 'Bridal', appt: 'Appt', class: 'Class', consult: 'Consult' };
 
 // Default durations (minutes) when a booking only has a start time.
-const DEFAULT_DUR = { bridal: 120, appt: 120, class: 90, consult: 30 };
+const DEFAULT_DUR = { bridal: 120, appt: 120, class: 90, consult: 30, block: 60 };
 
 // Px per hour in the day grid. At 58 the baseline 7 AM–8 PM ran to ~750px of
 // grid before the header, the week strip and the legend, which is most of a
@@ -77,8 +79,11 @@ function layoutEvents(events) {
 
 export default function ScheduleView({
   bookings = [], classRegs = [], dateKey, onChangeDate,
-  onSelectBooking, onSelectClassReg, dm, withViews = false, headerRight = null,
+  onSelectBooking, onSelectClassReg, onSelectTimeBlock, dm, withViews = false, headerRight = null,
 }) {
+  // Her blocked time, from the shared cache. Read here rather than passed in so
+  // every schedule shows it, including the one inside the client card.
+  const timeBlocks = useTimeBlocks();
   const [nowMin, setNowMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
   const [view, setView] = useState('day');
 
@@ -140,8 +145,19 @@ export default function ScheduleView({
         onOpen: () => onSelectClassReg?.(r),
       });
     });
+    timeBlocks.forEach(t => {
+      if (!t.date) return;
+      push(t.date, {
+        id: `b-${t.id}`, type: 'block', name: blockLabel(t),
+        detail: t.time ? 'Blocked time' : 'Blocked all day',
+        timeStr: t.time || '', status: 'confirmed',
+        // Only clickable where a panel can edit it. In the client card it is
+        // there to be seen, not changed.
+        onOpen: onSelectTimeBlock ? () => onSelectTimeBlock(t) : null,
+      });
+    });
     return map;
-  }, [bookings, classRegs, onSelectBooking, onSelectClassReg]);
+  }, [bookings, classRegs, timeBlocks, onSelectBooking, onSelectClassReg, onSelectTimeBlock]);
 
   // Which kinds of events each date has (strip dots + month bars).
   const kindsByDate = useMemo(() => {
@@ -235,7 +251,18 @@ export default function ScheduleView({
   // ── Shared bits ──
 
   // Solid when confirmed, hollow + dashed when the time isn't locked in yet.
+  // Blocked time is its own thing: hatched grey with dark ink, like Booksy's
+  // time reservations, so it never reads as a client.
+  const blockInk = BLOCK_INK[dm ? 'dark' : 'light'];
+  const colorOf = (type) => (type === 'block' ? blockInk : EVENT_COLORS[type]);
   const blockStyle = (ev) => {
+    if (ev.type === 'block') {
+      return {
+        background: `${blockHatch(dm)}, ${dm ? '#24222a' : '#F7F5F8'}`,
+        color: dm ? '#d9d2dc' : '#5f5763',
+        border: `1px solid ${dm ? '#4a4450' : '#DDD6DF'}`,
+      };
+    }
     const color = EVENT_COLORS[ev.type];
     if (ev.status === 'pending') {
       return {
@@ -367,7 +394,7 @@ export default function ScheduleView({
             <span className="flex items-center gap-[3px] h-[3px]">
               {kinds && [...kinds].slice(0, 3).map(t => (
                 <span key={t} className="w-[3px] h-[3px] rounded-full"
-                  style={{ background: isSel ? (dm ? '#8a8a94' : '#c9c9d1') : EVENT_COLORS[t] }} />
+                  style={{ background: isSel ? (dm ? '#8a8a94' : '#c9c9d1') : colorOf(t) }} />
               ))}
             </span>
           </button>
@@ -379,10 +406,25 @@ export default function ScheduleView({
 
   const renderDayGrid = () => (
     <>
-      {untimed.length > 0 && (
+      {/* A whole-day block isn't a missing time, it's the whole day. It gets
+          its own line so "No time set" keeps meaning a client to chase. */}
+      {untimed.some(ev => ev.type === 'block') && (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[0.68rem] font-medium" style={{ color: muted }}>All day</span>
+          {untimed.filter(ev => ev.type === 'block').map(ev => (
+            <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
+              className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md text-[0.8rem] ${ev.onOpen ? 'transition-opacity hover:opacity-75' : 'cursor-default'}`}
+              style={blockStyle(ev)}>
+              <span className="w-1.5 h-1.5 rounded-[1.5px] flex-shrink-0" style={{ background: blockInk }} />
+              <span className="truncate max-w-[200px]">{ev.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {untimed.some(ev => ev.type !== 'block') && (
         <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
           <span className="text-[0.68rem] font-medium" style={{ color: muted }}>No time set</span>
-          {untimed.map(ev => (
+          {untimed.filter(ev => ev.type !== 'block').map(ev => (
             <button key={ev.id} onClick={ev.onOpen}
               className="flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md text-[0.8rem] transition-opacity hover:opacity-75"
               style={{ background: `${EVENT_COLORS[ev.type]}1a`, color: dm ? '#e4e4e7' : '#33333a' }}>
@@ -424,8 +466,8 @@ export default function ScheduleView({
             const width = 100 / ev.cols;
             const compact = height < 40;   // a one-hour block still gets both lines
             return (
-              <button key={ev.id} onClick={ev.onOpen}
-                className="absolute rounded-md text-left overflow-hidden transition-opacity hover:opacity-85 z-10"
+              <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
+                className={`absolute rounded-md text-left overflow-hidden z-10 ${ev.onOpen ? 'transition-opacity hover:opacity-85' : 'cursor-default'}`}
                 style={{
                   top, height,
                   left: `calc(${ev.col * width}% + ${ev.col === 0 ? 0 : 2}px)`,
@@ -519,7 +561,7 @@ export default function ScheduleView({
                   {u.length > 0 && (
                     <button onClick={u[0].onOpen} title={u.map(e => e.name).join(', ')}
                       className="w-full h-[14px] rounded-[3px] transition-opacity hover:opacity-75"
-                      style={{ background: `${EVENT_COLORS[u[0].type]}26`, border: `1px dashed ${EVENT_COLORS[u[0].type]}` }} />
+                      style={{ background: `${colorOf(u[0].type)}26`, border: `1px dashed ${colorOf(u[0].type)}` }} />
                   )}
                 </span>
               ))}
@@ -623,7 +665,7 @@ export default function ScheduleView({
                     fuller the day. Reads as density without a number to parse. */}
                 <span className="flex items-center gap-[2px] h-[3px]">
                   {kinds && [...kinds].slice(0, 3).map(t => (
-                    <span key={t} className="w-[7px] h-[3px] rounded-full" style={{ background: EVENT_COLORS[t] }} />
+                    <span key={t} className="w-[7px] h-[3px] rounded-full" style={{ background: colorOf(t) }} />
                   ))}
                 </span>
               </button>
@@ -682,6 +724,9 @@ export default function ScheduleView({
         ))}
         <span className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
           <span className="w-2 h-2 rounded-[3px] inline-block" style={{ border: `1.5px dashed ${muted}` }} /> Pending
+        </span>
+        <span className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
+          <span className="w-2 h-2 rounded-[3px] inline-block" style={{ background: blockInk, opacity: 0.7 }} /> Blocked
         </span>
       </div>
     </div>

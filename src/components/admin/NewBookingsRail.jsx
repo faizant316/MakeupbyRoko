@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import StatusBadge from './StatusBadge';
 import { shortDate } from './depositState';
 import { localDateKey } from './todayItems';
-import { bookingOccasion } from './bookingNotes';
+import { bookingOccasion, isBooksyImport } from './bookingNotes';
 import { STATUS_COLORS } from './statusColors';
 import { isBookingUnseen } from './bookingSeen';
 import { displayLocation } from '@/lib/location';
@@ -120,11 +120,12 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, d
 
   // Booked in the last 30 days, newest first. Booksy imports stay out: 563
   // contacts all carry the same import timestamp, so one afternoon of backfill
-  // would bury every real booking in here for a month.
+  // would bury every real booking in here for a month. A Booksy booking she
+  // adds by hand from Add Client is a real new booking, so that one shows.
   const now = Date.now();
   const windowStart = now - WINDOW_DAYS * DAY;
   const recent = (bookings || [])
-    .filter(b => b.source !== 'booksy' && b.created_date && new Date(b.created_date).getTime() >= windowStart)
+    .filter(b => !isBooksyImport(b) && b.created_date && new Date(b.created_date).getTime() >= windowStart)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   // While the bookings are still in flight there's nothing to show and no way

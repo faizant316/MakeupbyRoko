@@ -8,7 +8,8 @@ import ScheduleView from './ScheduleView';
 import BlockDaysSheet from './BlockDaysSheet';
 import { Check, Cross } from './Glyphs';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
-import { STATUS_COLORS, CONSULT_INK } from './statusColors';
+import { useTimeBlocks } from './useTimeBlocks';
+import { STATUS_COLORS, CONSULT_INK, BLOCK_INK } from './statusColors';
 
 const SETTING_KEY = 'max_bookings_per_day';
 const DEFAULT_CAP = 3;
@@ -91,7 +92,7 @@ function Stepper({ value, onChange, min = 1, max = 20, dm }) {
 // `month` and `selectedDate` live up in Admin so the month arrows can sit in
 // the page header alongside the "Calendar" title.
 export default function AvailabilityTab({
-  bookings = [], classRegs = [], darkMode: dm, onSelect, onSelectClassReg,
+  bookings = [], classRegs = [], darkMode: dm, onSelect, onSelectClassReg, onSelectTimeBlock, onBlockTime,
   month, setMonth, selectedDate, setSelectedDate,
 }) {
   const qc = useQueryClient();
@@ -142,7 +143,8 @@ export default function AvailabilityTab({
   const blockedSet = useMemo(() => new Set(blocked.map(b => b.date)), [blocked]);
   const offMap = blockedRecByDate;
 
-  const evMap = useMemo(() => buildEventMap(bookings, classRegs), [bookings, classRegs]);
+  const timeBlocks = useTimeBlocks();
+  const evMap = useMemo(() => buildEventMap(bookings, classRegs, timeBlocks), [bookings, classRegs, timeBlocks]);
   const bookedMap = useMemo(() => buildBookedMap(bookings), [bookings]);
 
   const capFor = (key) => overrideMap[key] ?? defaultCap;
@@ -380,6 +382,7 @@ export default function AvailabilityTab({
     { c: STATUS_COLORS.completed, label: 'Completed' },
     { c: CONSULT_INK.light, label: 'Consultation' },
     { c: CLASS_PINK, label: 'Makeup Class' },
+    { c: BLOCK_INK.light, label: 'Blocked time' },
     { c: OFF_RED, label: 'Day off' },
   ];
 
@@ -387,6 +390,9 @@ export default function AvailabilityTab({
   // and their card takes over the tab. Jump to the top first, otherwise the
   // card opens at whatever scroll depth the calendar was at.
   const openEvent = (ev) => {
+    // Blocked time opens its editor over the calendar, so there's no page to
+    // jump to the top of.
+    if (ev.kind === 'block') { onSelectTimeBlock?.(ev.raw); return; }
     scrollToTarget(0, { immediate: true });
     if (ev.kind === 'class') onSelectClassReg?.(ev.raw);
     else onSelect?.(ev.raw);
@@ -443,6 +449,7 @@ export default function AvailabilityTab({
               onChangeDate={goDay}
               onSelectBooking={(b) => openEvent({ kind: 'appt', raw: b })}
               onSelectClassReg={(r) => openEvent({ kind: 'class', raw: r })}
+              onSelectTimeBlock={(t) => openEvent({ kind: 'block', raw: t })}
               dm={dm}
             />
           ) : (
@@ -622,11 +629,12 @@ export default function AvailabilityTab({
                       return (
                         <button key={ev.id} onClick={() => openEvent(ev)}
                           className="w-full flex items-center gap-2.5 text-left rounded-xl px-2.5 py-2 transition-colors"
-                          style={{ background: dm ? '#1e1e24' : '#FAFAFC', border: `1px solid ${dm ? '#3a3a48' : '#EDEDF2'}`, borderLeft: `3px solid ${dot}` }}
+                          style={{ background: dm ? '#1e1e24' : '#FAFAFC', border: `1px solid ${dm ? '#3a3a48' : '#EDEDF2'}` }}
                           onMouseEnter={e => e.currentTarget.style.background = dm ? '#2e2e37' : '#F4F4F8'}
                           onMouseLeave={e => e.currentTarget.style.background = dm ? '#1e1e24' : '#FAFAFC'}>
+                          <span className={`w-1.5 h-1.5 flex-shrink-0 ${ev.kind === 'block' ? 'rounded-[1.5px]' : 'rounded-full'}`} style={{ background: dot }} />
                           <span className="text-[0.66rem] font-semibold tabular-nums flex-shrink-0 w-[52px]" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
-                            {startTime(ev.time) || '—'}
+                            {startTime(ev.time) || (ev.kind === 'block' ? 'All day' : '—')}
                           </span>
                           <span className="flex-1 min-w-0">
                             <span className="block text-[0.76rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{ev.name}</span>
@@ -680,6 +688,20 @@ export default function AvailabilityTab({
                     Reopen this day
                   </button>
                 ) : (
+                  <>
+                  {/* Part of a day, with a note. Same panel as Add Client, opened
+                      on its Block off time side with this date filled in. */}
+                  {onBlockTime && (
+                    <button
+                      onClick={() => onBlockTime(selectedDate)}
+                      className="w-full mb-2 py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
+                      style={{ background: dm ? '#1e1e24' : '#FAF9FA', color: dm ? '#d9d2dc' : '#5f5763', border: `1.5px solid ${dm ? '#3a3a48' : '#E6E1E8'}` }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                      </svg>
+                      Block off time
+                    </button>
+                  )}
                   <button
                     onClick={() => blockDay.mutate(selectedDate)}
                     className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
@@ -689,6 +711,7 @@ export default function AvailabilityTab({
                     </svg>
                     Close this day off
                   </button>
+                  </>
                 )}
               </div>
             </div>

@@ -65,6 +65,17 @@ export const EVENT_COLORS = {
 // a consultation is the same color wherever it shows up.
 export const CONSULT_INK = { light: '#6B5A93', dark: '#B6A7D9' };
 
+// Blocked time (Roko's own reservations). A warm grey, drawn with diagonal
+// hatching wherever there's room, the way Booksy draws a time reservation: the
+// time is taken, but not by a client, so it must not wear a client colour.
+export const BLOCK_INK = { light: '#857C88', dark: '#ABA3AE' };
+
+export function blockHatch(dm) {
+  const a = dm ? 'rgba(171,163,174,0.16)' : 'rgba(133,124,136,0.10)';
+  const b = dm ? 'rgba(171,163,174,0.05)' : 'rgba(133,124,136,0.03)';
+  return `repeating-linear-gradient(135deg, ${a} 0 6px, ${b} 6px 12px)`;
+}
+
 export const EVENT_LABELS = {
   bridal:  'Bridal',
   appt:    'Appointment',
