@@ -110,7 +110,7 @@ export async function POST(req) {
     await sendEmail({
       log: { bookingId, kind: 'booking_confirmed', audience: 'client' },
       to,
-      subject: `Your ${serviceName} appointment is confirmed ✦`,
+      subject: `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}`,
       html: bookingConfirmedEmail({ firstName, serviceName, dateFormatted, time, travels: !!travels, cancelUrl, balanceDue, clientAddress }),
     });
     return NextResponse.json({ success: true });

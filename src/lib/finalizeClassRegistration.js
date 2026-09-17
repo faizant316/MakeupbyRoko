@@ -128,7 +128,7 @@ export async function finalizeClassRegistration(supabase, { registrationId, sess
       to: reg.email,
       subject: dateFormatted
         ? `You're booked! ${classes[0]?.title || 'Your class'} on ${dateFormatted}`
-        : "You're officially booked! Your class is confirmed.",
+        : `You're booked for ${classes[0]?.title || 'your class'}`,
       html: classPaymentEmail({ firstName, classes, totalPaid, format, formatLabel, dateFormatted, classTime, zoomLink, cancelUrl }),
     },
     {

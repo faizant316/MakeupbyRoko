@@ -42,7 +42,7 @@ export async function POST(req) {
     await sendEmail({
       log: { registrationId, kind: 'class_lesson', audience: 'client' },
       to: clientEmail,
-      subject: `You're enrolled! Your ${className} is scheduled`,
+      subject: `You're enrolled in ${className}`,
       html: enrolledLessonEmail({
         firstName,
         className,

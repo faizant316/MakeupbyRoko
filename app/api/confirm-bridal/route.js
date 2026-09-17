@@ -66,10 +66,10 @@ export async function POST(req) {
       log: { bookingId, kind: 'bridal_confirmed', audience: 'client' },
       to: clientEmail,
       subject: migrated
-        ? `Makeup by Roko has a new home ✦ your ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''} + consultation`
+        ? `Makeup by Roko has moved · your ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}`
         : updated
-        ? `Your consultation time has been updated ✦ ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}`
-        : `You're confirmed for ${serviceName}${dateFormatted ? ` ✦ ${dateFormatted}` : ''}`,
+        ? `New consultation time · ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}`
+        : `You're confirmed for ${serviceName}${dateFormatted ? ` on ${dateFormatted}` : ''}`,
       html: bridalConfirmedEmail({
         firstName, serviceName, dateFormatted, time,
         ...(confirmOnly ? {} : { consultationDate, consultationTime, consultationType, zoomLink, consultationNotes }),
