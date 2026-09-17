@@ -9,6 +9,7 @@ import BlockDaysSheet from './BlockDaysSheet';
 import { Check, Cross } from './Glyphs';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { useTimeBlocks } from './useTimeBlocks';
+import { windowMinutes, blockLabel } from '@/lib/timeBlocks';
 import { STATUS_COLORS, CONSULT_INK, BLOCK_INK } from './statusColors';
 
 const SETTING_KEY = 'max_bookings_per_day';
@@ -108,6 +109,7 @@ export default function AvailabilityTab({
   // Days waiting on the confirm sheet. Nothing is written until she confirms.
   const [pendingBlock, setPendingBlock] = useState(null);
   const [showAllDaysOff, setShowAllDaysOff] = useState(false);
+  const [showAllTimeBlocks, setShowAllTimeBlocks] = useState(false);
   // Day / Week / Month, the same three the Home calendar has. The Calendar tab
   // used to be month-only, which meant the one page devoted to the calendar
   // could show less than the picker on the home screen.
@@ -160,6 +162,15 @@ export default function AvailabilityTab({
     [blocked, tk],
   );
   const blockedRuns = useMemo(() => groupRuns(upcomingBlocked), [upcomingBlocked]);
+  // Today onward, soonest first; within a day, all-day blocks lead and the
+  // rest run in start-time order.
+  const upcomingTimeBlocks = useMemo(
+    () => timeBlocks
+      .filter(t => t.date >= tk)
+      .sort((a, b) => a.date.localeCompare(b.date)
+        || (windowMinutes(a.time)?.start ?? -1) - (windowMinutes(b.time)?.start ?? -1)),
+    [timeBlocks, tk],
+  );
   const fullyBookedSoon = useMemo(() => {
     let n = 0; const d = new Date();
     for (let i = 0; i < 30; i++) {
@@ -424,18 +435,38 @@ export default function AvailabilityTab({
               })}
             </div>
 
-            {/* Select — the whole point: pick days by tapping them. A single
-                day in Day view is already selected, so there's nothing to pick. */}
-            {view !== 'day' && (
-              <button
-                onClick={() => (selectMode ? exitSelect() : (setSelectMode(true), setSelectedDate(null)))}
-                className="text-[0.68rem] font-semibold tracking-[0.06em] px-3.5 py-1.5 rounded-lg transition-all flex-shrink-0 active:scale-95"
-                style={selectMode
-                  ? { background: '#E05549', color: '#fff' }
-                  : { background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
-                {selectMode ? 'Cancel' : 'Select days'}
-              </button>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Block off time, from the page it belongs on. It used to be
+                  reachable here only after tapping a day, so the Calendar tab
+                  looked like it couldn't do it at all. Starts on the day that's
+                  picked, if one is; otherwise the panel asks which day. Hidden
+                  while picking days, where every tap means "close this day". */}
+              {onBlockTime && !selectMode && (
+                <button
+                  onClick={() => onBlockTime(selectedDate || (view === 'day' ? tk : null))}
+                  className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold tracking-[0.06em] px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
+                    <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                  </svg>
+                  <span className="sm:hidden">Block time</span>
+                  <span className="hidden sm:inline">Block off time</span>
+                </button>
+              )}
+
+              {/* Select — the whole point: pick days by tapping them. A single
+                  day in Day view is already selected, so there's nothing to pick. */}
+              {view !== 'day' && (
+                <button
+                  onClick={() => (selectMode ? exitSelect() : (setSelectMode(true), setSelectedDate(null)))}
+                  className="text-[0.68rem] font-semibold tracking-[0.06em] px-3.5 py-1.5 rounded-lg transition-all flex-shrink-0 active:scale-95"
+                  style={selectMode
+                    ? { background: '#E05549', color: '#fff' }
+                    : { background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
+                  {selectMode ? 'Cancel' : 'Select days'}
+                </button>
+              )}
+            </div>
           </div>
 
           {view === 'day' ? (
@@ -729,7 +760,7 @@ export default function AvailabilityTab({
                 Tap any date to see what's on it, set its booking limit, or close it off.
               </p>
               <p className="text-[0.68rem] mt-2.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#5d5d66' : '#adadb6' }}>
-                Double-tap closes a day straight off. For a whole trip, hit <span className="font-semibold" style={{ color: dm ? '#8b8b95' : '#83838d' }}>Select days</span>.
+                Double-tap closes a day straight off. For a whole trip, hit <span className="font-semibold" style={{ color: dm ? '#8b8b95' : '#83838d' }}>Select days</span>. For part of a day, <span className="font-semibold" style={{ color: dm ? '#8b8b95' : '#83838d' }}>Block off time</span>.
               </p>
             </div>
           )}
@@ -782,6 +813,56 @@ export default function AvailabilityTab({
                   className="w-full mt-2.5 py-2 rounded-xl text-[0.68rem] font-semibold transition-all"
                   style={{ background: dm ? '#1e1e24' : '#F7F7FB', color: dm ? '#a1a1aa' : '#83838d' }}>
                   {showAllDaysOff ? 'Show less' : `Show all ${blockedRuns.length}`}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Blocked time — the part-of-a-day blocks, listed the way Days off
+              lists whole days, so everything she has taken off the schedule
+              can be found on this one page. Tapping a row shows its day;
+              Edit opens the same panel it was made in, to change or delete. */}
+          {upcomingTimeBlocks.length > 0 && (
+            <div className="rounded-xl p-5" style={card}>
+              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
+                Blocked time · {upcomingTimeBlocks.length} coming up
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {(showAllTimeBlocks ? upcomingTimeBlocks : upcomingTimeBlocks.slice(0, 5)).map(t => {
+                  const isSel = t.date === selectedDate;
+                  return (
+                    <div key={t.id}
+                      onClick={() => jumpTo(t.date)}
+                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all"
+                      style={{ background: dm ? '#1e1e24' : '#FAFAFC', border: `1px solid ${isSel ? (dm ? '#6b6470' : '#C9C2CC') : (dm ? '#3a3a48' : '#EDEDF2')}` }}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-[1.5px] flex-shrink-0" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} />
+                        <div className="min-w-0">
+                          <p className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>
+                            {fmtDay(t.date)} · {t.time || 'All day'}
+                          </p>
+                          <p className="text-[0.63rem] truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{blockLabel(t)}</p>
+                        </div>
+                      </div>
+                      {onSelectTimeBlock && (
+                        <button onClick={(e) => { e.stopPropagation(); onSelectTimeBlock(t); }}
+                          className="text-[0.62rem] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0"
+                          style={{ color: dm ? '#a1a1aa' : '#9c9ca4' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = dm ? '#e4e4e7' : '#111'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#9c9ca4'; }}>
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {upcomingTimeBlocks.length > 5 && (
+                <button
+                  onClick={() => setShowAllTimeBlocks(v => !v)}
+                  className="w-full mt-2.5 py-2 rounded-xl text-[0.68rem] font-semibold transition-all"
+                  style={{ background: dm ? '#1e1e24' : '#F7F7FB', color: dm ? '#a1a1aa' : '#83838d' }}>
+                  {showAllTimeBlocks ? 'Show less' : `Show all ${upcomingTimeBlocks.length}`}
                 </button>
               )}
             </div>
