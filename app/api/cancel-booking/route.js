@@ -68,7 +68,7 @@ export async function POST(req) {
           await sendEmail({
             log: { bookingId: booking.id, kind: 'cancel_requested', audience: 'client' },
             to: booking.email,
-            subject: `We've received your request · ${booking.service}`,
+            subject: `Cancellation request received · ${booking.service}`,
             html: bridalCancelRequestEmail({ name: firstName, service: booking.service, date: dateFmt }),
           });
         }

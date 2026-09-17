@@ -43,9 +43,9 @@ export async function POST(req) {
       log: { bookingId, kind: 'consultation', audience: 'client' },
       to: clientEmail,
       subject: migrated
-        ? `Makeup by Roko has a new home ✦ your consultation on ${consultationDate}`
+        ? `Makeup by Roko has moved · your consultation on ${consultationDate}`
         : updated
-        ? `Updated consultation time: ${consultationDate} at ${consultationTime}`
+        ? `New consultation time: ${consultationDate} at ${consultationTime}`
         : `Your consultation is scheduled for ${consultationDate} at ${consultationTime}`,
       html: consultationScheduledEmail({ firstName, serviceName, consultationDate, consultationTime, consultationType, zoomLink, consultationNotes, updated, migrated }),
     });

@@ -92,7 +92,7 @@ export async function POST(req) {
     // the same package used to arrive under a byte-identical subject. The date
     // keeps each booking in its own conversation.
     const clientSubject = isBridal
-      ? `Bridal Inquiry Received · ${bridalTitle} · ${bridalDateFormatted} ✦`
+      ? `Bridal Inquiry Received · ${bridalTitle} · ${bridalDateFormatted}`
       : `Booking Request Received · ${serviceName} · ${dateFormatted}`;
 
     const adminSubject = isBridal
