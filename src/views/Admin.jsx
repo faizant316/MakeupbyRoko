@@ -95,9 +95,15 @@ export default function Admin() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Rechecked every minute while the tab is in front of her. It used to load
+  // once, so a booking that came in while the admin sat open never appeared
+  // until she happened to refresh, and the Recent bookings rail had nothing new
+  // to tell her about. An unchanged list comes back as the same data and
+  // re-renders nothing.
   const { data: rawBookings = [], isLoading: loadingBookings } = useQuery({
     queryKey: ['admin-bookings'],
     queryFn: () => api.entities.Booking.list('-created_date', 200),
+    refetchInterval: 60_000,
   });
 
   // A bride's address lives on her INQUIRY (event_location), not her booking,

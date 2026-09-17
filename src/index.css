@@ -308,6 +308,19 @@
    children (the schedule drawer, floating buttons) once it's done. */
 .admin-enter { animation: fadeRiseIn 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
 
+/* Recent bookings: the unread dot on a booking Roko hasn't opened sends out a
+   ring three times as the card arrives, then holds still. Enough to catch the
+   eye when she lands on the page, not something that never stops moving.
+   Transform and opacity only, so it never costs a layout. */
+@keyframes railUnseenPing {
+  0% { transform: scale(1); opacity: 0.5; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+.rail-unseen-ping { animation: railUnseenPing 1.8s cubic-bezier(0, 0, 0.2, 1) 0.4s 3 both; }
+@media (prefers-reduced-motion: reduce) {
+  .rail-unseen-ping { animation: none; opacity: 0; }
+}
+
 /* Category tab switch — content refresh cue. The results block is re-keyed on
    the active category, so each switch replays this rise-in plus a thin accent
    bar that sweeps across, confirming the tap even when the list looks the same. */

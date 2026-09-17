@@ -19,6 +19,7 @@ import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
 import { STATUS_COLORS, EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
 import { isDepositUnseen, daysSince, shortDateTime } from './depositState';
+import { isBookingUnseen } from './bookingSeen';
 import { STUDIO_TOWN } from '@/lib/studio';
 
 // The whole Zelle deposit section, deliberately one line.
@@ -1113,6 +1114,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     onUpdateBooking?.({ deposit_seen_at: booking.zelle_uploaded_at });
     // Runs once per unseen arrival: the update clears the condition itself.
   }, [booking.id, booking.zelle_uploaded_at, booking.deposit_seen_at]);
+
+  // Same acknowledgment for the booking itself. Opening the card from anywhere
+  // (the Recent bookings rail, the calendar, a client's history) is what takes
+  // it off the rail's "new" count.
+  useEffect(() => {
+    if (!isBookingUnseen(booking)) return;
+    onUpdateBooking?.({ admin_seen_at: new Date().toISOString() });
+  }, [booking.id, booking.admin_seen_at]);
   // Side-by-side day schedule drawer (so Roko can eyeball her real day while
   // proposing a new time). Defaults to this booking's date, falls back to today.
   const [showSchedule, setShowSchedule] = useState(false);

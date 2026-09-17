@@ -97,6 +97,12 @@ export async function POST(req) {
       insert.location_city = body.location_city || cityFromLocation(body.location);
     }
     if (body.travel_fee != null) insert.travel_fee = body.travel_fee;
+    // A booking Roko typed in herself through Add Client is not news to her, so
+    // it arrives already seen (0023) instead of lighting up her own rail. Asked
+    // for explicitly rather than inferred from the admin session, because a
+    // test booking made on the public site from a logged-in browser SHOULD
+    // show up as new.
+    if (isAdmin && body.entered_in_admin) insert.admin_seen_at = new Date().toISOString();
 
     let { data, error } = await supabase.from('bookings').insert(insert).select().single();
     // If migration 0007 hasn't been applied yet the `source` column doesn't
