@@ -17,8 +17,12 @@ import { isDepositUnseen, depositTone, timeAgo as depositTimeAgo, daysSince } fr
 // Thumbnail of the client's uploaded Zelle screenshot, so a deposit can be
 // checked and cleared from the list without opening the card. Signed URLs are
 // short-lived, so it's fetched per mount rather than cached.
+//
+// A client can send several (one per payment when a deposit is split). The
+// thumbnail shows the first with a count on it, and opens all of them.
 function ZelleThumb({ bookingId, dm, onOpen }) {
-  const [url, setUrl] = useState(null);
+  const [urls, setUrls] = useState([]);
+  const url = urls[0] || null;
 
   useEffect(() => {
     let live = true;
@@ -28,7 +32,7 @@ function ZelleThumb({ bookingId, dm, onOpen }) {
       body: JSON.stringify({ id: bookingId, table: 'bookings' }),
     })
       .then(r => r.json())
-      .then(d => { if (live && d?.url) setUrl(d.url); })
+      .then(d => { if (live) setUrls(d?.urls?.length ? d.urls : (d?.url ? [d.url] : [])); })
       .catch(() => {});
     return () => { live = false; };
   }, [bookingId]);
@@ -36,13 +40,21 @@ function ZelleThumb({ bookingId, dm, onOpen }) {
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); if (url) { onOpen?.(url); } }}
-      aria-label={url ? 'Open the Zelle screenshot full size' : 'Zelle screenshot loading'}
-      className="w-[38px] h-[50px] rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center transition-transform hover:scale-105"
+      onClick={(e) => { e.stopPropagation(); if (url) { onOpen?.(urls); } }}
+      aria-label={url ? `Open ${urls.length > 1 ? `all ${urls.length} Zelle screenshots` : 'the Zelle screenshot'} full size` : 'Zelle screenshot loading'}
+      className="relative w-[38px] h-[50px] rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center transition-transform hover:scale-105"
       style={{ background: dm ? '#1e1e24' : '#F4F6FB', border: `1px solid ${dm ? '#3f3f46' : '#DDE5F4'}` }}
     >
       {url ? (
-        <img src={url} alt="Zelle screenshot" className="w-full h-full object-cover" />
+        <>
+          <img src={url} alt="Zelle screenshot" className="w-full h-full object-cover" />
+          {urls.length > 1 && (
+            <span className="absolute bottom-0.5 right-0.5 min-w-[15px] h-[15px] px-1 rounded-full text-[0.55rem] font-bold leading-[15px] text-center tabular-nums"
+              style={{ background: 'rgba(12,12,16,0.72)', color: '#fff' }}>
+              {urls.length}
+            </span>
+          )}
+        </>
       ) : (
         <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#B9C4DA'} strokeWidth="1.6" className="w-4 h-4">
           <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
@@ -646,22 +658,30 @@ export default function BookingsList({
         );
       })()}
 
-      {/* Screenshot lightbox — opened from a thumbnail in the confirm queue */}
-      {lightbox && (
+      {/* Screenshot lightbox — opened from a thumbnail in the confirm queue.
+          Holds every screenshot on the deposit, side by side, scrolling
+          sideways when they don't fit. */}
+      {lightbox?.length > 0 && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          className="fixed inset-0 z-[100] flex items-center p-6 overflow-x-auto"
           style={{ background: 'rgba(12,12,16,0.82)' }}
           onClick={() => setLightbox(null)}
           role="dialog"
-          aria-label="Zelle screenshot"
+          aria-label={lightbox.length > 1 ? 'Zelle screenshots' : 'Zelle screenshot'}
+          data-lenis-prevent
         >
-          <img
-            src={lightbox}
-            alt="Zelle screenshot"
-            className="max-w-full max-h-full rounded-xl object-contain"
-            style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
-            onClick={e => e.stopPropagation()}
-          />
+          <div className="flex items-center gap-4 h-full mx-auto">
+            {lightbox.map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                alt={`Zelle screenshot ${i + 1}`}
+                className="h-full max-w-[85vw] w-auto rounded-xl object-contain flex-shrink-0"
+                style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
+                onClick={e => e.stopPropagation()}
+              />
+            ))}
+          </div>
           <button
             type="button"
             onClick={() => setLightbox(null)}
