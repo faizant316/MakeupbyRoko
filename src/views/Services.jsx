@@ -517,9 +517,8 @@ export default function ServicesPage() {
                 <div key={section} className="flex flex-col gap-4">
                   {/* Mirrors the "Bridal Services" / "Non-Bridal" label row */}
                   <div className="flex items-center gap-3">
-                    <div className="w-[3px] h-[14px] rounded-full flex-shrink-0" style={{ background: 'rgba(212,160,176,0.4)' }} />
                     <div className="skel h-[9px] w-[110px] rounded-full" />
-                    <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/15 to-transparent" />
+                    <span className="flex-1 h-px bg-[#F3ECEF]" />
                   </div>
 
                   <div className="grid gap-5 grid-cols-1 lg:grid-cols-3">
@@ -582,11 +581,12 @@ export default function ServicesPage() {
           {/* Bridal — featured cards side by side */}
           {bridalServices.length > 0 && (
             <div className="flex flex-col gap-4">
-              {/* Section label */}
+              {/* Section label: the name and a plain hairline. No accent tick
+                  in front and no line fading out to nothing, the two stock
+                  flourishes of generated section headers. */}
               <div className="flex items-center gap-3">
-                <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#D4A0B0]">Bridal Services</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
+                <span className="flex-1 h-px bg-[#EFE3E8]" />
               </div>
 
               {/* One fork, two columns on a laptop and one on a phone.
@@ -664,9 +664,8 @@ export default function ServicesPage() {
           {otherServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <div className="w-[3px] h-[14px] rounded-full bg-[#555] flex-shrink-0" />
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#555]">Other Services</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#bbb]/40 to-transparent" />
+                <span className="flex-1 h-px bg-[#E9E9EB]" />
                 <SwipeHint idx={otherIdx} count={otherServices.length} className="sm:hidden" />
               </div>
 
@@ -724,9 +723,8 @@ export default function ServicesPage() {
           {lessonServices.length > 0 && (
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <div className="w-[3px] h-[14px] rounded-full bg-[#D4A0B0] flex-shrink-0" />
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#111]">Learn With Roko</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-[#D4A0B0]/25 to-transparent" />
+                <span className="flex-1 h-px bg-[#EFE3E8]" />
               </div>
               <div className="flex flex-col gap-4">
                 {lessonServices.map((svc) => (

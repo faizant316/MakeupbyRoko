@@ -296,15 +296,19 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
     ? 'background 0.18s ease, backdrop-filter 0.18s ease'
     : 'background 0.30s ease, backdrop-filter 0.30s ease';
 
+  // Fine print: rules she has to know before booking this service. Plain
+  // lines between hairlines. They were pink-washed boxes with a rose bar down
+  // the left edge, which is the stock callout of generated sites.
+  const noteCls = 'py-2.5 text-[0.76rem] leading-[1.6] text-[#5E5358]';
   const badges = (
     <>
       {svc.title === 'Luxury Bridal Look' && (
-        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055] mb-4">
+        <div className={`${noteCls} border-y border-[#EFE8E3] mb-4`}>
           <strong>$200+ travel fee</strong> automatically added for services not held at the studio
         </div>
       )}
       {svc.title === 'Full Day Service' && (
-        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055] mb-4">
+        <div className={`${noteCls} border-y border-[#EFE8E3] mb-4`}>
           Required for: bridal switch, location over <strong>1 hr from studio</strong>, or start time <strong>before 7 AM</strong>
         </div>
       )}
@@ -314,22 +318,22 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           calendar rule is the one the picker enforces, so it leads here and the
           pricing note follows it as fine print. */}
       {svc.category === 'event' && (
-        <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055] mb-4">
+        <div className={`${noteCls} border-y border-[#EFE8E3] mb-4`}>
           Book at least <strong>{leadLabelFor(svc)} ahead</strong>. Roko keeps the next few weeks open for brides.
-          <span className="block mt-1 text-[#8C6070]">Booked far in advance? Bridal pricing may apply.</span>
+          <span className="block mt-1 text-[#8A7F85]">Booked far in advance? Bridal pricing may apply.</span>
         </div>
       )}
       {/* Two rules, not three. The third read "Test your look before the big
           day. No surprises on your wedding day.", which is the description again
           in a pink box rather than anything the bride has to know. */}
       {svc.title === 'Bridal Trial' && (
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
+        <div className="flex flex-col mb-4 border-y border-[#EFE8E3] divide-y divide-[#EFE8E3]">
+          <div className={noteCls}>
             Recommended <strong>1–3 months before</strong> your wedding date
           </div>
           {/* The trial has always been studio only (BridalInquiryForm never asks
               where, it stamps the studio), and the sheet never said so either. */}
-          <div className="px-3.5 py-2.5 rounded-lg bg-[#FBF5F7] border-l-2 border-[#C4849A] text-[0.73rem] text-[#6B4055]">
+          <div className={noteCls}>
             Held at <strong>Roko's studio in {STUDIO_TOWN}</strong>, no travel option on trials
           </div>
         </div>

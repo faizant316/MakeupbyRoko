@@ -371,13 +371,13 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, d
                     <button
                       key={b.id}
                       onClick={() => onSelect?.(b)}
-                      className="flex items-start gap-3.5 w-full text-left pl-4 pr-5 py-3.5 transition-colors"
+                      className="flex items-start gap-3.5 w-full text-left px-5 py-3.5 transition-colors"
                       style={{
                         borderBottom: `1px solid ${dm ? 'rgba(255,255,255,0.05)' : 'rgba(113, 113, 122,0.08)'}`,
-                        // The rows already cluster by status; this edge is what
-                        // makes the clusters legible without a sub-header for
-                        // every one of them.
-                        borderLeft: `3px solid ${STATUS_COLORS[status] || STATUS_COLORS.pending}`,
+                        // No coloured edge down the left of each row. The
+                        // badge on the right already names the status and the
+                        // day header tallies them, and a bar down the side is
+                        // the stock look of generated dashboards.
                         opacity: status === 'cancelled' ? 0.6 : 1,
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = dm ? '#3f3f46' : '#FAFAFB'}

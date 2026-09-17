@@ -238,10 +238,9 @@ export default function CancelBooking() {
           {record?.time ? <Row label="Time" value={record.time} /> : null}
         </div>
 
-        {/* Policy note */}
-        <div style={{ background: SOFT, borderRadius: 14, borderLeft: `3px solid ${isBridal ? '#E8C48A' : '#E8C4D0'}`, padding: '14px 16px', marginBottom: 20 }}>
-          <p style={{ fontSize: 13, color: '#6B636A', lineHeight: 1.6, margin: 0 }}>{policy}</p>
-        </div>
+        {/* Policy note. Plain text under the summary; it was a tinted panel
+            with a coloured bar down its left edge. */}
+        <p style={{ fontSize: 13, color: '#6B636A', lineHeight: 1.6, margin: '0 2px 20px' }}>{policy}</p>
 
         {/* Reason */}
         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: '#8a7d82', marginBottom: 8 }}>

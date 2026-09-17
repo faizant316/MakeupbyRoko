@@ -34,8 +34,9 @@ const Label = ({ children }) => (
   </span>
 );
 
-// One answer. Hairline rules between rows, the name in the page's serif, and a
-// pink marker that only appears under the cursor.
+// One answer. Hairline rules between rows and the name in the page's serif.
+// Hover moves the arrow. There used to be a pink bar that slid in on the left
+// too, which is the stock hover of generated sites.
 const Choice = ({ label, sub, onClick, first }) => (
   <button
     type="button"
@@ -44,7 +45,6 @@ const Choice = ({ label, sub, onClick, first }) => (
     style={{ background: 'none', border: 'none', borderTop: first ? 'none' : '1px solid #f0ebe6', cursor: 'pointer' }}
   >
     <span className="flex items-center gap-3 min-w-0">
-      <span className="w-[3px] h-[18px] flex-shrink-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: '#D4A0B0' }} />
       <span className="min-w-0">
         <span className="block font-serif text-[1.05rem] leading-tight text-[#111]">{label}</span>
         <span className="block text-[0.74rem] text-[#a89f99] mt-1">{sub}</span>

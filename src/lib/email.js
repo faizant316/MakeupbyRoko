@@ -284,9 +284,11 @@ function cstepsPanel(title, steps) {
   return cpanel(`${ctitle(title)}${steps.map(s => cstep(s[0], s[1], s[2])).join('')}`);
 }
 
+// A soft panel for a sentence that needs setting apart. No coloured bar down
+// the left edge: that is the stock callout of generated emails and sites.
 function cinfo(html) {
   return `<tr><td style="padding:6px 24px 14px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF5F8;border-radius:12px;border-left:3px solid #E8C4D0;"><tr><td style="padding:13px 16px;font-size:13px;color:#6B636A;line-height:1.55;">${html}</td></tr></table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF5F8;border-radius:12px;"><tr><td style="padding:13px 16px;font-size:13px;color:#6B636A;line-height:1.55;">${html}</td></tr></table>
   </td></tr>`;
 }
 
