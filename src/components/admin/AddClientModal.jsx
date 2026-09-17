@@ -302,6 +302,8 @@ export default function AddClientModal({ onSave, onClose, darkMode: dm }) {
           name: fullName, email: form.email.trim(), phone: form.phone,
           service: form.service, date: form.date || null, time: form.time || null,
           notes: buildNotes(), status: form.status, deposit_received: form.deposit_received,
+          // She's the one typing it, so it shouldn't come back to her as new.
+          entered_in_admin: true,
           // A bride's address is captured on her inquiry below, so mirror it onto
           // the booking too — the appointments list reads the booking, and a
           // bride added by hand should show a location like everyone else.
