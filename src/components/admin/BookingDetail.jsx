@@ -641,6 +641,19 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
     notes: parsed.notes,
   });
 
+  // The consultation lands about a month before the appointment, so the
+  // calendar opens on that month (Apr 4 opens March) with the day itself dotted.
+  const consultMonth = (() => {
+    if (!booking.date) return undefined;
+    const [y, m] = booking.date.split('-').map(Number);
+    const d = new Date(y, m - 2, 1); // m is 1-based, so m - 2 is the month before
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  })();
+  const apptFirstName = booking.name?.split(' ')[0];
+  const apptMarker = booking.date
+    ? { date: booking.date, label: apptFirstName ? `${apptFirstName}'s appointment` : 'Appointment' }
+    : undefined;
+
   const set = (k, v) => {
     const next = { ...form, [k]: v };
     setForm(next);
@@ -860,7 +873,8 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             <div className="flex flex-col gap-4">
               <div>
                 <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
-                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR} />
+                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR}
+                  openTo={consultMonth} marker={apptMarker} autoOpen={!hasConsult} />
                 {/* What that day already holds, so picking a time never means
                     leaving the card to go check the schedule. */}
                 {renderDayPeek?.(form.date, form.time)}

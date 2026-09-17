@@ -39,15 +39,33 @@ function palette(dm) {
     : { bg: '#fafafa', panel: '#fff', border: '#e5e5e5', text: '#111', muted: '#999', hover: '#F7F2F6', headMuted: '#888' };
 }
 
+// The month the calendar should land on: the picked date's month, else the
+// openTo hint's month (never one that's already over), else this month.
+function startMonth(value, openTo) {
+  const now = new Date();
+  const thisMonth = new Date(now.getFullYear(), now.getMonth());
+  const raw = value || openTo;
+  if (!raw) return thisMonth;
+  const d = new Date(raw + 'T00:00:00');
+  const m = new Date(d.getFullYear(), d.getMonth());
+  return !value && m < thisMonth ? thisMonth : m;
+}
+
 // Desktop: a styled trigger + popover month calendar. Mobile: the native date
 // wheel (best UX on touch). Value is a 'YYYY-MM-DD' string. Dark-mode aware.
-export function AdminDatePicker({ value, onChange, dm, accent = '#111' }) {
+//
+// openTo: a 'YYYY-MM-DD' whose month the calendar opens on while nothing is
+// picked. A native date input can't be told where to open, so passing it
+// swaps the phone wheel for this calendar too.
+// marker: { date, label } dots one day and names it under the grid.
+// autoOpen: pop the calendar the moment the field appears, if it's empty.
+export function AdminDatePicker({ value, onChange, dm, accent = '#111', openTo, marker, autoOpen = false }) {
   const p = palette(dm);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen && !value);
   const ref = useRef(null);
+  const nativeOnPhone = !openTo;
 
-  const base = value ? new Date(value + 'T00:00:00') : new Date();
-  const [view, setView] = useState(new Date(base.getFullYear(), base.getMonth()));
+  const [view, setView] = useState(() => startMonth(value, openTo));
 
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -80,14 +98,17 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111' }) {
   return (
     <>
       {/* Mobile — native date wheel */}
-      <div className="block sm:hidden">
-        <input type="date" value={value || ''} onChange={e => onChange(e.target.value)}
-          className="w-full px-4 rounded-xl outline-none appearance-none" style={inputStyle} />
-      </div>
+      {nativeOnPhone && (
+        <div className="block sm:hidden">
+          <input type="date" value={value || ''} onChange={e => onChange(e.target.value)}
+            className="w-full px-4 rounded-xl outline-none appearance-none" style={inputStyle} />
+        </div>
+      )}
 
       {/* Desktop — styled popover calendar */}
-      <div ref={ref} className="hidden sm:block relative">
-        <button type="button" onClick={() => setOpen(o => !o)}
+      <div ref={ref} className={`${nativeOnPhone ? 'hidden sm:block' : ''} relative`}>
+        {/* Every open lands on the right month, even after browsing away. */}
+        <button type="button" onClick={() => { if (!open) setView(startMonth(value, openTo)); setOpen(o => !o); }}
           className="w-full px-4 rounded-xl outline-none flex items-center justify-between gap-2 transition-colors"
           style={{ ...inputStyle, borderColor: open ? accent : p.border }}>
           <span style={{ color: value ? p.text : p.muted, fontSize: '0.85rem' }}>
@@ -99,8 +120,8 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111' }) {
         </button>
 
         {open && (
-          <div className="absolute z-50 mt-2 left-0 rounded-2xl p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
-            style={{ background: p.panel, border: `1px solid ${p.border}`, width: '292px' }}>
+          <div className="absolute z-50 mt-2 left-0 w-full sm:w-[292px] rounded-2xl p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+            style={{ background: p.panel, border: `1px solid ${p.border}` }}>
             {/* Month nav */}
             <div className="flex items-center justify-between mb-2 px-1">
               <button type="button" onClick={() => setView(new Date(year, month - 1))}
@@ -122,24 +143,38 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111' }) {
             {/* Days */}
             <div className="grid grid-cols-7 gap-0.5 text-center">
               {cells.map((d, i) => {
-                if (!d) return <div key={`e-${i}`} className="w-9 h-9" />;
+                if (!d) return <div key={`e-${i}`} className="w-full h-10 sm:w-9 sm:h-9" />;
                 const k = dateKey(year, month, d);
                 const isSel = value === k;
                 const isToday = k === todayKey;
+                const isMarked = marker?.date === k;
                 return (
-                  <button key={k} type="button"
+                  <button key={k} type="button" title={isMarked ? marker.label : undefined}
                     onClick={() => { onChange(k); setOpen(false); }}
-                    className="w-9 h-9 flex items-center justify-center text-[0.82rem] rounded-lg transition-colors"
+                    className="relative w-full h-10 sm:w-9 sm:h-9 flex items-center justify-center text-[0.82rem] rounded-lg transition-colors"
                     style={isSel
                       ? { background: accent, color: '#fff', fontWeight: 600 }
-                      : { color: isToday ? accent : p.text, fontWeight: isToday ? 700 : 400 }}
+                      : { color: isToday ? accent : p.text, fontWeight: isToday || isMarked ? 700 : 400 }}
                     onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = p.hover; }}
                     onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}>
                     {d}
+                    {isMarked && (
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                        style={{ background: isSel ? '#fff' : accent }} />
+                    )}
                   </button>
                 );
               })}
             </div>
+
+            {marker?.date && (
+              <div className="flex items-center gap-2 mt-2 pt-2.5 px-1" style={{ borderTop: `1px solid ${p.border}` }}>
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent }} />
+                <span className="text-[0.7rem] truncate" style={{ color: p.headMuted }}>
+                  {marker.label}, <span style={{ color: p.text, fontWeight: 600 }}>{formatDisplay(marker.date)}</span>
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
