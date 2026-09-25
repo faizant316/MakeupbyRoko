@@ -122,7 +122,7 @@ export default function BridalCard({ svc, idx, onSelect, onViewDetail }) {
             {/* The facts that decide between packages, as chips.
                 Loud enough to read at a glance, which the old grey one-line
                 summary was not (Roko, 2026-09-09). It also stopped being an
-                ingredient list: "lashes, touch-up kit, Zoom call" is true of
+                ingredient list: "lashes, Zoom call, long-wear finish" is true of
                 nearly every package here, so it never helped anyone choose.
                 See cardFacts() in serviceCopy for what replaced it.
 

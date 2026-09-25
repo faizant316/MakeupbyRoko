@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FULL_DAY_RATE_RULE } from '@/lib/serviceCopy';
 
 // Package comparison, shown under the bridal cards behind a disclosure.
 //
@@ -28,12 +29,15 @@ function buildSections(luxury, fullday) {
         { label: 'Duration', luxury: luxury.duration, fullday: fullday.duration },
         { label: 'Full bridal makeup', luxury: true, fullday: true },
         { label: 'Lash application', luxury: true, fullday: true },
-        { label: 'Touch-up kit', luxury: true, fullday: true },
         // Every bridal booking gets one, Full Day included. The Full Day service
         // record just doesn't list it, which is a gap in that record, not policy.
         { label: 'Zoom consultation (30 min)', luxury: true, fullday: true },
         { label: 'Artist stays through ceremony', luxury: null, fullday: true },
-        { label: 'Second look / bridal switch', luxury: null, fullday: true },
+        // A second look used to be listed as simply included on a full day.
+        // Since 2026-09-24 it is one of two things the bride picks between,
+        // the other being makeup for one additional face, so the cell says so
+        // rather than showing a check she would read as "and".
+        { label: 'Touch-up, second look or one extra face', luxury: null, fullday: 'Choose one' },
       ],
     },
     {
@@ -57,16 +61,16 @@ function buildSections(luxury, fullday) {
     {
       // The heading carries the rule, so a dash in the Luxury column reads as
       // "not available on this package" without repeating "Full Day required"
-      // on every row. These triggers are the policy (see ServiceFAQ).
-      category: 'When Full Day is required',
-      rows: [
-        { label: 'Venue over 1 hr from the studio', luxury: null, fullday: true },
-        { label: 'Start time before 7 AM', luxury: null, fullday: true },
-        { label: 'Second look on the day', luxury: null, fullday: true },
-        // Moved here from Pricing on 2026-09-09. Party glam used to read as an
-        // extra both packages sold; it is now a reason to book the Full Day.
-        { label: 'Bridesmaid / MOB add-ons', luxury: null, fullday: true },
-      ],
+      // on every row.
+      //
+      // The rows are FULL_DAY_RATE_RULE's short labels rather than a list typed
+      // out again here. Roko sent those four triggers as one block on
+      // 2026-09-24 and they are the policy; keeping a second copy of them in
+      // this file is what let it drift last time (it sold a second look and
+      // bridesmaid add-ons as two separate triggers, and they are now one
+      // choice). The long titles live in the FAQ, which has the width for them.
+      category: 'When the full-day rate applies',
+      rows: FULL_DAY_RATE_RULE.map(i => ({ label: i.short, luxury: null, fullday: true })),
     },
   ];
 }

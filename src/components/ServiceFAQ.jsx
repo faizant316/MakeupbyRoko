@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fullDayRateBlock } from '@/lib/serviceCopy';
 
 const GENERAL_FAQ = [
   { q: "How do I book an appointment?", a: "Book right here on the site: pick your service, choose an available date, and fill out the booking form. Once you submit, you'll get a confirmation email with the Zelle deposit details and a private link to upload your screenshot. Roko confirms within 24–48 hours." },
@@ -10,19 +11,19 @@ const GENERAL_FAQ = [
 ];
 
 const BRIDAL_FAQ = [
-  { q: "What does the Luxury Bridal Look include?", a: "The Luxury Bridal Look is $750 (2-hour service) with a $375 deposit. It includes full bridal makeup, lash application, a professional touch-up kit, and a 30-min Zoom consultation. Bridesmaid and mother-of-the-bride add-ons are not available on this package, they are part of the Full Day Service." },
+  { q: "What does the Luxury Bridal Look include?", a: "The Luxury Bridal Look is $750 (2-hour service) with a $375 deposit. It includes full bridal makeup, lash application, and a 30-min Zoom consultation. Makeup for an additional person is not part of this package. One additional non-bridal face is available on the Full Day Service instead, where it is one of the things the full-day rate covers." },
   { q: "What is the travel fee?", a: "A $200+ travel fee is automatically added when Roko travels to you for the Luxury Bridal Look or a trial. Studio appointments in Mountain House, CA have no travel fee, and the Full Day Service has travel built into its price, so no fee is added until the venue is over 2 hours out, where a flat $750 applies." },
-  { q: "When is a Full Day Service required?", a: "The Full Day Service ($1,700, $850 deposit) is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a start time before 7 AM." },
-  { q: "Can you do makeup for my bridesmaids too?", a: "Bridesmaid and mother-of-the-bride add-ons are part of the Full Day Service rather than the Luxury Bridal Look. Book the Full Day Service and let me know how many people need glam in your inquiry, so timing can be planned accordingly. Party glam also has to be booked at least one month ahead." },
+  { q: "When is a Full Day Service required?", a: fullDayRateBlock() },
+  { q: "Can you do makeup for my bridesmaids too?", a: "One additional person can be, on the Full Day Service rather than the Luxury Bridal Look. A full day covers you plus any one extra: one touch-up session, one makeup look change, or makeup for one additional non-bridal client. Anyone beyond that one person books the $400 Non-Bridal Makeup service separately. That service is held at the studio and is not added onto the wedding-day booking." },
   { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
   ...GENERAL_FAQ.slice(0, 2),
 ];
 
 const FULL_DAY_FAQ = [
-  { q: "What does the Full Day Service include?", a: "The Full Day Service is $1,700 (4 hours of coverage) with an $850 deposit. Roko stays with you from prep through ceremony, no rushing and no handoffs. It includes full bridal makeup, lash application, a bridal switch (second look) when needed, a professional touch-up kit, and a 30-min Zoom consultation. Bridesmaid & MOB add-ons are available." },
-  { q: "When is the Full Day Service required?", a: "The Full Day Service is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or have a ceremony start time before 7 AM. It's also ideal for anyone who wants a calm, unhurried morning." },
+  { q: "What does the Full Day Service include?", a: "The Full Day Service is $1,700 (4 hours of coverage) with an $850 deposit. Roko stays with you from prep through ceremony, no rushing and no handoffs. It includes full bridal makeup, lash application, a 30-min Zoom consultation, and any one extra of your choosing: one touch-up session, one makeup look change, or makeup for one additional non-bridal client." },
+  { q: "When is the Full Day Service required?", a: fullDayRateBlock() },
   { q: "Is there a travel fee?", a: "No. Roko travels to you for full-day coverage and that travel is already included in the $1,700 price, so there's no separate travel fee within about 2 hours of the studio. Past that, a flat $750 is added to cover the hotel the night before, the transportation and the extra day, making the booking $2,450. (The $200+ travel fee is a different thing: it applies to the Luxury Bridal Look and trials when they're held somewhere other than the studio.)" },
-  { q: "Can you do makeup for my bridesmaids too?", a: "Yes! Bridesmaid and mother-of-the-bride add-ons are available on the Full Day Service. Let me know how many people need glam in your inquiry so timing can be planned accordingly. Party glam has to be booked at least one month ahead, since more chairs means more hours and more product." },
+  { q: "Can you do makeup for my bridesmaids too?", a: "One of them, yes. A full day covers you plus any one extra, and makeup for one additional non-bridal client is one of the things you can use that on. Roko does that person at the venue, since she is already booked there for the day. Anyone beyond that one person books the $400 Non-Bridal Makeup service separately. That service is held at the studio and is not added onto the wedding-day booking." },
   { q: "Do you travel for destination weddings?", a: "Yes! For out-of-state and destination weddings, select \"Yes, out of state\" on the form and add your location in the details box. From there, Roko will go over travel requirements and pricing with you during your consultation." },
   ...GENERAL_FAQ.slice(0, 2),
 ];

@@ -11,8 +11,9 @@ const PERFECT_FOR = [
   // early-arrival surcharge, the emails) uses 7 AM as the trigger; this line was
   // the only place saying 10 and it read as a second, softer rule.
   'Early ceremony start times (before 7 AM)',
-  'Venues over 1 hour from the studio',
-  'Bridal switch looks between ceremony & reception',
+  'Venues an hour or more from the studio',
+  'A touch-up, or a switch between ceremony & reception',
+  'Makeup for one additional non-bridal guest',
   'Brides who want a calm, unhurried experience',
 ];
 
@@ -22,7 +23,7 @@ const DEFAULT_INCLUDES = [
   'Travel to venue included',
   'Professional lash application',
   'Dedicated 1-on-1 Zoom consultation',
-  'Bridesmaid & MOB add-ons available',
+  'Any one extra: a touch-up, a look change, or one additional face',
 ];
 
 export default function FullDayIncludes({ bridalIncludes }) {

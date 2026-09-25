@@ -18,8 +18,7 @@ values
   'Your wedding day deserves nothing less than perfection. A $200+ travel fee will be automatically added for any service not held at the studio.',
   ARRAY[
     'Full bridal makeup application',
-    'Lash application included',
-    'Professional touch-up kit'
+    'Lash application included'
   ],
   ARRAY[
     'Fully customized to your wedding aesthetic',
@@ -39,15 +38,15 @@ values
   1700,
   'Full day',
   '$850 deposit',
-  'Full-day booking is required for brides who need a bridal switch (second look), are located over 1 hour from the studio, or need an early start time before 7 AM.',
+  'The full-day rate applies when the booking includes one touch-up or one makeup look change, or makeup for one additional non-bridal client, or a start time before 7 AM, or a location one hour or more from the studio.',
   ARRAY[
-    'Full bridal makeup + second look',
+    'Full bridal makeup + any one extra',
     'All-day availability',
     'Travel included'
   ],
   ARRAY[
-    'Required for bridal switch / second look',
-    'Required for location over 1 hr from studio',
+    'Includes any one extra: touch-up, look change or one extra face',
+    'Required for location 1 hr or more from studio',
     'Required for start time before 7 AM'
   ],
   'Full-day coverage means you never worry about smudging before the first look. Timing is coordinated with your hair stylist and photographer so the morning runs smoothly.',

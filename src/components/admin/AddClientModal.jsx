@@ -721,12 +721,12 @@ export default function AddClientModal({
           </div>
 
           <div>
-            <label style={labelStyle}>Does the bridal party need glam too?</label>
+            <label style={labelStyle}>Is she spending her one extra on another person?</label>
             <YesNo value={bridal.bridal_party_glam} onChange={v => { setBr('bridal_party_glam', v); if (!v) setBr('num_people_glam', ''); }} dm={dm} yes="Yes, add glam" no="Just the bride" />
             {bridal.bridal_party_glam === true && (
               <div className="mt-2.5">
-                <label style={labelStyle}>How many need glam? (besides the bride)</label>
-                <input value={bridal.num_people_glam} onChange={e => setBr('num_people_glam', e.target.value)} placeholder="e.g. 3 bridesmaids + mom" className={inputClass} style={inputStyle} />
+                <label style={labelStyle}>Who is the extra person?</label>
+                <input value={bridal.num_people_glam} onChange={e => setBr('num_people_glam', e.target.value)} placeholder="e.g. mother of the bride" className={inputClass} style={inputStyle} />
               </div>
             )}
           </div>
