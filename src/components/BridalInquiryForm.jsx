@@ -26,7 +26,8 @@ import TimePicker from './TimePicker';
 import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_READY_VALUE } from '@/lib/studio';
 import BookingCalendar, { getMinBookingDate } from './BookingCalendar';
-import { BRIDAL_LEAD_DAYS, canAddParty, daysUntil } from '@/lib/bookingLeadTime';
+import { BRIDAL_LEAD_DAYS } from '@/lib/bookingLeadTime';
+import { FULL_DAY_CHOICES, FULL_DAY_EXTRA_RECORD } from '@/lib/serviceCopy';
 import { useTravelDistance } from '@/lib/useTravelDistance';
 import { FAR_TRAVEL_FEE, LOCAL_TRAVEL_FEE, addMoney, formatDriveTime, isOutsideCalifornia, needsFarTravelFee, needsFullDay } from '@/lib/travel';
 
@@ -297,7 +298,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   const isTrial = /trial/i.test(activeService?.title || '');
   const bridalPrice = activeService?.price || '$750';
   const bridalDeposit = activeService?.deposit || '$375 deposit';
-  const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','Professional touch-up kit','30-min Zoom consultation included'];
+  const bridalIncludes = activeService?.includes?.length ? activeService.includes : ['Full bridal makeup application','Lash application included','30-min Zoom consultation included'];
   const bridalTitle = activeService?.title || 'Bridal Package';
 
   // For the Bridal Trial, the date being picked is the trial date, not the
@@ -437,28 +438,29 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
 
   // Party add-ons need a month. Derived from the date the bride actually picked,
   // so it re-evaluates if she goes back and moves her date.
-  // Full Day only as of 2026-09-09. More chairs means more hours and more
-  // product, which is a full day's work whatever the bride booked, so Roko sells
-  // it with the day rather than as an add-on to a two-hour package. The Luxury
-  // form does not ask the question at all rather than asking and refusing.
-  const partyAllowed = isFullDay && canAddParty(selectedDate);
-  const daysToDate = daysUntil(selectedDate);
+  // Full Day only. A two-hour Luxury booking has no room for a second face or a
+  // second look, which is exactly why wanting one puts the booking at the
+  // full-day rate to begin with, so the Luxury form does not ask rather than
+  // asking and then refusing.
+  //
+  // No lead-time gate on it since 2026-09-24. Party glam used to need a month of
+  // its own on top of the bride's two weeks, because "how many need glam" was an
+  // uncapped free-text field and four extra chairs is a different day's work.
+  // Capped at one, what is left is a single face on a day Roko has already
+  // reserved and already driven to, so it rides the bride's own window.
+  const extraAllowed = isFullDay;
 
-  // One human-readable answer for "who needs glam", stored + emailed so Roko always
-  // sees either the bridal-party count or an explicit "Just the bride". When the
-  // date is inside the party window Roko never asked the question, so the record
-  // says exactly that instead of implying the bride chose to come alone.
+  // One human-readable answer for what the bride did with her one extra, stored
+  // and emailed so Roko can plan the morning around the number of faces. Written
+  // out in words rather than kept as the raw choice key, because this same string
+  // is what she reads on the booking record and in her copy of the confirmation.
+  // The radio writes it (FULL_DAY_EXTRA_RECORD); nothing here has to know which
+  // options exist.
   const glamSummary = isTrial
     ? ''
     : !isFullDay
-    ? 'Just the bride (party glam is Full Day only)'
-    : !partyAllowed
-    ? 'Just the bride (inside 1 month, party glam not offered)'
-    : form.bridal_party_glam === true
-      ? (form.num_people_glam.trim() || 'Yes, final count to confirm')
-      : form.bridal_party_glam === false
-      ? 'Just the bride'
-      : (form.num_people_glam || '');
+    ? 'Just the bride (the extra is Full Day only)'
+    : (form.num_people_glam || '');
 
   // ── Step navigation ──
   const goStep = (next, dir = 'forward') => {
@@ -565,7 +567,7 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     // rather than falsy — a deliberate "No" is false and must pass.
     // Only required when the question was actually shown. Inside the 1-month
     // party window it isn't, so demanding an answer would dead-end the form.
-    if (partyAllowed && form.bridal_party_glam == null) { alert('Please let Roko know if your bridal party needs glam too.'); return; }
+    if (extraAllowed && form.bridal_party_glam == null) { alert('Please let Roko know how you would like to use your one extra.'); return; }
     if (form.out_of_state == null) { alert('Please let Roko know if this is an out-of-state event.'); return; }
     // Destination travel is quoted per trip, and the quote starts with the city,
     // so this is the one out-of-state answer worth blocking on. Only asked (and
@@ -742,10 +744,9 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
       { label: 'Ready by (your preference)', value: form.makeup_ready_by_time },
       { label: 'Hairstylist arrive by', value: form.ready_by_time },
       { label: 'Photographer arrives', value: form.photographer_arrival_time },
-      // The bride sees the plain answer. The parenthetical on glamSummary is
-      // for Roko's copy, so she knows the bride never turned a party down —
-      // she was never offered one.
-      { label: 'Who needs glam', value: partyAllowed ? glamSummary : 'Just you' },
+      // Blank on Luxury rather than asserting "Just you" about a question the
+      // bride was never shown.
+      { label: 'Your one extra', value: extraAllowed ? glamSummary : '' },
       { label: 'Photographer', value: form.photographer },
       { label: 'Hairstylist', value: form.hairstylist },
       { label: 'Out-of-state event', value: form.out_of_state == null ? '' : form.out_of_state ? 'Yes' : 'No' },
@@ -1461,74 +1462,51 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               <input value={form.hairstylist} onChange={e => set('hairstylist', e.target.value)} placeholder="Share their Instagram" className={inputClass} />
             </div>
 
-            {/* Two separate rules, and the form only ever shows one question.
+            {/* The full day covers the bride plus ANY ONE extra, and this is
+                where she picks which one. The options are the two `choice`
+                items in FULL_DAY_RATE_RULE, so this form cannot offer something
+                the FAQ and the comparison table don't.
 
-                Which package: party glam is Full Day only as of 2026-09-09,
-                so the Luxury form does not ask at all. A bride is never shown
-                a choice that would be taken away from her later, and the
-                Luxury card, the comparison table and the FAQs no longer offer
-                it either, so nothing sends her here expecting it.
+                Before this the question was "does your bridal party need glam
+                too?" followed by a free-text box placeheld "e.g. 3 bridesmaids
+                + mom", which invited a count the package no longer allows, plus
+                a separate notice when the date fell inside the party month.
+                Both are gone: the answer can only ever be one person now, and
+                one face on a day already reserved needs no window of its own.
 
-                How far out: a party still needs a month even on a Full Day.
-                More chairs means more hours and more product than Roko can
-                absorb late. Inside that window she is told the rule outright
-                rather than asked and then refused, and she can still book
-                herself, which is the point. */}
-            {partyAllowed ? (
+                Two full options rather than a Yes/No, so neither reads as the
+                default and the bride spending her extra on a look change knows
+                she chose it rather than missed out. */}
+            {extraAllowed ? (
               <div>
-                <label className={labelClass}>Does your bridal party need glam too? *</label>
-                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Bridesmaids, mom, anyone else getting glammed with you.</p>
-                <div className="flex gap-3 mt-1">
-                  {['No', 'Yes'].map(opt => {
-                    const active = opt === 'Yes' ? form.bridal_party_glam === true : form.bridal_party_glam === false;
+                <label className={labelClass}>Your full day includes one extra. Which would you like? *</label>
+                <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">One of the two, not both. Anyone beyond one additional person books the $400 non-bridal service separately, at the studio.</p>
+                <div className="flex flex-col gap-2.5 mt-1">
+                  {FULL_DAY_CHOICES.map(c => {
+                    const isPerson = c.choice === 'person';
+                    const active = isPerson ? form.bridal_party_glam === true : form.bridal_party_glam === false;
                     return (
                       <button
-                        key={opt}
+                        key={c.choice}
                         type="button"
                         onClick={() => {
-                          const yes = opt === 'Yes';
-                          set('bridal_party_glam', yes);
-                          if (!yes) set('num_people_glam', '');
+                          // bridal_party_glam stays a real boolean: it answers
+                          // "is there a second face that morning", which is the
+                          // only part of this Roko schedules around.
+                          set('bridal_party_glam', isPerson);
+                          set('num_people_glam', FULL_DAY_EXTRA_RECORD[c.choice]);
                         }}
-                        className={`flex-1 py-3 rounded-xl text-[0.82rem] font-medium border transition-all ${
+                        className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all ${
                           active
-                            ? 'bg-[#111] text-white border-[#111]'
-                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                            ? 'bg-[#111] border-[#111]'
+                            : 'bg-white border-gray-200 hover:border-gray-400'
                         }`}
                       >
-                        {opt === 'Yes' ? 'Yes, add glam' : 'No, just me'}
+                        <span className={`block text-[0.82rem] font-medium ${active ? 'text-white' : 'text-gray-600'}`}>{c.title}</span>
+                        <span className={`block text-[0.72rem] mt-1 leading-[1.5] ${active ? 'text-white/70' : 'text-gray-400'}`}>{c.detail}</span>
                       </button>
                     );
                   })}
-                </div>
-
-                {form.bridal_party_glam === true && (
-                  <div className="mt-3" style={{ animation: 'fadeSlideDown 0.2s ease-out' }}>
-                    <label className={labelClass}>How Many Need Glam? (Besides You)</label>
-                    <input
-                      value={form.num_people_glam}
-                      onChange={e => set('num_people_glam', e.target.value)}
-                      placeholder="e.g. 3 bridesmaids + mom"
-                      className={inputClass}
-                    />
-                  </div>
-                )}
-              </div>
-            ) : isFullDay ? (
-              <div>
-                <label className={labelClass}>Bridal party glam</label>
-                <div className="mt-1.5">
-                  {/* Lead with the RULE, not the arithmetic. "14 days out ·
-                      needs 30" made the bride solve for the rule herself; she
-                      has to be told outright that party glam is booked a month
-                      ahead. Her own date comes second, as the reason it doesn't
-                      apply to her. */}
-                  <p className="text-[0.88rem] font-semibold mb-1" style={{ color: '#2C1A14' }}>
-                    Must be booked at least one month in advance
-                  </p>
-                  <p className="text-[0.82rem] leading-[1.6]" style={{ color: '#6E6058' }}>
-                    Your {dateNoun} is {daysToDate != null ? `${daysToDate} ${daysToDate === 1 ? 'day' : 'days'} away` : 'sooner than that'}, so this covers you only. Want your party glammed? Add a note below.
-                  </p>
                 </div>
               </div>
             ) : null}

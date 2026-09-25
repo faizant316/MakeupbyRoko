@@ -22,10 +22,6 @@ const FAQS = [
     a: 'A deposit via Zelle is required to lock in your date. Once your booking request is received, Roko will confirm within 24–48 hours. The remaining balance is due on the day of your appointment.',
   },
   {
-    q: 'Do you offer touch-up kits?',
-    a: 'Yes. Bridal clients receive a professional touch-up kit to keep throughout the day. For other services, Roko can recommend the best products to maintain your look.',
-  },
-  {
     q: 'What should I do to prepare for my appointment?',
     a: 'Come with a clean, moisturized face and no makeup on. If you have inspiration photos or a specific vision in mind, bring those along! For bridal consultations, Roko will ask for reference photos in advance.',
   },

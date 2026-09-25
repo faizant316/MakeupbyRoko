@@ -136,30 +136,26 @@ const PHOTO_OVERRIDES = {
 // at, short enough to be read in full on a phone without scrolling.
 const CONTENT_OVERRIDES = {
   'Luxury Bridal Look': {
-    desc: 'Everything for your wedding day look, from skin prep to lashes. You keep a touch-up kit for the day, and you get a 30 minute Zoom call beforehand to plan it together.',
+    desc: 'Everything for your wedding day look, from skin prep to lashes, plus a 30 minute Zoom call beforehand to plan it together.',
     includes: [
       'Full bridal makeup',
       'Lashes included',
-      'Touch-up kit to take with you',
       '30 minute Zoom call before the day',
       'Airbrush on request',
     ],
   },
   'Full Day Service': {
-    desc: "Roko stays with you for up to four hours, so she's there for an early start, a second look, or a venue further out. Travel is included within about two hours of the studio, and past that a flat $750 covers the hotel the night before and the drive.",
+    desc: "Roko stays with you for up to four hours, so she's there for an early start, a venue further out, or one extra look or face. Travel is included within about two hours of the studio, and past that a flat $750 covers the hotel the night before and the drive.",
     includes: [
       'Up to four hours reserved for you',
       'Full bridal makeup, including chest and back',
       'Skin prep matched to your skin type',
       'Lashes included',
-      'Touch-up kit to take with you',
-      'A second look, or one extra full glam',
-      'Touch-ups before photos and the ceremony',
+      'Any one extra: a touch-up, a look change, or one additional face',
       'Help with your dress and finishing touches',
       '30 minute Zoom call before the day',
       'Travel included within 2 hours of the studio',
       'Past 2 hours, a flat $750 covers the hotel and the drive',
-      'Bridesmaid and mother-of-the-bride add-ons available',
     ],
   },
   'Non-Bridal Makeup': {

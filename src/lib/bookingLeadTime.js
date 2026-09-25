@@ -18,18 +18,15 @@ export const BRIDAL_LEAD_DAYS = 14;
 // Non-bridal appointments. Inside this window the calendar belongs to brides.
 export const NON_BRIDAL_LEAD_DAYS = 30;
 
-// Bridal party add-ons (bridesmaids, mother of the bride). More chairs means
-// more hours and more product, which is not something she can absorb on short
-// notice even when the bride herself is already on the books.
+// Bridal party add-ons had a window of their own here, 30 days, longer than the
+// bride's own 14, because "how many need glam" was an uncapped free-text field
+// and four extra chairs is a different day's work however far out it is booked.
 //
-// Separate from, and longer than, the window for booking the wedding itself.
-// A Full Day can be booked two weeks out; the party on it still cannot. That
-// gap is the whole reason this constant exists rather than reusing the bridal
-// one, and it is why the "book a month ahead" notice is reachable at all.
-//
-// Since 2026-09-09 party glam is sold only with the Full Day Service, so the
-// Luxury form never asks the question and never shows that notice.
-export const PARTY_LEAD_DAYS = 30;
+// Roko capped the full day at ONE extra on 2026-09-24, so what is left is a
+// single face on a day she has already reserved and already driven to. It rides
+// the bride's own window now. PARTY_LEAD_DAYS, canAddParty() and the form's
+// "must be booked at least one month in advance" notice are all deleted rather
+// than left lying around for someone to re-gate the question with.
 
 // What each window is called in client-facing copy, so the calendar note, the
 // error the server returns and the form all say the same thing.
@@ -59,15 +56,6 @@ export function meetsLead(dateKey, days, from = new Date()) {
   const picked = new Date(`${dateKey}T00:00:00`);
   if (Number.isNaN(picked.getTime())) return false;
   return picked >= leadDate(days, from);
-}
-
-/**
- * Is this booking far enough out for the client to add a bridal party?
- * Inside the window the question is not asked at all, so a bride is never
- * shown a choice that would be taken away from her later.
- */
-export function canAddParty(dateKey, from = new Date()) {
-  return meetsLead(dateKey, PARTY_LEAD_DAYS, from);
 }
 
 /** Whole days from today to `dateKey`, or null if there's no date yet. */
