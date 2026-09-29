@@ -406,6 +406,82 @@
   .gal-in { filter: none; transform: none; }
 }
 
+/* ── Before / after compare ───────────────────────────────────────────────────
+   One custom property drives the whole slider (CompareSlider.jsx): the before
+   photo is clipped to the left of --ba-pos and the divider rides on it.
+
+   Registering it with @property is what lets it transition and animate. An
+   unregistered custom property can only flip between values, so the settle back
+   to the middle and the one-time "peek" would need a JS animation loop instead
+   of two lines of CSS. */
+@property --ba-pos {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+:root {
+  /* Near-critically-damped spring (~500ms, no bounce). The cubic-bezier is the
+     fallback for browsers without linear(). */
+  --spring-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    --spring-smooth: linear(
+      0, 0.0037, 0.0142, 0.031, 0.0534, 0.0804, 0.1108,
+      0.1438, 0.1784, 0.2135, 0.2484, 0.3145, 0.3746,
+      0.4283, 0.4755, 0.5562, 0.6215, 0.6726, 0.7112,
+      0.7735, 0.8196, 0.854, 0.8793, 0.9185, 0.9458,
+      0.9647, 0.9779, 0.9921, 1
+    );
+  }
+}
+.ba { --ba-pos: 50%; }
+.ba-before { clip-path: inset(0 calc(100% - var(--ba-pos)) 0 0); }
+/* The rail is exactly as wide as the frame, so translating it by (pos - 50%) of
+   its OWN width lands its centre line on the divider without touching layout. */
+.ba-rail { transform: translateX(calc(var(--ba-pos) - 50%)); }
+.ba.ba-settle { transition: --ba-pos 0.5s var(--spring-smooth); }
+/* Played once when a compare photo first comes into view, so it announces that
+   it moves before anyone has to guess. No fill mode: it starts and ends at 50%,
+   and a held final frame would override the inline position afterwards. */
+.ba.ba-peek { animation: baPeek 1.5s cubic-bezier(0.45, 0, 0.2, 1); }
+@keyframes baPeek {
+  0%   { --ba-pos: 50%; }
+  35%  { --ba-pos: 24%; }
+  70%  { --ba-pos: 74%; }
+  100% { --ba-pos: 50%; }
+}
+[data-ba-handle]:focus-visible > span {
+  box-shadow: 0 0 0 3px #D4A0B0, 0 2px 12px rgba(0,0,0,0.3);
+}
+
+/* Transformation viewer (TransformationViewer.jsx) */
+.ba-track { scrollbar-width: none; overscroll-behavior-x: contain; }
+.ba-track::-webkit-scrollbar { display: none; }
+.ba-viewer-in { animation: baViewerIn 0.38s var(--spring-smooth); }
+.ba-fade-in { animation: baFadeIn 0.25s ease-out; }
+@keyframes baViewerIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes baFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* The phone details sheet opens by growing its body row from 0fr to 1fr, which
+   animates to the content's real height with no measuring. On a laptop the
+   panel is a fixed column and is always open. */
+.ba-sheet-body { transition: grid-template-rows 0.45s var(--spring-smooth); }
+@media (min-width: 640px) {
+  .ba-sheet-body { transition: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ba.ba-settle { transition: none; }
+  .ba.ba-peek { animation: none; }
+  .ba-viewer-in { animation: baFadeIn 0.2s linear; }
+  .ba-sheet-body { transition: none; }
+}
+
 /* ── Calendar assemble ────────────────────────────────────────────────────────
    The month grid builds itself once, the first time the calendar mounts: weekday
    header, then day cells rising row by row, then the availability dots. Watching
