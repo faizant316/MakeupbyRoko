@@ -83,27 +83,6 @@ const CATEGORIES = [
   { key: 'lessons', label: 'Makeup Courses' },
 ];
 
-// Position + "there's more sideways" cue for the Other Services carousel on a
-// phone. The bridal fork used to have one too and no longer does: see the
-// stacked grid below for why swiping was the wrong gesture there. The dots
-// under a carousel only report where you are once you've already swiped; this
-// says there is something to swipe before you do, which is the whole reason
-// people were missing the services past the first card.
-function SwipeHint({ idx, count, className = '' }) {
-  if (!count || count < 2) return null;
-  return (
-    <span className={`flex items-center gap-2 flex-shrink-0 ${className}`}>
-      <span className="text-[0.6rem] tracking-[0.1em] uppercase text-[#b3a9a3]">{idx + 1} / {count}</span>
-      <span className="flex items-center gap-1 text-[0.6rem] tracking-[0.14em] uppercase text-[#D4A0B0]">
-        Swipe
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-          <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-        </svg>
-      </span>
-    </span>
-  );
-}
-
 // Local cover photos that always override whatever is set in the DB.
 const PHOTO_OVERRIDES = {
   'Makeup Courses': '/makeup-courses.jpg',
@@ -230,8 +209,6 @@ export default function ServicesPage() {
   const [detailOrigin, setDetailOrigin] = useState(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [otherIdx, setOtherIdx]   = useState(0);
-  const otherScrollRef   = useRef(null);
   const filterScrollRef  = useRef(null);
   // Edge state for the category filter strip, so we can show "more to scroll" cues.
   const [filterEdges, setFilterEdges] = useState({ atStart: true, atEnd: false });
@@ -243,16 +220,6 @@ export default function ServicesPage() {
     const atStart = el.scrollLeft <= 1;
     const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
     setFilterEdges(prev => (prev.atStart === atStart && prev.atEnd === atEnd ? prev : { atStart, atEnd }));
-  }, []);
-
-  // Track which carousel card is centred so the pagination dots stay in sync.
-  const handleCarouselScroll = useCallback((ref, count, setIdx) => {
-    const el = ref.current;
-    const card = el?.firstElementChild?.firstElementChild;
-    if (!card) return;
-    const stride = card.offsetWidth + 16; // card width + gap-4 (16px)
-    const idx = Math.min(count - 1, Math.max(0, Math.round(el.scrollLeft / stride)));
-    setIdx(idx);
   }, []);
 
   const { data: serviceEntities = [], isLoading: servicesLoading, isError: servicesError } = useQuery({
@@ -284,12 +251,6 @@ export default function ServicesPage() {
     setDetailOrigin(e ? { x: e.clientX, y: e.clientY } : null);
     setDetailService(svc);
   }, []);
-
-  // Reset carousel scroll position when category changes
-  useEffect(() => {
-    if (otherScrollRef.current) otherScrollRef.current.scrollLeft = 0;
-    setOtherIdx(0);
-  }, [activeCategory]);
 
   // The mobile nav's Services dropdown deep-links into a category: it dispatches
   // this event, and we select that filter and scroll the grid into view.
@@ -330,7 +291,6 @@ export default function ServicesPage() {
   const bridalServices = sortedBridal(filtered.filter(s => s.category === 'bridal'));
   const otherServices  = filtered.filter(s => s.category !== 'bridal' && s.category !== 'lessons');
   const lessonServices = filtered.filter(s => s.category === 'lessons');
-  const nonBridal = [...otherServices, ...lessonServices]; // keep for mobile scroll ref compatibility
 
 
 
@@ -503,8 +463,8 @@ export default function ServicesPage() {
 
           {/* Loading state.
               Built to the real layout (section label, then a 3-up card grid on
-              desktop and a single card on mobile where the carousel shows one at
-              a time) so the services land where the placeholders were instead of
+              desktop and a single card on mobile, which is all a phone screen
+              shows of the stack) so the services land where the placeholders were instead of
               shoving the page down. The sweep and the per-card stagger live in
               .skel / .skel-2 / .skel-3 in index.css. */}
           {servicesLoading && (
@@ -662,55 +622,18 @@ export default function ServicesPage() {
               <div className="flex items-center gap-3">
                 <span className="text-[0.6rem] font-semibold tracking-[0.16em] uppercase text-[#555]">Other Services</span>
                 <span className="flex-1 h-px bg-[#E9E9EB]" />
-                <SwipeHint idx={otherIdx} count={otherServices.length} className="sm:hidden" />
               </div>
 
-              {/* Desktop: vertical stacked cards */}
-              <div className="hidden sm:flex flex-col gap-4">
+              {/* One stack at every width, same as the bridal cards above it.
+                  On a phone this used to be a sideways scroll-snap carousel with
+                  a "Swipe" hint, which is the gesture the bridal fork already
+                  dropped for the same reason: sideways inside a page she is
+                  scrolling down is a second gesture, and the second service was
+                  easy to miss. Stacked, her thumb finds it on the way down. */}
+              <div className="flex flex-col gap-4">
                 {otherServices.map((svc) => (
                   <NonBridalCard key={svc.key} svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
                 ))}
-              </div>
-
-              {/* Mobile scroll-snap */}
-              <div className="sm:hidden">
-                <div
-                  ref={otherScrollRef}
-                  onScroll={() => handleCarouselScroll(otherScrollRef, otherServices.length, setOtherIdx)}
-                  className="-mx-[clamp(1.25rem,5vw,3rem)] [&::-webkit-scrollbar]:hidden"
-                  style={{
-                    overflowX: 'auto', overflowY: 'hidden',
-                    scrollSnapType: 'x mandatory',
-                    scrollPaddingLeft: 'clamp(1.25rem,5vw,3rem)',
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none', msOverflowStyle: 'none',
-                  }}
-                >
-                  <div className="flex items-stretch gap-4 pb-4"
-                    style={{ paddingLeft: 'clamp(1.25rem,5vw,3rem)', paddingRight: 'clamp(1.25rem,5vw,3rem)' }}>
-                    {otherServices.map((svc) => (
-                      <div key={svc.key} className="flex-shrink-0 w-[82vw] max-w-[320px] self-stretch" style={{ scrollSnapAlign: 'start' }}>
-                        <NonBridalCard svc={svc} onSelect={setSelectedService} onOpenClassModal={() => setShowClassModal(true)} onViewDetail={handleViewDetail} />
-                      </div>
-                    ))}
-                    <div className="flex-shrink-0 w-4" />
-                  </div>
-                </div>
-                {/* Pagination dots — one per card, active card highlighted */}
-                {otherServices.length > 1 && (
-                  <div className="flex justify-center items-center gap-1.5 mt-3">
-                    {otherServices.map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-1.5 rounded-full transition-all duration-300"
-                        style={{
-                          width: i === otherIdx ? 18 : 6,
-                          background: i === otherIdx ? '#D4A0B0' : 'rgba(212,160,176,0.35)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -781,7 +704,7 @@ export default function ServicesPage() {
       />
 
       {/* Before & After */}
-      <BeforeAfterGallery />
+      <BeforeAfterGallery services={SERVICE_DATA} onBook={setSelectedService} />
 
       {/* Testimonials */}
       <Testimonials />
