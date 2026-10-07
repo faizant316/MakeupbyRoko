@@ -50,3 +50,12 @@ booksy-capture*.json
 .next-preview
 # Same idea, for the server `npm run test:scroll` starts for itself
 .next-e2e
+
+!.env.example
+
+# Private notes (never commit)
+_oauth-url.txt
+makeupbyroko-portfolio-handoff.md
+.demo-reel/
+.next-c7dev/
+brag-output/
