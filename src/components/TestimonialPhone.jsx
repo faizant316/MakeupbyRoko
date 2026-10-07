@@ -18,7 +18,9 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
   };
 
   // High-quality iPhone 15 Pro frame PNG with transparent background
-  const IPHONE_FRAME = '/apple-iphone-15-pro-black-titanium-portrait.png';
+  // 840px wide WebP (the original PNG was 1419px and 322 KB for a frame shown
+  // at most 280px wide).
+  const IPHONE_FRAME = '/iphone-frame.webp';
 
   return (
     <div className="relative mx-auto select-none" style={{ width: '100%', maxWidth: 280 }}>
@@ -83,6 +85,8 @@ export default function TestimonialPhone({ images, activeIndex, onNext, onPrev }
           src={IPHONE_FRAME}
           alt=""
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full pointer-events-none z-20"
           style={{
             objectFit: 'contain',

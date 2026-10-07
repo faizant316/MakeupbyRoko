@@ -1,12 +1,13 @@
 ﻿'use client';
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import dynamic from 'next/dynamic';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
 import { isScrollLocked } from '@/lib/useScrollLock';
+import { prefetchWhenIdle } from '@/lib/prefetchWhenIdle';
 
 import Navigation from '../components/Navigation';
-import BookingModal from '../components/BookingModal';
 import ServicesHero from '../components/ServicesHero';
 import ServicesFooter from '../components/ServicesFooter';
 import BeforeAfterGallery from '../components/BeforeAfterGallery';
@@ -16,11 +17,22 @@ import BridalCard from '../components/BridalCard';
 import NonBridalCard from '../components/NonBridalCard';
 import BridalComparison from '../components/BridalComparison';
 import About from '../components/About';
-import MakeupClassModal from '../components/MakeupClassModal';
 import CoursesFeature from '../components/CoursesFeature';
-import ServiceDetailModal from '../components/ServiceDetailModal';
 import ServiceChooser from '../components/ServiceChooser';
 import BookingCTA from '../components/BookingCTA';
+
+// The three sheets this page opens. Between them they are most of the page's
+// JavaScript (the booking flow alone is BookingModal + BridalInquiryForm +
+// BookingCalendar + ContractSign, ~250 KB of source), and none of it is on
+// screen until someone taps. Shipping it up front made a phone download and
+// parse the whole checkout before it could show the hero. Loaded on demand now,
+// and warmed once the page is idle so the first tap still opens instantly.
+const BookingModal = dynamic(() => import('../components/BookingModal'), { ssr: false });
+const ServiceDetailModal = dynamic(() => import('../components/ServiceDetailModal'), { ssr: false });
+const MakeupClassModal = dynamic(() => import('../components/MakeupClassModal'), { ssr: false });
+prefetchWhenIdle(() => import('../components/BookingModal'));
+prefetchWhenIdle(() => import('../components/ServiceDetailModal'));
+prefetchWhenIdle(() => import('../components/MakeupClassModal'));
 
 // Drive the hero's scale/opacity straight from scroll into two CSS variables on
 // the hero element, batched through requestAnimationFrame. This deliberately
@@ -84,10 +96,11 @@ const CATEGORIES = [
 ];
 
 // Local cover photos that always override whatever is set in the DB.
+// WebP, 1200px wide: the JPGs beside them are the full-size originals.
 const PHOTO_OVERRIDES = {
-  'Makeup Courses': '/makeup-courses.jpg',
-  'Full Day Service': '/full-day-service.jpg',
-  'Bridal Trial': '/bridal-trial.jpg',
+  'Makeup Courses': '/makeup-courses.webp',
+  'Full Day Service': '/full-day-service.webp',
+  'Bridal Trial': '/bridal-trial.webp',
 };
 
 // Copy the DB row gets wrong, overridden here for both the card and its detail

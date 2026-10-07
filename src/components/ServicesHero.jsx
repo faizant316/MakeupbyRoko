@@ -24,8 +24,8 @@ const CTA_HOVER = {
 // re-renders a component that also drives the hero video.
 const paintCta = (el, look) => Object.assign(el.style, look);
 
-const VIDEO_URL = '/hero.mp4';          // full-quality 1080p, used on both desktop and mobile
-const POSTER_URL = '/hero-poster.jpg';  // crisp still shown instantly; video fades in once ready
+const VIDEO_URL = '/hero.mp4';          // full-quality 1080p, used on both desktop and mobile (src handed out after load, see useDeferredVideoSrc)
+const POSTER_URL = '/hero-poster.webp'; // crisp still shown instantly; video fades in once ready (34 KB, was a 72 KB JPG)
 
 // Tiny blurred placeholder baked straight into the code. It paints at 0ms with
 // zero network, so the hero is never blank even on the very first frame of a
@@ -124,13 +124,41 @@ function useMobileHeroParallax() {
   return ref;
 }
 
-function useViewportHeight() {
-  // Capture once at mount — do NOT update on resize.
-  // iOS Safari increases window.innerHeight when its toolbar collapses during
-  // scroll, causing the hero text to visually jump downward. Locking to the
-  // initial value (equivalent to 100svh) keeps the layout perfectly stable.
-  const [vh] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 812));
-  return vh;
+// The hero video is 2 MB; the poster that covers it is 34 KB. With the video's
+// src in the first HTML, both downloads start together and on a phone the video
+// wins the bandwidth fight, so the poster (the first real picture anyone sees,
+// and the thing Google times as LCP) arrived seconds late. Hold the src until
+// the page has finished loading and the main thread is idle, and only for the
+// layout actually on screen: the desktop video used to download on phones too,
+// hidden under md:flex. The poster covers the wait either way, and the video
+// still fades in once it is genuinely playing.
+//
+// Once handed out, the src is never taken back, so a resize across the
+// breakpoint just starts the other copy rather than tearing one down.
+function useDeferredVideoSrc(src, media) {
+  const [ready, setReady] = useState(undefined);
+  useEffect(() => {
+    const mq = window.matchMedia(media);
+    const hasIdle = 'requestIdleCallback' in window;
+    let loaded = document.readyState === 'complete';
+    let idle = 0;
+    const sync = () => { if (loaded && mq.matches) setReady(src); };
+    const onLoad = () => {
+      const go = () => { loaded = true; sync(); };
+      idle = hasIdle ? requestIdleCallback(go, { timeout: 1500 }) : setTimeout(go, 200);
+    };
+    if (loaded) sync();
+    else window.addEventListener('load', onLoad, { once: true });
+    mq.addEventListener('change', sync);
+    return () => {
+      window.removeEventListener('load', onLoad);
+      mq.removeEventListener('change', sync);
+      // Idle and timer handles are separate number spaces: cancel only the kind
+      // we actually made, or clearTimeout could kill some unrelated timer.
+      if (hasIdle) cancelIdleCallback(idle); else clearTimeout(idle);
+    };
+  }, [src, media]);
+  return ready;
 }
 
 // POSTER-FIRST hero. The crisp still image (over an instant blurred placeholder)
@@ -253,14 +281,17 @@ function MobileVideoLoop({ src, poster, lqip, videoStyle, onError, active = true
     <>
       {/* 0ms blurred paint, zero network */}
       <div style={{ ...base, backgroundImage: `url(${lqip})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      {/* src arrives after page load (useDeferredVideoSrc). Until then there is
+          no src attribute at all, so nothing downloads and onError cannot fire. */}
       <video ref={refA} src={src} muted playsInline preload="auto" autoPlay
         style={{ ...base, ...fade, opacity: ready && front === 'A' ? 1 : 0 }} onError={onError} />
       <video ref={refB} src={src} muted playsInline preload="none"
         style={{ ...base, ...fade, opacity: ready && front === 'B' ? 1 : 0 }} />
       {/* Crisp still on top. Covers the video until it is truly playing, then
           crossfades out. Non-interactive so a tap still reaches the page and
-          triggers the gesture-based autoplay retry. */}
-      <img src={poster} alt="" aria-hidden="true"
+          triggers the gesture-based autoplay retry. fetchPriority because this
+          is the first real picture on a phone: it should beat the scripts. */}
+      <img src={poster} alt="" aria-hidden="true" fetchPriority="high"
         style={{ ...base, ...fade, opacity: ready ? 0 : 1, pointerEvents: 'none' }} />
     </>
   );
@@ -272,8 +303,10 @@ export default function ServicesHero() {
   const [desktopVideoFailed, setDesktopVideoFailed] = useState(false);
   const [desktopReady, setDesktopReady] = useState(false);
   const mobileHeroRef = useMobileHeroParallax();
-  const vh = useViewportHeight();
   const onScreen = useHeroOnScreen();
+  // md = 768px, the same breakpoint as the md:hidden / md:flex split below.
+  const mobileVideoSrc = useDeferredVideoSrc(VIDEO_URL, '(max-width: 767.98px)');
+  const desktopVideoSrc = useDeferredVideoSrc(VIDEO_URL, '(min-width: 768px)');
 
   // Same resilient autoplay coverage for the desktop split-panel video.
   const getDesktopVideo = useCallback(() => desktopVideoRef.current, []);
@@ -318,10 +351,10 @@ export default function ServicesHero() {
         {/* Scaling video container — ONLY the video scales, not text.
             --mh-scale is updated on scroll by useMobileHeroParallax. */}
         <div
+          className="hero-m-h"
           style={{
             position: 'relative',
             width: '100%',
-            height: `calc(${vh}px - var(--nav-h))`,
             transform: 'scale3d(var(--mh-scale, 1), var(--mh-scale, 1), 1)',
             transformOrigin: 'top center',
             WebkitBackfaceVisibility: 'hidden',
@@ -330,7 +363,7 @@ export default function ServicesHero() {
           {mobileVideoFailed
             ? <img src={POSTER_URL} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'saturate(0.3) brightness(0.75) contrast(1.1)' }} />
             : <MobileVideoLoop
-                src={VIDEO_URL}
+                src={mobileVideoSrc}
                 poster={POSTER_URL}
                 lqip={LQIP}
                 active={onScreen}
@@ -355,12 +388,11 @@ export default function ServicesHero() {
 
         {/* Text content — outside scaling container, position matches original */}
         <div
-          className="absolute px-6 z-10"
+          className="absolute px-6 z-10 hero-m-h"
           style={{
             top: 'var(--nav-h)',
             left: 0,
             right: 0,
-            height: `calc(${vh}px - var(--nav-h))`,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
@@ -604,7 +636,7 @@ export default function ServicesHero() {
           }} />
           <video
             ref={desktopVideoRef}
-            src={VIDEO_URL}
+            src={desktopVideoSrc}
             autoPlay
             muted
             loop
@@ -620,7 +652,7 @@ export default function ServicesHero() {
             onError={() => setDesktopVideoFailed(true)}
           />
           {/* Crisp still, covers the video until it is truly playing, then crossfades out */}
-          <img src={POSTER_URL} alt="" aria-hidden="true" style={{
+          <img src={POSTER_URL} alt="" aria-hidden="true" fetchPriority="high" style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
             filter: 'saturate(0.3) brightness(0.7) contrast(1.15)',
             opacity: desktopReady ? 0 : 1, transition: 'opacity 0.7s ease', pointerEvents: 'none',

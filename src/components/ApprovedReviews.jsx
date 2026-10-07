@@ -1,7 +1,13 @@
 import { useState, useRef, useCallback } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
-import MediaModal from './MediaModal';
+import dynamic from 'next/dynamic';
+import { prefetchWhenIdle } from '@/lib/prefetchWhenIdle';
+
+// Only mounted after a tap on a review; kept out of the homepage's first load.
+// See prefetchWhenIdle.
+const MediaModal = dynamic(() => import('./MediaModal'), { ssr: false });
+prefetchWhenIdle(() => import('./MediaModal'));
 
 // How many cards the desktop wall shows before "View all" reveals the rest, so a
 // long review list never turns the home page into an endless scroll.

@@ -9,8 +9,7 @@
 
 import { BRIDAL_LEAD_DAYS, NON_BRIDAL_LEAD_DAYS, LEAD_LABEL, leadDate } from './bookingLeadTime';
 import { TRAVEL_HOUR_MINUTES, FAR_TRAVEL_MINUTES, FAR_TRAVEL_FEE } from './travel';
-import { STUDIO_TOWN } from './studio';
-import { AVAILABLE_DAYS } from '@/components/BookingCalendar';
+import { STUDIO_TOWN, AVAILABLE_DAYS } from './studio';
 
 // One verb for the whole page. Every path starts at the same calendar, so every
 // card says the same thing and nothing reads as a gate.

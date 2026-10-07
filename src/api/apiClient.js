@@ -2,7 +2,11 @@
  * API client — wraps all Supabase/backend calls used across components.
  */
 
-import { createClient } from '@/lib/supabase/client';
+// No static import of the Supabase client. Everything below is a plain fetch to
+// our own /api routes except auth, and the Supabase SDK is ~66 KB gzipped, about
+// a third of the public homepage's JavaScript, shipped to every visitor so the
+// nav could ask "is Roko signed in?". It is imported on demand inside auth now.
+const loadSupabase = () => import('@/lib/supabase/client').then((m) => m.createClient());
 
 const apiFetch = async (url, options = {}) => {
   const isFormData = options.body instanceof FormData;
@@ -72,13 +76,13 @@ export const api = {
 
   auth: {
     me: async () => {
-      const supabase = createClient();
+      const supabase = await loadSupabase();
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error || !user) throw Object.assign(new Error('Not authenticated'), { status: 401 });
       return { ...user, role: 'admin', full_name: user.user_metadata?.full_name || user.email };
     },
     logout: async () => {
-      const supabase = createClient();
+      const supabase = await loadSupabase();
       await supabase.auth.signOut();
       window.location.href = '/login';
     },

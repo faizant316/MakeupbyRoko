@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { placeLine } from '@/lib/serviceCopy';
 import CompareSlider from './CompareSlider';
-import TransformationViewer from './TransformationViewer';
+import dynamic from 'next/dynamic';
+import { prefetchWhenIdle } from '@/lib/prefetchWhenIdle';
+
+// Only mounted after a tap on a cell; kept out of the homepage's first load.
+// See prefetchWhenIdle.
+const TransformationViewer = dynamic(() => import('./TransformationViewer'), { ssr: false });
+prefetchWhenIdle(() => import('./TransformationViewer'));
 
 const INSTAGRAM_URL = 'https://www.instagram.com/makeupbyroko_/';
 

@@ -682,6 +682,18 @@
   50%      { transform: translateY(5px); opacity: 1; }
 }
 
+/* Mobile hero height: one screen minus the nav. This used to be measured from
+   window.innerHeight once at mount, frozen so iOS Safari's collapsing toolbar
+   could not grow the hero mid-scroll. The page is server-rendered now and the
+   server has no window, so the same thing is said in CSS: svh is the viewport
+   with the toolbars SHOWN and never changes as they collapse, which is exactly
+   what the frozen value was. The vh line is only for browsers older than svh
+   (iOS 15.4 / Chrome 108). */
+.hero-m-h {
+  height: calc(100vh - var(--nav-h));
+  height: calc(100svh - var(--nav-h));
+}
+
 /* Full-screen sheets (booking, class checkout) slide the site nav away. It sits
    at z-9999, above them, and they carry their own back / close buttons, so it is
    52px of pure overhead on a phone. Toggled by useHideSiteNav().

@@ -20,7 +20,13 @@ export default function Navigation({ onCloseModal }) {
   const savedScrollRef = useRef(0);
   const restoreRef = useRef(null);
 
+  // Admin link for Roko. Only someone who has signed in on this browser has a
+  // Supabase session cookie (sb-<project>-auth-token, sometimes split into .0/.1
+  // chunks), and clients never sign in, so without one there is nothing to ask:
+  // skipping the check spares every client the Supabase SDK download that
+  // api.auth.me() would otherwise pull in. With one, the server still decides.
   useEffect(() => {
+    if (!/(?:^|;\s*)sb-[^=;]*-auth-token/.test(document.cookie)) return;
     api.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
   }, []);
 
@@ -44,6 +50,11 @@ export default function Navigation({ onCloseModal }) {
       if (isScrollLocked()) return;
       setScrolled(window.scrollY > 20);
     };
+    // Once on mount too: the homepage is server-rendered, so the visitor may
+    // already have scrolled (or a /#reviews link already jumped) before this
+    // runs, and the bar would otherwise sit in its over-hero look until the
+    // next scroll event.
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);

@@ -3,33 +3,37 @@ import TestimonialPhone from './TestimonialPhone';
 import LeaveReviewForm from './LeaveReviewForm';
 import ApprovedReviews from './ApprovedReviews';
 
+// Screenshots live in public/reviews. They used to load from media.base44.com
+// (the platform this site was migrated off) as ~500 KB PNGs each, 2.4 MB for
+// five phone screenshots; the WebP copies are the same 576x1024 pixels at
+// ~55 KB, and no longer depend on an old account staying alive.
 const REVIEWS = [
   {
-    image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/43ff616cf_image.png',
+    image: '/reviews/review-1.webp',
     name: 'Engagement Client',
     service: 'Full Glam',
     quote: '"I never felt so beautiful before and everyone told me I look like a doll… ur work is absolute magic"',
   },
   {
-    image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/03d618924_image.png',
+    image: '/reviews/review-2.webp',
     name: 'Bridal Client',
     service: 'Bridal Package',
     quote: '"My favorite part about the wedding was my makeup. Your my one and only favorite artist."',
   },
   {
-    image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/fb4610611_image.png',
+    image: '/reviews/review-3.webp',
     name: 'Bridal Client',
     service: 'Bridal Package',
     quote: '"Everyone LOVED both my makeup and hair. They said I was a princess. You two are the best both inside and out!"',
   },
   {
-    image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/c50d73a88_image.png',
+    image: '/reviews/review-4.webp',
     name: 'NY Bridal Client',
     service: 'Bridal Package',
     quote: '"You both have officially ruined NY artists for me… no one is good enough for us anymore since you and Roko"',
   },
   {
-    image: 'https://media.base44.com/images/public/69dad1fca2043b3db56edb29/ed5925dbe_image.png',
+    image: '/reviews/review-5.webp',
     name: 'Bridal Client',
     service: 'Full Glam',
     quote: '"I got told I looked like a princess countless times… I had sweat DRIPPING down my face all night & my makeup did not budge"',

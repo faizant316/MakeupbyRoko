@@ -2,7 +2,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BRIDAL_LEAD_DAYS, leadDate } from '@/lib/bookingLeadTime';
-import { studioToday } from '@/lib/studio';
+import { studioToday, AVAILABLE_DAYS } from '@/lib/studio';
 
 // One calendar for every public booking flow.
 //
@@ -14,8 +14,8 @@ import { studioToday } from '@/lib/studio';
 // the 14-day lead-time window. Everything below is the merged behaviour, with
 // the one REAL difference between the flows kept as a prop (see allowClosedDays).
 
-// Days Roko normally works: Sun, Tue, Wed, Fri, Sat (closed Mon/Thu).
-export const AVAILABLE_DAYS = [0, 2, 3, 5, 6];
+// Days Roko normally works. Defined in src/lib/studio.js, re-exported here.
+export { AVAILABLE_DAYS };
 
 const pad = (n) => String(n).padStart(2, '0');
 export const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;

@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import InfoModal from './InfoModal';
+import dynamic from 'next/dynamic';
+import { prefetchWhenIdle } from '@/lib/prefetchWhenIdle';
+
+// Only mounted after a tap on a policy link; kept out of the homepage's first
+// load. See prefetchWhenIdle.
+const InfoModal = dynamic(() => import('./InfoModal'), { ssr: false });
+prefetchWhenIdle(() => import('./InfoModal'));
 
 const SocialIg = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" width={17} height={17}>
@@ -124,8 +130,12 @@ export default function ServicesFooter() {
 
           {/* Bottom bar */}
           <div className="flex items-center justify-between py-5 flex-wrap gap-3">
+            {/* The homepage HTML is built once per deploy, so from New Year until
+                the next deploy the server's year and the phone's disagree. The
+                year sits in its own span so React can quietly patch just it,
+                instead of discarding the server HTML over a text mismatch. */}
             <p className="text-[0.7rem] text-white/20 tracking-[0.02em]">
-              © {currentYear} Roqia Moshref. All rights reserved.
+              © <span suppressHydrationWarning>{currentYear}</span> Roqia Moshref. All rights reserved.
             </p>
           </div>
 

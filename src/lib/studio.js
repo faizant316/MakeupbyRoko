@@ -15,6 +15,12 @@ export const STUDIO_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=
 // location === STUDIO_READY_VALUE is the single "no travel fee" signal.
 export const STUDIO_READY_VALUE = `Roko's Studio (${STUDIO_TOWN})`;
 
+// Days Roko normally works: Sun, Tue, Wed, Fri, Sat (closed Mon/Thu).
+// Lives here rather than in BookingCalendar so the service cards (via
+// serviceCopy) can read it without pulling the whole 47 KB calendar into the
+// homepage's first load. BookingCalendar re-exports it.
+export const AVAILABLE_DAYS = [0, 2, 3, 5, 6];
+
 // ── The studio's clock ──────────────────────────────────────────────────────
 // "Today" has to mean the same day to the client's browser and to the server,
 // and it did not: the browser is on Pacific time, Vercel runs on UTC, so from

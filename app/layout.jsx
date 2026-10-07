@@ -86,6 +86,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        {/* Reloads always start at the top of the page. Must run before the
+            body is parsed: the browser restores the old scroll position as soon
+            as enough of the page has laid out, which on the server-rendered
+            homepage is long before React loads. See providers.jsx. */}
+        <script dangerouslySetInnerHTML={{ __html: "history.scrollRestoration='manual'" }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
@@ -94,8 +99,14 @@ export default function RootLayout({ children }) {
       <body>
         <SmoothScroll />
         <Providers>{children}</Providers>
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
-        <Script id="ga-init" strategy="afterInteractive">{`
+        {/* lazyOnload: GA waits until the page has finished loading and the
+            browser is idle. gtag.js is ~175 KB and was the single biggest chunk
+            of script work during a phone's first few seconds (Lighthouse TBT),
+            all of it competing with the page the visitor came to see. The
+            trade: someone who leaves within the first second or two is not
+            counted. The dataLayer queue means nothing else is lost. */}
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="lazyOnload" />
+        <Script id="ga-init" strategy="lazyOnload">{`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());

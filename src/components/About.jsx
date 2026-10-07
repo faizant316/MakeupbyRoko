@@ -118,10 +118,16 @@ export default function About() {
               transition: 'opacity 0.7s ease-out 0.1s, transform 0.7s ease-out 0.1s',
             }}
           >
+            {/* WebP, 53 KB. roko_pic.png beside it is 2.3 MB and stays only as
+                the social share image (layout.jsx), where PNG is safest.
+                width/height reserve the space before it loads. */}
             <img
-              src="/roko_pic.png"
+              src="/roko_pic.webp"
               alt="Roqia Moshref"
+              width={1100}
+              height={1646}
               loading="lazy"
+              decoding="async"
               className="w-full h-auto block hover:scale-[1.02] transition-transform duration-700"
             />
           </div>
