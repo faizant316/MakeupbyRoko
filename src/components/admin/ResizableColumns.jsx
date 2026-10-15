@@ -29,7 +29,7 @@ const MIN_SPLIT = MIN_LEFT + MIN_RIGHT;
 
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-export default function ResizableColumns({ left, right, darkMode: dm }) {
+export default function ResizableColumns({ left, right }) {
   const [leftWidth, setLeftWidth] = useState(DEFAULT_LEFT);
   const [containerW, setContainerW] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -105,7 +105,7 @@ export default function ResizableColumns({ left, right, darkMode: dm }) {
     return (
       <div ref={containerRef}>
         {left}
-        <div className="mt-2 mb-7 h-px" style={{ background: dm ? '#2e2e38' : '#ECECF1' }} />
+        <div className="mb-7 mt-2 h-px bg-line" />
         {right}
       </div>
     );
@@ -128,12 +128,8 @@ export default function ResizableColumns({ left, right, darkMode: dm }) {
         className="relative flex-shrink-0 self-stretch cursor-col-resize"
         style={{ width: 32, marginLeft: -8, marginRight: -8, touchAction: 'none' }}
       >
-        <div className="absolute inset-y-2 left-1/2 -translate-x-1/2 w-px transition-colors"
-          style={{ background: (dragging || hovering) ? '#D4A0B0' : 'transparent' }} />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[5px] h-11 rounded-full transition-colors"
-          style={{ background: (dragging || hovering) ? '#D4A0B0' : (dm ? '#34343d' : '#E5E7EB') }}
-        />
+        <div className={`absolute inset-y-2 left-1/2 w-px -translate-x-1/2 transition-colors ${dragging || hovering ? 'bg-rose-soft' : 'bg-transparent'}`} />
+        <div className={`absolute left-1/2 top-1/2 h-11 w-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors ${dragging || hovering ? 'bg-rose-soft' : 'bg-line-strong'}`} />
       </div>
 
       <div className="flex-1 min-w-0">{right}</div>

@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { freezeScrollEffects, unfreezeScrollEffects } from '@/lib/useScrollLock';
+import { lockScroll, unlockScroll } from '@/lib/useScrollLock';
+import { cx } from './ui';
 
 export const ADMIN_TABS = [
   { key: 'bookings',     label: 'Home',           sub: 'Overview & appointments', icon: 'home'     },
@@ -32,36 +33,32 @@ function loadNavOrder() {
   return known;
 }
 
-// Six-dot grip shown on hover — the drag handle for reordering a nav row.
-function GripDots({ dm }) {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill={dm ? '#6f6f78' : '#c2c2cc'} aria-hidden>
-      <circle cx="9" cy="6" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="9" cy="18" r="1.3" />
-      <circle cx="15" cy="6" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="15" cy="18" r="1.3" />
-    </svg>
-  );
+// The order Roko dragged the sidebar into, shared by the drawer so the phone
+// menu lists sections the same way.
+export function useNavOrder() {
+  const [order, setOrder] = useState(() => loadNavOrder());
+  useEffect(() => {
+    try { localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(order)); } catch { /* private mode */ }
+  }, [order]);
+  const tabs = order.map(k => ADMIN_TABS.find(t => t.key === k)).filter(Boolean);
+  return [tabs, setOrder];
 }
 
-/* Modern, crisp line icons (Lucide-style, 24px grid, round joins). stroke is
-   currentColor so each icon inherits the nav item's active/muted color. */
-function NavIcon({ name, className, style }) {
+// Line icons on a 24px grid. stroke is currentColor so each inherits its row.
+export function NavIcon({ name, className, strokeWidth = 1.6 }) {
   const common = {
     className,
-    style,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
-    strokeWidth: 1.7,
+    strokeWidth,
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
+    'aria-hidden': true,
   };
   switch (name) {
     case 'home':
-      return (
-        <svg {...common}>
-          <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
-        </svg>
-      );
+      return <svg {...common}><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></svg>;
     case 'users':
       return (
         <svg {...common}>
@@ -83,15 +80,10 @@ function NavIcon({ name, className, style }) {
         <svg {...common}>
           <path d="M12 3l1.9 4.9L18.8 9.8 13.9 11.7 12 16.6 10.1 11.7 5.2 9.8 10.1 7.9z" />
           <path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" />
-          <path d="M5 4.5l.5 1.3 1.3.5-1.3.5L5 8.1 4.5 6.8 3.2 6.3 4.5 5.8z" />
         </svg>
       );
     case 'star':
-      return (
-        <svg {...common}>
-          <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.4l-5.81 3.05 1.11-6.47-4.7-4.58 6.5-.95z" />
-        </svg>
-      );
+      return <svg {...common}><path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.4l-5.81 3.05 1.11-6.47-4.7-4.58 6.5-.95z" /></svg>;
     case 'cap':
       return (
         <svg {...common}>
@@ -100,52 +92,48 @@ function NavIcon({ name, className, style }) {
           <path d="M22 10v6" />
         </svg>
       );
-    case 'chart':
-      return (
-        <svg {...common}>
-          <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-          <path d="M7 14l3.5-4 3 3L21 6" />
-        </svg>
-      );
-    case 'revenue':
-      return (
-        <svg {...common}>
-          <path d="M12 2v20" />
-          <path d="M17 5.5H9.75a3.25 3.25 0 0 0 0 6.5h4.5a3.25 3.25 0 0 1 0 6.5H6" />
-        </svg>
-      );
     case 'reports':
-      // Bar-chart columns with a dollar tick — revenue + traffic in one mark.
       return (
         <svg {...common}>
           <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-          <rect x="7"  y="12" width="3" height="5" rx="0.6" />
-          <rect x="12" y="8"  width="3" height="9" rx="0.6" />
-          <rect x="17" y="5"  width="3" height="12" rx="0.6" />
+          <path d="M8 17v-5M12.5 17V8M17 17V5" />
         </svg>
       );
+    case 'moon':
+      return <svg {...common}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>;
+    case 'site':
+      return <svg {...common}><path d="M7 17 17 7M8 7h9v9" /></svg>;
+    case 'logout':
+      return <svg {...common}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>;
     default:
       return null;
   }
 }
 
-export default function AdminSidebar({
-  activeTab,
-  setActiveTab,
-  mobileOpen,
-  setMobileOpen,
-  darkMode: dm,
-  onDarkModeToggle,
-  onBackToSite,
-  onLogout,
-}) {
-  // Drag-to-reorder nav order, persisted per device.
-  const [order, setOrder] = useState(() => loadNavOrder());
-  useEffect(() => {
-    try { localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(order)); } catch { /* private mode */ }
-  }, [order]);
-  const orderedTabs = order.map(k => ADMIN_TABS.find(t => t.key === k)).filter(Boolean);
+function Count({ n, className }) {
+  if (!n) return null;
+  return (
+    <span className={cx('min-w-[20px] bg-ink px-1.5 py-0.5 text-center text-[0.66rem] font-semibold tabular-nums leading-none text-paper', className)}>
+      {n > 99 ? '99+' : n}
+    </span>
+  );
+}
 
+// A small on/off switch, the one round control in the dashboard (it is what
+// a switch looks like everywhere else, so it reads instantly).
+function Switch({ on }) {
+  return (
+    <span aria-hidden className={cx('relative h-[20px] w-[34px] shrink-0 rounded-full transition-colors duration-300', on ? 'bg-ink' : 'bg-line-strong')}>
+      <span className={cx('absolute left-[2px] top-[2px] h-4 w-4 rounded-full bg-paper transition-transform duration-300 ease-quint', on && 'translate-x-[14px]')} />
+    </span>
+  );
+}
+
+// ---- laptop ---------------------------------------------------------------------------
+
+// Pinned down the left, full height. Drag a row's grip to reorder; the order is
+// saved on this device and the phone menu follows it.
+export default function AdminSidebar({ activeTab, setActiveTab, counts = {}, darkMode: dm, onDarkModeToggle, onBackToSite, onLogout, tabs, setOrder }) {
   const onDragEnd = (result) => {
     if (!result.destination || result.source.index === result.destination.index) return;
     setOrder(prev => {
@@ -156,343 +144,234 @@ export default function AdminSidebar({
     });
   };
 
-  // Lock body scroll when mobile nav is open — same robust technique the public
-  // site's menu uses (pin the body with position:fixed and restore the exact
-  // scroll position on close). Plain overflow:hidden lets the page lurch on
-  // mobile; this keeps the open/close buttery smooth with no shift.
-  // Freeze scroll-driven effects alongside the pin: a position:fixed body reports
-  // window.scrollY as 0, so opening this drawer used to read as "jumped back to
-  // the top" and made the floating nav button vanish, then pop back in on close.
-  // Same freeze the public site uses. See isScrollLocked in useScrollLock.
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const scrollY = window.scrollY;
-    freezeScrollEffects();
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, scrollY);
-      unfreezeScrollEffects();
-    };
-  }, [mobileOpen]);
+  return (
+    <aside className="sticky top-0 hidden h-[100svh] w-[244px] shrink-0 flex-col border-r border-line bg-paper lg:flex">
+      <a href="/" className="block px-6 pb-6 pt-7">
+        <span className="block text-[1.12rem] font-semibold leading-none tracking-[-0.02em] text-ink">Roqia Moshref</span>
+        <span className="mt-2 block text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-rose">Studio dashboard</span>
+      </a>
 
-  const handleTabClick = (key) => {
-    setActiveTab(key);
-    setMobileOpen(false);
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="admin-nav">
+          {(drop) => (
+            <nav ref={drop.innerRef} {...drop.droppableProps} aria-label="Dashboard" className="flex-1 overflow-y-auto border-t border-line px-3 py-4">
+              {tabs.map((tab, index) => {
+                const on = activeTab === tab.key;
+                return (
+                  <Draggable key={tab.key} draggableId={tab.key} index={index}>
+                    {(drag, snap) => (
+                      <div
+                        ref={drag.innerRef}
+                        {...drag.draggableProps}
+                        className={cx(
+                          'group relative flex items-center transition-colors duration-200',
+                          snap.isDragging ? 'bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.14)]' : on ? 'bg-canvas' : 'hover:bg-canvas/70',
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab(tab.key)}
+                          aria-current={on ? 'page' : undefined}
+                          className={cx(
+                            'flex h-10 min-w-0 flex-1 items-center gap-3 pl-3 pr-2 text-left text-[0.88rem] transition-colors',
+                            on ? 'font-medium text-ink' : 'text-ink-muted hover:text-ink',
+                          )}
+                        >
+                          <NavIcon name={tab.icon} strokeWidth={on ? 1.9 : 1.6} className="h-[18px] w-[18px] shrink-0" />
+                          <span className="flex-1 truncate">{tab.label}</span>
+                          <Count n={counts[tab.key]} />
+                        </button>
+                        <span
+                          {...drag.dragHandleProps}
+                          aria-label={`Reorder ${tab.label}`}
+                          className="flex h-10 w-6 shrink-0 cursor-grab items-center justify-center text-ink-muted/60 opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+                        >
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden>
+                            <circle cx="9" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" />
+                            <circle cx="15" cy="6" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="15" cy="18" r="1.4" />
+                          </svg>
+                        </span>
+                      </div>
+                    )}
+                  </Draggable>
+                );
+              })}
+              {drop.placeholder}
+            </nav>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      <div className="border-t border-line px-3 py-3">
+        <button type="button" onClick={onDarkModeToggle} aria-pressed={dm} className="flex h-10 w-full items-center gap-3 px-3 text-[0.84rem] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-ink">
+          <NavIcon name="moon" className="h-[17px] w-[17px] shrink-0" />
+          <span className="flex-1 text-left">Dark mode</span>
+          <Switch on={dm} />
+        </button>
+        <button type="button" onClick={onBackToSite} className="flex h-10 w-full items-center gap-3 px-3 text-[0.84rem] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-ink">
+          <NavIcon name="site" className="h-[17px] w-[17px] shrink-0" />
+          View the website
+        </button>
+        <button type="button" onClick={onLogout} className="flex h-10 w-full items-center gap-3 px-3 text-[0.84rem] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-tone-alert">
+          <NavIcon name="logout" className="h-[17px] w-[17px] shrink-0" />
+          Log out
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+// ---- phone -------------------------------------------------------------------------------
+
+const today = () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+// The phone's menu. Slides in from the left over a dimmed page, frosted so the
+// screen you came from still shows through. Swipe it back to the left, tap
+// outside it, press Escape or pick a section to close it.
+export function AdminDrawer({ open, onClose, activeTab, setActiveTab, counts = {}, darkMode: dm, onDarkModeToggle, onBackToSite, onLogout, tabs }) {
+  const root = useRef(null);
+  const closeButton = useRef(null);
+  const drag = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    lockScroll();
+    const t = setTimeout(() => closeButton.current?.focus({ preventScroll: true }), 60);
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      unlockScroll();
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
+
+  // Follow the finger while it drags the panel left, then decide on release:
+  // far enough or fast enough closes, anything less springs back. The offset
+  // goes straight to a CSS variable, so a drag never re-renders React.
+  const setDrag = (px) => root.current?.style.setProperty('--drag', `${px}px`);
+  const onPointerDown = (e) => {
+    if (e.pointerType === 'mouse') return;
+    drag.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, live: false };
+  };
+  const onPointerMove = (e) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.live) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      d.live = true;
+      root.current?.setAttribute('data-dragging', 'true');
+    }
+    d.dx = Math.min(0, dx);
+    setDrag(d.dx);
+  };
+  const onPointerEnd = (e) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d?.live) return;
+    root.current?.removeAttribute('data-dragging');
+    const v = d.dx / Math.max(1, e.timeStamp - d.t);
+    setDrag(0);
+    if (d.dx < -80 || v < -0.45) onClose();
+    // The drag ended on whatever was under the finger. It was a swipe, not a tap.
+    const swallow = (ev) => { ev.preventDefault(); ev.stopPropagation(); };
+    window.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 50);
   };
 
+  const pick = (key) => {
+    setActiveTab(key);
+    onClose();
+  };
+
+  let i = 0;
+  const row = 'drawer-item press flex h-12 w-full items-center gap-3.5 px-3 text-left text-[0.92rem] text-ink-soft active:bg-ink/[0.04]';
+
   return (
-    <>
-      {/* ════════════════════════════════════════════════════
-          DESKTOP sidebar — sticky, 220px, left of content
-          ════════════════════════════════════════════════════ */}
+    <div ref={root} className="drawer lg:hidden" data-open={open ? 'true' : 'false'}>
+      <div aria-hidden className="drawer-scrim fixed inset-0 z-[300] bg-black/35" onClick={onClose} />
       <aside
-        className="hidden sm:flex flex-col w-[234px] shrink-0 sticky top-14 self-start overflow-y-auto"
-        style={{
-          height: 'calc(100vh - 56px)',
-          borderRight: `1px solid ${dm ? '#2e2e38' : '#E5E7EB'}`,
-          background: dm ? '#1e1e24' : '#fff',
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        aria-hidden={!open}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        className="drawer-panel fixed inset-y-0 left-0 z-[301] flex w-[min(86vw,340px)] touch-pan-y flex-col border-r border-paper/60 bg-paper/[0.84] shadow-[inset_-1px_0_0_rgb(var(--c-ink)/0.06)] backdrop-blur-2xl backdrop-saturate-[1.8]"
       >
-        {/* Nav items — drag the grip to reorder; order is saved on this device.
-            The grip only shows on hover so navigation clicks stay effortless. */}
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="admin-nav">
-            {(dropProvided) => (
-              <nav
-                ref={dropProvided.innerRef}
-                {...dropProvided.droppableProps}
-                className="flex-1 flex flex-col gap-1 px-3.5 pt-6"
-              >
-                {orderedTabs.map((tab, index) => {
-                  const isActive = activeTab === tab.key;
-                  const activeColor = dm ? '#f4dce4' : '#A0607A';
-                  const mutedColor = dm ? '#a1a1aa' : '#8a8a8a';
-                  return (
-                    <Draggable key={tab.key} draggableId={tab.key} index={index}>
-                      {(dragProvided, snapshot) => (
-                        <div
-                          ref={dragProvided.innerRef}
-                          {...dragProvided.draggableProps}
-                          className="group flex items-center rounded-xl transition-colors duration-200"
-                          style={{
-                            ...dragProvided.draggableProps.style,
-                            background: snapshot.isDragging
-                              ? (dm ? '#2e2e38' : '#fff')
-                              : isActive
-                                ? dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.12)'
-                                : 'transparent',
-                            boxShadow: snapshot.isDragging ? '0 10px 28px rgba(0,0,0,0.22)' : 'none',
-                          }}
-                          onMouseEnter={e => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = dm ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.035)'; }}
-                          onMouseLeave={e => { if (!isActive && !snapshot.isDragging) e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          <span
-                            {...dragProvided.dragHandleProps}
-                            className="flex items-center self-stretch pl-1.5 pr-0.5 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-                            aria-label={`Reorder ${tab.label}`}
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <GripDots dm={dm} />
-                          </span>
-                          <button
-                            onClick={() => setActiveTab(tab.key)}
-                            className="flex-1 min-w-0 flex items-center gap-3 text-left pr-3 py-2.5"
-                          >
-                            <NavIcon
-                              name={tab.icon}
-                              className="w-[20px] h-[20px] flex-shrink-0 transition-colors"
-                              style={{ color: isActive ? activeColor : mutedColor }}
-                            />
-                            <span className="flex flex-col min-w-0">
-                              <span
-                                className="text-[0.89rem] font-medium leading-tight truncate transition-colors"
-                                style={{ color: isActive ? activeColor : (dm ? '#d4d4d8' : '#3f3f46') }}
-                              >
-                                {tab.label}
-                              </span>
-                              {isActive && (
-                                <span className="text-[0.66rem] mt-0.5 leading-tight truncate" style={{ color: dm ? '#9a8088' : '#c79bb0' }}>
-                                  {tab.sub}
-                                </span>
-                              )}
-                            </span>
-                          </button>
-                        </div>
-                      )}
-                    </Draggable>
-                  );
-                })}
-                {dropProvided.placeholder}
-              </nav>
-            )}
-          </Droppable>
-        </DragDropContext>
-
-        {/* Utility actions at bottom of sidebar — icon chips with a sun/moon
-            toggle, matching the mobile menu's cleaner look */}
-        <div
-          className="px-3.5 pb-5 pt-3 flex flex-col gap-1"
-          style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#E5E7EB'}` }}
-        >
-          {/* Dark / light mode */}
+        <div className="flex items-center gap-1 px-2 pb-2 pt-[calc(env(safe-area-inset-top)+8px)]">
           <button
-            onClick={onDarkModeToggle}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors active:scale-[0.99]"
-            style={{ background: 'transparent' }}
-            onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2b2b34' : '#F4F4F8'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            ref={closeButton}
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="press flex h-11 w-11 shrink-0 items-center justify-center text-ink"
           >
-            <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F0F0F5' }}>
-              {dm ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                  <circle cx="12" cy="12" r="4"/>
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-              )}
-            </span>
-            <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#555' }}>
-              {dm ? 'Light Mode' : 'Dark Mode'}
-            </span>
+            <span className="burger" data-x={open ? 'true' : 'false'}><i /><i /><i /></span>
           </button>
-
-          {/* Back to site */}
-          <button
-            onClick={onBackToSite}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors active:scale-[0.99]"
-            style={{ background: 'transparent' }}
-            onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2b2b34' : '#F4F4F8'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
-              </svg>
-            </span>
-            <span className="text-[0.8rem] font-medium" style={{ color: dm ? '#d4d4d8' : '#555' }}>Back to Site</span>
-          </button>
-
-          {/* Log out */}
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors active:scale-[0.99]"
-            style={{ background: 'transparent' }}
-            onMouseEnter={e => { e.currentTarget.style.background = dm ? '#2b2b34' : '#F4F4F8'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-              </svg>
-            </span>
-            <span className="text-[0.8rem] font-medium text-red-400">Log Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ════════════════════════════════════════════════════
-          MOBILE full-screen nav overlay — fades in over the page
-          Matches the style of Navigation.jsx mobile menu
-          ════════════════════════════════════════════════════ */}
-      <div
-        className={`sm:hidden fixed inset-0 z-[200] flex flex-col transition-all duration-300 ${
-          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        style={{
-          background: dm ? '#1e1e24' : '#ffffff',
-        }}
-      >
-        {/* Header row — matches height of admin header */}
-        <div
-          className="flex items-center justify-between px-6 flex-shrink-0"
-          style={{
-            height: '56px',
-            borderBottom: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}`,
-          }}
-        >
-          <span
-            className="text-base font-semibold tracking-[0.02em]"
-            style={{ color: dm ? '#e4e4e7' : '#111' }}
-          >
-            Dashboard
-          </span>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#111'} strokeWidth="2.2" className="w-4 h-4">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <div className="min-w-0 pl-1">
+            <span className="block truncate text-[1.08rem] font-semibold leading-none tracking-[-0.02em] text-ink">Roqia Moshref</span>
+            <span className="mt-1.5 block truncate text-[0.72rem] text-ink-muted">{today()}</span>
+          </div>
         </div>
 
-        {/* Nav items — icon chip + label rows, sized so all sections fit.
-            Honors the order set by dragging on desktop. */}
-        <nav className="flex-1 overflow-y-auto px-5 pt-1">
-          {orderedTabs.map(tab => {
-            const isActive = activeTab === tab.key;
-            const activeColor = '#D4A0B0';
+        <nav aria-label="Dashboard" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-3 pt-3">
+          {tabs.map((tab) => {
+            const on = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
-                onClick={() => handleTabClick(tab.key)}
-                className="w-full text-left py-3 flex items-center gap-3.5 active:opacity-60 transition-opacity"
-                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
+                type="button"
+                onClick={() => pick(tab.key)}
+                aria-current={on ? 'page' : undefined}
+                style={{ '--i': i++ }}
+                className={cx(
+                  'drawer-item press flex h-[52px] w-full items-center gap-3.5 px-3 text-left text-[0.98rem]',
+                  on ? 'bg-ink/[0.06] font-semibold text-ink' : 'text-ink-soft active:bg-ink/[0.04]',
+                )}
               >
                 <span
-                  className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: isActive
-                      ? 'rgba(212,160,176,0.16)'
-                      : dm ? '#2a2a32' : '#F0F0F5',
-                  }}
+                  className={cx(
+                    'flex h-9 w-9 shrink-0 items-center justify-center transition-colors duration-300',
+                    on ? 'bg-ink text-paper' : 'bg-paper/80 text-ink-soft shadow-[0_0_0_1px_rgb(var(--c-ink)/0.08)]',
+                  )}
                 >
-                  <NavIcon
-                    name={tab.icon}
-                    className="w-[19px] h-[19px]"
-                    style={{ color: isActive ? activeColor : (dm ? '#a1a1aa' : '#7a6f74') }}
-                  />
+                  <NavIcon name={tab.icon} strokeWidth={on ? 1.9 : 1.6} className="h-[18px] w-[18px]" />
                 </span>
-                <span className="flex flex-col min-w-0">
-                  <span
-                    className="font-medium leading-tight"
-                    style={{
-                      fontSize: 'clamp(1.05rem, 4.4vw, 1.3rem)',
-                      color: isActive ? activeColor : (dm ? '#e4e4e7' : '#1a1a1a'),
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                  <span
-                    className="text-[0.6rem] tracking-[0.12em] uppercase mt-0.5"
-                    style={{ color: dm ? '#7a7a84' : '#bbb' }}
-                  >
-                    {tab.sub}
-                  </span>
-                </span>
+                <span className="flex-1 truncate">{tab.label}</span>
+                <Count n={counts[tab.key]} className="text-[0.7rem]" />
               </button>
             );
           })}
+
+          <div className="drawer-item mx-3 my-3 h-px bg-ink/10" style={{ '--i': i++ }} />
+
+          <button type="button" onClick={onDarkModeToggle} aria-pressed={dm} className={row} style={{ '--i': i++ }}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center"><NavIcon name="moon" className="h-[18px] w-[18px]" /></span>
+            <span className="flex-1">Dark mode</span>
+            <Switch on={dm} />
+          </button>
+          <button type="button" onClick={() => { onClose(); onBackToSite(); }} className={row} style={{ '--i': i++ }}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center"><NavIcon name="site" className="h-[18px] w-[18px]" /></span>
+            View the website
+          </button>
         </nav>
 
-        {/* Utility actions at bottom — compact rows with icon chips, sized so
-            every nav section still stays visible above them without scrolling */}
-        <div
-          className="px-5 pb-5 pt-2 flex flex-col flex-shrink-0"
-          style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECEDF1'}` }}
-        >
-          {/* Dark / light mode — sun & moon */}
-          <button
-            onClick={onDarkModeToggle}
-            className="w-full flex items-center gap-3 py-2.5 rounded-lg active:opacity-60 transition-opacity"
-          >
-            <span
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#F0F0F5' }}
-            >
-              {dm ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                  <circle cx="12" cy="12" r="4"/>
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="#7a6f74" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-              )}
-            </span>
-            <span className="text-[0.86rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>
-              {dm ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            </span>
-          </button>
-
-          {/* Back to site */}
-          <button
-            onClick={() => { setMobileOpen(false); onBackToSite(); }}
-            className="w-full flex items-center gap-3 py-2.5 rounded-lg active:opacity-60 transition-opacity"
-          >
-            <span
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: dm ? '#2e2e38' : '#F0F0F5' }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#7a6f74'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
-              </svg>
-            </span>
-            <span className="text-[0.86rem] font-medium" style={{ color: dm ? '#e4e4e7' : '#2a2a2a' }}>Back to Site</span>
-          </button>
-
-          {/* Log out */}
-          <button
-            onClick={() => { setMobileOpen(false); onLogout(); }}
-            className="w-full flex items-center gap-3 py-2.5 rounded-lg active:opacity-60 transition-opacity"
-          >
-            <span
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(239,68,68,0.1)' }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[16px] h-[16px]">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-              </svg>
-            </span>
-            <span className="text-[0.86rem] font-medium" style={{ color: '#ef4444' }}>Log Out</span>
+        <div className="drawer-item flex items-center gap-3 border-t border-ink/10 px-5 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3.5" style={{ '--i': i++ }}>
+          <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-wash text-[0.8rem] font-semibold text-rose">R</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[0.88rem] font-medium text-ink">Roqia</p>
+            <p className="truncate text-[0.74rem] text-ink-muted">Makeup by Roko</p>
+          </div>
+          <button type="button" onClick={() => { onClose(); onLogout(); }} className="press -mr-2 h-10 px-2 text-[0.8rem] font-medium text-ink-muted">
+            Log out
           </button>
         </div>
-      </div>
-    </>
+      </aside>
+    </div>
   );
 }

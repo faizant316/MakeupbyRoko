@@ -1,0 +1,389 @@
+/* Roko's dashboard. Everything here is scoped to the admin: the variables are
+   only read by the admin's own classes, and every rule is behind .admin-ui (on
+   <body> while the dashboard is open) or a class only the dashboard uses, so
+   none of it reaches the website. */
+
+/* ---- palette -----------------------------------------------------------------
+
+   One set of colours, held as variables so dark mode is a swap here rather
+   than a second colour carried by every component. Channels, not hex, so
+   Tailwind's opacity modifiers work on them (bg-ink/35, border-rose/30).
+
+   Warm neutrals because the brand is: the greys lean a touch toward the rose
+   instead of the blue-grey of a stock dashboard. One rose family: the deep one
+   for text and anything chosen, the soft one for dots and rings, the wash for
+   bridal rows. */
+:root {
+  --c-paper: 255 255 255;
+  --c-canvas: 246 245 243;
+  --c-ink: 18 17 19;
+  --c-ink-soft: 74 70 76;
+  --c-ink-muted: 117 112 122;
+  --c-line: 232 229 227;
+  --c-line-strong: 211 207 204;
+  --c-rose: 160 96 122;
+  --c-rose-soft: 212 160 176;
+  --c-rose-wash: 252 244 248;
+  --c-pending: 180 83 9;
+  --c-confirmed: 37 99 235;
+  --c-alert: 192 54 44;
+  --c-done: 100 116 139;
+  --c-consult: 107 90 147;
+  --font-ui: var(--font-inter, Inter), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+html.admin-dark {
+  --c-paper: 31 30 34;
+  --c-canvas: 22 21 24;
+  --c-ink: 237 235 239;
+  --c-ink-soft: 200 196 204;
+  --c-ink-muted: 150 144 155;
+  --c-line: 48 46 52;
+  --c-line-strong: 72 69 77;
+  --c-rose: 226 175 194;
+  --c-rose-soft: 185 132 151;
+  --c-rose-wash: 43 34 41;
+  --c-pending: 245 184 60;
+  --c-confirmed: 127 165 245;
+  --c-alert: 240 122 112;
+  --c-done: 167 178 196;
+  --c-consult: 182 167 217;
+  color-scheme: dark;
+}
+
+/* ---- type ----------------------------------------------------------------------
+
+   Inter, self-hosted (see app/layout.jsx). The admin used to name Inter without
+   ever loading it, so every screen fell back to whatever the device had:
+   Segoe UI on Windows, Roboto on Android. Set on the body as well as the app
+   root because sheets are portalled to <body>. !important because the
+   website's base styles put a serif stack on every heading. */
+body.admin-ui,
+.admin-ui :where(*),
+.admin-app,
+.admin-app :where(*) {
+  font-family: var(--font-ui) !important;
+}
+body.admin-ui {
+  background: rgb(var(--c-canvas));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* The admin scrolls natively; a pull past the top shouldn't drag the whole
+     app down and reload it mid-task. */
+  overscroll-behavior-y: none;
+}
+.admin-app {
+  letter-spacing: -0.006em;
+}
+.admin-app :is(h1, h2, h3, h4) {
+  font-weight: 600;
+  letter-spacing: -0.018em;
+}
+
+/* ---- touch ---------------------------------------------------------------------
+
+   The grey flash phones paint over anything tapped is the loudest sign of a
+   web page pretending to be an app, and it fights the press states below.
+   Controls fire on the first tap instead of waiting to see if a second is
+   coming, and a long press no longer selects a button's label or pops the
+   link callout. Text content stays selectable. */
+.admin-ui {
+  -webkit-tap-highlight-color: transparent;
+}
+.admin-ui :is(a, button, [role='button'], [role='tab'], label[for], summary) {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Keyboard focus: one rose ring, offset so it never sits on the control's
+   own edge. Mouse and touch focus show nothing. */
+.admin-ui :focus-visible {
+  outline: 1.5px solid rgb(var(--c-rose));
+  outline-offset: 3px;
+}
+
+/* Press feedback the instant a finger lands, not when it lifts. */
+.press {
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out, opacity 160ms ease-out;
+}
+.press:active {
+  transform: scale(0.97);
+  transition-duration: 70ms;
+}
+
+/* ---- arrival -------------------------------------------------------------------
+
+   The greeting sets itself a word at a time, each rising out of its own mask.
+   Once a visit, never on the way back to the screen. */
+.kin {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.kin > span {
+  display: inline-block;
+  animation: kin-rise 820ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes kin-rise {
+  from { transform: translate3d(0, 115%, 0); }
+  to { transform: none; }
+}
+
+/* Anything that should arrive a beat after the greeting. --i staggers it. */
+.rise-in {
+  animation: rise-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- the drawer ----------------------------------------------------------------
+
+   The phone's menu: a frosted panel over a page that is only dimmed. Blurring
+   the whole page under a full-screen overlay is what makes menus stutter on
+   older phones; a 340px panel is cheap. */
+.drawer-panel {
+  transform: translate3d(-102%, 0, 0);
+  visibility: hidden;
+  transition: transform 460ms cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 460ms;
+}
+.drawer[data-open='true'] .drawer-panel {
+  transform: translate3d(var(--drag, 0px), 0, 0);
+  visibility: visible;
+  transition: transform 460ms cubic-bezier(0.32, 0.72, 0, 1), visibility 0s;
+}
+.drawer[data-dragging='true'] .drawer-panel {
+  transition: none;
+}
+.drawer-scrim {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 360ms ease-out, visibility 0s linear 360ms;
+}
+.drawer[data-open='true'] .drawer-scrim {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 360ms ease-out, visibility 0s;
+}
+
+/* The rows arrive one after another as the panel lands, and leave together. */
+.drawer-item {
+  opacity: 0;
+  transform: translate3d(-14px, 0, 0);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+.drawer[data-open='true'] .drawer-item {
+  opacity: 1;
+  transform: none;
+  transition: opacity 420ms ease-out, transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(90ms + var(--i, 0) * 38ms);
+}
+
+/* Three lines that melt into a cross. */
+.burger {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 14px;
+}
+.burger > i {
+  position: absolute;
+  left: 0;
+  height: 1.75px;
+  width: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 520ms cubic-bezier(0.32, 0.72, 0, 1), opacity 240ms ease-out, width 520ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.burger > i:nth-child(1) { top: 0; }
+.burger > i:nth-child(2) { top: 6.1px; width: 64%; }
+.burger > i:nth-child(3) { top: 12.2px; }
+.burger[data-x='true'] > i:nth-child(1) { transform: translateY(6.1px) rotate(45deg); }
+.burger[data-x='true'] > i:nth-child(2) { opacity: 0; width: 0; }
+.burger[data-x='true'] > i:nth-child(3) { transform: translateY(-6.1px) rotate(-45deg); }
+
+/* ---- sheets --------------------------------------------------------------------
+
+   Every pop-up in the dashboard. A sheet rises from the bottom edge on a
+   phone, the way the system's own do; on a laptop it settles into the middle.
+   Both leave the way they came, faster than they arrived. data-state is set
+   by the Sheet component, which keeps the sheet mounted until its exit has
+   played. */
+.sheet-scrim {
+  animation: sheet-scrim-in 240ms ease-out both;
+}
+.sheet-panel {
+  animation: sheet-up 460ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.sheet[data-state='closing'] .sheet-scrim {
+  animation: sheet-scrim-out 220ms ease-in both;
+}
+.sheet[data-state='closing'] .sheet-panel {
+  animation: sheet-down 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+@media (min-width: 640px) {
+  .sheet-panel {
+    animation: sheet-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .sheet[data-state='closing'] .sheet-panel {
+    animation: sheet-out 200ms ease-in both;
+  }
+}
+@keyframes sheet-scrim-in { from { opacity: 0; } }
+@keyframes sheet-scrim-out { to { opacity: 0; } }
+@keyframes sheet-up { from { transform: translate3d(0, 100%, 0); } }
+@keyframes sheet-down { to { transform: translate3d(0, 100%, 0); } }
+@keyframes sheet-in { from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.985); } }
+@keyframes sheet-out { to { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.985); } }
+
+/* Small menus that drop from a button (filters, sort). */
+.pop-in {
+  transform-origin: var(--origin, top right);
+  animation: pop-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translate3d(0, -4px, 0) scale(0.97); }
+}
+
+/* ---- the next-up card ----------------------------------------------------------
+
+   Three soft pools of light drifting under the dark card: rose, plum and a warm
+   nude, the colours of the work itself. Each is its own composited layer moving
+   by transform only, so the page never repaints for them. */
+.mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.mesh > i {
+  position: absolute;
+  width: 90%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  will-change: transform;
+}
+.mesh > i:nth-child(1) {
+  left: -25%;
+  top: -55%;
+  background: radial-gradient(closest-side, rgba(212, 160, 176, 0.42), rgba(212, 160, 176, 0));
+  animation: mesh-a 19s ease-in-out infinite alternate;
+}
+.mesh > i:nth-child(2) {
+  right: -35%;
+  top: -10%;
+  background: radial-gradient(closest-side, rgba(154, 84, 116, 0.42), rgba(154, 84, 116, 0));
+  animation: mesh-b 23s ease-in-out infinite alternate;
+}
+.mesh > i:nth-child(3) {
+  left: 10%;
+  bottom: -70%;
+  background: radial-gradient(closest-side, rgba(201, 164, 140, 0.3), rgba(201, 164, 140, 0));
+  animation: mesh-c 27s ease-in-out infinite alternate;
+}
+@keyframes mesh-a { to { transform: translate3d(22%, 18%, 0) scale(1.15); } }
+@keyframes mesh-b { to { transform: translate3d(-24%, 14%, 0) scale(0.9); } }
+@keyframes mesh-c { to { transform: translate3d(18%, -22%, 0) scale(1.2); } }
+[data-still='true'] .mesh > i {
+  animation-play-state: paused;
+}
+
+/* A dot that breathes, for something happening right now. */
+.live-dot {
+  position: relative;
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: inherit;
+  animation: live-ring 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes live-ring {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(3.2); opacity: 0; }
+}
+
+/* A check that draws itself. */
+.tick path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: tick-draw 420ms cubic-bezier(0.65, 0, 0.35, 1) 80ms forwards;
+}
+@keyframes tick-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ---- fold ----------------------------------------------------------------------
+
+   Every section that opens and shuts. Height animates through the grid row
+   rather than max-height or a measured pixel height, so the timing is the same
+   however tall the section is and nothing has to be measured first. */
+.fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fold[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.fold > div {
+  min-height: 0;
+  overflow: hidden;
+}
+/* Shut means out of the tab order too, once it has finished closing. */
+.fold[data-open='false'] > div {
+  visibility: hidden;
+  transition: visibility 0s linear 420ms;
+}
+.fold > div > * {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+.fold[data-open='true'] > div > * {
+  opacity: 1;
+  transition: opacity 360ms ease-out 80ms;
+}
+
+/* Horizontal chip rows scroll on a phone without a scrollbar showing. */
+.no-bar {
+  scrollbar-width: none;
+}
+.no-bar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kin > span,
+  .rise-in,
+  .mesh > i,
+  .live-dot::after,
+  .tick path,
+  .pop-in,
+  .sheet-scrim,
+  .sheet-panel {
+    animation: none !important;
+  }
+  .tick path {
+    stroke-dashoffset: 0;
+  }
+  .drawer-panel,
+  .drawer-scrim,
+  .drawer-item,
+  .fold,
+  .fold > div > *,
+  .burger > i,
+  .press {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}

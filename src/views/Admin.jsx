@@ -1,20 +1,21 @@
 ﻿'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { api } from '@/api/apiClient';
 import { cityFromLocation } from '@/lib/location';
 import { isBridalService } from '@/components/admin/statusColors';
-import { isScrollLocked } from '@/lib/useScrollLock';
+import { isBookingUnseen } from '@/components/admin/bookingSeen';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import '../components/admin/admin.css';
 import AdminCalendar from '../components/admin/AdminCalendar';
 import NewBookingsRail from '../components/admin/NewBookingsRail';
-import { Lock, Star4 } from '../components/admin/Glyphs';
 import BookingsList from '../components/admin/BookingsList';
 import BookingDetail from '../components/admin/BookingDetail';
 import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
 import ContractSettings from '../components/admin/ContractSettings';
-import AdminSidebar, { ADMIN_TABS } from '../components/admin/AdminSidebar';
+import AdminSidebar, { ADMIN_TABS, AdminDrawer, useNavOrder } from '../components/admin/AdminSidebar';
+import { cx } from '../components/admin/ui';
 import AvailabilityTab from '../components/admin/AvailabilityTab';
 import ClassSignupsCard from '../components/admin/ClassSignupsCard';
 import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
@@ -24,8 +25,10 @@ import AddClientModal from '../components/admin/AddClientModal';
 import BulkImportModal from '../components/admin/BulkImportModal';
 import ClientsTab from '../components/admin/ClientsTab';
 import ResizableColumns from '../components/admin/ResizableColumns';
+import HomeTop from '../components/admin/HomeTop';
 import { daysUntil, scheduledDate } from '../components/admin/timeline';
 import { isAdminEmail } from '@/lib/adminAllowlist';
+import BrandLoader from '../components/BrandLoader';
 
 const DEFAULT_CAP = 3;
 
@@ -41,10 +44,9 @@ export default function Admin() {
   // month arrows render up in the page header next to the title.
   const [availMonth, setAvailMonth] = useState(() => new Date());
   const [availDay, setAvailDay] = useState(null);
-  const [userName, setUserName] = useState('');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('admin-dark') === 'true');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [showNavFab, setShowNavFab] = useState(false);
+  const [navTabs, setNavOrder] = useNavOrder();
   // The Add Client panel, which also blocks off time. Null when closed;
   // otherwise which side it opens on, the day it starts on, and the blocked
   // time being edited (when she tapped one on a calendar).
@@ -52,31 +54,28 @@ export default function Admin() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
   const [authGranted, setAuthGranted] = useState(false);
-  const [authError, setAuthError] = useState(null);
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  // Dark mode is a class on <html> that swaps the palette variables in
+  // admin.css, so sheets portalled to <body> follow it too.
   useEffect(() => {
     localStorage.setItem('admin-dark', darkMode);
+    document.documentElement.classList.toggle('admin-dark', darkMode);
   }, [darkMode]);
 
-  // Floating back button (mobile): reveal as soon as the page is scrolled even
-  // a little past the header, and keep it there so it's always within reach.
-  // Only tucked away right at the top, where the header already sits.
+  // The body carries the dashboard's type, touch rules and canvas for as long
+  // as the dashboard is open, and gives them back on the way out to the site.
   useEffect(() => {
-    const onScroll = () => {
-      // A pinned body (the nav drawer, any admin modal) reports scrollY as 0, so
-      // without this the button hid itself the moment one opened and popped back
-      // when it closed. Hold the last real answer while the page is locked.
-      if (isScrollLocked()) return;
-      setShowNavFab(window.scrollY > 40);
+    document.body.classList.add('admin-ui');
+    return () => {
+      document.body.classList.remove('admin-ui');
+      document.documentElement.classList.remove('admin-dark');
     };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
 
   // Client-side auth gate (defense in depth — middleware already blocks the
   // route at the edge). Confirms a live session AND that it's an allowlisted
@@ -84,15 +83,11 @@ export default function Admin() {
   useEffect(() => {
     api.auth.me().then(u => {
       if (!isAdminEmail(u.email)) {
-        setAuthChecked(true);
         router.push('/login');
         return;
       }
-      if (u.full_name) setUserName(u.full_name.split(' ')[0]);
       setAuthGranted(true);
-      setAuthChecked(true);
     }).catch(() => {
-      setAuthChecked(true);
       router.push('/login');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,9 +206,8 @@ export default function Admin() {
     queryFn: () => api.entities.ClassRegistration.list('-created_date', 200),
     staleTime: 30000,
   });
-  const newClassRegsCount = classRegs.filter(r => r.status === 'new' || !r.status).length;
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const recentClassRegs = classRegs.filter(r => r.created_date && r.created_date > oneDayAgo);
+  // Sign-ups nobody has picked up yet.
+  const newClassRegsCount = classRegs.filter(r => !r.status || r.status === 'new' || r.status === 'pending').length;
 
   const updateBookingMutation = useMutation({
     mutationFn: ({ id, data }) => api.entities.Booking.update(id, data),
@@ -273,8 +267,6 @@ export default function Admin() {
     ? classRegs.filter(r => r.appointment_date === selectedDate)
     : [];
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayCount = bookings.filter(b => b.date === today).length;
   // Status chips count real appointments/consultations only. Booksy-imported
   // rows with neither a date nor a consultation are CRM contacts (they live in
   // Clients); rows with a date OR a consultation are real scheduled items.
@@ -285,279 +277,83 @@ export default function Admin() {
   const cancelledCount = siteBookings.filter(b => b.status === 'cancelled').length;
   const statusCounts = { all: siteBookings.length, pending: pendingCount, confirmed: confirmedCount, completed: completedCount, cancelled: cancelledCount };
 
+  // What each section has waiting, for the counts beside it in the menu.
+  const navCounts = useMemo(() => ({
+    bookings: bookings.filter(isBookingUnseen).length,
+    classes: newClassRegsCount,
+    reviews: reviews.filter(r => r.status === 'pending').length,
+  }), [bookings, newClassRegsCount, reviews]);
+
   const dm = darkMode;
 
-  // Access denied screen when logged in as non-admin
-  if (authError === 'admin_required') {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0C0A09' }}>
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.07]"
-            style={{ background: 'radial-gradient(circle, #ef4444, transparent 70%)' }} />
-        </div>
+  // The same screen the page showed while the dashboard downloaded, so the
+  // sign-in check doesn't flash a different one in between.
+  if (!authGranted) return <BrandLoader caption="Loading your dashboard" />;
 
-        <div className="relative flex flex-col items-center gap-8 px-8 text-center max-w-[380px]">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <Lock className="w-6 h-6 text-red-400" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h1 className="font-serif text-[1.6rem] tracking-[0.18em] uppercase text-white/90 font-light mb-2">
-              Admin Access Only
-            </h1>
-            <p className="text-[0.85rem] text-white/50 leading-relaxed">
-              This dashboard requires admin privileges. Log out and sign in with your admin account to continue.
-            </p>
-          </div>
+  const activeTabMeta = ADMIN_TABS.find(t => t.key === activeTab);
+  const activeTabLabel = activeTabMeta?.label ?? '';
 
-          <button
-            onClick={() => api.auth.logout()}
-            className="px-8 py-3 rounded-lg font-medium tracking-[0.08em] uppercase transition-all"
-            style={{
-              background: '#ef4444',
-              color: '#fff',
-              fontSize: '0.75rem',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#dc2626'}
-            onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}
-          >
-            Log Out & Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Beautiful loading / auth gate screen
-  if (!authGranted) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0C0A09' }}>
-        {/* Ambient glow */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.07]"
-            style={{ background: 'radial-gradient(circle, #D4A0B0, transparent 70%)' }} />
-          <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] rounded-full opacity-[0.04]"
-            style={{ background: 'radial-gradient(circle, #B8A0D4, transparent 70%)' }} />
-        </div>
-
-        <div className="relative flex flex-col items-center gap-8 px-8 text-center">
-          {/* Logo mark */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-1"
-              style={{ background: 'rgba(212,160,176,0.12)', border: '1px solid rgba(212,160,176,0.2)' }}>
-              <Star4 className="w-6 h-6 text-[#D4A0B0]" />
-            </div>
-            <h1 className="font-serif text-[1.6rem] tracking-[0.18em] uppercase text-white/90 font-light">
-              Roqia Moshref
-            </h1>
-            <p className="text-[0.6rem] tracking-[0.22em] uppercase text-[#D4A0B0]/70 font-medium">
-              Studio Dashboard
-            </p>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-10" style={{ background: 'linear-gradient(to bottom, transparent, rgba(212,160,176,0.3), transparent)' }} />
-
-          {/* Loading indicator */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex gap-2">
-              {[0,1,2].map(i => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full"
-                  style={{
-                    background: '#D4A0B0',
-                    animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
-                    opacity: 0.6,
-                  }} />
-              ))}
-            </div>
-            <p className="text-[0.65rem] tracking-[0.16em] uppercase text-white/20 font-medium">
-              Verifying access
-            </p>
-          </div>
-
-          {/* Logout button for testing */}
-          <button
-            onClick={() => api.auth.logout()}
-            className="text-[0.65rem] tracking-[0.1em] uppercase transition-colors mt-6"
-            style={{ color: 'rgba(212,160,176,0.6)' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#D4A0B0'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(212,160,176,0.6)'}
-          >
-            Clear Session & Try Again
-          </button>
-        </div>
-
-        <style>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 0.2; transform: scale(0.8); }
-            50% { opacity: 1; transform: scale(1); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Resolve active tab label for mobile header
-  const activeTabLabel = ADMIN_TABS.find(t => t.key === activeTab)?.label ?? '';
-
-  // Floating back button: where "back" goes. Not shown on the Home overview
-  // (use the menu to switch sections); everywhere else it returns one level up.
+  // A client card (or class sign-up) open over a section. The phone bar's left
+  // button turns into Back while one is, and the page title steps aside for
+  // the card's own header.
   const isDetailOpen =
     (activeTab === 'bookings' && !!selectedBooking) ||
     (activeTab === 'classes' && !!selectedClassReg) ||
     // The Calendar tab opens client cards in place, so back there means
     // "close the card and show the calendar again", not "leave the tab".
     (activeTab === 'availability' && (!!selectedBooking || !!selectedClassReg));
-  const canGoBack = isDetailOpen || activeTab !== 'bookings';
   const handleBack = () => {
-    if (activeTab === 'availability' && selectedBooking) { setSelectedBooking(null); return; }
-    if (activeTab === 'availability' && selectedClassReg) { setSelectedClassReg(null); return; }
-    if (activeTab === 'bookings' && selectedBooking) { setSelectedBooking(null); return; }
-    if (activeTab === 'classes' && selectedClassReg) { setSelectedClassReg(null); return; }
-    if (activeTab !== 'bookings') {
-      setActiveTab('bookings');
-      setSelectedBooking(null);
-      setSelectedClassReg(null);
-    }
+    if (selectedBooking) { setSelectedBooking(null); return; }
+    if (selectedClassReg) setSelectedClassReg(null);
+  };
+  const detailName = selectedBooking?.name || selectedClassReg?.full_name || '';
+
+  const goTab = (key) => { setActiveTab(key); setSelectedBooking(null); setSelectedClassReg(null); };
+  const sidebarProps = {
+    activeTab,
+    setActiveTab: goTab,
+    counts: navCounts,
+    darkMode: dm,
+    onDarkModeToggle: () => setDarkMode(d => !d),
+    onBackToSite: () => router.push('/'),
+    onLogout: () => api.auth.logout(),
+    tabs: navTabs,
   };
 
   return (
-    <div
-      className="admin-app min-h-screen transition-colors duration-300"
-      style={{ background: dm ? '#1e1e24' : '#fff', color: dm ? '#e4e4e7' : '#111' }}
-    >
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-[100]"
-        style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#E2E2E8'}`, background: dm ? '#26262e' : '#fff' }}
-      >
-        <div className="px-4 sm:px-6 lg:px-8 flex items-center h-14">
-          {/* Branding + active section chip (mobile). pr-14 on mobile reserves
-              room for the fixed hamburger so the pill never slides under it. */}
-          <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-14 sm:pr-0">
-            <a
-              href="/"
-              className="font-serif text-lg tracking-[0.12em] uppercase whitespace-nowrap flex-shrink-0"
-              style={{ color: dm ? '#e4e4e7' : '#111' }}
-            >
-              Roqia Moshref
-            </a>
-            {/* Active section pill — mobile only. Truncates so it stays tidy. */}
-            <span
-              className="sm:hidden text-[0.55rem] tracking-[0.14em] uppercase font-semibold px-1.5 py-0.5 rounded-md min-w-0 truncate"
-              style={{ color: '#D4A0B0', background: dm ? 'rgba(212,160,176,0.1)' : 'rgba(212,160,176,0.08)' }}
-            >
-              {activeTabLabel}
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className="admin-app min-h-[100svh] bg-canvas text-ink">
+      <div className="lg:flex">
+        <AdminSidebar {...sidebarProps} setOrder={setNavOrder} />
 
-      {/* Mobile hamburger — animates to × when open.
-          Rendered as a FIXED button (not inside the sticky header) so its hit
-          box always lines up with where it's painted — exactly how the public
-          site's nav button behaves (its parent is fixed too). The sticky header
-          was desyncing the tap target downward; fixed positioning fixes that.
-          Lines are pointer-events-none so every tap lands on the button, and
-          touch-action:manipulation keeps taps instant. */}
-      <button
-        onClick={() => setMobileNavOpen(o => !o)}
-        className="sm:hidden fixed top-[6px] right-4 z-[110] w-11 h-11 flex items-center justify-center rounded-full transition-transform duration-200 active:scale-90"
-        style={{
-          background: mobileNavOpen ? (dm ? '#3f3f46' : '#EBEBF0') : 'transparent',
-          touchAction: 'manipulation',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-        aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
-      >
-        <span
-          className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
-            mobileNavOpen ? 'rotate-45 translate-y-0' : '-translate-y-[5px]'
-          }`}
-          style={{ background: dm ? '#EBEBF0' : '#111' }}
-        />
-        <span
-          className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
-            mobileNavOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
-          }`}
-          style={{ background: dm ? '#EBEBF0' : '#111' }}
-        />
-        <span
-          className={`pointer-events-none absolute block w-[20px] h-[1.5px] rounded-full transition-all duration-300 ease-in-out ${
-            mobileNavOpen ? '-rotate-45 translate-y-0' : 'translate-y-[5px]'
-          }`}
-          style={{ background: dm ? '#EBEBF0' : '#111' }}
-        />
-      </button>
+        <div className="min-w-0 flex-1">
+          <PhoneBar
+            detailOpen={isDetailOpen}
+            title={isDetailOpen ? detailName : activeTabLabel}
+            watchKey={`${activeTab}:${selectedBooking?.id || ''}:${selectedClassReg?.id || ''}`}
+            menuOpen={mobileNavOpen}
+            onMenu={() => setMobileNavOpen(true)}
+            onBack={handleBack}
+            onAdd={() => setEntryPanel({ mode: 'client', date: selectedDate })}
+            unseen={navCounts.bookings}
+          />
 
-      {/* ── Floating back button (mobile) ────────────────────────
-          Gray translucent arrow, like the public site's modal back button.
-          Goes up one level (no menu). Hidden while scrolling down a page;
-          slides in when you scroll up to leave. */}
-      <button
-        onClick={handleBack}
-        aria-label="Go back"
-        className={`sm:hidden fixed left-4 top-[68px] z-[90] w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ease-out active:scale-90 ${
-          showNavFab && canGoBack && !mobileNavOpen
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 -translate-y-2 pointer-events-none'
-        }`}
-        style={{
-          background: 'rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-        }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-
-      {/* ── Sidebar + Content ────────────────────────────────── */}
-      <div className="flex">
-        <AdminSidebar
-          activeTab={activeTab}
-          setActiveTab={(key) => { setActiveTab(key); setSelectedBooking(null); setSelectedClassReg(null); }}
-          mobileOpen={mobileNavOpen}
-          setMobileOpen={setMobileNavOpen}
-          darkMode={dm}
-          onDarkModeToggle={() => setDarkMode(d => !d)}
-          onBackToSite={() => router.push('/')}
-          onLogout={() => api.auth.logout()}
-        />
-
-        {/* Main content */}
-        <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Page title. The Calendar tab used to hang the month stepper off
-              the right-hand end of this row, which put the date you're looking
-              at in the corner of the screen, small, and a long way from the
-              grid it belongs to. It sits centred above the grid now. */}
-          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 mt-8 sm:mt-10 mb-5 sm:mb-6">
-            <div>
-              <h1
-                className="font-serif text-[2rem] sm:text-[2.25rem] leading-none tracking-[-0.01em]"
-                style={{ color: dm ? '#e4e4e7' : '#111' }}
-              >
-                {activeTabLabel}
-              </h1>
-              <p className="text-[0.78rem] mt-2 tracking-wide" style={{ color: dm ? '#8e8e99' : '#bbb' }}>
-                Welcome back, <span className="text-[#D4A0B0]">Roqia</span>
-              </p>
-            </div>
-          </div>
+          <main id="admin-main" className="mx-auto w-full max-w-[1360px] px-4 pb-[calc(48px+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-7 lg:px-10 lg:pb-12 lg:pt-10">
+            {activeTab === 'bookings' && !isDetailOpen ? (
+              <HomeTop
+                bookings={bookings}
+                onOpen={setSelectedBooking}
+                onAddClient={() => setEntryPanel({ mode: 'client', date: selectedDate })}
+                onShowPending={() => { setStatusFilter('pending'); setViewType('appointments'); setSelectedDate(null); }}
+              />
+            ) : !isDetailOpen && (
+              <PageHeader title={activeTabLabel} sub={activeTabMeta?.sub} />
+            )}
 
         {/* Keyed so every navigation (open/close a card, switch tabs) replays
-            the same quiet fade-rise. The title above stays put for stability. */}
+            the same quiet fade-rise. */}
         <div key={`${activeTab}:${selectedBooking?.id || ''}:${selectedClassReg?.id || ''}`} className="admin-enter">
         {activeTab === 'bookings' && !selectedBooking && (
           <>
-            {/* Two columns on desktop: calendar + today + classes on the left,
-                the appointments workspace on the right. The divider between
-                them is user-draggable (desktop only) and remembers its width.
-                Stacks on mobile/tablet. */}
             {/* Who booked, and when? On a phone that's the first question and
                 the appointments list is three scrolls down, so the rail answers
                 it before the calendar does. Laptop keeps it inside the list. */}
@@ -573,7 +369,6 @@ export default function Admin() {
                       onSelectTimeBlock={(t) => setEntryPanel({ mode: 'block', editBlock: t })}
                       onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }} />
                   </div>
-                  {/* Class Sign-Ups quick access */}
                   {classRegs.length > 0 && (
                     <ClassSignupsCard
                       classRegs={classRegs}
@@ -723,42 +518,149 @@ export default function Admin() {
           <ReportsTab darkMode={dm} />
         )}
         </div> {/* /animated tab content */}
+          </main>
+        </div>
+      </div>
 
-        {/* Outside the keyed tab wrapper, so switching tabs underneath can't
-            remount it, and the Calendar tab can open it as well as Home. */}
-        {entryPanel && (
-          <AddClientModal
-            initialMode={entryPanel.mode}
-            initialDate={entryPanel.date || entryPanel.editBlock?.date || null}
-            editBlock={entryPanel.editBlock || null}
-            bookings={bookings}
-            classRegs={classRegs}
-            onSave={(record, kind) => {
-              setEntryPanel(null);
-              if (kind === 'class') {
-                queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
-                queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
-                setActiveTab('classes');
-                setSelectedClassReg(record);
-              } else if (kind === 'booking') {
-                queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-                setSelectedBooking(record);
-              } else {
-                // Blocked time or a day off: refresh both, then land on the day
-                // it went on, so she sees it arrive.
-                queryClient.invalidateQueries({ queryKey: ['time-blocks'] });
-                queryClient.invalidateQueries({ queryKey: ['blocked-dates'] });
-                const d = record?.date;
-                if (d && activeTab === 'availability') { setAvailDay(d); setAvailMonth(new Date(d + 'T00:00:00')); }
-                else if (d) { setSelectedDate(d); setCurrentMonth(new Date(d + 'T00:00:00')); }
-              }
-            }}
-            onClose={() => setEntryPanel(null)}
-            darkMode={dm}
-          />
-        )}
-        </div> {/* /main content */}
-      </div> {/* /flex row */}
+      <AdminDrawer {...sidebarProps} open={mobileNavOpen} onClose={closeMobileNav} />
+
+      {/* Outside the keyed tab wrapper, so switching tabs underneath can't
+          remount it, and the Calendar tab can open it as well as Home. */}
+      {entryPanel && (
+        <AddClientModal
+          initialMode={entryPanel.mode}
+          initialDate={entryPanel.date || entryPanel.editBlock?.date || null}
+          editBlock={entryPanel.editBlock || null}
+          bookings={bookings}
+          classRegs={classRegs}
+          onSave={(record, kind) => {
+            setEntryPanel(null);
+            if (kind === 'class') {
+              queryClient.invalidateQueries({ queryKey: ['class-registrations'] });
+              queryClient.invalidateQueries({ queryKey: ['class-registrations-summary'] });
+              setActiveTab('classes');
+              setSelectedClassReg(record);
+            } else if (kind === 'booking') {
+              queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+              setSelectedBooking(record);
+            } else {
+              // Blocked time or a day off: refresh both, then land on the day
+              // it went on, so she sees it arrive.
+              queryClient.invalidateQueries({ queryKey: ['time-blocks'] });
+              queryClient.invalidateQueries({ queryKey: ['blocked-dates'] });
+              const d = record?.date;
+              if (d && activeTab === 'availability') { setAvailDay(d); setAvailMonth(new Date(d + 'T00:00:00')); }
+              else if (d) { setSelectedDate(d); setCurrentMonth(new Date(d + 'T00:00:00')); }
+            }
+          }}
+          onClose={() => setEntryPanel(null)}
+          darkMode={dm}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---- the phone bar ---------------------------------------------------------------
+
+// A slim frosted bar on a phone: the menu (or Back, while a card is open), the
+// brand, and a new client from anywhere. Once the page's own title has scrolled
+// up under the bar, the bar takes the title over, the way an iPhone app's
+// large title does.
+function PhoneBar({ detailOpen, title, watchKey, menuOpen, onMenu, onBack, onAdd, unseen }) {
+  const past = useTitlePast(watchKey);
+  const showTitle = detailOpen ? past || !!title : past;
+  return (
+    <header className="sticky top-0 z-[200] grid h-14 grid-cols-[48px_minmax(0,1fr)_48px] items-center border-b border-line/80 bg-paper/80 px-1.5 backdrop-blur-xl backdrop-saturate-150 lg:hidden">
+      {detailOpen ? (
+        <button type="button" onClick={onBack} aria-label="Back" className="press flex h-11 w-11 items-center justify-center text-ink">
+          <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onMenu}
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+          className="press relative flex h-11 w-11 items-center justify-center text-ink"
+        >
+          <span className="burger" data-x="false"><i /><i /><i /></span>
+          {unseen ? <span aria-hidden className="absolute right-2 top-2.5 h-2 w-2 rounded-full bg-ink ring-2 ring-paper" /> : null}
+        </button>
+      )}
+
+      <div className="relative h-full min-w-0 overflow-hidden">
+        <p
+          aria-hidden={showTitle}
+          className={cx(
+            'absolute inset-0 flex items-center justify-center gap-2 transition-[opacity,transform] duration-300 ease-quint',
+            showTitle && 'pointer-events-none -translate-y-3 opacity-0',
+          )}
+        >
+          <span className="truncate text-[1rem] font-semibold tracking-[-0.02em] text-ink">Roqia Moshref</span>
+        </p>
+        <p
+          aria-hidden={!showTitle}
+          className={cx(
+            'absolute inset-0 flex items-center justify-center px-1 transition-[opacity,transform] duration-300 ease-quint',
+            showTitle ? 'opacity-100' : 'translate-y-3 opacity-0',
+          )}
+        >
+          <span className="truncate text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">{title}</span>
+        </p>
+      </div>
+
+      <button type="button" onClick={onAdd} aria-label="Add client" className="press flex h-11 w-11 items-center justify-center text-ink">
+        <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-[22px] w-[22px]">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+    </header>
+  );
+}
+
+// Whether the page's large title (the h1, or whatever carries data-bar-title)
+// has gone up under the phone bar. Screens can render their title late, so it
+// keeps looking for as long as the screen is up.
+function useTitlePast(watchKey) {
+  const [past, setPast] = useState(false);
+  useEffect(() => {
+    setPast(false);
+    const main = document.getElementById('admin-main');
+    if (!main) return undefined;
+    let io;
+    let node = null;
+    const attach = () => {
+      const h = main.querySelector('[data-bar-title]') || main.querySelector('h1');
+      if (!h || h === node) return;
+      io?.disconnect();
+      node = h;
+      io = new IntersectionObserver(
+        ([e]) => setPast(!e.isIntersecting && e.boundingClientRect.top < 80),
+        { rootMargin: '-56px 0px 0px 0px' },
+      );
+      io.observe(h);
+    };
+    attach();
+    const mo = new MutationObserver(attach);
+    mo.observe(main, { childList: true, subtree: true });
+    return () => {
+      io?.disconnect();
+      mo.disconnect();
+    };
+  }, [watchKey]);
+  return past;
+}
+
+// The top of every section: a large title and one line under it.
+function PageHeader({ title, sub, children }) {
+  return (
+    <div className="mb-6 sm:mb-8">
+      <h1 className="text-[clamp(1.85rem,4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.025em] text-ink">{title}</h1>
+      {sub ? <p className="mt-1.5 text-[0.86rem] text-ink-muted sm:mt-2">{sub}</p> : null}
+      {children}
     </div>
   );
 }

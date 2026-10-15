@@ -3,11 +3,12 @@ import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DateBlockPopup from './DateBlockPopup';
 import ScheduleView from './ScheduleView';
-import MonthCalendar, { CLASS_PINK, OFF_RED } from './MonthCalendar';
+import MonthCalendar, { CLASS_PINK } from './MonthCalendar';
 import CalendarHeader from './CalendarHeader';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { useTimeBlocks } from './useTimeBlocks';
 import { STATUS_COLORS, STATUS_COLORS_DM, EVENT_COLORS, CONSULT_INK, BLOCK_INK } from './statusColors';
+import { Segmented, cx } from './ui';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -18,12 +19,11 @@ function getWeekStart(date) {
   return d;
 }
 
-// A day in the Week strip. This used to be a stack of tiny 10px labels on a
-// block of flat colour (indigo today, amber filling up, red full) with a "0/4"
-// jammed in beside three dots, which at 50px wide read as noise rather than as
-// a week. Now it's a card like every other surface in the admin: one number you
-// can read at a glance, the day's kinds as dots under it, and the capacity as
-// plain small text that only takes on colour when the day is actually tight.
+// A day in the Week strip: one number you can read at a glance, the day's
+// kinds as dots under it, and the capacity as plain small text that only takes
+// on colour when the day is actually tight. Square, like every card. The
+// selected day is the filled one; today says so with its label, not a ring, so
+// "which day am I looking at" always has one answer.
 function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}, consultationDateMap = {}, classRegDateMap = {}, blockedSet, blockedMap, onSingleClick, onDoubleClick, onUnblock, maxPerDay, dayCapacityMap = {}, dm }) {
   const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const effectiveCap = dayCapacityMap[key] ?? maxPerDay;
@@ -38,26 +38,6 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
   const isFull = count >= effectiveCap;
   const isFillingUp = count > 0 && !isFull;
 
-  const ink = dm ? '#ECEDF1' : '#1a1a1f';
-  const muted = dm ? '#8b8b95' : '#9c9ca6';
-  const accent = '#C4849A';
-  const line = dm ? '#2e2e38' : '#EDE7EA';
-  const selBg = dm ? '#ECEDF1' : '#1a1a1f';
-
-  const bg = isSel ? selBg
-    : isBlocked ? (dm ? 'rgba(239,68,68,0.10)' : '#FEF3F3')
-    : isFull ? (dm ? 'rgba(239,68,68,0.07)' : '#FFF8F8')
-    : (dm ? '#1e1e24' : '#fff');
-  const border = isSel ? 'transparent'
-    : isBlocked || isFull ? (dm ? 'rgba(239,68,68,0.34)' : '#F6DCDC')
-    : isToday ? accent
-    : line;
-  const dayColor = isSel ? (dm ? '#6b6b75' : 'rgba(255,255,255,0.62)')
-    : isBlocked ? OFF_RED : isToday ? accent : muted;
-  const numColor = isSel ? (dm ? '#111' : '#fff') : isBlocked ? OFF_RED : ink;
-  const countColor = isSel ? (dm ? '#6b6b75' : 'rgba(255,255,255,0.62)')
-    : isFull ? OFF_RED : isFillingUp ? '#B8862F' : muted;
-
   const dots = [
     ...[...new Set(activeStatuses)].slice(0, 3).map(st => (dm ? STATUS_COLORS_DM : STATUS_COLORS)[st] || '#999'),
     ...(hasConsultation ? [CONSULT_INK[dm ? 'dark' : 'light']] : []),
@@ -66,45 +46,50 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
 
   return (
     <button
+      type="button"
       onClick={() => { if (!isBlocked) onSingleClick(key); }}
       onDoubleClick={(e) => { e.preventDefault(); if (isBlocked) onUnblock(blockedMap[key]?.id); else onDoubleClick(key); }}
       title={isBlocked ? 'Day off · double-click to reopen' : isFull ? `Fully booked (${count})` : isFillingUp ? `${effectiveCap - count} spot(s) left` : 'Click to select · double-click to close the day'}
-      className="relative rounded-xl sm:rounded-2xl py-2.5 sm:py-4 px-0.5 sm:px-1 flex flex-col items-center gap-1 sm:gap-1.5 w-full select-none transition-all active:scale-[0.97]"
-      style={{ background: bg, border: `1px solid ${border}`, boxShadow: isToday && !isSel ? `0 0 0 1px ${accent}` : 'none' }}
-      onMouseEnter={e => { if (!isSel) e.currentTarget.style.borderColor = accent; }}
-      onMouseLeave={e => { if (!isSel) e.currentTarget.style.borderColor = border; }}
+      className={cx(
+        'press relative flex w-full select-none flex-col items-center gap-1 border px-0.5 py-2.5 sm:gap-1.5 sm:px-1 sm:py-4',
+        isSel ? 'border-ink bg-ink text-paper'
+          : isBlocked ? 'border-tone-alert/25 bg-tone-alert/[0.05]'
+          : isFull ? 'border-tone-alert/20 bg-tone-alert/[0.03] hover:border-tone-alert/40'
+          : 'border-line bg-paper hover:border-ink/30',
+      )}
     >
-      {/* Custom-limit marker — this day has its own cap, not the default */}
+      {/* Custom-limit marker: this day has its own cap, not the default. */}
       {isCustom && !isBlocked && (
-        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-          style={{ background: isSel ? (dm ? '#8a8a94' : 'rgba(255,255,255,0.85)') : '#A0607A' }} title="Custom limit" />
+        <span className={cx('absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full', isSel ? 'bg-paper/80' : 'bg-rose')} title="Custom limit" />
       )}
 
-      <span className="text-[0.55rem] sm:text-[0.58rem] font-semibold tracking-[0.1em] sm:tracking-[0.12em] uppercase" style={{ color: dayColor }}>
+      <span className={cx('text-[0.55rem] font-semibold uppercase tracking-[0.12em] sm:text-[0.58rem]',
+        isSel ? 'text-paper/60' : isBlocked ? 'text-tone-alert' : isToday ? 'text-rose' : 'text-ink-muted')}>
         {DAYS[d.getDay()]}
       </span>
-      <span className="text-[1.15rem] sm:text-[1.45rem] leading-none tabular-nums" style={{ color: numColor, fontWeight: isToday || isSel ? 600 : 400 }}>
+      <span className={cx('text-[1.15rem] leading-none tabular-nums sm:text-[1.45rem]',
+        isSel ? 'font-semibold text-paper' : isBlocked ? 'text-tone-alert' : isToday ? 'font-semibold text-rose' : 'text-ink')}>
         {d.getDate()}
       </span>
 
       {/* What's on the day, one dot per kind. Height is reserved either way so
           empty days don't sit a few pixels shorter than busy ones. */}
-      <span className="flex items-center gap-[3px] h-[5px]">
+      <span className="flex h-[5px] items-center gap-[3px]">
         {dots.map((c, i) => (
-          <span key={i} className="w-[5px] h-[5px] rounded-full"
-            style={{ background: isSel ? (dm ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.85)') : c }} />
+          <span key={i} className="h-[5px] w-[5px] rounded-full" style={{ background: isSel ? 'rgb(var(--c-paper) / 0.85)' : c }} />
         ))}
       </span>
 
       {isBlocked ? (
-        <span className="inline-flex items-center gap-1 text-[0.6rem] font-semibold tracking-[0.08em] uppercase" style={{ color: OFF_RED }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="w-2 h-2">
-            <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
+        <span className="inline-flex items-center gap-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-tone-alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-2 w-2" aria-hidden>
+            <path d="M5 5l14 14M19 5 5 19" />
           </svg>
           Off
         </span>
       ) : (
-        <span className="text-[0.62rem] tabular-nums" style={{ color: countColor, fontWeight: isFull || isFillingUp ? 600 : 400 }}>
+        <span className={cx('text-[0.62rem] tabular-nums',
+          isSel ? 'text-paper/60' : isFull ? 'font-semibold text-tone-alert' : isFillingUp ? 'font-semibold text-tone-pending' : 'text-ink-muted')}>
           {count}/{effectiveCap}
         </span>
       )}
@@ -147,7 +132,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['blocked-dates'] }); setBlockPopup(null); },
   });
 
-  // Only confirmed/completed bookings count toward capacity
+  // Every status on a day, for its dots.
   const dateMap = {};
   bookings.forEach(b => {
     if (!b.date) return;
@@ -155,7 +140,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     dateMap[b.date].push(b.status || 'pending');
   });
 
-  // Only pending/confirmed count toward capacity — completed appointments free up the slot
+  // Only pending/confirmed count toward capacity: completed appointments free up the slot.
   const confirmedDateMap = {};
   bookings.forEach(b => {
     if (!b.date || !['confirmed', 'pending'].includes(b.status)) return;
@@ -163,7 +148,6 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     confirmedDateMap[b.date].push(b.status);
   });
 
-  // Consultation dates — purple dots
   const consultationDateMap = {};
   bookings.forEach(b => {
     if (!b.consultation_date) return;
@@ -171,7 +155,6 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     consultationDateMap[b.consultation_date].push(b.name || 'Client');
   });
 
-  // Class registration dates — pink dots
   const classRegDateMap = {};
   classRegs.forEach(r => {
     if (!r.appointment_date) return;
@@ -234,9 +217,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
           className="mb-4"
         />
 
-        {/* Same grid as the Calendar tab, just denser. One calendar look
-            everywhere, and each day names what's on it instead of leaving
-            unexplained dots next to a booking count. */}
+        {/* Same grid as the Calendar tab, just denser. */}
         <MonthCalendar
           cur={currentMonth}
           evMap={evMap}
@@ -282,7 +263,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
         {/* minmax(0,1fr) so seven cells always fit the card: with the default
             auto minimum, "SUN" plus its tracking sets a floor and the last day
             hangs off the right edge on a phone. */}
-        <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+        <div className="grid gap-1 sm:gap-1.5" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
           {days.map(d => (
             <WeekDayCell key={`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`} d={d} {...sharedCellProps} />
           ))}
@@ -298,37 +279,34 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     const isBlocked = blockedSet.has(key);
     const goKey = (k) => { setCurrentMonth(new Date(k + 'T00:00:00')); setSelectedDate(k); setStatusFilter?.('all'); };
 
-    // The date, the arrows and Today all live in ScheduleView's own header now.
-    // This used to print its own date line and its own Today button right above
-    // that one, so the day view carried two of each. Block day rides along in
-    // the same row instead.
+    // The date, the arrows and Today all live in ScheduleView's own header;
+    // Block day rides along in the same row.
     const blockBtn = (
-      <button onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
-        className={`h-7 px-2.5 rounded-md text-[0.68rem] font-semibold tracking-[0.08em] uppercase border transition-all flex-shrink-0 ${
-          isBlocked
-            ? 'text-red-500 border-red-200 hover:bg-red-50'
-            : dm ? 'text-[#8e8e99] border-[#3a3a48] hover:text-red-400 hover:border-red-400' : 'text-[#a3a3ad] border-[#E5E7EB] hover:text-red-500 hover:border-red-200'
-        }`}>
-        <span className="inline-flex items-center gap-1.5">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5">
-            {isBlocked ? <><line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" /></>
-                       : <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>}
-          </svg>
-          {isBlocked ? 'Unblock' : 'Block day'}
-        </span>
+      <button
+        type="button"
+        onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
+        className={cx(
+          'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded border px-2.5 text-[0.72rem] font-medium transition-colors',
+          isBlocked ? 'border-tone-alert/30 text-tone-alert hover:border-tone-alert/60' : 'border-line-strong text-ink-muted hover:border-tone-alert/40 hover:text-tone-alert',
+        )}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="h-2.5 w-2.5" aria-hidden>
+          {isBlocked ? <path d="M5 5l14 14M19 5 5 19" /> : <path d="M12 5v14M5 12h14" />}
+        </svg>
+        {isBlocked ? 'Unblock' : 'Block day'}
       </button>
     );
 
     return (
       <>
         {isBlocked && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4 flex-shrink-0">
-              <circle cx="12" cy="12" r="9" /><line x1="6" y1="18" x2="18" y2="6" />
+          <div className="mb-4 flex items-center gap-3 border border-tone-alert/25 bg-tone-alert/[0.05] px-4 py-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-4 w-4 shrink-0 text-tone-alert" aria-hidden>
+              <circle cx="12" cy="12" r="9" /><path d="M6 18 18 6" />
             </svg>
             <div>
-              <p className="text-[0.75rem] font-semibold text-red-500">This day is blocked · clients can't book</p>
-              {blockedMap[key]?.reason && <p className="text-[0.7rem] text-[#999] mt-0.5">{blockedMap[key].reason}</p>}
+              <p className="text-[0.78rem] font-semibold text-tone-alert">This day is blocked · clients can't book</p>
+              {blockedMap[key]?.reason && <p className="mt-0.5 text-[0.74rem] text-ink-muted">{blockedMap[key].reason}</p>}
             </div>
           </div>
         )}
@@ -348,28 +326,19 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
     );
   };
 
+  const swatch = 'flex items-center gap-1.5 text-[0.66rem] font-medium text-ink-muted';
+
   return (
     <>
-      <div className="rounded-xl p-4 sm:p-6" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
-        {/* View switcher + hint — minimal text tabs, soft tint when active */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1">
-            {['Day', 'Week', 'Month'].map(v => {
-              const active = view === v.toLowerCase();
-              return (
-                <button key={v} onClick={() => changeView(v.toLowerCase())}
-                  className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
-                  style={active
-                    ? { background: dm ? '#34343d' : '#EBEBF1', color: dm ? '#ECEDF1' : '#1a1a1a' }
-                    : { background: 'transparent', color: dm ? '#6f6f78' : '#a8a8b1' }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#83838d'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#a8a8b1'; }}>
-                  {v}
-                </button>
-              );
-            })}
-          </div>
-          <span className="text-[0.62rem] tracking-wide hidden sm:block" style={{ color: dm ? '#5f5f69' : '#a8a8b2' }}>
+      <section className="border border-line bg-paper p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Segmented
+            size="sm"
+            value={view}
+            onChange={changeView}
+            options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]}
+          />
+          <span className="hidden text-[0.68rem] text-ink-muted sm:block">
             {view === 'month' ? 'Tap a day to filter · double-tap to close it off' : 'Double-click to block a date'}
           </span>
         </div>
@@ -378,53 +347,44 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
         {view === 'week' && renderWeek()}
         {view === 'day' && renderDay()}
 
-        {/* Legend (month/week only — the day schedule carries its own) */}
+        {/* Legend (month and week only; the day schedule carries its own).
+            Every swatch is the real thing, shrunk. */}
         {view !== 'day' && (
-        <div className="flex items-center gap-x-4 gap-y-2 mt-6 pt-4 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-          {/* Every swatch here is the real thing, shrunk: today is the rose
-              ring both grids draw, a full day is the soft red card. The old keys
-              still described the indigo/amber blocks the week view used to
-              paint, which stopped being true when those cells were redrawn. */}
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-            <span className="w-3 h-3 rounded-md inline-block" style={{ border: '1px solid #C4849A', boxShadow: '0 0 0 1px #C4849A' }} /> Today
-          </span>
-          {view === 'week' && (
-            <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
-              <span className="w-3 h-3 rounded-md inline-block" style={{ background: dm ? 'rgba(239,68,68,0.07)' : '#FFF8F8', border: `1px solid ${dm ? 'rgba(239,68,68,0.34)' : '#F6DCDC'}` }} /> Fully booked
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+            {view === 'week' && (
+              <span className={cx(swatch, 'text-tone-alert')}>
+                <span className="inline-block h-3 w-3 border border-tone-alert/30 bg-tone-alert/[0.04]" /> Fully booked
+              </span>
+            )}
+            <span className={cx(swatch, 'text-tone-alert')}>
+              <span className="inline-flex h-3 w-3 items-center justify-center border border-tone-alert/30 bg-tone-alert/[0.06]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" className="h-1.5 w-1.5" aria-hidden>
+                  <path d="M5 5l14 14M19 5 5 19" />
+                </svg>
+              </span> Day off
             </span>
-          )}
-          {/* Days off share the red cell but carry an ✕, so they get their own
-              key rather than being lumped in with "fully booked". */}
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium text-red-400">
-            <span className="w-3 h-3 rounded-md inline-flex items-center justify-center"
-              style={{ background: dm ? 'rgba(239,68,68,0.10)' : '#FEF3F3', border: `1px solid ${dm ? 'rgba(239,68,68,0.34)' : '#F6DCDC'}` }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={OFF_RED} strokeWidth="3.5" strokeLinecap="round" className="w-1.5 h-1.5">
-                <line x1="5" y1="5" x2="19" y2="19" /><line x1="19" y1="5" x2="5" y2="19" />
-              </svg>
-            </span> Day off
-          </span>
-          {Object.entries(STATUS_COLORS).filter(([s]) => s !== 'cancelled').map(([s, color]) => (
-            <span key={s} className="flex items-center gap-1.5 text-[0.6rem] font-medium capitalize" style={{ color: dm ? '#8e8e99' : '#999' }}>
-              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: color }} /> {s}
+            {Object.entries(STATUS_COLORS).filter(([s]) => s !== 'cancelled').map(([s, color]) => (
+              <span key={s} className={cx(swatch, 'capitalize')}>
+                <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} /> {s}
+              </span>
+            ))}
+            <span className={swatch}>
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: view === 'month' ? CONSULT_INK[dm ? 'dark' : 'light'] : EVENT_COLORS.consult }} /> Consultation
             </span>
-          ))}
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: view === 'month' ? CONSULT_INK[dm ? 'dark' : 'light'] : EVENT_COLORS.consult }} /> Consultation
-          </span>
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: view === 'month' ? CLASS_PINK : '#D4A0B0' }} /> Makeup Class
-          </span>
-          <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-            <span className="w-2.5 h-2.5 rounded-[2px] inline-block" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} /> Blocked time
-          </span>
-          {view === 'week' && (
-            <span className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-              <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#A0607A' }} /> Custom limit
+            <span className={swatch}>
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: CLASS_PINK }} /> Makeup class
             </span>
-          )}
-        </div>
+            <span className={swatch}>
+              <span className="inline-block h-2 w-2" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} /> Blocked time
+            </span>
+            {view === 'week' && (
+              <span className={swatch}>
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose" /> Custom limit
+              </span>
+            )}
+          </div>
         )}
-      </div>
+      </section>
 
       {blockPopup && (
         <DateBlockPopup

@@ -35,10 +35,6 @@
     --nav-h: 52px;
   }
 
-  * {
-    @apply border-border;
-  }
-
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -54,7 +50,6 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
     font-family: var(--font-sans);
     background: var(--bg);
     color: var(--text);
@@ -84,27 +79,7 @@
   }
 }
 
-/* ── Admin dashboard: unified ChatGPT-style typography ─────────────────
-   Everything under .admin-app renders in one clean sans (Inter, our Söhne
-   stand-in), overriding the marketing site's serif headings so the whole
-   dashboard reads like ChatGPT. Scoped + !important so component-level
-   font-serif classes and the base h1–h4 rules are all pulled into line. */
-.admin-app,
-.admin-app * {
-  font-family: var(--font-admin) !important;
-}
-.admin-app {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.006em;
-}
-.admin-app h1,
-.admin-app h2,
-.admin-app h3,
-.admin-app h4 {
-  font-weight: 600;
-  letter-spacing: -0.014em;
-}
+/* The admin's own type lives in src/components/admin/admin.css. */
 
 /* Layout & Typography */
 .container {

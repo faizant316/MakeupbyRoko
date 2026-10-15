@@ -1,101 +1,66 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    darkMode: ["class"],
-    content: [
-      "./app/**/*.{ts,tsx,js,jsx}",
-      "./src/**/*.{ts,tsx,js,jsx}",
-    ],
-  theme: {
-  	extend: {
-  		// Site-wide type: everything now renders in the admin dashboard's clean
-  		// sans (Söhne → Inter fallback stack). Both `font-sans` and `font-serif`
-  		// utilities resolve here, so legacy `font-serif` headings across the site
-  		// pick up the new font without touching 60+ component files. Cormorant
-  		// Garamond is retired brand-wide.
-  		fontFamily: {
-  			sans: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-  			serif: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		},
-  		colors: {
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			},
-  			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
-  				primary: 'hsl(var(--sidebar-primary))',
-  				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-  				accent: 'hsl(var(--sidebar-accent))',
-  				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-  				border: 'hsl(var(--sidebar-border))',
-  				ring: 'hsl(var(--sidebar-ring))'
-  			}
-  		},
-  		keyframes: {
-  			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
-  			},
-  			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
-  			}
-  		},
-  		animation: {
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
-  	}
+  content: [
+    "./app/**/*.{ts,tsx,js,jsx}",
+    "./src/**/*.{ts,tsx,js,jsx}",
+  ],
+  // Hover styles only where there is a real pointer. On a phone a tapped
+  // button kept its hover colour until the next tap somewhere else.
+  future: {
+    hoverOnlyWhenSupported: true,
   },
-  plugins: [require("tailwindcss-animate")],
+  theme: {
+    extend: {
+      // Site-wide type: everything renders in the admin dashboard's clean sans
+      // stack. Both `font-sans` and `font-serif` resolve here, so legacy
+      // `font-serif` headings pick it up without touching 60+ files. Cormorant
+      // Garamond is retired brand-wide.
+      fontFamily: {
+        sans: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        serif: ['Söhne', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+      },
+      // What these three have always rendered as. They used to be read from a
+      // --radius variable left over from the Base44 scaffold (2px), which made
+      // `rounded-md` and `rounded-sm` silently square.
+      borderRadius: {
+        lg: '2px',
+        md: '0px',
+        sm: '0px',
+      },
+      // The admin's palette. Each colour is a CSS variable (see
+      // src/components/admin/admin.css), so dark mode swaps the variables and
+      // no component has to carry a second colour for it.
+      colors: {
+        paper: 'rgb(var(--c-paper) / <alpha-value>)',
+        canvas: 'rgb(var(--c-canvas) / <alpha-value>)',
+        ink: {
+          DEFAULT: 'rgb(var(--c-ink) / <alpha-value>)',
+          soft: 'rgb(var(--c-ink-soft) / <alpha-value>)',
+          muted: 'rgb(var(--c-ink-muted) / <alpha-value>)',
+        },
+        line: {
+          DEFAULT: 'rgb(var(--c-line) / <alpha-value>)',
+          strong: 'rgb(var(--c-line-strong) / <alpha-value>)',
+        },
+        rose: {
+          DEFAULT: 'rgb(var(--c-rose) / <alpha-value>)',
+          soft: 'rgb(var(--c-rose-soft) / <alpha-value>)',
+          wash: 'rgb(var(--c-rose-wash) / <alpha-value>)',
+        },
+        tone: {
+          pending: 'rgb(var(--c-pending) / <alpha-value>)',
+          confirmed: 'rgb(var(--c-confirmed) / <alpha-value>)',
+          alert: 'rgb(var(--c-alert) / <alpha-value>)',
+          done: 'rgb(var(--c-done) / <alpha-value>)',
+          consult: 'rgb(var(--c-consult) / <alpha-value>)',
+        },
+      },
+      // The admin's one curve (easeOutQuint): quick to answer, long to settle.
+      transitionTimingFunction: {
+        quint: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        sheet: 'cubic-bezier(0.32, 0.72, 0, 1)',
+      },
+    },
+  },
+  plugins: [],
 }
