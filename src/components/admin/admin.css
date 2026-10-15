@@ -9,18 +9,19 @@
    than a second colour carried by every component. Channels, not hex, so
    Tailwind's opacity modifiers work on them (bg-ink/35, border-rose/30).
 
-   Warm neutrals because the brand is: the greys lean a touch toward the rose
-   instead of the blue-grey of a stock dashboard. One rose family: the deep one
-   for text and anything chosen, the soft one for dots and rings, the wash for
-   bridal rows. */
+   A makeup studio, not a car dashboard: the "black" is a deep plum, the page
+   under the cards is a blush cream, and the hairlines carry a little pink.
+   Every greyed text colour still clears 4.5:1 on both white and the canvas.
+   One rose family: the deep one for text and anything chosen, the soft one
+   for dots and rings, the wash for bridal rows. */
 :root {
   --c-paper: 255 255 255;
-  --c-canvas: 246 245 243;
-  --c-ink: 18 17 19;
-  --c-ink-soft: 74 70 76;
-  --c-ink-muted: 117 112 122;
-  --c-line: 232 229 227;
-  --c-line-strong: 211 207 204;
+  --c-canvas: 249 243 244;
+  --c-ink: 43 24 35;
+  --c-ink-soft: 92 70 82;
+  --c-ink-muted: 128 104 116;
+  --c-line: 240 228 232;
+  --c-line-strong: 226 207 214;
   --c-rose: 160 96 122;
   --c-rose-soft: 212 160 176;
   --c-rose-wash: 252 244 248;
@@ -29,17 +30,30 @@
   --c-alert: 192 54 44;
   --c-done: 100 116 139;
   --c-consult: 107 90 147;
+  /* The lipstick sheen that moves through Roqia's name: the brand rose, a
+     brighter pink and a deep berry. The brightest still reads at 3:1 on the
+     canvas, which is the bar for text this large. */
+  --sheen-a: #a0607a;
+  --sheen-b: #c9628a;
+  --sheen-c: #7e3558;
+  /* Corners. Soft, not round: cards and the things you press. */
+  --r-card: 12px;
+  --r-ctl: 8px;
   --font-ui: var(--font-inter, Inter), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif-display: var(--font-display, 'Instrument Serif'), 'Instrument Serif', Georgia, 'Times New Roman', serif;
 }
 
 html.admin-dark {
-  --c-paper: 31 30 34;
-  --c-canvas: 22 21 24;
-  --c-ink: 237 235 239;
-  --c-ink-soft: 200 196 204;
-  --c-ink-muted: 150 144 155;
-  --c-line: 48 46 52;
-  --c-line-strong: 72 69 77;
+  --c-paper: 34 27 32;
+  --c-canvas: 24 19 23;
+  --c-ink: 242 234 238;
+  --c-ink-soft: 208 194 202;
+  --c-ink-muted: 160 142 152;
+  --c-line: 54 44 51;
+  --c-line-strong: 80 66 75;
+  --sheen-a: #e2afc2;
+  --sheen-b: #f8d0de;
+  --sheen-c: #e98bb0;
   --c-rose: 226 175 194;
   --c-rose-soft: 185 132 151;
   --c-rose-wash: 43 34 41;
@@ -133,6 +147,41 @@ body.admin-ui {
 @keyframes kin-rise {
   from { transform: translate3d(0, 115%, 0); }
   to { transform: none; }
+}
+/* The name's mask needs more room than a word's: the italic leans past its
+   box on the right and the q drops below the line. */
+.kin.kin-loose {
+  padding: 0 0.14em 0.3em 0;
+  margin: 0 -0.14em -0.3em 0;
+}
+
+/* Roqia's name in the greeting: a serif italic with a slow pink sheen moving
+   through it, back and forth. Only the name's own few pixels repaint, and it
+   stops while the greeting is scrolled away or the tab is hidden (data-still,
+   set by HomeTop). !important and the extra class to beat the admin's
+   all-Inter rule above. */
+.admin-app .greet-name {
+  font-family: var(--font-serif-display) !important;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.2em;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  padding-right: 0.06em;
+  background-image: linear-gradient(100deg, var(--sheen-a) 0%, var(--sheen-b) 22%, var(--sheen-c) 44%, var(--sheen-b) 66%, var(--sheen-a) 88%);
+  background-size: 260% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: name-sheen 7s ease-in-out infinite alternate;
+}
+@keyframes name-sheen {
+  to { background-position: 100% 50%; }
+}
+[data-still='true'] .greet-name {
+  animation-play-state: paused;
 }
 
 /* Anything that should arrive a beat after the greeting. --i staggers it. */
@@ -255,9 +304,15 @@ body.admin-ui {
 
 /* ---- the next-up card ----------------------------------------------------------
 
-   Three soft pools of light drifting under the dark card: rose, plum and a warm
+   A deep berry, like a dark lipstick, instead of black. Stays this colour in
+   dark mode too: it is the one rich moment on the page.
+
+   Three soft pools of light drifting under it: rose, magenta and a warm
    nude, the colours of the work itself. Each is its own composited layer moving
    by transform only, so the page never repaints for them. */
+.berry {
+  background: linear-gradient(135deg, #3a1528 0%, #4c1c36 52%, #5f2745 100%);
+}
 .mesh {
   position: absolute;
   inset: 0;
@@ -274,19 +329,19 @@ body.admin-ui {
 .mesh > i:nth-child(1) {
   left: -25%;
   top: -55%;
-  background: radial-gradient(closest-side, rgba(212, 160, 176, 0.42), rgba(212, 160, 176, 0));
+  background: radial-gradient(closest-side, rgba(236, 160, 190, 0.38), rgba(236, 160, 190, 0));
   animation: mesh-a 19s ease-in-out infinite alternate;
 }
 .mesh > i:nth-child(2) {
   right: -35%;
   top: -10%;
-  background: radial-gradient(closest-side, rgba(154, 84, 116, 0.42), rgba(154, 84, 116, 0));
+  background: radial-gradient(closest-side, rgba(196, 72, 126, 0.4), rgba(196, 72, 126, 0));
   animation: mesh-b 23s ease-in-out infinite alternate;
 }
 .mesh > i:nth-child(3) {
   left: 10%;
   bottom: -70%;
-  background: radial-gradient(closest-side, rgba(201, 164, 140, 0.3), rgba(201, 164, 140, 0));
+  background: radial-gradient(closest-side, rgba(240, 190, 170, 0.24), rgba(240, 190, 170, 0));
   animation: mesh-c 27s ease-in-out infinite alternate;
 }
 @keyframes mesh-a { to { transform: translate3d(22%, 18%, 0) scale(1.15); } }
@@ -364,6 +419,7 @@ body.admin-ui {
 
 @media (prefers-reduced-motion: reduce) {
   .kin > span,
+  .admin-app .greet-name,
   .rise-in,
   .mesh > i,
   .live-dot::after,

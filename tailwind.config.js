@@ -26,6 +26,10 @@ module.exports = {
         lg: '2px',
         md: '0px',
         sm: '0px',
+        // The admin's two corners (admin.css): cards, and the things you press
+        // or type into.
+        card: 'var(--r-card)',
+        ctl: 'var(--r-ctl)',
       },
       // The admin's palette. Each colour is a CSS variable (see
       // src/components/admin/admin.css), so dark mode swaps the variables and

@@ -1,5 +1,5 @@
 import Script from 'next/script';
-import { Inter } from 'next/font/google';
+import { Inter, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 import Providers from './providers';
 import SmoothScroll from '@/components/SmoothScroll';
@@ -11,6 +11,9 @@ const GA_ID = 'G-HE25CGQHH4';
 // actually uses, so the public site never fetches it. preload stays off for
 // the same reason: a preload would be paid on every public page too.
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap', preload: false });
+// The admin's one serif, for Roqia's name in the Home greeting. Same terms as
+// Inter above: only the admin names it, so the public site never downloads it.
+const display = Instrument_Serif({ weight: '400', style: 'italic', subsets: ['latin'], variable: '--font-display', display: 'swap', preload: false });
 
 // The one public domain we want Google to rank. Everything SEO-facing (canonical
 // URL, Open Graph, sitemap, structured data) points here so Google consolidates
@@ -91,7 +94,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${display.variable}`}>
       <head>
         {/* Reloads always start at the top of the page. Must run before the
             body is parsed: the browser restores the old scroll position as soon

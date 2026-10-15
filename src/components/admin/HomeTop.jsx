@@ -22,16 +22,40 @@ import { cx } from './ui';
 // Plays the first time the dashboard opens, not every time she comes back to Home.
 let greeted = false;
 
-function Kinetic({ text }) {
+// "Good morning, Roqia", a word at a time. Her name is set apart: a pink serif
+// italic with a sheen moving through it (.greet-name in admin.css), the same
+// whether or not the words have just risen in.
+function Kinetic({ text, name }) {
   const [play] = useState(() => !greeted);
   useEffect(() => { greeted = true; }, []);
-  if (!play) return text;
-  return text.split(' ').map((w, i, all) => (
+  const words = [...text.split(' ').map(w => ({ w })), { w: name, name: true }];
+  const word = ({ w, name: isName }) => (isName ? <span className="greet-name">{w}</span> : w);
+  return words.map((x, i) => (
     <span key={i}>
-      <span className="kin"><span style={{ '--i': i }}>{w}</span></span>
-      {i < all.length - 1 ? ' ' : null}
+      {play
+        ? <span className={cx('kin', x.name && 'kin-loose')}><span style={{ '--i': i }}>{word(x)}</span></span>
+        : word(x)}
+      {i < words.length - 1 ? ' ' : null}
     </span>
   ));
+}
+
+// Marks the greeting still while it is scrolled away or the tab is hidden, so
+// the sheen in her name only moves while someone can see it.
+function useStillWhenHidden(ref) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    let seen = true;
+    const set = () => el.setAttribute('data-still', seen && !document.hidden ? 'false' : 'true');
+    const io = new IntersectionObserver(([e]) => { seen = e.isIntersecting; set(); });
+    io.observe(el);
+    document.addEventListener('visibilitychange', set);
+    return () => {
+      io.disconnect();
+      document.removeEventListener('visibilitychange', set);
+    };
+  }, [ref]);
 }
 
 const partOfDay = (h) => (h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening');
@@ -138,12 +162,14 @@ function RollNumber({ value, pad = 2, className }) {
 
 // ---- the chips ----------------------------------------------------------------------------
 
+// Soft pills, never warning colours: this is the first thing she sees, and
+// it should read as a note, not an alarm. A new booking is the one filled
+// pill, because it's good news.
 const CHIP_TONE = {
-  ink: 'border-line-strong text-ink',
-  confirmed: 'border-tone-confirmed/30 text-tone-confirmed',
-  pending: 'border-tone-pending/30 text-tone-pending',
+  new: 'bg-ink text-paper hover:bg-ink/85',
+  soft: 'bg-rose-wash text-rose ring-1 ring-inset ring-rose-soft/45 hover:bg-rose-soft/20',
 };
-const DOT_TONE = { ink: 'bg-ink', confirmed: 'bg-tone-confirmed', pending: 'bg-tone-pending' };
+const DOT_TONE = { new: 'bg-rose-soft', soft: 'bg-rose' };
 
 // Scroll to whichever copy of a section is showing (the rail renders in one
 // place on a phone and another on a laptop).
@@ -155,7 +181,7 @@ function goTo(selector) {
 function Pulse({ chips }) {
   if (!chips.length) {
     return (
-      <p className="rise-in inline-flex h-9 items-center gap-2 border border-line-strong bg-paper px-3 text-[0.8rem] font-medium text-ink-soft" style={{ '--i': 3 }}>
+      <p className={cx('rise-in inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[0.8rem] font-medium', CHIP_TONE.soft)} style={{ '--i': 3 }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>
         All caught up
       </p>
@@ -170,7 +196,7 @@ function Pulse({ chips }) {
           <button
             type="button"
             onClick={c.onClick}
-            className={cx('press inline-flex h-9 shrink-0 items-center gap-2 border bg-paper px-3 text-[0.8rem] font-medium tabular-nums transition-colors hover:bg-canvas', CHIP_TONE[c.tone])}
+            className={cx('press inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-[0.8rem] font-medium tabular-nums transition-colors', CHIP_TONE[c.tone])}
           >
             <span className={cx('h-2 w-2 shrink-0 rounded-full', DOT_TONE[c.tone], c.live && 'live-dot')} />
             {c.label}
@@ -183,36 +209,38 @@ function Pulse({ chips }) {
 
 // ---- next up ------------------------------------------------------------------------------
 
-function ReadyCell({ label, ok, late }) {
+// A check when it's done, an empty ring when it isn't. Never red: she opens
+// the dashboard to see her day, not to be told off.
+function ReadyCell({ label, ok }) {
   return (
-    <li className="flex min-w-0 flex-col items-center gap-1.5 bg-[#17121a]/70 px-1 py-2.5">
+    <li className="flex min-w-0 flex-col items-center gap-1.5 bg-[#2a0f1e]/45 px-1 py-2.5">
       <span className={cx(
         'flex h-5 w-5 items-center justify-center rounded-full',
-        ok ? 'bg-[#E9C2D0] text-[#17121a]' : late ? 'bg-[#E0675C] text-white' : 'border border-white/35',
+        ok ? 'bg-[#F3C6D6] text-[#3a1528]' : 'border border-dashed border-white/40',
       )}>
         {ok ? (
           <svg viewBox="0 0 12 12" className="tick h-3 w-3" aria-hidden>
             <path d="M2.5 6.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        ) : late ? <span className="text-[0.7rem] font-bold leading-none">!</span> : null}
+        ) : null}
       </span>
-      <span className={cx('max-w-full truncate text-[0.68rem] font-medium', ok ? 'text-white' : late ? 'text-[#FFB0A8]' : 'text-white/70')}>
+      <span className={cx('max-w-full truncate text-[0.68rem] font-medium', ok ? 'text-white' : 'text-white/70')}>
         {label}
-        <span className="sr-only">{ok ? ' done' : late ? ' overdue' : ' not yet'}</span>
+        <span className="sr-only">{ok ? ' done' : ' not yet'}</span>
       </span>
     </li>
   );
 }
 
-const ghostBtn = 'press inline-flex h-10 items-center gap-1.5 rounded border border-white/25 px-3.5 text-[0.8rem] font-medium text-white transition-colors hover:border-white/60';
+const ghostBtn = 'press inline-flex h-10 items-center gap-1.5 rounded-ctl border border-white/25 px-3.5 text-[0.8rem] font-medium text-white transition-colors hover:border-white/60';
 
 function NextUp({ bookings, onOpen }) {
   const ref = useRef(null);
   const now = useNow(ref);
   const next = nextAppointment(bookings, now);
 
-  // Stays dark in both themes: it is the one dark moment on the page.
-  const shell = 'relative overflow-hidden border border-transparent bg-[#17121a] text-white [.admin-dark_&]:border-white/10';
+  // Berry in both themes: it is the one rich moment on the page.
+  const shell = 'berry relative overflow-hidden rounded-card border border-transparent text-white [.admin-dark_&]:border-white/10';
 
   if (!next) {
     return (
@@ -232,7 +260,6 @@ function NextUp({ bookings, onOpen }) {
   const left = split((live ? end : start) - now);
   const todayKey = localDateKey(new Date(now));
   const tomorrowKey = localDateKey(new Date(now + DAY));
-  const daysAway = Math.round((new Date(`${b.date}T00:00:00`) - new Date(`${todayKey}T00:00:00`)) / DAY);
   const pct = live ? Math.min(100, ((now - start) / (end - start)) * 100) : 0;
 
   const dateLabel = new Date(`${b.date}T00:00:00`).toLocaleDateString('en-US', {
@@ -244,20 +271,20 @@ function NextUp({ bookings, onOpen }) {
     : b.date === tomorrowKey ? 'Tomorrow'
     : `Next up · ${dateLabel}`;
 
-  // What a booking needs before the day. Booksy keeps its own deposit and
-  // agreement, so those two only count for bookings made here. A bride also
-  // needs her consultation. Anything still missing inside a week turns red.
+  // What a booking needs before the day. Booksy keeps its own deposit,
+  // agreement and consultation, so those only count for bookings made here
+  // (no Booksy bride has a consult on file, and every one of them would show
+  // as missing).
   const bridal = isBridalService(b.service);
   const booksy = b.source === 'booksy';
-  const soon = daysAway <= 7;
   const checks = [
     { key: 'time', label: 'Time', ok: !!b.time },
     { key: 'confirmed', label: 'Confirmed', ok: b.status === 'confirmed' },
     ...(booksy ? [] : [
       { key: 'deposit', label: 'Deposit', ok: !!b.deposit_received },
       { key: 'contract', label: 'Contract', ok: !!(b.contract_signed_at || b.contract_signed) },
+      ...(bridal ? [{ key: 'consult', label: 'Consult', ok: !!b.consultation_date }] : []),
     ]),
-    ...(bridal ? [{ key: 'consult', label: 'Consult', ok: !!b.consultation_date }] : []),
   ];
   const ready = checks.every(c => c.ok);
 
@@ -282,7 +309,7 @@ function NextUp({ bookings, onOpen }) {
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white/75">
-              {(live || b.date === todayKey) && <span className={cx('live-dot h-2 w-2 rounded-full', live ? 'bg-[#E0675C]' : 'bg-[#E9C2D0]')} />}
+              {(live || b.date === todayKey) && <span className={cx('live-dot h-2 w-2 rounded-full', live ? 'bg-[#FF8FB8]' : 'bg-[#F3C6D6]')} />}
               {eyebrow}
             </p>
             <p className="text-[0.76rem] tabular-nums text-white/70 lg:hidden">{b.time || 'No time set'}</p>
@@ -312,7 +339,7 @@ function NextUp({ bookings, onOpen }) {
             </p>
             {units.map(([v, label], i) => (
               <div key={label} className={cx(
-                'flex min-w-[3.6rem] flex-col items-center bg-white/[0.07] px-2 pb-2 pt-2.5 ring-1 ring-inset ring-white/10 sm:min-w-[4.2rem] sm:px-3',
+                'flex min-w-[3.6rem] flex-col items-center rounded-ctl bg-white/[0.08] px-2 pb-2 pt-2.5 ring-1 ring-inset ring-white/[0.12] sm:min-w-[4.2rem] sm:px-3',
                 i === units.length - 1 && units.length > 3 && 'max-[360px]:hidden',
               )}>
                 <RollNumber value={v} pad={label.startsWith('day') && v > 99 ? 3 : 2} className="text-[1.75rem] font-semibold leading-none tracking-[-0.02em] sm:text-[2.1rem]" />
@@ -326,7 +353,7 @@ function NextUp({ bookings, onOpen }) {
 
           {live && (
             <div className="mt-4 h-[3px] w-full bg-white/15">
-              <div className="h-full bg-[#E9C2D0] transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
+              <div className="h-full bg-[#F3C6D6] transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
             </div>
           )}
         </div>
@@ -337,17 +364,17 @@ function NextUp({ bookings, onOpen }) {
           </p>
           <ul
             aria-label="Ready for the day"
-            className="mt-5 grid gap-px overflow-hidden bg-white/10 lg:mt-auto"
+            className="mt-5 grid gap-px overflow-hidden rounded-ctl bg-white/10 lg:mt-auto"
             style={{ gridTemplateColumns: `repeat(${checks.length}, minmax(0, 1fr))` }}
           >
-            {checks.map(c => <ReadyCell key={c.key} label={c.label} ok={c.ok} late={!c.ok && soon} />)}
+            {checks.map(c => <ReadyCell key={c.key} label={c.label} ok={c.ok} />)}
           </ul>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => onOpen(b)}
-              className="press inline-flex h-10 items-center gap-1.5 rounded bg-white px-4 text-[0.8rem] font-semibold text-[#17121a] transition-colors hover:bg-white/90"
+              className="press inline-flex h-10 items-center gap-1.5 rounded-ctl bg-white px-4 text-[0.8rem] font-semibold text-[#3a1528] transition-colors hover:bg-white/90"
             >
               {ready ? 'Open card' : 'Get it ready'}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="m9 18 6-6-6-6" /></svg>
@@ -378,30 +405,36 @@ function NextUp({ bookings, onOpen }) {
 // ---- the whole top -----------------------------------------------------------------------
 
 export default function HomeTop({ bookings, onOpen, onAddClient, onShowPending }) {
+  const titleRef = useRef(null);
+  useStillWhenHidden(titleRef);
   const now = new Date();
-  const greeting = `Good ${partOfDay(now.getHours())}, Roqia`;
+  const greeting = `Good ${partOfDay(now.getHours())},`;
   const date = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  // What is waiting, each one a tap from the thing it counts. Only what asks
-  // something of her; a quiet day says so.
+  // What is waiting, each one a tap from the thing it counts, and each
+  // booking counted once. "To confirm" and "needs a time" used to be two
+  // chips, but a booking with no time is nearly always one still to confirm,
+  // so the same few bookings showed up twice and a quiet week looked like a
+  // pile of alerts. A new booking is counted as new, not as waiting too.
   const live = (bookings || []).filter(b => b.status !== 'cancelled' && b.status !== 'completed');
-  const unseen = live.filter(isBookingUnseen).length;
+  const unseenRows = live.filter(isBookingUnseen);
+  const unseen = unseenRows.length;
   const deposits = (bookings || []).filter(isDepositUnseen).length;
-  const toConfirm = live.filter(b => (b.status || 'pending') === 'pending' && (b.date || b.consultation_date)).length;
-  const noTime = live.filter(b => !b.time && b.date).length;
+  const waiting = live.filter(b => !unseenRows.includes(b) && (
+    ((b.status || 'pending') === 'pending' && (b.date || b.consultation_date)) || (!b.time && b.date)
+  )).length;
   const chips = [
-    unseen > 0 && { key: 'new', tone: 'ink', live: true, label: `${unseen} new ${unseen === 1 ? 'booking' : 'bookings'}`, onClick: () => goTo('[data-rail]') },
-    deposits > 0 && { key: 'deposit', tone: 'confirmed', label: `${deposits} ${deposits === 1 ? 'deposit' : 'deposits'} in`, onClick: () => goTo('#bookings-list') },
-    toConfirm > 0 && { key: 'confirm', tone: 'pending', label: `${toConfirm} to confirm`, onClick: () => { onShowPending?.(); goTo('#bookings-list'); } },
-    noTime > 0 && { key: 'time', tone: 'pending', label: `${noTime} ${noTime === 1 ? 'needs' : 'need'} a time`, onClick: () => goTo('[data-rail]') },
+    unseen > 0 && { key: 'new', tone: 'new', live: true, label: `${unseen} new ${unseen === 1 ? 'booking' : 'bookings'}`, onClick: () => goTo('[data-rail]') },
+    deposits > 0 && { key: 'deposit', tone: 'soft', label: `${deposits} ${deposits === 1 ? 'deposit' : 'deposits'} in`, onClick: () => goTo('#bookings-list') },
+    waiting > 0 && { key: 'waiting', tone: 'soft', label: `${waiting} to look over`, onClick: () => { onShowPending?.(); goTo('#bookings-list'); } },
   ].filter(Boolean);
 
   return (
     <div className="mb-7 sm:mb-9">
       <div className="flex items-end justify-between gap-6">
         <div className="min-w-0">
-          <h1 data-bar-title="Home" className="text-[clamp(1.95rem,4.4vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-ink">
-            <Kinetic text={greeting} />
+          <h1 ref={titleRef} data-bar-title="Home" className="text-[clamp(1.95rem,4.4vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.028em] text-ink">
+            <Kinetic text={greeting} name="Roqia" />
           </h1>
           <p className="rise-in mt-2 text-[0.92rem] text-ink-muted" style={{ '--i': 2 }}>{date}</p>
         </div>
@@ -409,7 +442,7 @@ export default function HomeTop({ bookings, onOpen, onAddClient, onShowPending }
           <button
             type="button"
             onClick={onAddClient}
-            className="press hidden h-11 shrink-0 items-center gap-2 rounded bg-ink px-5 text-[0.86rem] font-medium text-paper transition-colors hover:bg-ink/85 sm:inline-flex"
+            className="press hidden h-11 shrink-0 items-center gap-2 rounded-ctl bg-ink px-5 text-[0.86rem] font-medium text-paper transition-colors hover:bg-ink/85 sm:inline-flex"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="h-4 w-4" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
             Add client
