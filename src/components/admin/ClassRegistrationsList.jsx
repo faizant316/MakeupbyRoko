@@ -13,11 +13,11 @@ import { Chevron, Fold, RowPanel, Segmented, Tag, cx } from './ui';
 const ENROLLMENT_STATES = ['pending', 'confirmed', 'enrolled', 'cancelled'];
 export const enrollmentKey = (status) => (ENROLLMENT_STATES.includes(status) ? status : 'pending');
 
-// Online or in person. Metadata, so it's a quiet neutral tag rather than a
-// colour of its own. Shared with the detail page.
+// Online or in person. A quiet neutral tag in this list; the colours are for
+// the detail page's format chip.
 export const FORMAT_META = {
-  online:    { label: 'Online',    short: 'Zoom' },
-  in_person: { label: 'In Person', short: 'Studio' },
+  online:    { label: 'Online',    short: 'Zoom',   color: '#2D8CFF', bg: 'rgba(45,140,255,0.1)'  },
+  in_person: { label: 'In Person', short: 'Studio', color: '#8A63A8', bg: 'rgba(138,99,168,0.12)' },
 };
 
 // Where the money stands, as a small tinted chip. Rose for not paid yet (the

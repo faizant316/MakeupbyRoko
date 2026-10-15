@@ -9,25 +9,27 @@
    than a second colour carried by every component. Channels, not hex, so
    Tailwind's opacity modifiers work on them (bg-ink/35, border-rose/30).
 
-   A makeup studio, not a car dashboard: the "black" is a deep plum, the page
-   under the cards is a blush cream, and the hairlines carry a little pink.
-   Every greyed text colour still clears 4.5:1 on both white and the canvas.
-   One rose family: the deep one for text and anything chosen, the soft one
-   for dots and rings, the wash for bridal rows. */
+   A makeup studio, not a car dashboard: the "black" is a deep plum. The page
+   under the cards and the hairlines are a plain near-white, NOT pink, so the
+   pink wash on bridal rows is the thing that stands out (a blush canvas made
+   every row look bridal). Every greyed text colour still clears 4.5:1 on
+   white, the canvas and the bridal wash. One rose family: the deep one for
+   text and anything chosen, the soft one for dots and rings, the wash for
+   bridal rows. */
 :root {
   --c-paper: 255 255 255;
-  --c-canvas: 249 243 244;
+  --c-canvas: 250 250 251;
   --c-ink: 43 24 35;
   --c-ink-soft: 92 70 82;
   --c-ink-muted: 128 104 116;
-  --c-line: 240 228 232;
-  --c-line-strong: 226 207 214;
+  --c-line: 236 235 238;
+  --c-line-strong: 222 220 225;
   /* The three that are read as small text (rose labels, the PENDING and
      CONFIRMED badges) are a shade deeper than their old values so they clear
      4.5:1 even on their own 10% tint and on the bridal wash. */
   --c-rose: 142 79 105;
   --c-rose-soft: 212 160 176;
-  --c-rose-wash: 252 244 248;
+  --c-rose-wash: 252 240 246;
   --c-pending: 161 74 11;
   --c-confirmed: 29 78 216;
   --c-alert: 192 54 44;
@@ -46,20 +48,22 @@
   --font-serif-display: var(--font-display, 'Instrument Serif'), 'Instrument Serif', Georgia, 'Times New Roman', serif;
 }
 
+/* Dark mode is a neutral charcoal for the same reason: a plum-black page
+   hid the bridal rows, which are the only pink surface. */
 html.admin-dark {
-  --c-paper: 34 27 32;
-  --c-canvas: 24 19 23;
-  --c-ink: 242 234 238;
-  --c-ink-soft: 208 194 202;
-  --c-ink-muted: 160 142 152;
-  --c-line: 54 44 51;
-  --c-line-strong: 80 66 75;
+  --c-paper: 32 32 36;
+  --c-canvas: 21 21 24;
+  --c-ink: 240 238 241;
+  --c-ink-soft: 202 198 205;
+  --c-ink-muted: 152 148 157;
+  --c-line: 50 50 56;
+  --c-line-strong: 74 74 82;
   --sheen-a: #e2afc2;
   --sheen-b: #f8d0de;
   --sheen-c: #e98bb0;
   --c-rose: 226 175 194;
   --c-rose-soft: 185 132 151;
-  --c-rose-wash: 43 34 41;
+  --c-rose-wash: 56 36 47;
   --c-pending: 245 184 60;
   --c-confirmed: 127 165 245;
   --c-alert: 240 122 112;
