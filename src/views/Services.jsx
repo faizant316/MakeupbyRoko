@@ -133,7 +133,6 @@ const CONTENT_OVERRIDES = {
       'Full bridal makeup',
       'Lashes included',
       '30 minute Zoom call before the day',
-      'Airbrush on request',
     ],
   },
   'Full Day Service': {
@@ -144,14 +143,12 @@ const CONTENT_OVERRIDES = {
       'Skin prep matched to your skin type',
       'Lashes included',
       'Any one extra: a touch-up, a look change, or one additional face',
-      'Help with your dress and finishing touches',
-      '30 minute Zoom call before the day',
       'Travel included within 2 hours of the studio',
       'Past 2 hours, a flat $750 covers the hotel and the drive',
     ],
   },
   'Non-Bridal Makeup': {
-    desc: 'Makeup for parties, birthdays, graduations, nights out and wedding guests, done at the studio. Book at least a month ahead, since wedding clients are booked first.',
+    desc: 'Makeup for parties, birthdays, graduations, nights out and wedding guests, done at the studio. Book at least a month ahead, since bridal clients are first priority.',
     includes: [
       'Skin prep and primer',
       'Foundation matched to your skin',

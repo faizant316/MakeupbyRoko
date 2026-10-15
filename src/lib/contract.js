@@ -233,6 +233,8 @@ export function defaultContractTemplate({ kind = 'appointment' } = {}) {
 //   time          - appointment time / window, e.g. "11:00 AM – 1:00 PM" (optional)
 //   depositAmount - e.g. "$375" (optional; falls back to generic wording)
 //   priceAmount   - e.g. "$750" (optional)
+//   farTravelFee  - far-travel charge on a Full Day past two hours (optional)
+//   earlyArrivalFee - non-bridal look done before 7 AM, e.g. "$100" (optional)
 //   locationType  - 'studio' | 'onlocation' (kept for compatibility; the
 //                   default Travel Fee wording now covers both cases)
 //   kind          - 'appointment' | 'class'
@@ -247,6 +249,7 @@ export function buildContract({
   depositAmount,
   priceAmount,
   farTravelFee,
+  earlyArrivalFee,
   locationType = 'studio', // eslint-disable-line no-unused-vars
   kind = 'appointment',
   overrides = {},
@@ -269,8 +272,12 @@ export function buildContract({
   // does arithmetic on {price} and {balance}, so a $750 that lived outside them
   // would have the agreement quoting a balance the client does not actually owe.
   const farN = amountValue(farTravelFee);
+  // Same treatment for the before-7 AM fee. Left out, a non-bridal client who
+  // picked an early look signed an agreement quoting the bare service price and
+  // a balance $100 short of what she owes (2026-10-15).
+  const earlyN = amountValue(earlyArrivalFee);
   const depositN = amountValue(depositAmount);
-  const totalN = priceN != null ? priceN + (farN || 0) : null;
+  const totalN = priceN != null ? priceN + (farN || 0) + (earlyN || 0) : null;
   const balanceN = totalN != null && depositN != null && totalN > depositN ? totalN - depositN : null;
 
   // Only ever print a figure that reads as money. A catalogue label like
@@ -283,8 +290,9 @@ export function buildContract({
   };
   const priceText = asMoneyText(priceAmount, null);
   const farText = asMoneyText(farTravelFee, null);
+  const earlyText = asMoneyText(earlyArrivalFee, null);
   // What {price} resolves to: the whole figure the client is agreeing to pay.
-  const totalText = farN && totalN != null ? formatMoney(totalN) : priceText;
+  const totalText = (farN || earlyN) && totalN != null ? formatMoney(totalN) : priceText;
   const depositText = asMoneyText(depositAmount, null);
 
   const values = {
@@ -354,7 +362,8 @@ export function buildContract({
         dateKnown ? { label: 'Date', value: values.date } : null,
         priceText ? { label: farText ? 'Package price' : 'Service price', value: priceText } : null,
         farText ? { label: 'Far travel (venue over 2 hrs)', value: `+${farText}` } : null,
-        farText && totalText ? { label: 'Total', value: totalText } : null,
+        earlyText ? { label: 'Early arrival (before 7 AM)', value: `+${earlyText}` } : null,
+        (farText || earlyText) && totalText ? { label: 'Total', value: totalText } : null,
         // "today" because the next line says what is due on the day, and the
         // two were previously distinguishable only by reading both.
         depositText ? { label: 'Deposit to book today', value: values.deposit } : null,

@@ -25,3 +25,8 @@ export const TRAVEL_EXPLAINER =
 // guards match /travel/i on this string, including the one that stops the
 // confirmed email quoting a studio price to someone Roko is driving to.
 export const TRAVEL_NOTE = `✈️ ${TRAVEL_LABEL} · from $${TRAVEL_FROM}`;
+
+// The before-7 AM fee on a non-bridal look. Not travel, but it is the other
+// surcharge that changes a non-bridal total, and the booking form, the signed
+// agreement and the emailed copy of it all have to add the same figure.
+export const EARLY_ARRIVAL_FEE = '$100';

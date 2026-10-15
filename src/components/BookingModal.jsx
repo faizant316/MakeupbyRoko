@@ -28,7 +28,7 @@ import { NON_BRIDAL_LEAD_DAYS } from '@/lib/bookingLeadTime';
 import { cityFromLocation } from '@/lib/location';
 import LocationAutocomplete from './LocationAutocomplete';
 import { STUDIO_TOWN } from '@/lib/studio';
-import { TRAVEL_PRICE, TRAVEL_LABEL, TRAVEL_EXPLAINER, TRAVEL_NOTE } from '@/lib/travelPricing';
+import { TRAVEL_PRICE, TRAVEL_LABEL, TRAVEL_EXPLAINER, TRAVEL_NOTE, EARLY_ARRIVAL_FEE } from '@/lib/travelPricing';
 
 // Stable stand-in for "counts haven't arrived yet" — see where it's used below.
 const NO_COUNTS = {};
@@ -50,6 +50,15 @@ const OCCASIONS = [
   'Party / night out',
   'Other',
 ];
+
+// "6:30 AM" → true. The ready-by time IS the time the look is done, so a ready-by
+// before 7:00 answers the before-7 question on its own.
+const isBeforeSeven = (t) => {
+  const m = String(t || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return false;
+  const h = (parseInt(m[1], 10) % 12) + (/pm/i.test(m[3]) ? 12 : 0);
+  return h < 7;
+};
 
 // Pull a number out of a stored price string ("$1,700", "$375 deposit").
 const money = (s) => {
@@ -99,7 +108,12 @@ export default function BookingModal({ service: initialService, onClose }) {
   const occasion = formData.event_type === 'Other'
     ? formData.event_type_other.trim()
     : formData.event_type;
-  const isEarlyArrival = formData.early_arrival === true;
+  // The yes/no is optional and the ready-by time isn't, so the time wins. A
+  // photoshoot client picked a ready-by before 7 AM, never tapped Yes, and every
+  // total she saw left the $100 out (2026-10-15).
+  const readyBeforeSeven = isBeforeSeven(formData.ready_by_time);
+  const earlyAnswer = readyBeforeSeven ? true : formData.early_arrival;
+  const isEarlyArrival = earlyAnswer === true;
   const hasTravelFee = formData.travel_requested === true;
   const contractOverrides = useContractOverrides();
 
@@ -338,6 +352,9 @@ export default function BookingModal({ service: initialService, onClose }) {
       : 'your selected date',
     depositAmount: service.deposit,
     priceAmount: service.price,
+    // Folded into the agreement's total and its "due on the day". Not on a
+    // travel booking: that price is "From $750", with no exact total to add to.
+    earlyArrivalFee: isEarlyArrival && !hasTravelFee ? EARLY_ARRIVAL_FEE : undefined,
     locationType: hasTravelFee ? 'onlocation' : 'studio',
     overrides: contractOverrides,
   });
@@ -732,9 +749,16 @@ export default function BookingModal({ service: initialService, onClose }) {
                             key={String(opt.value)}
                             type="button"
                             onMouseDown={e => e.preventDefault()}
-                            onClick={() => setFormData({ ...formData, early_arrival: opt.value })}
+                            // "No" with a ready-by before 7 contradicts itself,
+                            // so it clears that time for her to pick again
+                            // rather than quietly keeping the fee on.
+                            onClick={() => setFormData({
+                              ...formData,
+                              early_arrival: opt.value,
+                              ...(!opt.value && readyBeforeSeven ? { ready_by_time: '' } : {}),
+                            })}
                             className={`flex items-center justify-center px-3 py-3.5 rounded-xl text-[0.78rem] font-medium border transition-all touch-manipulation ${
-                              formData.early_arrival === opt.value
+                              earlyAnswer === opt.value
                                 ? 'bg-[#111] text-white border-[#111] shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
                                 : 'bg-[#FDFBFC] text-[#6E6660] border-[#EFE9EC] hover:border-[#D4A0B0] hover:bg-white hover:text-[#111]'
                             }`}
@@ -904,6 +928,8 @@ export default function BookingModal({ service: initialService, onClose }) {
                       { label: 'Occasion', value: occasion },
                       { label: 'Ready by', value: formData.ready_by_time },
                       { label: 'Where', value: hasTravelFee ? (formData.location || 'Roko travels to you') : `Roko's studio, ${STUDIO_TOWN}` },
+                      { label: 'Early arrival', value: isEarlyArrival ? `+${EARLY_ARRIVAL_FEE}` : '' },
+                      { label: 'Estimated total', value: isEarlyArrival ? footerTotal : '' },
                     ],
                     confirmLabel: 'Yes, confirm this booking',
                     // Only when Roko is travelling. A studio booking's address
@@ -969,7 +995,7 @@ export default function BookingModal({ service: initialService, onClose }) {
                         { label: 'Name', value: `${formData.fname} ${formData.lname}`.trim() },
                         { label: 'Email', value: formData.email },
                         { label: 'Phone', value: formData.phone },
-                        { label: 'Before 7 AM?', value: formData.early_arrival == null ? '' : formData.early_arrival ? 'Yes (+$100)' : 'No' },
+                        { label: 'Before 7 AM?', value: earlyAnswer == null ? '' : earlyAnswer ? `Yes (+${EARLY_ARRIVAL_FEE})` : 'No' },
                         { label: 'Ready by', value: formData.ready_by_time },
                         { label: 'Occasion', value: occasion },
                         // The place, not a yes/no about travel. "Yes" told her

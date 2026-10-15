@@ -9,6 +9,7 @@ import {
 } from '../../../src/lib/email';
 import { createClient } from '../../../src/lib/supabase/server';
 import { CONTRACT_SETTINGS_KEY, parseContractSettings } from '../../../src/lib/contract';
+import { EARLY_ARRIVAL_FEE } from '../../../src/lib/travelPricing';
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'makeupbyroko22@gmail.com';
 
@@ -68,6 +69,9 @@ export async function POST(req) {
         // into {price} and {balance}, so the emailed agreement quotes the same
         // total she signed on site.
         farTravelFee: isBridal ? farTravelFee : undefined,
+        // Same for the before-7 AM fee on a studio booking. A travel booking's
+        // price is "From $750", which has no exact total to add it to.
+        earlyArrivalFee: !isBridal && isEarlyArrival && !hasTravelFee ? EARLY_ARRIVAL_FEE : undefined,
         locationType: isBridal ? 'onlocation' : (hasTravelFee ? 'onlocation' : 'studio'),
         kind: 'appointment',
         overrides,

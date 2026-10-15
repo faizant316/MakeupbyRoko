@@ -377,9 +377,10 @@ export default function ServiceDetailModal({ svc, onClose, onBook, onOpenClassMo
           any of it is new.
 
           what_to_expect and key_features are untouched in the services table,
-          they are just no longer rendered here; the few facts only they carried
-          (airbrush on request, the trial's photo documentation) moved into the
-          includes copy in src/views/Services.jsx. */}
+          they are just no longer rendered here; the one fact only they carried
+          (the trial's photo documentation) moved into the includes copy in
+          src/views/Services.jsx. Airbrush is gone on purpose: Roko doesn't do
+          airbrush makeup (2026-10-15), so it is never to be listed again. */}
       {svc.includes?.length > 0 && (
         <div className="mb-2">
           <p className="text-[0.63rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] mb-2.5">What's Included</p>

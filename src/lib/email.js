@@ -112,8 +112,11 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
 </body></html>`;
 }
 
-export function contractClientPanel({ clientName, serviceName, dateFormatted, time = '', depositAmount, priceAmount, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent }) {
-  const c = buildContract({ clientName, serviceName, dateFormatted, time, depositAmount, priceAmount, locationType, kind, overrides });
+// The two fees are forwarded on purpose. The route has always passed
+// farTravelFee here, and this function used to drop it on the floor, so the
+// emailed agreement quoted a smaller total than the one signed on the site.
+export function contractClientPanel({ clientName, serviceName, dateFormatted, time = '', depositAmount, priceAmount, farTravelFee, earlyArrivalFee, locationType = 'studio', kind = 'appointment', overrides = {}, signedName, signedAt, photoConsent }) {
+  const c = buildContract({ clientName, serviceName, dateFormatted, time, depositAmount, priceAmount, farTravelFee, earlyArrivalFee, locationType, kind, overrides });
   const signedAtLabel = signedAt
     ? new Date(signedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
     : '';
