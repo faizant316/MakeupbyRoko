@@ -27,6 +27,7 @@ import ResizableColumns from '../components/admin/ResizableColumns';
 import HomeTop from '../components/admin/HomeTop';
 import { daysUntil, scheduledDate } from '../components/admin/timeline';
 import { isAdminEmail } from '@/lib/adminAllowlist';
+import { scrollToTarget } from '@/lib/lenis';
 import BrandLoader from '../components/BrandLoader';
 
 const DEFAULT_CAP = 3;
@@ -73,6 +74,21 @@ export default function Admin() {
   }, []);
 
   const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
+
+  // Every trip to a section starts at its top, the way an app's tabs do. The
+  // window used to keep its scroll position, so leaving the bottom of Home for
+  // Clients landed halfway down the client list. navTick counts taps in the
+  // sidebar and the phone menu, so tapping the section you're already in (Home
+  // while a client card is open, say) goes back to its top as well.
+  //
+  // A plain effect on purpose, not a layout effect: the phone menu pins the
+  // page while it's open and puts the old position back in its own effect
+  // cleanup as it closes. Cleanups run before effects, so this lands after
+  // that restore instead of being undone by it.
+  const [navTick, setNavTick] = useState(0);
+  useEffect(() => {
+    scrollToTarget(0, { immediate: true });
+  }, [activeTab, navTick]);
 
   // Client-side auth gate (defense in depth — middleware already blocks the
   // route at the edge). Confirms a live session AND that it's an allowlisted
@@ -305,7 +321,7 @@ export default function Admin() {
   };
   const detailName = selectedBooking?.name || selectedClassReg?.full_name || '';
 
-  const goTab = (key) => { setActiveTab(key); setSelectedBooking(null); setSelectedClassReg(null); };
+  const goTab = (key) => { setActiveTab(key); setSelectedBooking(null); setSelectedClassReg(null); setNavTick(n => n + 1); };
   const sidebarProps = {
     activeTab,
     setActiveTab: goTab,
