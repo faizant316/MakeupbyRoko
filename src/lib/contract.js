@@ -19,7 +19,9 @@
 
 import { FAR_TRAVEL_FEE, LOCAL_TRAVEL_FEE } from './travel';
 
-export const CONTRACT_VERSION = 'v1';
+// v2 (2026-10-15): deposits became non-refundable AND non-transferable with no
+// notice window. Every v1 signature agreed to 14 days notice and one transfer.
+export const CONTRACT_VERSION = 'v2';
 
 // app_settings key holding Roko's editable contract (values + full wording).
 export const CONTRACT_SETTINGS_KEY = 'contract_settings';
@@ -74,6 +76,14 @@ const SUPERSEDED_SECTION_BODIES = {
     `A non-refundable deposit of {deposit} is required to secure your date. The remaining balance (base service price {price}, plus any travel fee or add-ons) is due in cash on the day of your appointment. No digital payments are accepted for the balance.`,
     `Your class fee (total {price}) is paid in full at checkout by card to reserve your seat.`,
     `Your service price is {price}. A non-refundable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due in cash on the day of your appointment, plus any travel fee or add-ons. No digital payments are accepted for the balance.`,
+    `Your service price is {price}. A non-refundable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due on the day of your appointment, plus any travel fee or add-ons.`,
+  ],
+  // The first is what the saved agreement actually said until 2026-10-15, so
+  // every bride was signing 14 days notice and a one-time transfer. Roko dropped
+  // the notice window entirely: non-refundable, non-transferable, full stop.
+  cancellation: [
+    `The Client must give at least {days} days notice to cancel or reschedule. Deposits are non-refundable. With at least {days} days notice, your deposit may be transferred one time to a new appointment date. Cancellations or changes made with less than {days} days notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.`,
+    `The Client must give at least 24 hours notice to cancel or reschedule. The deposit is non-refundable and non-transferable. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.`,
   ],
   travel: [
     `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee}, regardless of distance.`,
@@ -199,8 +209,8 @@ export function defaultContractTemplate({ kind = 'appointment' } = {}) {
       ]
     : [
         { id: 'booking', heading: 'Booking & Confirmation', body: `Submitting this form is a booking request, not a confirmed appointment. Your date is only confirmed once the deposit has been received and acknowledged by the Artist. Appointments are first come, first serve. The Artist reserves the right to decline any booking at her discretion.` },
-        { id: 'payment', heading: 'Deposit & Payment', body: `Your service price is {price}. A non-refundable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due on the day of your appointment, plus any travel fee or add-ons.` },
-        { id: 'cancellation', heading: 'Cancellation & Rescheduling', body: `The Client must give at least 24 hours notice to cancel or reschedule. The deposit is non-refundable and non-transferable. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.` },
+        { id: 'payment', heading: 'Deposit & Payment', body: `Your service price is {price}. A non-refundable, non-transferable deposit of {deposit} secures your date, and that deposit counts toward your service price, so the remaining {balance} is due on the day of your appointment, plus any travel fee or add-ons.` },
+        { id: 'cancellation', heading: 'Cancellation & Rescheduling', body: `The deposit is non-refundable and non-transferable. If the Client cancels or reschedules, the deposit is not refunded and cannot be moved to a new date, regardless of how much notice is given. Same-day cancellations and no-shows are charged the full service amount. If the Artist must cancel due to illness or emergency, the Client will receive a full refund of the deposit or the option to reschedule at no additional cost.` },
         { id: 'travel', heading: 'Travel Fee', body: `In-studio appointments at {studioLocation} have no travel fee. On-location services (the artist traveling to you) are subject to a travel fee starting at {travelFee} within approximately one hour of the studio. Beyond one hour, the booking is made as the Full Day Service, whose package price includes travel. Where the venue is more than approximately two hours from the studio, a flat far-travel charge of {farTravelFee} is added to the Full Day Service to cover overnight lodging, transportation and the additional day. That charge is part of the balance due on the day, not part of the deposit.` },
         shared.health,
         { id: 'punctuality', heading: 'Punctuality', body: `Please arrive on time. Arrivals more than 15 minutes late may result in a shortened service or cancellation at the Artist's discretion, without a refund.` },

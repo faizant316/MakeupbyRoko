@@ -103,11 +103,11 @@ const INFO_CONTENT = {
       },
       {
         title: 'Cancellation by Client',
-        body: 'If you need to cancel, please notify Roko as soon as possible via email or text. Cancellations made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount.'
+        body: 'If you need to cancel, please notify Roko as soon as possible via email or text. Your deposit is not refunded, however much notice you give. Same-day cancellations and no-shows are charged the full service amount.'
       },
       {
         title: 'Rescheduling',
-        body: 'Please give at least 24 hours notice to cancel or reschedule. Deposits are non-refundable and non-transferable. Changes made with less than 24 hours notice forfeit the deposit.'
+        body: 'Deposits are non-transferable, so a deposit can\'t be moved to a new date if you reschedule.'
       },
       {
         title: 'Cancellation by Artist',

@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'Deposits are non-refundable and non-transferable. If you need to cancel or reschedule, please reach out at least 24 hours before your appointment. Roko will do her best to accommodate based on availability.',
+    a: 'Deposits are non-refundable and non-transferable. If you cancel or reschedule, your deposit can\'t be refunded or moved to a new date, however much notice you give.',
   },
   {
     q: 'Can you accommodate sensitive skin or allergies?',

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Last-look confirmation before a booking is actually sent.
 //
@@ -20,6 +20,9 @@ import { useEffect, useRef } from 'react';
 //               client who submits, then phones to move the location, then
 //               submits the form again to try to fix it herself, which is how
 //               one booking becomes three rows (2026-09-09).
+//               Comes with a box she has to tick before the confirm button
+//               unlocks. Roko (2026-10-15): clients tap straight through to send
+//               so they're first in line, without reading the warning at all.
 //   confirmLabel / busyLabel
 //   submitting - true while the booking is saving
 //   onConfirm / onCancel
@@ -36,6 +39,10 @@ export default function ConfirmBookingDialog({
   onCancel,
 }) {
   const panelRef = useRef(null);
+  // Starts unticked every time: the dialog unmounts when it closes, so a client
+  // who goes back to fix the address has to check it again on the way out.
+  const [checked, setChecked] = useState(false);
+  const canConfirm = !notice || checked;
 
   // Escape backs out, the same as the "let me change it" button. Never while
   // submitting — the booking is already in flight and closing would only hide
@@ -157,6 +164,27 @@ export default function ConfirmBookingDialog({
               <div>
                 <p className="text-[0.74rem] font-semibold mb-1" style={{ color: '#B06883' }}>{notice.title}</p>
                 <p className="text-[0.76rem] leading-[1.6]" style={{ color: '#6E6058' }}>{notice.body}</p>
+                {/* Same box as the agree tick on the agreement, so it reads as
+                    something to do rather than more text to skim. */}
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={checked}
+                  onClick={() => setChecked(c => !c)}
+                  disabled={submitting}
+                  className="mt-2.5 py-1 flex items-start gap-2.5 text-left touch-manipulation"
+                >
+                  <span className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
+                    checked ? 'bg-[#111] border-[#111]' : 'bg-white border-[#D9BFCB]'
+                  }`}>
+                    {checked && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                    )}
+                  </span>
+                  <span className="text-[0.78rem] font-medium leading-[1.5] pt-[1px]" style={{ color: '#2C1A14' }}>
+                    I made sure all my information is correct
+                  </span>
+                </button>
               </div>
             </div>
           )}
@@ -165,17 +193,22 @@ export default function ConfirmBookingDialog({
             <button
               type="button"
               onClick={onConfirm}
-              disabled={submitting}
+              disabled={submitting || !canConfirm}
               className={`w-full py-3.5 rounded-xl text-[0.85rem] font-medium tracking-[0.03em] transition-all touch-manipulation ${
                 submitting
                   ? 'btn-busy bg-[#111] text-white'
-                  : 'bg-[#111] text-white hover:bg-[#222] active:scale-[0.99] shadow-[0_4px_20px_rgba(0,0,0,0.16)]'
+                  : canConfirm
+                    ? 'bg-[#111] text-white hover:bg-[#222] active:scale-[0.99] shadow-[0_4px_20px_rgba(0,0,0,0.16)]'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
               <span key={submitting ? 'busy' : 'idle'} className="btn-busy-label relative z-[1]">
                 {submitting ? busyLabel : confirmLabel}
               </span>
             </button>
+            {!canConfirm && (
+              <p className="text-[0.66rem] text-gray-400 text-center">Check the box above to send</p>
+            )}
             <button
               type="button"
               onClick={onCancel}

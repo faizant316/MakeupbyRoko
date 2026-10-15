@@ -17,7 +17,7 @@ const SECTIONS = [
   },
   {
     title: 'Cancellations & Rescheduling',
-    body: `All deposits are strictly non-refundable and non-transferable. Please give at least 24 hours notice to cancel or reschedule. Cancellations or changes made with less than 24 hours notice forfeit the deposit in full. Same-day cancellations and no-shows are charged the full service amount.`
+    body: `All deposits are strictly non-refundable and non-transferable. If you cancel or reschedule, your deposit is not refunded and cannot be moved to a new date, regardless of how much notice is given. Same-day cancellations and no-shows are charged the full service amount.`
   },
   {
     title: 'Late Arrivals',

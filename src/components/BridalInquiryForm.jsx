@@ -356,10 +356,29 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
   // the price nearly triples, and a silent change to the sticky footer is not an
   // acceptable way to find that out.
   const [switchedToFullDay, setSwitchedToFullDay] = useState(false);
+  // The package she was on before the switch, so she can get back to it. Roko
+  // (2026-10-15): a bride the gate moves to Full Day who then puts in a closer
+  // address had no way back to Luxury, short of closing the sheet and starting
+  // over.
+  const [switchedFrom, setSwitchedFrom] = useState(null);
+  const [switchedBack, setSwitchedBack] = useState(false);
   const switchToFullDay = () => {
     if (!fullDayService || !onSwitchService) return;
+    setSwitchedFrom(activeService);
     onSwitchService(fullDayService);
     setSwitchedToFullDay(true);
+    setSwitchedBack(false);
+  };
+  const switchBack = () => {
+    if (!switchedFrom || !onSwitchService) return;
+    onSwitchService(switchedFrom);
+    setSwitchedFrom(null);
+    setSwitchedToFullDay(false);
+    setSwitchedBack(true);
+    // The one extra is a Full Day choice. Left set, a Luxury inquiry would be
+    // saved saying a second face is coming that morning.
+    set('bridal_party_glam', undefined);
+    set('num_people_glam', '');
   };
 
   // ── The hour rule ──────────────────────────────────────────────────────────
@@ -384,6 +403,15 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
     && needsFullDay(travel.minutes)
     && !isOutsideCalifornia(travel.matched);
   const driveTimeLabel = formatDriveTime(travel.minutes);
+  // The way back, offered only when the hour rule would no longer send her here:
+  // a measured venue the Luxury gate would let through. Exactly the inverse of
+  // travelGated, so no address can bounce her between the two packages.
+  const canSwitchBack = isFullDay
+    && Boolean(switchedFrom)
+    && travel.status === 'measured'
+    && !needsFullDay(travel.minutes)
+    && !isOutsideCalifornia(travel.matched);
+  const switchedFromDeposit = (switchedFrom?.deposit || '').replace(/\s*deposit\s*$/i, '').trim();
 
   // The two-hour rule. The hour rule above decides which package she books; this
   // one decides what it costs. Full Day includes travel, but only so far: past
@@ -1171,7 +1199,43 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
                     still free to change, rather than at Review & Sign or in an
                     email afterwards. Same shape as the hour-rule gate on the
                     Luxury form, because it is the same kind of moment. */}
-                {farTravel ? (
+                {canSwitchBack ? (
+                  /* The gate in reverse, same shape. The price quoted is the
+                     whole of it, travel fee included, so going back is never a
+                     smaller number that grows on the next screen. */
+                  <div
+                    className="mt-3.5 rounded-2xl border"
+                    style={{
+                      borderColor: '#DCA9BE',
+                      background: 'linear-gradient(180deg, rgba(196,132,154,0.075), rgba(196,132,154,0.025))',
+                      animation: 'fadeSlideDown 0.2s ease-out',
+                    }}
+                  >
+                    <div className="px-4 pt-4 pb-4">
+                      <p className="inline-block text-[0.55rem] font-bold tracking-[0.16em] uppercase mb-2.5 px-2 py-1 rounded-md text-white" style={{ background: '#B06883' }}>
+                        Under an hour
+                      </p>
+                      <p className="text-[0.86rem] leading-[1.7]" style={{ color: '#4A423E' }}>
+                        This address is about <strong className="font-semibold">{driveTimeLabel}</strong> from the studio, so you can go back to the <strong className="font-semibold">{switchedFrom.title}</strong>.
+                      </p>
+                      <p className="text-[0.78rem] leading-[1.6] mt-2" style={{ color: '#6E6058' }}>
+                        {switchedFrom.price ? <><strong style={{ color: '#4A423E' }}>{switchedFrom.price}</strong>{switchedFromDeposit ? <> with a <strong style={{ color: '#4A423E' }}>{switchedFromDeposit}</strong> deposit</> : null}, plus the {LOCAL_TRAVEL_FEE} travel fee on the day.</> : <>Plus the {LOCAL_TRAVEL_FEE} travel fee on the day.</>}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={switchBack}
+                        className="mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-[0.82rem] font-semibold text-white transition-all active:scale-[0.985] touch-manipulation"
+                        style={{ background: '#111' }}
+                      >
+                        Switch back to {switchedFrom.title}{switchedFrom.price ? ` · ${switchedFrom.price}` : ''}
+                        <span aria-hidden="true">&rarr;</span>
+                      </button>
+                      <p className="text-[0.72rem] text-center mt-2.5 leading-[1.6]" style={{ color: '#A2968F' }}>
+                        Or keep the Full Day Service, travel included.
+                      </p>
+                    </div>
+                  </div>
+                ) : farTravel ? (
                   <div
                     className="mt-3.5 rounded-2xl border"
                     style={{
@@ -1263,6 +1327,16 @@ export default function BridalInquiryForm({ onClose, service: passedService, onS
               </div>
             ) : (
               <div>
+                {/* Mirror of the strip on the Full Day side: the price just
+                    dropped without the sheet reloading, so say so here too. */}
+                {switchedBack && (
+                  <div className="mb-4 rounded-xl px-3.5 py-3" style={{ background: 'rgba(196,132,154,0.08)', border: '1px solid #EBC4D2', animation: 'fadeSlideDown 0.2s ease-out' }}>
+                    <p className="text-[0.58rem] font-bold tracking-[0.16em] uppercase mb-1" style={{ color: '#B06883' }}>Package switched</p>
+                    <p className="text-[0.82rem] leading-[1.65]" style={{ color: '#4A423E' }}>
+                      Back to the <strong>{bridalTitle}</strong>{activeService?.price ? <>, <strong>{activeService.price}</strong></> : null}. Everything you&apos;d filled in was kept.
+                    </p>
+                  </div>
+                )}
                 <label className={labelClass}>Where are you getting ready? *</label>
                 <p className="text-[0.75rem] text-gray-400 mt-0.5 mb-2">Where Roko does your makeup, not necessarily the venue.</p>
                 <div className="flex gap-3 mt-1">
