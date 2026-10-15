@@ -10,7 +10,7 @@ import '../components/admin/admin.css';
 import AdminCalendar from '../components/admin/AdminCalendar';
 import NewBookingsRail from '../components/admin/NewBookingsRail';
 import BookingsList from '../components/admin/BookingsList';
-import BookingDetail from '../components/admin/BookingDetail';
+import BookingDetail, { MY_SCHEDULE_EVENT } from '../components/admin/BookingDetail';
 import ReviewsList from '../components/admin/ReviewsList';
 import ServicesList from '../components/admin/ServicesList';
 import ContractSettings from '../components/admin/ContractSettings';
@@ -331,6 +331,11 @@ export default function Admin() {
             onMenu={() => setMobileNavOpen(true)}
             onBack={handleBack}
             onAdd={() => setEntryPanel({ mode: 'client', date: selectedDate })}
+            // Inside a client card the + gives way to My Schedule: the card
+            // owns the drawer, so the bar just asks it to open.
+            onSchedule={(activeTab === 'bookings' || activeTab === 'availability') && selectedBooking
+              ? () => window.dispatchEvent(new Event(MY_SCHEDULE_EVENT))
+              : null}
             unseen={navCounts.bookings}
           />
 
@@ -552,7 +557,7 @@ export default function Admin() {
 // brand, and a new client from anywhere. Once the page's own title has scrolled
 // up under the bar, the bar takes the title over, the way an iPhone app's
 // large title does.
-function PhoneBar({ detailOpen, title, watchKey, menuOpen, onMenu, onBack, onAdd, unseen }) {
+function PhoneBar({ detailOpen, title, watchKey, menuOpen, onMenu, onBack, onAdd, onSchedule, unseen }) {
   const past = useTitlePast(watchKey);
   const showTitle = detailOpen ? past || !!title : past;
   return (
@@ -597,11 +602,19 @@ function PhoneBar({ detailOpen, title, watchKey, menuOpen, onMenu, onBack, onAdd
         </p>
       </div>
 
-      <button type="button" onClick={onAdd} aria-label="Add client" className="press flex h-11 w-11 items-center justify-center text-ink">
-        <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-[22px] w-[22px]">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>
+      {onSchedule ? (
+        <button type="button" onClick={onSchedule} aria-label="My Schedule" title="My Schedule" className="press flex h-11 w-11 items-center justify-center text-ink">
+          <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
+            <rect x="3" y="4.5" width="18" height="16.5" rx="2.5" /><path d="M16 2.5v4M8 2.5v4M3 10h18" />
+          </svg>
+        </button>
+      ) : (
+        <button type="button" onClick={onAdd} aria-label="Add client" className="press flex h-11 w-11 items-center justify-center text-ink">
+          <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-[22px] w-[22px]">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      )}
     </header>
   );
 }

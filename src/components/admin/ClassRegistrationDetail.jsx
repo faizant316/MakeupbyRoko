@@ -691,32 +691,34 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
   return (
     <>
       {/* ── Booksy-style status hero ── */}
-      <div className="relative mb-6">
-        <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
+      <div className="relative mb-5">
+        <div className="rounded-2xl px-3 sm:px-4 pt-3 pb-11 text-center"
           style={{ background: HERO_GRADIENTS[enrollmentStatus] || HERO_GRADIENTS.pending }}>
-          <div className="flex items-center justify-between">
+          {/* Same header as the client card: equal sides keep the status
+              centred, and phones use the top bar's Back instead of a second
+              arrow in here. */}
+          <div className="grid grid-cols-[56px_minmax(0,1fr)_56px] items-center">
             <button onClick={onBack} aria-label="Back to list"
-              className="w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-white/10">
+              className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center transition-all active:scale-90 hover:bg-white/10">
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
                 <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
               </svg>
             </button>
-            <div className="min-w-0 px-2">
-              <p className="text-white font-bold tracking-[0.16em] uppercase text-[1.25rem] leading-none">{enrollmentMeta.label}</p>
+            <div className="col-start-2 min-w-0">
+              <p className="text-white font-bold tracking-[0.14em] uppercase text-[1.05rem] sm:text-[1.15rem] leading-none">{enrollmentMeta.label}</p>
               <p className="text-white/70 text-[0.64rem] mt-1.5 truncate tabular-nums">
                 {fmt ? `${fmt.label} Class` : 'Makeup Class'} · ID: {String(reg.id || '').slice(0, 8).toUpperCase()}{signedUpOn ? ` · Signed up ${signedUpOn}` : ''}
               </p>
             </div>
-            <span className="w-10 -mr-1.5" />
           </div>
         </div>
 
         {/* START | DATE card, overlapping the banner like Booksy */}
-        <div className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-10 grid grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3.5"
+        <div className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-8 grid grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3"
           style={{
             background: dm ? '#27272a' : '#fff',
             border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
-            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
+            boxShadow: dm ? '0 8px 22px rgba(0,0,0,0.3)' : '0 6px 20px rgba(28, 28, 38,0.08)',
           }}>
           <div className="px-4 min-w-0">
             <p className="text-[0.56rem] font-bold tracking-[0.16em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>

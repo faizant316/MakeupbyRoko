@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '@/api/apiClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import StatusBadge from './StatusBadge';
@@ -257,6 +258,9 @@ const HERO_GRADIENTS = {
 
 // Brand plum (matches the front-end bridal cards)
 const PLUM = '#C4849A';
+
+// Fired by the phone bar's My Schedule button (src/views/Admin.jsx).
+export const MY_SCHEDULE_EVENT = 'admin:my-schedule';
 
 // Universal Google Maps link — works on desktop + mobile, no API key required.
 function mapsUrl(address) {
@@ -1149,14 +1153,17 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // would race the save (the prop still holds the old time for a beat) and wipe
   // the undo we just created.
   useEffect(() => { setUndoTime(loadUndo(booking)); }, [booking.id]);
+  // Watches the My Schedule pill itself, not the whole Appointment box. The
+  // box is tall, so the pill was long gone while the box still counted as on
+  // screen, and for a good scroll there was no My Schedule button anywhere.
   const [apptOut, setApptOut] = useState(false);
+  const [schedulePill, setSchedulePill] = useState(null);
   useEffect(() => {
-    const el = timeSectionRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
+    if (!schedulePill || typeof IntersectionObserver === 'undefined') { setApptOut(false); return; }
     const io = new IntersectionObserver(([e]) => setApptOut(!e.isIntersecting));
-    io.observe(el);
+    io.observe(schedulePill);
     return () => io.disconnect();
-  }, []);
+  }, [schedulePill]);
   const openSchedule = () => {
     setScheduleDay(
       (consultExpanded && consultDraft?.date) ? consultDraft.date
@@ -1169,6 +1176,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // far corner to undo one tap is the kind of thing you only notice when you
   // do it forty times a day.
   const toggleSchedule = () => (showSchedule ? setShowSchedule(false) : openSchedule());
+  // On a phone the button lives in the shell's top bar (where + sits on
+  // other screens), which is outside this card, so it asks by event.
+  const toggleScheduleRef = useRef(toggleSchedule);
+  toggleScheduleRef.current = toggleSchedule;
+  useEffect(() => {
+    const fn = () => toggleScheduleRef.current();
+    window.addEventListener(MY_SCHEDULE_EVENT, fn);
+    return () => window.removeEventListener(MY_SCHEDULE_EVENT, fn);
+  }, []);
   useEffect(() => {
     if (!showSchedule) return;
     const onKey = (e) => { if (e.key === 'Escape') setShowSchedule(false); };
@@ -2057,21 +2073,25 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // frame, and that was the choppiness. The width change lands in one go now
   // and only the drawer animates, on the compositor.
   return (
-    <div className="max-w-[1100px] mx-auto"
+    <div className="max-w-[960px] mx-auto"
       style={{ marginRight: showSchedule && docked ? scheduleW + 20 : undefined }}>
       {/* ── Booksy-style status hero ── */}
-      <div className="relative mb-6">
-        <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
+      <div className="relative mb-5">
+        <div className="rounded-2xl px-3 sm:px-4 pt-3 pb-11 text-center"
           style={{ background: HERO_GRADIENTS[booking.status] || HERO_GRADIENTS.pending }}>
-          <div className="flex items-center justify-between">
+          {/* Three columns with equal sides so the status sits dead centre
+              whether or not the back arrow is showing. */}
+          <div className="grid grid-cols-[56px_minmax(0,1fr)_56px] items-center">
+            {/* Phones already have Back in the top bar; two arrows a few
+                pixels apart read as a mistake. */}
             <button onClick={onBack} aria-label="Back to list"
-              className="w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-white/10">
+              className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center transition-all active:scale-90 hover:bg-white/10">
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
                 <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
               </svg>
             </button>
-            <div className="min-w-0 px-2">
-              <p className="text-white font-bold tracking-[0.16em] uppercase text-[1.25rem] leading-none">{booking.status || 'pending'}</p>
+            <div className="col-start-2 min-w-0">
+              <p className="text-white font-bold tracking-[0.14em] uppercase text-[1.05rem] sm:text-[1.15rem] leading-none">{booking.status || 'pending'}</p>
               <p className="text-white/70 text-[0.64rem] mt-1.5 truncate tabular-nums">
                 ID: {String(booking.id || '').slice(0, 8).toUpperCase()}{bookedOn ? ` · Booked ${bookedOn}` : ''}
               </p>
@@ -2081,7 +2101,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 the moment she needs her day is the moment she's answering
                 "does that time work?", not while reading the status banner. */}
             <button onClick={() => setShowEdit(true)}
-              className="px-3 py-2 -mr-1 rounded-lg text-[0.8rem] font-semibold text-white transition-all active:scale-95 hover:bg-white/10">
+              className="justify-self-end px-3 py-2 rounded-lg text-[0.8rem] font-semibold text-white transition-all active:scale-95 hover:bg-white/10">
               Edit
             </button>
           </div>
@@ -2093,11 +2113,11 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             openTimePicker();
             setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 60);
           }}
-          className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-10 grid grid-cols-[minmax(0,0.82fr)_auto_minmax(0,1.18fr)] sm:grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3.5 text-left transition-all active:scale-[0.995]"
+          className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-8 grid grid-cols-[minmax(0,0.82fr)_auto_minmax(0,1.18fr)] sm:grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3 text-left transition-all active:scale-[0.995]"
           style={{
             background: dm ? '#27272a' : '#fff',
             border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
-            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
+            boxShadow: dm ? '0 8px 22px rgba(0,0,0,0.3)' : '0 6px 20px rgba(28, 28, 38,0.08)',
           }}>
           <div className="px-3 sm:px-4 min-w-0">
             <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>
@@ -2118,7 +2138,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         </button>
       </div>
 
-      <div className="rounded-[6px] p-6 sm:p-8 mb-6" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
+      <div className="rounded-2xl p-4 sm:p-7 mb-6" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
         {/* Header. No status chip here: the hero above already states it in
             colour, at size, a few hundred pixels up the same screen. */}
         <div className="flex items-start mb-6 gap-3">
@@ -2389,7 +2409,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 {/* Her day, one tap from the time she's setting. It stays in
                     this same spot in every state of the box (deciding, picking,
                     already set) so it never moves out from under her. */}
-                <button type="button" onClick={toggleSchedule} aria-label="My Schedule" aria-expanded={showSchedule} title="See your day side by side"
+                <button type="button" ref={setSchedulePill} onClick={toggleSchedule} aria-label="My Schedule" aria-expanded={showSchedule} title="See your day side by side"
                   className="inline-flex items-center gap-1.5 h-9 sm:h-[30px] px-3 sm:px-2.5 rounded-full text-[0.78rem] font-medium whitespace-nowrap transition-colors flex-shrink-0"
                   style={{ background: dm ? '#2e2e38' : '#F4EFF1', color: dm ? '#d8c3cc' : '#8A5F71', border: `1px solid ${dm ? '#3a3a48' : '#EADCE2'}` }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -3432,12 +3452,20 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         </div>
       )}
 
+      {/* The floating button, the dim and the drawer render on <body>, not in
+          the card. The shell slides each screen in with a transform, and while
+          an ancestor has a transform, "fixed" means fixed to THAT box instead of
+          the window: the parked drawer sat just past the card's right edge, in
+          plain view, for the whole slide, then vanished. That was the flash on
+          opening a card. On <body> nothing above them ever moves. */}
+      {typeof document !== 'undefined' && createPortal(<>
       {/* Floating twin of the Appointment box's My Schedule. Fades in the moment
-          that box scrolls off, so her day is always one tap away no matter how
-          far down the card she is. Stays out of the way while the drawer is open. */}
+          that pill scrolls off, so her day is always one tap away no matter how
+          far down the card she is. Stays out of the way while the drawer is open.
+          Laptops only: on a phone the top bar carries the button the whole time. */}
       <button type="button" onClick={toggleSchedule} title="See your day side by side"
         aria-hidden={!(apptOut && !showSchedule)} tabIndex={apptOut && !showSchedule ? 0 : -1}
-        className="fixed bottom-5 right-5 z-[9994] inline-flex items-center gap-2 h-12 px-5 rounded-full text-[0.82rem] font-semibold text-white transition-all duration-200 active:scale-95"
+        className="fixed bottom-5 right-5 z-[9994] hidden lg:inline-flex items-center gap-2 h-12 px-5 rounded-full text-[0.82rem] font-semibold text-white transition-all duration-200 active:scale-95"
         style={{
           background: '#C4849A',
           boxShadow: '0 10px 30px rgba(150,90,115,0.42)',
@@ -3548,6 +3576,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           />
         </div>
       </aside>
+      </>, document.body)}
 
       {/* Toast notification */}
       {toast && (
