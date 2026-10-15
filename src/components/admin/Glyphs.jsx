@@ -84,14 +84,6 @@ export function Lock({ className = 'w-4 h-4', strokeWidth = 1.6, ...rest }) {
   );
 }
 
-export function Plane({ className = 'w-3.5 h-3.5', strokeWidth = 1.6, ...rest }) {
-  return (
-    <svg {...base} strokeWidth={strokeWidth} className={className} aria-hidden="true" {...rest}>
-      <path d="M10.2 13.8 3 11.4l17.2-6.6-6.6 17.2-2.4-7.2 3.4-3.4z" />
-    </svg>
-  );
-}
-
 export function Undo({ className = 'w-4 h-4', strokeWidth = 2, ...rest }) {
   return (
     <svg {...base} strokeWidth={strokeWidth} className={className} aria-hidden="true" {...rest}>

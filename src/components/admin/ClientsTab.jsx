@@ -5,12 +5,17 @@ import { lenisScrollTo } from '@/lib/lenis';
 import { isBridalService } from './statusColors';
 import { classesOfReg } from '@/lib/classCatalog';
 import { formatPhone, phoneHref } from '@/lib/phone';
+import { Button, Label, RowPanel, SearchLine, Segmented, Tag, buttonClass, cx } from './ui';
 
 // Booksy-style Clients section. One directory built automatically from every
 // booking and class sign-up: a searchable A-Z list with a jump rail, plus
 // smart groups (New, Most Loyal, Slipping Away, Prospects...) computed live
 // from appointment history. Tap a client for their card: contact actions,
 // stats, and their full appointment + class history.
+//
+// Drawn the way the rest of the dashboard is: rows on hairlines in one square
+// panel, the whole row the target, and colour kept for the few things that
+// mean something (bridal, a class, a status).
 
 const todayKey = () => new Date().toISOString().split('T')[0];
 const dayKeyOffset = (days) => {
@@ -106,41 +111,64 @@ function buildClients(bookings, classRegs) {
 }
 
 const GROUP_DEFS = [
-  { key: 'all',        label: 'All Clients',    desc: 'Everyone who has booked or inquired',                 test: () => true },
-  { key: 'new',        label: 'New Clients',    desc: 'Clients who first appeared in the last 30 days',      test: c => c.isNew },
-  { key: 'loyal',      label: 'Most Loyal',     desc: 'At least three visits in the last three months',      test: c => c.isLoyal },
-  { key: 'slipping',   label: 'Slipping Away',  desc: 'No appointment in the last month, nothing upcoming',  test: c => c.isSlipping },
+  { key: 'all',        label: 'All clients',    desc: 'Everyone who has booked or inquired',                 test: () => true },
+  { key: 'new',        label: 'New clients',    desc: 'Clients who first appeared in the last 30 days',      test: c => c.isNew },
+  { key: 'loyal',      label: 'Most loyal',     desc: 'At least three visits in the last three months',      test: c => c.isLoyal },
+  { key: 'slipping',   label: 'Slipping away',  desc: 'No appointment in the last month, nothing upcoming',  test: c => c.isSlipping },
   { key: 'prospects',  label: 'Prospects',      desc: "Inquired but haven't booked with you yet",            test: c => c.isProspect },
-  { key: 'firstvisit', label: 'First Visit',    desc: 'Clients on their very first booking',                 test: c => c.isFirstVisit },
-  { key: 'today',      label: 'Booking Today',  desc: 'Clients with an appointment today',                   test: c => c.hasToday },
+  { key: 'firstvisit', label: 'First visit',    desc: 'Clients on their very first booking',                 test: c => c.isFirstVisit },
+  { key: 'today',      label: 'Booking today',  desc: 'Clients with an appointment today',                   test: c => c.hasToday },
   { key: 'upcoming',   label: 'Upcoming',       desc: 'Clients with a future appointment on the books',      test: c => c.upcomingCount > 0 },
 ];
 
-function GroupIcon({ color }) {
+function GroupIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   );
 }
 
-function ActionCircle({ href, label, dm, children }) {
+// The "this opens" chevron at the end of a row. Nudges right under a pointer.
+function RowChevron({ className }) {
   return (
-    <a href={href}
-      className="flex flex-col items-center gap-1.5 flex-1 py-3 rounded-2xl transition-all hover:opacity-80 active:scale-[0.97]"
-      style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}`, minWidth: 0 }}>
-      <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+      className={cx('h-3.5 w-3.5 shrink-0 text-ink-muted/60 transition-transform duration-200 group-hover:translate-x-0.5', className)} aria-hidden>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+// The same rose-wash circle in the directory and on the card, so the person
+// you tapped is recognisably the person who opens.
+function Avatar({ name, large = false }) {
+  return (
+    <span aria-hidden className={cx(
+      'flex shrink-0 items-center justify-center rounded-full bg-rose-wash font-semibold text-rose',
+      large ? 'h-16 w-16 text-[1.15rem]' : 'h-10 w-10 text-[0.74rem]',
+    )}>
+      {initialsOf(name)}
+    </span>
+  );
+}
+
+// Call / Text / Email. Equal widths, so none of them reads as the main one.
+function ContactButton({ href, label, children }) {
+  return (
+    <a href={href} className={buttonClass('quiet', 'md', 'h-11 flex-1 px-2')}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-ink-muted" aria-hidden>
         {children}
-      </span>
-      <span className="text-[0.62rem] font-semibold tracking-[0.04em]" style={{ color: dm ? '#d4d4d8' : '#555' }}>{label}</span>
+      </svg>
+      {label}
     </a>
   );
 }
 
+const historyRow = 'group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-200 sm:px-5';
+
 // ── Client card (detail) ──
-function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
-  const line = dm ? '#2e2e38' : '#EAEAF0';
+function ClientDetail({ client, onBack, onOpenBooking, onOpenClassReg }) {
   const apptRows = [...client.appts].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const classRows = [...client.classes].sort((a, b) => (b.appointment_date || '').localeCompare(a.appointment_date || ''));
   const memberSince = client.firstSeen
@@ -149,152 +177,152 @@ function ClientDetail({ client, dm, onBack, onOpenBooking, onOpenClassReg }) {
 
   return (
     <div className="max-w-[1100px]">
-      <button onClick={onBack} className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.1em] uppercase text-[#D4A0B0] hover:text-[#b8849a] transition-colors mb-6">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        All Clients
-      </button>
+      <Button variant="ghost" size="sm" onClick={onBack} className="-ml-3 mb-5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        All clients
+      </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[350px_minmax(0,1fr)] gap-x-8 items-start">
-      <div className="lg:sticky lg:top-20">
-      {/* Identity */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[1.3rem]"
-          style={{ background: dm ? 'rgba(212,160,176,0.16)' : '#F5E6EC', color: dm ? '#e7c9d5' : '#8A4A63' }}>
-          {initialsOf(client.name)}
-        </div>
-        <div className="min-w-0">
-          <h2 className="font-serif text-[1.6rem] leading-tight truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.name}</h2>
-          {memberSince && (
-            <p className="text-[0.72rem] mt-1" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>Client since {memberSince}</p>
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="flex flex-col gap-5 lg:sticky lg:top-8">
+          {/* Identity */}
+          <div className="flex items-center gap-4">
+            <Avatar name={client.name} large />
+            <div className="min-w-0">
+              <h2 className="break-words text-[1.55rem] font-semibold leading-tight tracking-[-0.02em] text-ink">{client.name}</h2>
+              {memberSince && <p className="mt-1 text-[0.8rem] text-ink-muted">Client since {memberSince}</p>}
+            </div>
+          </div>
+
+          {/* Contact actions */}
+          {(client.phone || client.email) && (
+            <div className="flex gap-2">
+              {client.phone && (
+                <ContactButton href={`tel:${phoneHref(client.phone)}`} label="Call">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 11.7 19.79 19.79 0 0 1 1 3.07 2 2 0 0 1 2.11 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </ContactButton>
+              )}
+              {client.phone && (
+                <ContactButton href={`sms:${phoneHref(client.phone)}`} label="Text">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </ContactButton>
+              )}
+              {client.email && (
+                <ContactButton href={`mailto:${client.email}`} label="Email">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
+                </ContactButton>
+              )}
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* Contact actions */}
-      <div className="flex gap-2.5 mb-6">
-        {client.phone && (
-          <ActionCircle href={`tel:${phoneHref(client.phone)}`} label="Call" dm={dm}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.11 11.7 19.79 19.79 0 0 1 1 3.07 2 2 0 0 1 2.11 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-          </ActionCircle>
-        )}
-        {client.phone && (
-          <ActionCircle href={`sms:${phoneHref(client.phone)}`} label="Text" dm={dm}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </ActionCircle>
-        )}
-        {client.email && (
-          <ActionCircle href={`mailto:${client.email}`} label="Email" dm={dm}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
-            </svg>
-          </ActionCircle>
-        )}
-      </div>
+          {/* Contact details */}
+          <RowPanel>
+            {client.phone && (
+              <div className="flex min-w-0 items-center justify-between gap-3 px-4 py-3">
+                <Label className="shrink-0">Phone</Label>
+                <span className="truncate text-[0.86rem] font-medium tabular-nums text-ink">{formatPhone(client.phone)}</span>
+              </div>
+            )}
+            {client.email && (
+              <div className="flex min-w-0 items-center justify-between gap-3 px-4 py-3">
+                <Label className="shrink-0">Email</Label>
+                <span className="truncate text-[0.86rem] font-medium text-ink">{client.email}</span>
+              </div>
+            )}
+            {!client.phone && !client.email && (
+              <p className="px-4 py-3 text-[0.8rem] text-ink-muted">No contact info on file</p>
+            )}
+          </RowPanel>
 
-      {/* Contact details */}
-      <div className="rounded-2xl px-4 py-3.5 mb-6 flex flex-col gap-2" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
-        {client.phone && (
-          <div className="flex items-center justify-between gap-3 min-w-0">
-            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>Phone</span>
-            <span className="text-[0.82rem] font-medium truncate tabular-nums" style={{ color: dm ? '#e4e4e7' : '#111' }}>{formatPhone(client.phone)}</span>
-          </div>
-        )}
-        {client.email && (
-          <div className="flex items-center justify-between gap-3 min-w-0">
-            <span className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase flex-shrink-0" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>Email</span>
-            <span className="text-[0.82rem] font-medium truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{client.email}</span>
-          </div>
-        )}
-        {!client.phone && !client.email && (
-          <p className="text-[0.78rem]" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>No contact info on file</p>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2.5 mb-8">
-        {[
-          { label: 'Bookings', value: client.total },
-          { label: 'Completed', value: client.completedCount },
-          { label: 'Upcoming', value: client.upcomingCount },
-        ].map(s => (
-          <div key={s.label} className="rounded-2xl py-3.5 text-center" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
-            <div className="font-serif text-[1.4rem] leading-none" style={{ color: dm ? '#ECEDF1' : '#111' }}>{s.value}</div>
-            <div className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5" style={{ color: dm ? '#8e8e99' : '#A89098' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-      </div> {/* /left column */}
-
-      <div className="min-w-0">
-      {/* Appointments */}
-      {apptRows.length > 0 && (
-        <div className="mb-8">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-3" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointments</p>
-          <div className="flex flex-col gap-2">
-            {apptRows.map(b => {
-              const rel = relativeDate(b.date);
-              return (
-                <button key={b.id} onClick={() => onOpenBooking?.(b)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all hover:opacity-90 active:scale-[0.995]"
-                  style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[0.84rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{b.service || 'Appointment'}</p>
-                    <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
-                      {rel.label}{b.time ? ` · ${b.time}` : ''}
-                      {isBridalService(b.service) ? ' · Bridal' : ''}
-                      {b.source === 'booksy' && <span style={{ color: dm ? '#5EEAD4' : '#0E8F98', fontWeight: 600 }}> · Booksy</span>}
-                    </p>
-                  </div>
-                  <StatusBadge status={b.status} />
-                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Classes */}
-      {classRows.length > 0 && (
-        <div className="mb-8">
-          <p className="text-[0.6rem] font-semibold tracking-[0.14em] uppercase mb-3" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Makeup Classes</p>
-          <div className="flex flex-col gap-2">
-            {classRows.map(r => (
-              <button key={r.id} onClick={() => onOpenClassReg?.(r)}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all hover:opacity-90 active:scale-[0.995]"
-                style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${line}` }}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[0.84rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#111' }}>{classLabelOf(r)}</p>
-                  <p className="text-[0.7rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
-                    {r.appointment_date ? relativeDate(r.appointment_date).label : 'No date set'}
-                    {r.appointment_time ? ` · ${r.appointment_time}` : ''}
-                  </p>
-                </div>
-                <span className="text-[0.6rem] font-semibold px-2.5 py-1 rounded-full flex-shrink-0"
-                  style={{ background: 'rgba(199,107,166,0.14)', color: '#A83E86' }}>
-                  {r.status === 'enrolled' ? 'Enrolled' : r.status === 'contacted' ? 'Contacted' : 'New'}
-                </span>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
+          {/* Stats */}
+          <div className="grid grid-cols-3 divide-x divide-line border border-line bg-paper">
+            {[
+              { label: 'Bookings', value: client.total },
+              { label: 'Completed', value: client.completedCount },
+              { label: 'Upcoming', value: client.upcomingCount },
+            ].map(s => (
+              <div key={s.label} className="min-w-0 px-4 py-4">
+                <p className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{s.label}</p>
+                <p className="mt-2 text-[1.5rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink">{s.value}</p>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        </div> {/* /left column */}
 
-      {apptRows.length === 0 && classRows.length === 0 && (
-        <div className="rounded-2xl py-10 text-center" style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${line}` }}>
-          <p className="text-[0.82rem]" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>No bookings on file yet</p>
-        </div>
-      )}
-      </div> {/* /right column */}
+        <div className="flex min-w-0 flex-col gap-8">
+          {/* Appointments. Bridal ones wear the rose wash, the same as on Home. */}
+          {apptRows.length > 0 && (
+            <section>
+              <div className="mb-2.5 flex items-baseline gap-2">
+                <Label>Appointments</Label>
+                <span className="text-[0.74rem] tabular-nums text-ink-muted">{apptRows.length}</span>
+              </div>
+              <RowPanel>
+                {apptRows.map(b => {
+                  const rel = relativeDate(b.date);
+                  const bridal = isBridalService(b.service);
+                  return (
+                    <button key={b.id} type="button" onClick={() => onOpenBooking?.(b)}
+                      className={cx(historyRow, bridal ? 'bg-rose-wash hover:bg-rose-soft/20 active:bg-rose-soft/25' : 'hover:bg-canvas/60 active:bg-canvas')}>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="min-w-0 truncate text-[0.88rem] font-semibold text-ink">{b.service || 'Appointment'}</span>
+                          {bridal && <Tag className="bg-rose/10 text-rose">Bridal</Tag>}
+                          {b.source === 'booksy' && <Tag title="Imported from Booksy">Booksy</Tag>}
+                        </span>
+                        <span className="mt-0.5 block text-[0.76rem] tabular-nums text-ink-muted">
+                          {rel.label}{b.time ? ` · ${b.time}` : ''}
+                        </span>
+                      </span>
+                      <StatusBadge status={b.status} />
+                      <RowChevron />
+                    </button>
+                  );
+                })}
+              </RowPanel>
+            </section>
+          )}
+
+          {/* Classes */}
+          {classRows.length > 0 && (
+            <section>
+              <div className="mb-2.5 flex items-baseline gap-2">
+                <Label>Makeup classes</Label>
+                <span className="text-[0.74rem] tabular-nums text-ink-muted">{classRows.length}</span>
+              </div>
+              <RowPanel>
+                {classRows.map(r => (
+                  <button key={r.id} type="button" onClick={() => onOpenClassReg?.(r)}
+                    className={cx(historyRow, 'hover:bg-canvas/60 active:bg-canvas')}>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[0.88rem] font-semibold text-ink">{classLabelOf(r)}</span>
+                      <span className="mt-0.5 block text-[0.76rem] tabular-nums text-ink-muted">
+                        {r.appointment_date ? relativeDate(r.appointment_date).label : 'No date set'}
+                        {r.appointment_time ? ` · ${r.appointment_time}` : ''}
+                      </span>
+                    </span>
+                    <span className="inline-flex h-[22px] shrink-0 items-center bg-rose/10 px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-rose">
+                      {r.status === 'enrolled' ? 'Enrolled' : r.status === 'contacted' ? 'Contacted' : 'New'}
+                    </span>
+                    <RowChevron />
+                  </button>
+                ))}
+              </RowPanel>
+            </section>
+          )}
+
+          {apptRows.length === 0 && classRows.length === 0 && (
+            <p className="border border-line bg-paper px-5 py-10 text-center text-[0.86rem] text-ink-muted">No bookings on file yet</p>
+          )}
+        </div> {/* /right column */}
       </div> {/* /two-column grid */}
     </div>
   );
 }
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
+const COLUMNS = 'sm:grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr]';
 
 export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm, onOpenBooking, onOpenClassReg }) {
   const [view, setView] = useState('list'); // 'list' | 'groups'
@@ -331,13 +359,10 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
 
   const selectedClient = selectedKey ? clients.find(c => c.key === selectedKey) : null;
 
-  const line = dm ? '#2e2e38' : '#EAEAF0';
-  const muted = dm ? '#8e8e99' : '#a8a8b1';
-
   if (selectedClient) {
     return (
       <ClientDetail
-        client={selectedClient} dm={dm}
+        client={selectedClient}
         onBack={() => setSelectedKey(null)}
         onOpenBooking={onOpenBooking}
         onOpenClassReg={onOpenClassReg}
@@ -352,159 +377,123 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
 
   return (
     <div className="max-w-[1100px]">
-      {/* List | Groups segmented control (Booksy style) */}
-      <div className="flex sm:inline-flex w-full sm:w-auto rounded-full p-1 mb-5"
-        style={{ background: dm ? '#26262e' : '#EDEDF3', border: `1px solid ${dm ? '#2e2e38' : '#E3E3EB'}` }}>
-        {[
-          { key: 'list', label: `List (${clients.length})` },
-          { key: 'groups', label: `Groups (${groups.length})` },
-        ].map(s => {
-          const active = view === s.key;
-          return (
-            <button key={s.key} onClick={() => setView(s.key)}
-              className="flex-1 sm:flex-none sm:min-w-[170px] py-2 px-6 rounded-full text-[0.78rem] font-semibold transition-all duration-200 whitespace-nowrap"
-              style={active
-                ? { background: dm ? '#3a3a44' : '#fff', color: dm ? '#ECEDF1' : '#111', boxShadow: dm ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 5px rgba(30, 30, 40,0.14)' }
-                : { background: 'transparent', color: muted }}>
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* List | Groups. Full width on a phone, so each half is an easy tap. */}
+      <Segmented
+        options={[
+          { value: 'list', label: 'List', count: clients.length },
+          { value: 'groups', label: 'Groups', count: groups.length },
+        ]}
+        value={view}
+        onChange={setView}
+        className="mb-6 w-full sm:w-auto [&>button]:flex-1 [&>button]:justify-center sm:[&>button]:min-w-[140px]"
+      />
 
       {view === 'groups' ? (
         /* ── Groups view ── */
-        <div className="flex flex-col">
-          {groups.map((g, i) => (
-            <button key={g.key}
+        <RowPanel>
+          {groups.map(g => (
+            <button key={g.key} type="button"
               onClick={() => { setActiveGroup(g.key); setView('list'); }}
-              className="w-full flex items-center gap-4 py-4 text-left transition-opacity hover:opacity-75"
-              style={{ borderBottom: i < groups.length - 1 ? `1px solid ${line}` : 'none' }}>
-              <span className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ border: `1px solid ${dm ? '#3a3a44' : '#DCDCE4'}` }}>
-                <GroupIcon color={dm ? '#8a8a93' : '#a8a8b1'} />
+              className="group flex w-full items-center gap-4 px-4 py-4 text-left transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas sm:px-5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line-strong text-ink-muted">
+                <GroupIcon />
               </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[0.95rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
-                  {g.label} <span style={{ color: muted, fontWeight: 500 }}>({g.count})</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline gap-2">
+                  <span className="text-[0.92rem] font-semibold text-ink">{g.label}</span>
+                  <span className="text-[0.8rem] tabular-nums text-ink-muted">{g.count}</span>
                 </span>
-                <span className="block text-[0.74rem] mt-0.5 leading-snug" style={{ color: muted }}>{g.desc}</span>
+                <span className="mt-0.5 block text-[0.76rem] leading-snug text-ink-muted">{g.desc}</span>
               </span>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+              <RowChevron />
             </button>
           ))}
-        </div>
+        </RowPanel>
       ) : (
         /* ── List view ── */
         <>
-          {/* Search */}
-          <div className="relative mb-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#a3a3ad" strokeWidth="1.5" className="w-[15px] h-[15px] absolute left-3.5 top-1/2 -translate-y-1/2">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search clients..."
-              className="w-full pl-10 pr-10 py-2.5 rounded-full text-base sm:text-[0.85rem] focus:ring-1 focus:ring-[#D4A0B0]/20 outline-none transition-all"
-              style={{ background: dm ? '#232328' : '#F3F3F7', border: `1px solid ${dm ? '#34343d' : 'transparent'}`, color: dm ? '#e4e4e7' : '#111' }}
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch('')} aria-label="Clear search"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: dm ? '#3f3f46' : '#E2E2EA', touchAction: 'manipulation' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#d4d4d8' : '#83838d'} strokeWidth="2.2" strokeLinecap="round" className="w-3.5 h-3.5">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            )}
-          </div>
+          <SearchLine value={search} onChange={setSearch} placeholder="Search clients" className="mb-4" />
 
-          {/* Active smart-group chip */}
+          {/* The smart group you came in through, and the way back out of it. */}
           {activeGroup !== 'all' && (
-            <div className="flex items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-2 pl-3.5 pr-2 py-1.5 rounded-full text-[0.72rem] font-semibold"
-                style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.18)', color: dm ? '#e7c9d5' : '#8A4A63' }}>
-                {group.label} ({visible.length})
-                <button onClick={() => setActiveGroup('all')} aria-label="Show all clients"
-                  className="w-5 h-5 rounded-full flex items-center justify-center transition-all active:scale-90"
-                  style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(160,96,122,0.15)' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <div className="mb-4 flex items-center gap-2">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded border border-line-strong bg-paper pl-3 pr-1 text-[0.8rem] font-medium text-ink">
+                {group.label}
+                <span className="tabular-nums text-ink-muted">{visible.length}</span>
+                <button type="button" onClick={() => setActiveGroup('all')} aria-label="Show all clients"
+                  className="press ml-0.5 flex h-6 w-6 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3 w-3" aria-hidden><path d="M18 6 6 18M6 6l12 12" /></svg>
                 </button>
               </span>
             </div>
           )}
 
           {visible.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-[0.85rem]" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>
-                {q ? `No clients match "${search}"` : 'No clients in this group yet'}
-              </p>
-            </div>
+            <p className="py-16 text-center text-[0.86rem] text-ink-muted">
+              {q ? `No clients match "${search}"` : 'No clients in this group yet'}
+            </p>
           ) : (
-            <div className="flex gap-1">
-              {/* Rows */}
-              <div className="flex-1 min-w-0">
-                {/* Desktop column header */}
-                <div className="hidden sm:flex items-center gap-3.5 pt-2 pb-2" style={{ borderBottom: `1px solid ${line}` }}>
-                  <span className="w-10 flex-shrink-0" />
-                  <span className="flex-1 min-w-0 grid grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] gap-4">
+            <div className="flex gap-1.5">
+              {/* Rows, in one panel. Each letter is a quiet strip across it. */}
+              <div className="min-w-0 flex-1 self-start border border-line bg-paper">
+                {/* Column heads, laptop only */}
+                <div className="hidden items-center gap-3.5 border-b border-line px-5 py-2.5 sm:flex">
+                  <span className="w-10 shrink-0" />
+                  <span className={cx('grid min-w-0 flex-1 gap-4', COLUMNS)}>
                     {['Client', 'Phone', 'Email', 'Next visit'].map(h => (
-                      <span key={h} className="text-[0.56rem] font-bold tracking-[0.14em] uppercase truncate" style={{ color: dm ? '#5a5a63' : '#BEBEC7' }}>{h}</span>
+                      <span key={h} className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{h}</span>
                     ))}
                   </span>
+                  <span className="w-3.5 shrink-0" />
                 </div>
-                {sections.map(([letter, list]) => (
-                  <div key={letter} ref={el => { letterRefs.current[letter] = el; }}>
-                    <p className="text-[0.68rem] font-bold tracking-[0.1em] pt-4 pb-1.5" style={{ color: dm ? '#8a8a93' : '#a8a8b1' }}>{letter}</p>
-                    {list.map((c, i) => {
-                      const nextRel = c.nextDate ? relativeDate(c.nextDate) : null;
-                      const lastRel = c.lastDate ? relativeDate(c.lastDate) : null;
-                      return (
-                        <button key={c.key} onClick={() => setSelectedKey(c.key)}
-                          className="w-full flex items-center gap-3.5 py-3 text-left transition-opacity hover:opacity-75"
-                          style={{ borderBottom: i < list.length - 1 ? `1px solid ${line}` : 'none' }}>
-                          <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-[0.78rem] font-semibold"
-                            style={{ background: dm ? '#2e2e38' : '#E9E9EF', color: dm ? '#a1a1aa' : '#83838d' }}>
-                            {initialsOf(c.name)}
-                          </span>
-                          <span className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-[1.2fr_0.9fr_1.2fr_0.75fr] sm:gap-4 sm:items-center">
-                            <span className="min-w-0">
-                              <span className="block text-[0.9rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{c.name}</span>
-                              <span className="block sm:hidden text-[0.74rem] mt-0.5 truncate tabular-nums" style={{ color: muted }}>
-                                {formatPhone(c.phone) || c.email || 'No contact info'}
+                {sections.map(([letter, list], si) => (
+                  <div key={letter} ref={el => { letterRefs.current[letter] = el; }} className={cx(si > 0 && 'border-t border-line')}>
+                    <p className="border-b border-line bg-canvas/50 px-4 py-1.5 text-[0.68rem] font-semibold tracking-[0.1em] text-ink-muted sm:px-5">{letter}</p>
+                    <div className="divide-y divide-line">
+                      {list.map(c => {
+                        const nextRel = c.nextDate ? relativeDate(c.nextDate) : null;
+                        const lastRel = c.lastDate ? relativeDate(c.lastDate) : null;
+                        return (
+                          <button key={c.key} type="button" onClick={() => setSelectedKey(c.key)}
+                            className="group flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas sm:px-5">
+                            <Avatar name={c.name} />
+                            <span className={cx('grid min-w-0 flex-1 grid-cols-1 sm:items-center sm:gap-4', COLUMNS)}>
+                              <span className="min-w-0">
+                                <span className="block break-words text-[0.9rem] font-semibold text-ink sm:truncate">{c.name}</span>
+                                <span className="mt-0.5 block truncate text-[0.76rem] tabular-nums text-ink-muted sm:hidden">
+                                  {formatPhone(c.phone) || c.email || 'No contact info'}
+                                </span>
+                              </span>
+                              <span className="hidden truncate text-[0.8rem] tabular-nums text-ink-soft sm:block">
+                                {formatPhone(c.phone) || '–'}
+                              </span>
+                              <span className="hidden truncate text-[0.8rem] text-ink-soft sm:block">
+                                {c.email || '–'}
+                              </span>
+                              <span className={cx('hidden truncate text-[0.8rem] tabular-nums sm:block', nextRel ? 'font-medium text-ink' : 'text-ink-muted')}>
+                                {nextRel ? nextRel.label : lastRel ? `Last ${lastRel.label}` : '–'}
                               </span>
                             </span>
-                            <span className="hidden sm:block text-[0.78rem] truncate tabular-nums" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
-                              {formatPhone(c.phone) || '—'}
-                            </span>
-                            <span className="hidden sm:block text-[0.78rem] truncate" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
-                              {c.email || '—'}
-                            </span>
-                            <span className="hidden sm:block text-[0.74rem] font-semibold truncate"
-                              style={{ color: nextRel ? '#2563EB' : muted }}>
-                              {nextRel ? nextRel.label : lastRel ? `Last ${lastRel.label}` : '—'}
-                            </span>
-                          </span>
-                          {c.upcomingCount > 0 && (
-                            <span className="sm:hidden w-2 h-2 rounded-full flex-shrink-0" title="Has an upcoming appointment" style={{ background: '#2563EB' }} />
-                          )}
-                          <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#3f3f46' : '#D2D2DB'} strokeWidth="2" className="hidden sm:block w-3.5 h-3.5 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-                        </button>
-                      );
-                    })}
+                            {c.upcomingCount > 0 && (
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-rose-soft sm:hidden" title="Has an upcoming appointment" />
+                            )}
+                            <RowChevron className="hidden sm:block" />
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* A-Z jump rail */}
-              <div className="flex-shrink-0 sticky self-start pl-1" style={{ top: 76 }}>
+              <div className="sticky top-[76px] shrink-0 self-start">
                 <div className="flex flex-col items-center">
-                  {'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('').filter(l => l !== '#' || presentLetters.has('#')).map(l => {
+                  {LETTERS.filter(l => l !== '#' || presentLetters.has('#')).map(l => {
                     const has = presentLetters.has(l);
                     return (
-                      <button key={l} onClick={() => has && jumpTo(l)} disabled={!has}
-                        className="w-5 text-[0.58rem] font-semibold leading-[15px] text-center"
-                        style={{ color: has ? (dm ? '#a1a1aa' : '#83838d') : (dm ? '#3a3a44' : '#D8D8E0'), cursor: has ? 'pointer' : 'default', touchAction: 'manipulation' }}>
+                      <button key={l} type="button" onClick={() => has && jumpTo(l)} disabled={!has}
+                        className={cx('w-5 text-center text-[0.6rem] font-semibold leading-[15px] transition-colors', has ? 'text-ink-muted hover:text-ink' : 'cursor-default text-line-strong')}>
                         {l}
                       </button>
                     );

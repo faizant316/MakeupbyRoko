@@ -1,11 +1,20 @@
 import { useState } from 'react';
 import { StarOutline } from './Glyphs';
+import { Button, Segmented, buttonClass, cx } from './ui';
 
-const FILTER_TONES = {
-  all:      { dot: null,      light: { bg: 'rgba(160,96,122,0.10)', txt: '#8A4A63' }, dark: { bg: 'rgba(212,160,176,0.16)', txt: '#e7c9d5' } },
-  pending:  { dot: '#F59E0B', light: { bg: 'rgba(245,158,11,0.13)', txt: '#B26A04' }, dark: { bg: 'rgba(245,158,11,0.18)',  txt: '#F5B83C' } },
-  approved: { dot: '#3B82F6', light: { bg: 'rgba(59,130,246,0.13)',  txt: '#1D4ED8' }, dark: { bg: 'rgba(59,130,246,0.18)',   txt: '#93B4F7' } },
+// Review status in the status tones: amber while it waits for her, blue once
+// it's live on the site. Same square chip as StatusBadge, which has no word
+// for "approved".
+const STATUS_TONE = {
+  pending: 'bg-tone-pending/10 text-tone-pending',
+  approved: 'bg-tone-confirmed/10 text-tone-confirmed',
 };
+
+const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+];
 
 export default function ReviewsList({ reviews, loading, onApprove, onDelete, darkMode: dm }) {
   const [filter, setFilter] = useState('all');
@@ -16,55 +25,32 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
     approved: reviews.filter(r => r.status === 'approved').length,
   };
 
-  const mutedTxt = dm ? '#8a8a93' : '#93939b';
-  const hoverTxt = dm ? '#cfcfd6' : '#62626B';
-  const hoverBg  = dm ? '#26262d' : '#F3F3F7';
-  const chipCls  = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.74rem] font-semibold whitespace-nowrap transition-colors flex-shrink-0';
-
   return (
     <div>
-      {/* Filter — minimal text chips, soft-tint when active (matches Bookings) */}
-      <div className="flex items-center gap-1 mb-5 overflow-x-auto no-scrollbar pb-0.5">
-        {['all', 'pending', 'approved'].map(key => {
-          const isActive = filter === key;
-          const c = FILTER_TONES[key];
-          const tone = dm ? c.dark : c.light;
-          return (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={chipCls}
-              style={isActive ? { background: tone.bg, color: tone.txt } : { background: 'transparent', color: mutedTxt }}
-              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = hoverBg; e.currentTarget.style.color = hoverTxt; } }}
-              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = mutedTxt; } }}
-            >
-              {c.dot && !isActive && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />}
-              <span className="capitalize">{key}</span>
-              <span style={{ opacity: 0.55 }}>{counts[key]}</span>
-            </button>
-          );
-        })}
-      </div>
+      <Segmented
+        options={FILTERS.map(f => ({ ...f, count: counts[f.value] }))}
+        value={filter}
+        onChange={setFilter}
+        className="mb-6"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 rounded-full border-2 animate-spin"
-            style={{ borderColor: dm ? '#3a3a48' : '#E5E7EB', borderTopColor: '#D4A0B0' }} />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-ink-muted" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-            style={{ background: dm ? '#26262e' : '#FAFAFB', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }}>
-            <StarOutline className="w-5 h-5 text-[#D4A0B0]" />
+        <div className="py-20 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center border border-line bg-paper">
+            <StarOutline className="h-5 w-5 text-rose-soft" />
           </div>
-          <p className="text-[0.85rem]" style={{ color: dm ? '#8e8e99' : '#a3a3ad' }}>
+          <p className="text-[0.86rem] text-ink-muted">
             {filter === 'all' ? 'No reviews yet' : `No ${filter} reviews`}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map(review => (
-            <ReviewCard key={review.id} review={review} onApprove={onApprove} onDelete={onDelete} dm={dm} />
+            <ReviewCard key={review.id} review={review} onApprove={onApprove} onDelete={onDelete} />
           ))}
         </div>
       )}
@@ -72,68 +58,55 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
   );
 }
 
-function ReviewCard({ review, onApprove, onDelete, dm }) {
+function ReviewCard({ review, onApprove, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const rating = review.rating || 0;
-  const isApproved = review.status === 'approved';
-
-  const bg      = dm ? '#26262e' : '#fff';
-  const bd      = dm ? '#3a3a48' : '#E2E4EA';
-  const tx      = dm ? '#e4e4e7' : '#111';
-  const di      = dm ? '#7a7a84' : '#bcbcc4';
-  const divider = dm ? '#2e2e38' : '#ECEDF1';
-  const star    = dm ? '#3a3a48' : '#E1E1E8';
 
   return (
-    <div className="rounded-2xl p-5 flex flex-col transition-all hover:shadow-md"
-      style={{ background: bg, border: `1px solid ${bd}` }}>
+    <article className="flex flex-col border border-line bg-paper p-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2.5">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h4 className="font-serif text-[1.02rem] truncate" style={{ color: tx }}>{review.name}</h4>
-          {review.service && <p className="text-[0.7rem] mt-0.5 truncate" style={{ color: '#D4A0B0' }}>{review.service}</p>}
+          <h4 className="truncate text-[0.98rem] font-semibold tracking-[-0.01em] text-ink">{review.name}</h4>
+          {review.service && <p className="mt-0.5 truncate text-[0.8rem] text-ink-soft">{review.service}</p>}
           {review.location && (
-            <p className="flex items-center gap-1 text-[0.66rem] mt-0.5 truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-3 h-3 flex-shrink-0">
+            <p className="mt-0.5 flex items-center gap-1 truncate text-[0.74rem] text-ink-muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-3 w-3 shrink-0" aria-hidden>
                 <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
               </svg>
               <span className="truncate">{review.location}</span>
             </p>
           )}
         </div>
-        <span className="px-2.5 py-1 text-[0.55rem] font-semibold tracking-[0.1em] uppercase rounded-full flex-shrink-0"
-          style={isApproved
-            ? { background: dm ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)', color: dm ? '#93B4F7' : '#1D4ED8' }
-            : { background: dm ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.13)', color: dm ? '#F5B83C' : '#B26A04' }}>
+        <span className={cx('inline-flex h-[22px] shrink-0 items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em]', STATUS_TONE[review.status] || STATUS_TONE.pending)}>
           {review.status}
         </span>
       </div>
 
       {/* Stars */}
-      <div className="flex items-center gap-0.5 mb-3">
+      <div className="mb-3 flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
         {[1, 2, 3, 4, 5].map(i => (
-          <span key={i} className="text-[0.82rem] leading-none" style={{ color: i <= rating ? '#D4A0B0' : star }}>★</span>
+          <span key={i} aria-hidden className={cx('text-[0.86rem] leading-none', i <= rating ? 'text-ink' : 'text-line-strong')}>★</span>
         ))}
       </div>
 
       {/* Client photo */}
       {review.photo && (
-        <a href={review.photo} target="_blank" rel="noopener noreferrer" className="block mb-3 rounded-lg overflow-hidden" style={{ border: `1px solid ${bd}` }}>
-          <img src={review.photo} alt="Client look" className="w-full max-h-[150px] object-cover" />
+        <a href={review.photo} target="_blank" rel="noopener noreferrer" className="mb-3 block overflow-hidden border border-line">
+          <img src={review.photo} alt="Client look" className="max-h-[150px] w-full object-cover" />
         </a>
       )}
 
       {/* Message */}
-      <p className="text-[0.82rem] leading-relaxed flex-1 mb-3" style={{ color: dm ? '#a1a1aa' : '#777' }}>
+      <p className="mb-3 flex-1 text-[0.86rem] leading-relaxed text-ink-soft">
         "{review.message}"
       </p>
 
       {/* Highlights */}
       {review.highlights?.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="mb-4 flex flex-wrap gap-1.5">
           {review.highlights.map((h, i) => (
-            <span key={i} className="px-2 py-0.5 rounded-full text-[0.62rem] font-medium"
-              style={{ background: dm ? 'rgba(212,160,176,0.16)' : 'rgba(212,160,176,0.12)', color: dm ? '#e7c9d5' : '#8A4A63' }}>
+            <span key={i} className="inline-flex h-6 items-center bg-canvas px-2 text-[0.68rem] font-medium text-ink-soft">
               {h}
             </span>
           ))}
@@ -141,41 +114,33 @@ function ReviewCard({ review, onApprove, onDelete, dm }) {
       )}
 
       {/* Date */}
-      <p className="text-[0.65rem] mb-4" style={{ color: di }}>
+      <p className="mb-4 text-[0.74rem] tabular-nums text-ink-muted">
         {review.created_date && new Date(review.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
       </p>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 pt-3" style={{ borderTop: `1px solid ${divider}` }}>
+      {/* Actions. Delete asks once, right here, before it goes. */}
+      <div className="flex items-center gap-2 border-t border-line pt-4">
         {review.status === 'pending' && (
-          <button onClick={() => onApprove(review.id)}
-            className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all active:scale-[0.98]"
-            style={{ background: dm ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.1)', color: dm ? '#93B4F7' : '#1D4ED8' }}>
+          <Button variant="solid" onClick={() => onApprove(review.id)} className="h-11 flex-1 sm:h-10">
             Approve
-          </button>
+          </Button>
         )}
         {!confirmDelete ? (
-          <button onClick={() => setConfirmDelete(true)}
-            className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all"
-            style={{ color: dm ? '#a1a1aa' : '#a8a8b1', border: `1px solid ${bd}` }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = dm ? '#7f1d1d' : '#fca5a5'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#a8a8b1'; e.currentTarget.style.borderColor = bd; }}>
+          <Button variant="danger" onClick={() => setConfirmDelete(true)} className="h-11 flex-1 sm:h-10">
             Delete
-          </button>
+          </Button>
         ) : (
           <>
-            <button onClick={() => onDelete(review.id)}
-              className="flex-1 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all active:scale-[0.98]">
-              Confirm Delete
+            <button type="button" onClick={() => onDelete(review.id)}
+              className={buttonClass('alert', 'md', 'h-11 flex-1 sm:h-10')}>
+              Confirm delete
             </button>
-            <button onClick={() => setConfirmDelete(false)}
-              className="px-3 py-2 text-[0.65rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all"
-              style={{ color: dm ? '#a1a1aa' : '#999', border: `1px solid ${bd}` }}>
+            <Button onClick={() => setConfirmDelete(false)} className="h-11 sm:h-10">
               Cancel
-            </button>
+            </Button>
           </>
         )}
       </div>
-    </div>
+    </article>
   );
 }

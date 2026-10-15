@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { lenisStop, lenisStart } from '@/lib/lenis';
 import ServicePreview from './ServicePreview';
-import { Cross, Star4 } from './Glyphs';
+import { Cross } from './Glyphs';
+import { Button, Chevron, Fold, Sheet, cx, inputClass } from './ui';
 
 const CATEGORIES = [
   { value: 'bridal', label: 'Bridal' },
@@ -9,6 +9,42 @@ const CATEGORIES = [
   { value: 'creative', label: 'Creative' },
   { value: 'lessons', label: 'Lessons' },
 ];
+
+// Field label, the same small caps the rest of the dashboard uses.
+const fieldLabel = 'mb-1.5 block text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted';
+// inputClass is a fixed 44px single line; a textarea needs its own height.
+const areaClass = 'w-full resize-none rounded border border-line bg-paper px-3 py-2.5 text-[16px] leading-relaxed text-ink placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 focus:outline-none sm:text-[0.9rem]';
+// Dashed drop targets: a hairline that turns rose while a file is over it.
+const dropClass = (over) => cx(
+  'relative w-full cursor-pointer border border-dashed transition-colors duration-200',
+  over ? 'border-rose bg-rose/[0.04]' : 'border-line-strong bg-canvas hover:border-ink/40',
+);
+
+function Section({ children }) {
+  return (
+    <p className="flex items-center gap-3 pt-2">
+      <span className="shrink-0 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{children}</span>
+      <span aria-hidden className="h-px flex-1 bg-line" />
+    </p>
+  );
+}
+
+// A removable entry under "What's included" and "Key features".
+function Chip({ children, onRemove }) {
+  return (
+    <span className="inline-flex h-8 items-center gap-1 rounded border border-line bg-canvas pl-2.5 pr-1 text-[0.8rem] text-ink-soft">
+      {children}
+      <button type="button" onClick={onRemove} aria-label="Remove"
+        className="press flex h-6 w-6 items-center justify-center rounded text-ink-muted hover:text-tone-alert">
+        <Cross className="h-2.5 w-2.5" strokeWidth={2.6} />
+      </button>
+    </span>
+  );
+}
+
+function Spinner() {
+  return <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />;
+}
 
 export default function ServiceFormModal({ service, onSave, onClose, darkMode: dm }) {
   const [form, setForm] = useState({
@@ -41,35 +77,11 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
   const [catOpen, setCatOpen] = useState(false);
   const catRef = useRef(null);
 
-  // Lock the page behind the modal. Lenis owns scrolling site-wide, so
-  // `overflow: hidden` alone won't stop wheel scrolling — pause Lenis too,
-  // and compensate for the scrollbar width so the page doesn't shift.
-  useEffect(() => {
-    // No padding-right compensation here any more. `scrollbar-gutter: stable`
-    // on <html> (see index.css) keeps the scrollbar's strip reserved whether or
-    // not a scrollbar is painted, so hiding overflow no longer changes the page
-    // width. Re-adding the old padding would now SHIFT the page by a scrollbar
-    // width rather than hold it still.
-    document.body.style.overflow = 'hidden';
-    lenisStop();
-    return () => {
-      document.body.style.overflow = '';
-      lenisStart();
-    };
-  }, []);
-
   useEffect(() => {
     const handler = (e) => { if (catRef.current && !catRef.current.contains(e.target)) setCatOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  // Close on Escape
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,363 +147,266 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
     if (e.dataTransfer.files?.length) uploadBeforeAfter(e.dataTransfer.files);
   }, [uploadBeforeAfter]);
 
-  // Theme tokens
-  const modalBg = dm ? '#27272a' : '#ffffff';
-  const borderColor = dm ? '#3f3f46' : '#E8E9EE';
-  const textPrimary = dm ? '#f4f4f5' : '#111111';
-  const textMuted = dm ? '#8e8e99' : '#999999';
-  const inputBg = dm ? '#18181b' : '#ffffff';
-  const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
-  const sectionLabelColor = dm ? '#8e8e99' : '#a3a3ad';
-  const tagBg = dm ? '#18181b' : '#FAFAFB';
-  const tagColor = dm ? '#a1a1aa' : '#666';
-  const addBtnBg = dm ? '#3f3f46' : '#111111';
-  const addBtnColor = dm ? '#f4f4f5' : '#ffffff';
-  const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
-
-  const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
-  const inputClass = `w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]`;
-
-  const labelStyle = {
-    display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em',
-    textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#808089',
-  };
-
-  const Section = ({ children }) => (
-    <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: sectionLabelColor }}>
-      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
-      {children}
-    </p>
-  );
-
   return (
-    <div
-      className="fixed inset-0 z-[500] flex items-stretch sm:items-center justify-center sm:p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    <Sheet
+      open
+      onClose={onClose}
+      size="lg"
+      title={service ? 'Edit service' : 'New service'}
+      headerExtra={(
+        <p className="mt-1 text-[0.84rem] text-ink-muted">
+          {service ? 'Update how this appears on your site' : 'Add a new offering to your site'}
+        </p>
+      )}
+      footer={(
+        <div className="flex items-center gap-2.5">
+          <Button size="lg" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form="service-form" variant="solid" size="lg" disabled={saving} className="flex-1">
+            {saving ? 'Saving…' : service ? 'Update service' : 'Create service'}
+          </Button>
+        </div>
+      )}
     >
-      <div
-        className="w-full sm:max-w-[600px] h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl sm:rounded-[24px]"
-        style={{ background: modalBg, border: dm ? `1px solid ${borderColor}` : 'none', animation: 'fadeSlideDown 0.3s ease-out' }}
-      >
-        {/* ── Header ── */}
-        <div className="flex-none flex justify-between items-center px-5 sm:px-6 border-b"
-          style={{ borderColor, paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#F2F2F7' }}>
-              <Star4 className="w-4 h-4 text-[#D4A0B0]" />
+      <form id="service-form" onSubmit={handleSubmit} ref={scrollRef} className="flex flex-col gap-4">
+
+        {/* Cover photo, photo-forward, like the live service card */}
+        <div
+          onDrop={handlePhotoDrop}
+          onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
+          onDragLeave={() => setPhotoDragOver(false)}
+          onClick={() => photoInputRef.current?.click()}
+          className={cx(dropClass(photoDragOver), 'group aspect-[16/7] overflow-hidden', form.photo && !photoDragOver && 'bg-black')}
+        >
+          {photoUploading ? (
+            <div className="absolute inset-0 flex items-center justify-center gap-2 text-[0.8rem] text-rose">
+              <Spinner />
+              Uploading…
             </div>
-            <div>
-              <h3 className="font-serif text-[1.25rem] leading-none" style={{ color: textPrimary }}>
-                {service ? 'Edit Service' : 'New Service'}
-              </h3>
-              <p className="text-[0.66rem] mt-1 tracking-wide" style={{ color: textMuted }}>
-                {service ? 'Update how this appears on your site' : 'Add a new offering to your site'}
-              </p>
+          ) : form.photo ? (
+            <>
+              <img src={form.photo} alt="Service" className="h-full w-full object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="bg-black/50 px-3 py-1.5 text-[0.74rem] font-medium text-white">
+                  Drop or click to replace
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-ink-muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-2 h-7 w-7" aria-hidden>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p className="text-[0.8rem] font-medium">Drop the service photo here or click to upload</p>
+              <p className="mt-0.5 text-[0.68rem] text-ink-muted/80">PNG or JPG, up to 10MB</p>
             </div>
-          </div>
-          <button onClick={onClose} type="button"
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#3f3f46' : '#F0F0F4', color: textMuted }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          )}
+          <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) uploadServicePhoto(f); e.target.value = ''; }} />
         </div>
 
-        {/* ── Scrollable body ── */}
-        <form id="service-form" onSubmit={handleSubmit}
-          ref={scrollRef} data-lenis-prevent
-          className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-4"
-          style={{ scrollbarWidth: 'thin' }}>
+        {/* BASICS */}
+        <Section>Basic info</Section>
 
-          {/* Cover photo — photo-forward, like the live service card */}
-          <div
-            onDrop={handlePhotoDrop}
-            onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
-            onDragLeave={() => setPhotoDragOver(false)}
-            onClick={() => photoInputRef.current?.click()}
-            className="relative w-full rounded-2xl overflow-hidden cursor-pointer transition-all group"
-            style={{
-              aspectRatio: '16 / 7',
-              border: `1.5px dashed ${photoDragOver ? '#D4A0B0' : inputBorder}`,
-              background: form.photo ? '#000' : (photoDragOver ? 'rgba(212,160,176,0.06)' : subtleBg),
-            }}
-          >
-            {photoUploading ? (
-              <div className="absolute inset-0 flex items-center justify-center gap-2 text-[#D4A0B0] text-[0.8rem]">
-                <span className="w-4 h-4 border-2 border-[#D4A0B0] border-t-transparent rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
-                Uploading…
-              </div>
-            ) : form.photo ? (
-              <>
-                <img src={form.photo} alt="Service" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.35)' }}>
-                  <span className="px-3 py-1.5 rounded-full text-white text-[0.7rem] font-medium" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-                    Drop or click to replace
-                  </span>
-                </div>
-              </>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.5" className="w-7 h-7 mb-2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <p className="text-[0.78rem] font-medium" style={{ color: textMuted }}>Drop the service photo here or click to upload</p>
-                <p className="text-[0.65rem] mt-0.5" style={{ color: textMuted, opacity: 0.6 }}>PNG or JPG, up to 10MB</p>
-              </div>
-            )}
-            <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) uploadServicePhoto(f); e.target.value = ''; }} />
-          </div>
+        <div>
+          <label className={fieldLabel}>Service name *</label>
+          <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+            placeholder="Full Glam" className={inputClass} />
+        </div>
 
-          {/* BASICS */}
-          <Section>Basic Info</Section>
-
-          <div>
-            <label style={labelStyle}>Service Name *</label>
-            <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-              placeholder="Full Glam" className={inputClass} style={inputStyle} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {/* Category custom dropdown */}
-            <div ref={catRef} className="relative">
-              <label style={labelStyle}>Category *</label>
-              <button type="button" onClick={() => setCatOpen(!catOpen)}
-                className={`${inputClass} text-left flex items-center justify-between cursor-pointer`} style={inputStyle}>
-                <span style={{ color: textPrimary }}>{CATEGORIES.find(c => c.value === form.category)?.label}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2"
-                  className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${catOpen ? 'rotate-180' : ''}`}>
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-              {catOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] py-1.5 z-50 overflow-hidden"
-                  style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${borderColor}`, animation: 'fadeSlideDown 0.15s ease-out' }}>
-                  {CATEGORIES.map(c => (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Category custom dropdown */}
+          <div ref={catRef} className="relative">
+            <label className={fieldLabel}>Category *</label>
+            <button type="button" onClick={() => setCatOpen(!catOpen)} aria-expanded={catOpen}
+              className={cx(inputClass, 'flex cursor-pointer items-center justify-between gap-2 text-left')}>
+              <span className="truncate">{CATEGORIES.find(c => c.value === form.category)?.label}</span>
+              <Chevron open={catOpen} className="h-3.5 w-3.5 text-ink-muted" />
+            </button>
+            {catOpen && (
+              <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+                style={{ '--origin': 'top left' }}>
+                {CATEGORIES.map(c => {
+                  const on = form.category === c.value;
+                  return (
                     <button key={c.value} type="button"
                       onClick={() => { setForm({ ...form, category: c.value }); setCatOpen(false); }}
-                      className="w-full flex items-center justify-between px-4 py-2.5 text-left text-[0.8rem] transition-colors"
-                      style={{
-                        color: form.category === c.value ? textPrimary : textMuted,
-                        background: form.category === c.value ? (dm ? '#3f3f46' : '#F6F6FA') : 'transparent',
-                        fontWeight: form.category === c.value ? 600 : 400,
-                      }}
-                      onMouseEnter={e => { if (form.category !== c.value) e.currentTarget.style.background = dm ? '#3f3f46' : '#F6F6F9'; }}
-                      onMouseLeave={e => { if (form.category !== c.value) e.currentTarget.style.background = 'transparent'; }}>
+                      className={cx('flex h-10 w-full items-center justify-between gap-2 px-3 text-left text-[0.84rem] transition-colors', on ? 'bg-canvas font-semibold text-ink' : 'text-ink-soft hover:bg-canvas/60')}>
                       {c.label}
-                      {form.category === c.value && (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-3.5 h-3.5">
+                      {on && (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3.5 w-3.5 shrink-0 text-rose" aria-hidden>
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                       )}
                     </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div>
-              <label style={labelStyle}>Sort Order</label>
-              <input type="number" value={form.sort_order} onChange={e => setForm({ ...form, sort_order: Number(e.target.value) })}
-                className={inputClass} style={inputStyle} />
-            </div>
-          </div>
-
-          {/* PRICING */}
-          <Section>Pricing &amp; Duration</Section>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label style={labelStyle}>Display Price *</label>
-              <input required value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
-                placeholder="From $250" className={inputClass} style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Base Price ($)</label>
-              <input type="number" value={form.price_value} onChange={e => setForm({ ...form, price_value: Number(e.target.value) })}
-                className={inputClass} style={inputStyle} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label style={labelStyle}>Duration *</label>
-              <input required value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })}
-                placeholder="90 min" className={inputClass} style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Deposit</label>
-              <input value={form.deposit} onChange={e => setForm({ ...form, deposit: e.target.value })}
-                placeholder="$75 deposit required" className={inputClass} style={inputStyle} />
-            </div>
-          </div>
-
-          {/* CONTENT */}
-          <Section>Content</Section>
-
-          <div>
-            <label style={labelStyle}>Description</label>
-            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-              placeholder="Describe this service…" className={`${inputClass} resize-none h-[80px]`} style={inputStyle} />
-          </div>
-
-          <div>
-            <label style={labelStyle}>What to Expect</label>
-            <textarea value={form.what_to_expect} onChange={e => setForm({ ...form, what_to_expect: e.target.value })}
-              placeholder="Describe the process and what clients should expect…" className={`${inputClass} resize-none h-[70px]`} style={inputStyle} />
-          </div>
-
-          {/* LISTS */}
-          <Section>Highlights &amp; Inclusions</Section>
-
-          {/* Includes */}
-          <div>
-            <label style={labelStyle}>What's Included</label>
-            <div className="flex gap-2 mb-2">
-              <input value={includeInput} onChange={e => setIncludeInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addInclude())}
-                placeholder="Add an item…" className={`${inputClass} flex-1`} style={inputStyle} />
-              <button type="button" onClick={addInclude}
-                className="px-4 text-[0.7rem] font-medium rounded-xl transition-colors active:scale-95"
-                style={{ background: addBtnBg, color: addBtnColor }}>Add</button>
-            </div>
-            {form.includes.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {form.includes.map((item, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.7rem]"
-                    style={{ background: tagBg, border: `1px solid ${borderColor}`, color: tagColor }}>
-                    {item}
-                    <button type="button" onClick={() => removeInclude(i)} className="hover:text-red-400 transition-colors opacity-50 hover:opacity-100">×</button>
-                  </span>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
-
-          {/* Key Features */}
           <div>
-            <label style={labelStyle}>Key Features</label>
-            <div className="flex gap-2 mb-2">
-              <input value={featureInput} onChange={e => setFeatureInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                placeholder="e.g., Detailed Consultation…" className={`${inputClass} flex-1`} style={inputStyle} />
-              <button type="button" onClick={addFeature}
-                className="px-4 text-[0.7rem] font-medium rounded-xl transition-colors active:scale-95"
-                style={{ background: addBtnBg, color: addBtnColor }}>Add</button>
-            </div>
-            {form.key_features.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {form.key_features.map((feature, i) => (
-                  <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.7rem]"
-                    style={{ background: tagBg, border: `1px solid ${borderColor}`, color: tagColor }}>
-                    {feature}
-                    <button type="button" onClick={() => removeFeature(i)} className="hover:text-red-400 transition-colors opacity-50 hover:opacity-100">×</button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <label className={fieldLabel}>Sort order</label>
+            <input type="number" value={form.sort_order} onChange={e => setForm({ ...form, sort_order: Number(e.target.value) })}
+              className={cx(inputClass, 'tabular-nums')} />
           </div>
+        </div>
 
-          {/* Before & After Photos — drag & drop uploads */}
+        {/* PRICING */}
+        <Section>Pricing &amp; duration</Section>
+
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label style={labelStyle}>Before &amp; After Photos</label>
-            <div
-              onDrop={handleBaDrop}
-              onDragOver={e => { e.preventDefault(); setBaDragOver(true); }}
-              onDragLeave={() => setBaDragOver(false)}
-              onClick={() => baInputRef.current?.click()}
-              className="rounded-xl px-4 py-5 text-center cursor-pointer transition-all"
-              style={{
-                border: `1.5px dashed ${baDragOver ? '#D4A0B0' : inputBorder}`,
-                background: baDragOver ? 'rgba(212,160,176,0.06)' : inputBg,
-              }}
-            >
-              {baUploading ? (
-                <div className="flex items-center justify-center gap-2 text-[#D4A0B0] text-[0.8rem]">
-                  <span className="w-4 h-4 border-2 border-[#D4A0B0] border-t-transparent rounded-full" style={{ animation: 'spin 0.7s linear infinite' }} />
-                  Uploading…
-                </div>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="1.5" className="w-6 h-6 mx-auto mb-1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                  <p className="text-[0.76rem] font-medium" style={{ color: textMuted }}>Drop photos here or click to upload</p>
-                  <p className="text-[0.64rem] mt-0.5" style={{ color: textMuted, opacity: 0.6 }}>You can add several at once</p>
-                </>
-              )}
-              <input ref={baInputRef} type="file" accept="image/*" multiple className="hidden"
-                onChange={e => { if (e.target.files?.length) uploadBeforeAfter(e.target.files); e.target.value = ''; }} />
-            </div>
-            {form.before_after_photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {form.before_after_photos.map((photo, i) => (
-                  <div key={i} className="relative group aspect-square rounded-lg overflow-hidden"
-                    style={{ background: tagBg, border: `1px solid ${borderColor}` }}>
-                    <img src={photo} alt={`Before & After ${i + 1}`} className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => removePhoto(i)}
-                      className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity text-lg">
-                      <Cross className="w-3 h-3" strokeWidth={3} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <label className={fieldLabel}>Display price *</label>
+            <input required value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
+              placeholder="From $250" className={inputClass} />
           </div>
-
-          {/* SETTINGS */}
-          <Section>Visibility</Section>
-
-          <div className="flex items-center justify-between px-4 py-3 rounded-xl"
-            style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
-            <div>
-              <p className="text-[0.8rem] font-medium" style={{ color: textPrimary }}>Active Service</p>
-              <p className="text-[0.72rem]" style={{ color: textMuted }}>
-                {form.is_active ? 'Visible to clients on the site' : 'Hidden from clients'}
-              </p>
-            </div>
-            <button type="button" onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
-              className="relative w-11 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
-              style={{ background: form.is_active ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
-              <div className="w-5 h-5 rounded-full shadow transition-transform duration-200"
-                style={{ background: '#fff', transform: form.is_active ? 'translateX(20px)' : 'translateX(0px)' }} />
-            </button>
+          <div>
+            <label className={fieldLabel}>Base price ($)</label>
+            <input type="number" value={form.price_value} onChange={e => setForm({ ...form, price_value: Number(e.target.value) })}
+              className={cx(inputClass, 'tabular-nums')} />
           </div>
+        </div>
 
-          {/* Preview toggle */}
-          <button type="button" onClick={() => setShowPreview(!showPreview)}
-            className="w-full py-2.5 text-[0.75rem] font-medium tracking-[0.04em] rounded-xl border transition-all"
-            style={showPreview
-              ? { background: dm ? '#3f3f46' : '#FAFAFB', borderColor: '#D4A0B0', color: '#D4A0B0' }
-              : { background: 'transparent', borderColor, color: textMuted }
-            }>
-            {showPreview ? 'Hide Preview ↑' : 'Preview Card ↓'}
-          </button>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={fieldLabel}>Duration *</label>
+            <input required value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })}
+              placeholder="90 min" className={inputClass} />
+          </div>
+          <div>
+            <label className={fieldLabel}>Deposit</label>
+            <input value={form.deposit} onChange={e => setForm({ ...form, deposit: e.target.value })}
+              placeholder="$75 deposit required" className={inputClass} />
+          </div>
+        </div>
 
-          {showPreview && (
-            <div className="rounded-xl p-4" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
-              <p className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase text-[#a3a3ad] mb-3">How it looks on the homepage</p>
-              <ServicePreview form={form} />
+        {/* CONTENT */}
+        <Section>Content</Section>
+
+        <div>
+          <label className={fieldLabel}>Description</label>
+          <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+            placeholder="Describe this service…" className={cx(areaClass, 'h-[88px]')} />
+        </div>
+
+        <div>
+          <label className={fieldLabel}>What to expect</label>
+          <textarea value={form.what_to_expect} onChange={e => setForm({ ...form, what_to_expect: e.target.value })}
+            placeholder="Describe the process and what clients should expect…" className={cx(areaClass, 'h-[76px]')} />
+        </div>
+
+        {/* LISTS */}
+        <Section>Highlights &amp; inclusions</Section>
+
+        {/* Includes */}
+        <div>
+          <label className={fieldLabel}>What's included</label>
+          <div className="mb-2 flex gap-2">
+            <input value={includeInput} onChange={e => setIncludeInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addInclude())}
+              placeholder="Add an item…" className={cx(inputClass, 'flex-1')} />
+            <Button variant="solid" onClick={addInclude} className="h-11">Add</Button>
+          </div>
+          {form.includes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {form.includes.map((item, i) => (
+                <Chip key={i} onRemove={() => removeInclude(i)}>{item}</Chip>
+              ))}
             </div>
           )}
-        </form>
+        </div>
 
-        {/* ── Pinned footer ── */}
-        <div className="flex-none px-5 sm:px-6 py-3.5 border-t flex items-center gap-3"
-          style={{ borderColor, background: modalBg, paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}>
-          <button type="button" onClick={onClose}
-            className="px-5 py-3 text-[0.78rem] font-medium rounded-xl border transition-all active:scale-[0.98]"
-            style={{ borderColor: inputBorder, color: textMuted, background: 'transparent' }}>
-            Cancel
-          </button>
-          <button type="submit" form="service-form" disabled={saving}
-            className="flex-1 py-3 text-[0.82rem] font-medium tracking-[0.04em] rounded-xl transition-all shadow-sm disabled:opacity-50 active:scale-[0.99]"
-            style={{ background: dm ? '#f4f4f5' : '#111111', color: dm ? '#111111' : '#ffffff' }}>
-            {saving ? 'Saving…' : service ? 'Update Service' : 'Create Service'}
+        {/* Key Features */}
+        <div>
+          <label className={fieldLabel}>Key features</label>
+          <div className="mb-2 flex gap-2">
+            <input value={featureInput} onChange={e => setFeatureInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+              placeholder="e.g., Detailed Consultation…" className={cx(inputClass, 'flex-1')} />
+            <Button variant="solid" onClick={addFeature} className="h-11">Add</Button>
+          </div>
+          {form.key_features.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {form.key_features.map((feature, i) => (
+                <Chip key={i} onRemove={() => removeFeature(i)}>{feature}</Chip>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Before & After Photos, drag & drop uploads */}
+        <div>
+          <label className={fieldLabel}>Before &amp; after photos</label>
+          <div
+            onDrop={handleBaDrop}
+            onDragOver={e => { e.preventDefault(); setBaDragOver(true); }}
+            onDragLeave={() => setBaDragOver(false)}
+            onClick={() => baInputRef.current?.click()}
+            className={cx(dropClass(baDragOver), 'px-4 py-5 text-center')}
+          >
+            {baUploading ? (
+              <div className="flex items-center justify-center gap-2 text-[0.8rem] text-rose">
+                <Spinner />
+                Uploading…
+              </div>
+            ) : (
+              <div className="text-ink-muted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-1.5 h-6 w-6" aria-hidden>
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p className="text-[0.8rem] font-medium">Drop photos here or click to upload</p>
+                <p className="mt-0.5 text-[0.68rem] text-ink-muted/80">You can add several at once</p>
+              </div>
+            )}
+            <input ref={baInputRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={e => { if (e.target.files?.length) uploadBeforeAfter(e.target.files); e.target.value = ''; }} />
+          </div>
+          {form.before_after_photos.length > 0 && (
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {form.before_after_photos.map((photo, i) => (
+                <div key={i} className="group relative aspect-square overflow-hidden border border-line bg-canvas">
+                  <img src={photo} alt={`Before & After ${i + 1}`} className="h-full w-full object-cover" />
+                  <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo"
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100">
+                    <Cross className="h-3 w-3" strokeWidth={3} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SETTINGS */}
+        <Section>Visibility</Section>
+
+        <div className="flex items-center justify-between gap-4 border border-line bg-paper px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-[0.86rem] font-medium text-ink">Active service</p>
+            <p className="text-[0.76rem] text-ink-muted">
+              {form.is_active ? 'Visible to clients on the site' : 'Hidden from clients'}
+            </p>
+          </div>
+          <button type="button" role="switch" aria-checked={form.is_active} aria-label="Active service"
+            onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
+            className="flex h-11 shrink-0 items-center">
+            <span aria-hidden className={cx('relative h-6 w-11 rounded-full transition-colors duration-300', form.is_active ? 'bg-ink' : 'bg-line-strong')}>
+              <span className={cx('absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-paper transition-transform duration-300 ease-quint', form.is_active && 'translate-x-5')} />
+            </span>
           </button>
         </div>
-      </div>
-    </div>
+
+        {/* Preview toggle */}
+        <Button onClick={() => setShowPreview(!showPreview)} aria-expanded={showPreview} className="h-11 w-full">
+          {showPreview ? 'Hide preview' : 'Preview card'}
+          <Chevron open={showPreview} className="h-3.5 w-3.5 text-ink-muted" />
+        </Button>
+
+        <Fold open={showPreview} lazy>
+          <div className="border border-line bg-canvas p-4">
+            <p className="mb-3 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">How it looks on the homepage</p>
+            <ServicePreview form={form} />
+          </div>
+        </Fold>
+      </form>
+    </Sheet>
   );
 }

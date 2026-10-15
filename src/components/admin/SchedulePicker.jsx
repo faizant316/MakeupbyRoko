@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Chevron, cx, inputClass } from './ui';
 
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -33,12 +34,6 @@ function timeFrom24(val) {
   return `${h12}:${ms} ${ampm}`;
 }
 
-function palette(dm) {
-  return dm
-    ? { bg: '#1c1c28', panel: '#27272a', border: '#3a3a48', text: '#e4e4e7', muted: '#71717a', hover: '#2e2e38', headMuted: '#a1a1aa' }
-    : { bg: '#fafafa', panel: '#fff', border: '#e5e5e5', text: '#111', muted: '#999', hover: '#F7F2F6', headMuted: '#888' };
-}
-
 // The month the calendar should land on: the picked date's month, else the
 // openTo hint's month (never one that's already over), else this month.
 function startMonth(value, openTo) {
@@ -51,16 +46,35 @@ function startMonth(value, openTo) {
   return !value && m < thisMonth ? thisMonth : m;
 }
 
-// Desktop: a styled trigger + popover month calendar. Mobile: the native date
-// wheel (best UX on touch). Value is a 'YYYY-MM-DD' string. Dark-mode aware.
+// The floating panel under a picker's field: square, one hairline, the one
+// shadow things that hover over the page are allowed.
+const POPOVER = 'pop-in absolute left-0 top-full z-50 mt-1 border border-line bg-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)]';
+
+const CalendarIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden>
+    <rect x="3" y="4.5" width="18" height="16.5" rx="1.5" /><path d="M16 2.5v4M8 2.5v4M3 10h18" />
+  </svg>
+);
+
+const Arrow = ({ dir }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+    <path d={dir === 'prev' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
+  </svg>
+);
+
+// Desktop: a boxed field + popover month calendar. Mobile: the native date
+// wheel (best UX on touch). Value is a 'YYYY-MM-DD' string.
 //
 // openTo: a 'YYYY-MM-DD' whose month the calendar opens on while nothing is
 // picked. A native date input can't be told where to open, so passing it
 // swaps the phone wheel for this calendar too.
 // marker: { date, label } dots one day and names it under the grid.
 // autoOpen: pop the calendar the moment the field appears, if it's empty.
-export function AdminDatePicker({ value, onChange, dm, accent = '#111', openTo, marker, autoOpen = false }) {
-  const p = palette(dm);
+// dm and accent are still accepted from the callers that pass them; the
+// colours come from the admin's palette now, which already knows dark mode,
+// so a picked day is ink wherever the picker sits.
+// eslint-disable-next-line no-unused-vars
+export function AdminDatePicker({ value, onChange, dm, accent, openTo, marker, autoOpen = false }) {
   const [open, setOpen] = useState(autoOpen && !value);
   const ref = useRef(null);
   const nativeOnPhone = !openTo;
@@ -91,59 +105,55 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111', openTo, 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const inputStyle = {
-    minHeight: '48px', border: `1px solid ${p.border}`, background: p.bg, color: p.text, fontSize: '16px',
-  };
-
   return (
     <>
-      {/* Mobile — native date wheel */}
+      {/* Mobile: native date wheel */}
       {nativeOnPhone && (
         <div className="block sm:hidden">
           <input type="date" value={value || ''} onChange={e => onChange(e.target.value)}
-            className="w-full px-4 rounded-xl outline-none appearance-none" style={inputStyle} />
+            className={cx(inputClass, 'appearance-none')} />
         </div>
       )}
 
-      {/* Desktop — styled popover calendar */}
-      <div ref={ref} className={`${nativeOnPhone ? 'hidden sm:block' : ''} relative`}>
+      {/* Desktop: popover calendar */}
+      <div ref={ref} className={cx(nativeOnPhone && 'hidden sm:block', 'relative')}>
         {/* Every open lands on the right month, even after browsing away. */}
         <button type="button" onClick={() => { if (!open) setView(startMonth(value, openTo)); setOpen(o => !o); }}
-          className="w-full px-4 rounded-xl outline-none flex items-center justify-between gap-2 transition-colors"
-          style={{ ...inputStyle, borderColor: open ? accent : p.border }}>
-          <span style={{ color: value ? p.text : p.muted, fontSize: '0.85rem' }}>
+          aria-expanded={open}
+          className={cx(inputClass, 'flex items-center justify-between gap-2 text-left', open && 'border-ink/60')}>
+          <span className={cx('truncate tabular-nums', value ? 'text-ink' : 'text-ink-muted/70')}>
             {value ? formatDisplay(value) : 'Select a date'}
           </span>
-          <svg viewBox="0 0 24 24" fill="none" stroke={p.muted} strokeWidth="1.6" className="w-4 h-4 flex-shrink-0">
-            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
+          <CalendarIcon />
         </button>
 
         {open && (
-          <div className="absolute z-50 mt-2 left-0 w-full sm:w-[292px] rounded-2xl p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
-            style={{ background: p.panel, border: `1px solid ${p.border}` }}>
+          <div className={cx(POPOVER, 'w-full p-3 sm:w-[300px]')} style={{ '--origin': 'top left' }}>
             {/* Month nav */}
-            <div className="flex items-center justify-between mb-2 px-1">
-              <button type="button" onClick={() => setView(new Date(year, month - 1))}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-lg transition-colors"
-                style={{ color: p.muted }}>‹</button>
-              <span className="font-serif text-[0.95rem]" style={{ color: p.text }}>{monthName}</span>
-              <button type="button" onClick={() => setView(new Date(year, month + 1))}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-lg transition-colors"
-                style={{ color: p.muted }}>›</button>
+            <div className="mb-2 flex items-center justify-between">
+              <button type="button" onClick={() => setView(new Date(year, month - 1))} aria-label="Previous month"
+                className="press flex h-9 w-9 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+                <Arrow dir="prev" />
+              </button>
+              <span className="text-[0.92rem] font-semibold tracking-[-0.01em] text-ink">{monthName}</span>
+              <button type="button" onClick={() => setView(new Date(year, month + 1))} aria-label="Next month"
+                className="press flex h-9 w-9 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+                <Arrow dir="next" />
+              </button>
             </div>
 
             {/* Weekday header */}
-            <div className="grid grid-cols-7 gap-0.5 text-center mb-1">
+            <div className="mb-1 grid grid-cols-7 gap-0.5 text-center">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                <div key={i} className="text-[0.55rem] font-semibold uppercase py-1" style={{ color: p.muted }}>{d}</div>
+                <div key={i} className="py-1 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-ink-muted">{d}</div>
               ))}
             </div>
 
-            {/* Days */}
+            {/* Days. Only the picked day is filled; today says so with its
+                colour, never with a ring of its own. */}
             <div className="grid grid-cols-7 gap-0.5 text-center">
               {cells.map((d, i) => {
-                if (!d) return <div key={`e-${i}`} className="w-full h-10 sm:w-9 sm:h-9" />;
+                if (!d) return <div key={`e-${i}`} className="h-10 w-full sm:h-9" />;
                 const k = dateKey(year, month, d);
                 const isSel = value === k;
                 const isToday = k === todayKey;
@@ -151,16 +161,17 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111', openTo, 
                 return (
                   <button key={k} type="button" title={isMarked ? marker.label : undefined}
                     onClick={() => { onChange(k); setOpen(false); }}
-                    className="relative w-full h-10 sm:w-9 sm:h-9 flex items-center justify-center text-[0.82rem] rounded-lg transition-colors"
-                    style={isSel
-                      ? { background: accent, color: '#fff', fontWeight: 600 }
-                      : { color: isToday ? accent : p.text, fontWeight: isToday || isMarked ? 700 : 400 }}
-                    onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = p.hover; }}
-                    onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}>
+                    aria-pressed={isSel}
+                    className={cx(
+                      'press relative flex h-10 w-full items-center justify-center rounded text-[0.86rem] tabular-nums transition-colors sm:h-9',
+                      isSel ? 'bg-ink font-semibold text-paper'
+                        : isToday ? 'font-semibold text-rose hover:bg-canvas'
+                        : isMarked ? 'font-semibold text-ink hover:bg-canvas'
+                        : 'text-ink hover:bg-canvas',
+                    )}>
                     {d}
                     {isMarked && (
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                        style={{ background: isSel ? '#fff' : accent }} />
+                      <span aria-hidden className={cx('absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full', isSel ? 'bg-paper' : 'bg-rose')} />
                     )}
                   </button>
                 );
@@ -168,10 +179,10 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111', openTo, 
             </div>
 
             {marker?.date && (
-              <div className="flex items-center gap-2 mt-2 pt-2.5 px-1" style={{ borderTop: `1px solid ${p.border}` }}>
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent }} />
-                <span className="text-[0.7rem] truncate" style={{ color: p.headMuted }}>
-                  {marker.label}, <span style={{ color: p.text, fontWeight: 600 }}>{formatDisplay(marker.date)}</span>
+              <div className="mt-2 flex items-center gap-2 border-t border-line px-1 pt-2.5">
+                <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose" />
+                <span className="truncate text-[0.74rem] text-ink-muted">
+                  {marker.label}, <span className="font-semibold text-ink">{formatDisplay(marker.date)}</span>
                 </span>
               </div>
             )}
@@ -182,10 +193,11 @@ export function AdminDatePicker({ value, onChange, dm, accent = '#111', openTo, 
   );
 }
 
-// Desktop: a styled scroll dropdown over the given time slots. Mobile: the
-// native time wheel. Value/onChange use a display string like "10:00 AM".
-export function AdminTimeSelect({ value, onChange, dm, slots = [], accent = '#111' }) {
-  const p = palette(dm);
+// Desktop: a boxed dropdown over the given time slots. Mobile: the native time
+// wheel. Value/onChange use a display string like "10:00 AM". dm and accent
+// are accepted for the same reason as above.
+// eslint-disable-next-line no-unused-vars
+export function AdminTimeSelect({ value, onChange, dm, slots = [], accent }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const listRef = useRef(null);
@@ -203,45 +215,35 @@ export function AdminTimeSelect({ value, onChange, dm, slots = [], accent = '#11
     if (el) listRef.current.scrollTop = el.offsetTop - listRef.current.clientHeight / 2 + el.clientHeight / 2;
   }, [open]);
 
-  const inputStyle = {
-    minHeight: '48px', border: `1px solid ${p.border}`, background: p.bg, color: p.text, fontSize: '16px',
-  };
-
   return (
     <>
-      {/* Mobile — native time wheel */}
+      {/* Mobile: native time wheel */}
       <div className="block sm:hidden">
         <input type="time" value={timeTo24(value)} onChange={e => onChange(timeFrom24(e.target.value))}
-          className="w-full px-4 rounded-xl outline-none appearance-none" style={inputStyle} />
+          className={cx(inputClass, 'appearance-none')} />
       </div>
 
-      {/* Desktop — styled dropdown */}
-      <div ref={ref} className="hidden sm:block relative">
-        <button type="button" onClick={() => setOpen(o => !o)}
-          className="w-full px-4 rounded-xl outline-none flex items-center justify-between gap-2 transition-colors"
-          style={{ ...inputStyle, borderColor: open ? accent : p.border }}>
-          <span style={{ color: value ? p.text : p.muted, fontSize: '0.85rem' }}>{value || 'Select a time'}</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke={p.muted} strokeWidth="2" className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
-            style={{ transform: open ? 'rotate(180deg)' : 'none' }}>
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+      {/* Desktop: dropdown */}
+      <div ref={ref} className="relative hidden sm:block">
+        <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
+          className={cx(inputClass, 'flex items-center justify-between gap-2 text-left', open && 'border-ink/60')}>
+          <span className={cx('truncate tabular-nums', value ? 'text-ink' : 'text-ink-muted/70')}>{value || 'Select a time'}</span>
+          <Chevron open={open} className="h-3.5 w-3.5 text-ink-muted" />
         </button>
 
         {open && (
-          <div className="absolute z-50 mt-2 left-0 right-0 rounded-2xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
-            style={{ background: p.panel, border: `1px solid ${p.border}` }}>
-            <div ref={listRef} data-lenis-prevent className="max-h-[240px] overflow-y-auto overscroll-contain py-1.5">
+          <div className={cx(POPOVER, 'right-0 p-1')} style={{ '--origin': 'top left' }}>
+            <div ref={listRef} data-lenis-prevent className="relative max-h-[240px] overflow-y-auto overscroll-contain">
               {slots.map(t => {
                 const isSel = t === value;
                 return (
-                  <div key={t} data-selected={isSel}
+                  <button key={t} type="button" data-selected={isSel}
                     onClick={() => { onChange(t); setOpen(false); }}
-                    className="px-4 py-2.5 text-[0.82rem] cursor-pointer select-none transition-colors"
-                    style={isSel ? { background: `${accent}1a`, color: accent, fontWeight: 600 } : { color: p.text }}
-                    onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = p.hover; }}
-                    onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}>
+                    className={cx('flex h-10 w-full items-center justify-between gap-2 px-3 text-left text-[0.86rem] tabular-nums transition-colors',
+                      isSel ? 'bg-canvas font-medium text-ink' : 'text-ink-soft hover:bg-canvas/60')}>
                     {t}
-                  </div>
+                    {isSel && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 text-rose" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>}
+                  </button>
                 );
               })}
             </div>

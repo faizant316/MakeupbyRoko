@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { lenisStop, lenisStart } from '@/lib/lenis';
 import { formatPhone } from '@/lib/phone';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
 import LocationAutocomplete from '@/components/LocationAutocomplete';
 import { cityFromLocation } from '@/lib/location';
+import { Button, Chevron, Label, Sheet, cx, inputClass } from './ui';
 
 const TIMES = [
   '4:00 AM', '4:30 AM', '5:00 AM', '5:30 AM',
@@ -18,11 +18,24 @@ const TIMES = [
 ];
 
 const STATUSES = [
-  { value: 'pending',   label: 'Pending',   color: '#F59E0B' },
-  { value: 'confirmed', label: 'Confirmed', color: '#2563EB' },
-  { value: 'completed', label: 'Completed', color: '#64748B' },
-  { value: 'cancelled', label: 'Cancelled', color: '#EF4444' },
+  { value: 'pending',   label: 'Pending',   dot: 'bg-tone-pending' },
+  { value: 'confirmed', label: 'Confirmed', dot: 'bg-tone-confirmed' },
+  { value: 'completed', label: 'Completed', dot: 'bg-tone-done' },
+  { value: 'cancelled', label: 'Cancelled', dot: 'bg-tone-alert' },
 ];
+
+const areaClass = cx(inputClass.replace('h-11 ', ''), 'block min-h-[88px] resize-none py-2.5 leading-relaxed');
+const fieldLabel = 'mb-1.5 block text-[0.8rem] font-medium text-ink-soft';
+
+// One part of the form: a small label, its fields, a hairline before the next.
+function Section({ title, children }) {
+  return (
+    <section className="py-6 first:pt-0 last:pb-0">
+      <h3 className="mb-4 text-[0.68rem] leading-snug"><Label>{title}</Label></h3>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
 
 export default function EditBookingModal({ booking, onSave, onClose, darkMode: dm }) {
   const [SERVICES, setServices] = useState([]);
@@ -49,8 +62,8 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
     deposit_received: booking.deposit_received || false,
     location: booking.location || '',
   });
-  // Keep the city derived from the address rather than editable on its own —
-  // two fields that can disagree is how a row ends up saying "Fremont" next to
+  // Keep the city derived from the address rather than editable on its own.
+  // Two fields that can disagree is how a row ends up saying "Fremont" next to
   // a Hayward street.
   const set = (k, v) => setForm(f => (
     k === 'location'
@@ -58,34 +71,13 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
       : { ...f, [k]: v }
   ));
 
-  // Lock the page behind the modal. Lenis owns scrolling site-wide, so
-  // overflow:hidden alone won't stop the wheel — pause Lenis too (this is what
-  // fixes the old base44 modal scrolling the background behind it).
-  useEffect(() => {
-    // No padding-right compensation here any more. `scrollbar-gutter: stable`
-    // on <html> (see index.css) keeps the scrollbar's strip reserved whether or
-    // not a scrollbar is painted, so hiding overflow no longer changes the page
-    // width. Re-adding the old padding would now SHIFT the page by a scrollbar
-    // width rather than hold it still.
-    document.body.style.overflow = 'hidden';
-    lenisStop();
-    return () => {
-      document.body.style.overflow = '';
-      lenisStart();
-    };
-  }, []);
+  // The page lock (Lenis paused, body pinned) and Escape come from Sheet.
 
   useEffect(() => {
     const handler = (e) => { if (svcRef.current && !svcRef.current.contains(e.target)) setSvcOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,186 +86,127 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
     setSaving(false);
   };
 
-  // Theme tokens (match ServiceFormModal)
-  const modalBg = dm ? '#27272a' : '#ffffff';
-  const borderColor = dm ? '#3f3f46' : '#E8E9EE';
-  const textPrimary = dm ? '#f4f4f5' : '#111111';
-  const textMuted = dm ? '#8e8e99' : '#999999';
-  const inputBg = dm ? '#18181b' : '#ffffff';
-  const inputBorder = dm ? '#3f3f46' : '#E2E4EA';
-  const sectionLabelColor = dm ? '#8e8e99' : '#a3a3ad';
-  const subtleBg = dm ? '#1e1e24' : '#FAFAFB';
-
-  const inputStyle = { background: inputBg, border: `1px solid ${inputBorder}`, color: textPrimary };
-  const inputClass = 'w-full px-3.5 py-2.5 rounded-xl text-[0.85rem] outline-none transition-all placeholder:opacity-40 focus:border-[#D4A0B0]';
-  const labelStyle = { display: 'block', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '6px', color: dm ? '#a1a1aa' : '#808089' };
-
-  const Section = ({ children }) => (
-    <p className="flex items-center gap-2.5 pt-1" style={{ fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: sectionLabelColor }}>
-      <span className="w-4 h-px" style={{ background: dm ? '#3f3f46' : '#E2E4EA' }} />
-      {children}
-    </p>
-  );
-
   const dateFormatted = form.date
     ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : null;
 
+  const footer = (
+    <div className="flex gap-2.5 sm:justify-end">
+      <Button variant="quiet" size="lg" onClick={onClose} className="max-sm:flex-1 sm:h-10 sm:px-5">Cancel</Button>
+      <Button type="submit" form="edit-appt-form" variant="solid" size="lg" disabled={saving}
+        className="max-sm:flex-[2] sm:h-10 sm:min-w-[10rem] sm:px-5">
+        {saving
+          ? <><span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-paper/30 border-t-paper" /> Saving…</>
+          : 'Save changes'}
+      </Button>
+    </div>
+  );
+
   return (
-    <div
-      className="fixed inset-0 z-[500] flex items-stretch sm:items-center justify-center sm:p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="w-full sm:max-w-[620px] h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl sm:rounded-[24px]"
-        style={{ background: modalBg, border: dm ? `1px solid ${borderColor}` : 'none', animation: 'fadeSlideDown 0.3s ease-out' }}
-      >
-        {/* Header */}
-        <div className="flex-none flex justify-between items-center px-5 sm:px-6 border-b"
-          style={{ borderColor, paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dm ? '#3f3f46' : '#F2F2F7' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-[0.55rem] font-bold tracking-[0.16em] uppercase" style={{ color: '#D4A0B0' }}>Admin</p>
-              <h3 className="font-serif text-[1.25rem] leading-none mt-0.5" style={{ color: textPrimary }}>Edit Appointment</h3>
-            </div>
-          </div>
-          <button onClick={onClose} type="button"
-            className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ background: dm ? '#3f3f46' : '#F0F0F4', color: textMuted }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
+    <Sheet open onClose={onClose} size="lg" eyebrow="Admin" title="Edit appointment" footer={footer}>
+      <form id="edit-appt-form" onSubmit={handleSubmit} className="divide-y divide-line">
 
-        {/* Scrollable body */}
-        <form id="edit-appt-form" onSubmit={handleSubmit} data-lenis-prevent
-          className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 flex flex-col gap-4" style={{ scrollbarWidth: 'thin' }}>
-
-          {/* CLIENT */}
-          <Section>Client</Section>
+        <Section title="Client">
           <div>
-            <label style={labelStyle}>Name</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Client name" className={inputClass} style={inputStyle} />
+            <label htmlFor="eb-name" className={fieldLabel}>Name</label>
+            <input id="eb-name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Client name" className={inputClass} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
             <div>
-              <label style={labelStyle}>Phone</label>
-              <input type="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="(555) 000-0000" className={inputClass} style={inputStyle} />
+              <label htmlFor="eb-phone" className={fieldLabel}>Phone</label>
+              <input id="eb-phone" type="tel" inputMode="tel" value={form.phone} onChange={e => set('phone', formatPhone(e.target.value))} placeholder="(555) 000-0000" className={inputClass} />
             </div>
             <div>
-              <label style={labelStyle}>Email</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" className={inputClass} style={inputStyle} />
+              <label htmlFor="eb-email" className={fieldLabel}>Email</label>
+              <input id="eb-email" type="email" inputMode="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" className={inputClass} />
             </div>
           </div>
+        </Section>
 
-          {/* SERVICE */}
-          <Section>Service</Section>
+        <Section title="Service">
           <div ref={svcRef} className="relative">
-            <button type="button" onClick={() => setSvcOpen(o => !o)}
-              className={`${inputClass} text-left flex items-center justify-between cursor-pointer`} style={inputStyle}>
-              <span style={{ color: form.service ? textPrimary : textMuted }}>{form.service || 'Select a service…'}</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke={textMuted} strokeWidth="2"
-                className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${svcOpen ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+            <button type="button" onClick={() => setSvcOpen(o => !o)} aria-expanded={svcOpen}
+              className={cx(inputClass, 'flex items-center justify-between gap-2 text-left', svcOpen && 'border-ink/60')}>
+              <span className={cx('truncate', form.service ? 'text-ink' : 'text-ink-muted/70')}>{form.service || 'Select a service…'}</span>
+              <Chevron open={svcOpen} className="h-3.5 w-3.5 text-ink-muted" />
             </button>
             {svcOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] py-1.5 z-50 max-h-[240px] overflow-y-auto"
-                style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${borderColor}`, animation: 'fadeSlideDown 0.15s ease-out' }} data-lenis-prevent>
-                {SERVICES.length === 0 && <p className="px-4 py-2.5 text-[0.8rem]" style={{ color: textMuted }}>Loading services…</p>}
+              <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 max-h-[240px] overflow-y-auto overscroll-contain border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+                style={{ '--origin': 'top left' }} data-lenis-prevent>
+                {SERVICES.length === 0 && <p className="px-3 py-2.5 text-[0.8rem] text-ink-muted">Loading services…</p>}
                 {SERVICES.map(s => (
                   <button key={s} type="button"
                     onClick={() => { set('service', s); setSvcOpen(false); }}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-left text-[0.8rem] transition-colors"
-                    style={{
-                      color: form.service === s ? textPrimary : textMuted,
-                      background: form.service === s ? (dm ? '#3f3f46' : '#F6F6FA') : 'transparent',
-                      fontWeight: form.service === s ? 600 : 400,
-                    }}
-                    onMouseEnter={e => { if (form.service !== s) e.currentTarget.style.background = dm ? '#3f3f46' : '#F6F6F9'; }}
-                    onMouseLeave={e => { if (form.service !== s) e.currentTarget.style.background = 'transparent'; }}>
-                    {s}
-                    {form.service === s && <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="2.5" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                    className={cx('flex h-10 w-full items-center justify-between gap-2 px-3 text-left text-[0.86rem] transition-colors',
+                      form.service === s ? 'bg-canvas font-medium text-ink' : 'text-ink-soft hover:bg-canvas/60')}>
+                    <span className="truncate">{s}</span>
+                    {form.service === s && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 text-rose" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>}
                   </button>
                 ))}
               </div>
             )}
           </div>
+        </Section>
 
-          {/* DATE & TIME */}
-          <Section>Date &amp; Time</Section>
+        <Section title="Date and time">
           <div>
-            <label style={labelStyle}>Date</label>
-            <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent="#D4A0B0" />
-            {dateFormatted && <p className="text-[0.72rem] font-medium mt-2" style={{ color: '#D4A0B0' }}>{dateFormatted}</p>}
+            <p className={fieldLabel}>Date</p>
+            <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} />
+            {dateFormatted && <p className="mt-2 text-[0.8rem] font-medium text-rose">{dateFormatted}</p>}
           </div>
           <div>
-            <label style={labelStyle}>Appointment Time Window</label>
-            <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIMES} dm={dm} accent="#D4A0B0" />
+            <p className={fieldLabel}>Appointment time window</p>
+            <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIMES} dm={dm} />
           </div>
+        </Section>
 
-          {/* LOCATION — editable so Roko can correct an imported address or add
-              one the client gave her over text, which is where most of them
-              actually arrive. Blank means the studio. */}
-          <Section>Client Location</Section>
+        {/* LOCATION: editable so Roko can correct an imported address or add
+            one the client gave her over text, which is where most of them
+            actually arrive. Blank means the studio. */}
+        <Section title="Client location">
           <div>
             <LocationAutocomplete value={form.location} onChange={v => set('location', v)} placeholder="Address or venue (leave blank for studio)" dm={dm} />
-            <p className="text-[0.72rem] mt-2" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
+            <p className="mt-2 text-[0.8rem] text-ink-muted">
               Shows on the appointment list so you can see where you're going without opening the card.
             </p>
           </div>
+        </Section>
 
-          {/* NOTES */}
-          <Section>Notes</Section>
-          <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
-            placeholder="Ready-by time, makeup vision, special requests…"
-            className={`${inputClass} resize-none`} style={{ ...inputStyle, minHeight: 84, fontSize: '16px' }} />
+        <Section title="Notes">
+          <textarea value={form.notes} onChange={e => set('notes', e.target.value)} aria-label="Notes"
+            placeholder="Ready-by time, makeup vision, special requests…" className={areaClass} />
+        </Section>
 
-          {/* STATUS */}
-          <Section>Status</Section>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {STATUSES.map(s => (
-              <button key={s.value} type="button" onClick={() => set('status', s.value)}
-                className="py-2.5 rounded-xl text-[0.7rem] font-semibold tracking-[0.04em] uppercase transition-all"
-                style={form.status === s.value
-                  ? { background: s.color, color: '#fff', border: `1px solid ${s.color}` }
-                  : { background: subtleBg, color: textMuted, border: `1px solid ${borderColor}` }
-                }>{s.label}</button>
-            ))}
+        <Section title="Status">
+          <div role="radiogroup" aria-label="Status" className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+            {STATUSES.map(s => {
+              const on = form.status === s.value;
+              return (
+                <button key={s.value} type="button" role="radio" aria-checked={on} onClick={() => set('status', s.value)}
+                  className={cx('flex min-h-[52px] items-center gap-2.5 px-3 text-left text-[0.86rem] font-medium transition-colors duration-200 sm:px-4',
+                    on ? 'bg-ink text-paper' : 'bg-paper text-ink hover:bg-canvas')}>
+                  <span aria-hidden className={cx('h-1.5 w-1.5 shrink-0 rounded-full', s.dot)} />
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
+        </Section>
 
-          {/* DEPOSIT */}
-          <Section>Deposit</Section>
-          <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: subtleBg, border: `1px solid ${borderColor}` }}>
-            <div>
-              <p className="text-[0.82rem] font-medium" style={{ color: textPrimary }}>Zelle Deposit Received</p>
-              <p className="text-[0.7rem]" style={{ color: textMuted }}>Toggle once the deposit is confirmed</p>
-            </div>
-            <button type="button" onClick={() => set('deposit_received', !form.deposit_received)}
-              className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
-              style={{ background: form.deposit_received ? '#22c55e' : (dm ? '#3f3f46' : '#e2e8f0') }}>
-              <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
-                style={{ background: '#fff', transform: form.deposit_received ? 'translateX(20px)' : 'translateX(0px)' }} />
-            </button>
-          </div>
-        </form>
-
-        {/* Pinned footer */}
-        <div className="flex-none px-5 sm:px-6 py-3.5 border-t flex items-center gap-3"
-          style={{ borderColor, background: modalBg, paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}>
-          <button type="button" onClick={onClose}
-            className="px-5 py-3 text-[0.78rem] font-medium rounded-xl border transition-all active:scale-[0.98]"
-            style={{ borderColor: inputBorder, color: textMuted, background: 'transparent' }}>Cancel</button>
-          <button type="submit" form="edit-appt-form" disabled={saving}
-            className="flex-1 py-3 text-[0.82rem] font-medium tracking-[0.04em] rounded-xl transition-all shadow-sm disabled:opacity-50 active:scale-[0.99]"
-            style={{ background: dm ? '#f4f4f5' : '#111111', color: dm ? '#111111' : '#ffffff' }}>
-            {saving ? 'Saving…' : 'Save Changes'}
+        <Section title="Deposit">
+          <button type="button" role="switch" aria-checked={form.deposit_received} aria-label="Zelle deposit received"
+            onClick={() => set('deposit_received', !form.deposit_received)}
+            className="flex min-h-[44px] w-full items-center justify-between gap-4 text-left">
+            <span className="min-w-0">
+              <span className="block text-[0.86rem] font-medium text-ink">Zelle deposit received</span>
+              <span className="mt-0.5 block text-[0.8rem] text-ink-muted">Toggle once the deposit is confirmed</span>
+            </span>
+            <span aria-hidden className={cx('flex h-[26px] w-11 shrink-0 items-center rounded-full px-[3px] transition-colors duration-200', form.deposit_received ? 'bg-ink' : 'bg-line-strong')}>
+              <span className={cx('h-5 w-5 rounded-full bg-paper transition-transform duration-300 ease-quint', form.deposit_received && 'translate-x-[18px]')} />
+            </span>
           </button>
-        </div>
-      </div>
-    </div>
+        </Section>
+      </form>
+    </Sheet>
   );
 }

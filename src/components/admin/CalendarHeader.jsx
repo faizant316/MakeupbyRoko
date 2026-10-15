@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Chevron, cx } from './ui';
 
 // One header for every admin calendar view: Day, Week and Month, in the Home
 // card and in the client-card drawer.
@@ -16,9 +17,20 @@ import { useState } from 'react';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// A quiet square around an icon: no border, a canvas tint under a pointer.
+const quietIcon = 'press flex shrink-0 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink';
+
+function Arrow({ dir, className }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {dir < 0 ? <path d="m15 18-6-6 6-6" /> : <path d="m9 18 6-6-6-6" />}
+    </svg>
+  );
+}
+
 export default function CalendarHeader({
   title,                 // the big centred line: "Fri, Sep 4" / "Aug 30 – Sep 5" / "September"
-  subtitle,              // small line beneath — the year, always
+  subtitle,              // small line beneath: the year, always
   onStep,                // (dir) => void
   stepUnit = 'day',      // names the arrows for screen readers
   jumpDate,              // Date the jumper opens on; omit to make the title inert
@@ -27,16 +39,12 @@ export default function CalendarHeader({
   onToday,
   isToday = true,        // hides the Today chip when you're already there
   big = false,           // full-page calendar: bigger date, bigger arrows
-  dm,
+  // eslint-disable-next-line no-unused-vars
+  dm,                    // still passed by every caller; the colours switch on their own now
   className = '',
 }) {
   const [showJump, setShowJump] = useState(false);
   const [jumpYear, setJumpYear] = useState(() => (jumpDate || new Date()).getFullYear());
-
-  const muted = dm ? '#8b8b95' : '#9c9ca6';
-  const ink = dm ? '#ECEDF1' : '#1a1a1f';
-  const accent = '#C4849A';
-  const chipBg = dm ? '#26262e' : '#f6f2f4';
   const canJump = !!(onJump && jumpDate);
 
   const openJump = () => {
@@ -46,100 +54,108 @@ export default function CalendarHeader({
   };
 
   const arrow = (dir) => (
-    <button type="button" onClick={() => onStep(dir)} aria-label={`${dir < 0 ? 'Previous' : 'Next'} ${stepUnit}`}
-      className={`${big ? 'w-10 h-10' : 'w-8 h-8'} rounded-lg flex items-center justify-center flex-shrink-0 transition-colors active:scale-90`}
-      style={{ color: muted, background: 'transparent' }}
-      onMouseEnter={e => { e.currentTarget.style.background = chipBg; e.currentTarget.style.color = accent; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = muted; }}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={big ? 'w-[18px] h-[18px]' : 'w-4 h-4'}>
-        {dir < 0 ? <polyline points="15 18 9 12 15 6" /> : <polyline points="9 18 15 12 9 6" />}
-      </svg>
+    <button
+      type="button"
+      onClick={() => onStep(dir)}
+      aria-label={`${dir < 0 ? 'Previous' : 'Next'} ${stepUnit}`}
+      className={cx(quietIcon, big ? 'h-11 w-11' : 'h-10 w-10')}
+    >
+      <Arrow dir={dir} className={big ? 'h-[18px] w-[18px]' : 'h-4 w-4'} />
     </button>
   );
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={cx('relative', className)}>
       {/* Three tracks so the middle one stays centred no matter how wide the
           buttons on the right get. On a phone they stack, date first. */}
-      <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3">
+      <div className="mb-3 flex flex-col items-center gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr]">
         <span className="hidden sm:block" />
 
-        <div className="flex items-center gap-0.5 sm:gap-1 min-w-0 justify-center">
+        <div className="relative flex min-w-0 items-center justify-center gap-1">
           {arrow(-1)}
-          <button type="button" onClick={openJump} disabled={!canJump}
-            className={`flex flex-col items-center min-w-0 rounded-xl transition-opacity hover:opacity-70 ${big ? 'px-3 py-1.5' : 'px-1.5 py-0.5'}`}
-            style={{ WebkitTapHighlightColor: 'transparent', cursor: canJump ? 'pointer' : 'default' }}>
-            <span className="flex items-center gap-1.5 min-w-0">
-              <span className={`font-medium leading-tight truncate ${big ? 'font-serif text-[1.45rem] sm:text-[1.7rem]' : 'text-[1.06rem] sm:text-[1.2rem]'}`}
-                style={{ color: ink, letterSpacing: '-0.01em' }}>
+          <button
+            type="button"
+            onClick={openJump}
+            disabled={!canJump}
+            aria-expanded={canJump ? showJump : undefined}
+            className={cx(
+              'flex min-w-0 flex-col items-center rounded transition-colors duration-200',
+              big ? 'px-3 py-1.5' : 'px-2 py-1',
+              canJump ? 'press cursor-pointer hover:bg-canvas' : 'cursor-default',
+            )}
+          >
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className={cx(
+                'truncate font-semibold leading-tight tracking-[-0.02em] text-ink',
+                big ? 'text-[1.45rem] sm:text-[1.7rem]' : 'text-[1.06rem] sm:text-[1.2rem]',
+              )}>
                 {title}
               </span>
-              {canJump && (
-                <svg viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`flex-shrink-0 ${big ? 'w-3.5 h-3.5' : 'w-3 h-3'}`}
-                  style={{ transition: 'transform 200ms ease', transform: showJump ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              )}
+              {canJump && <Chevron open={showJump} className={cx('text-ink-muted', big ? 'h-3.5 w-3.5' : 'h-3 w-3')} />}
             </span>
             {subtitle && (
-              <span className={`leading-tight tabular-nums mt-[1px] ${big ? 'text-[0.74rem]' : 'text-[0.66rem]'}`} style={{ color: muted }}>{subtitle}</span>
+              <span className={cx('mt-px leading-tight tabular-nums text-ink-muted', big ? 'text-[0.74rem]' : 'text-[0.68rem]')}>{subtitle}</span>
             )}
           </button>
           {arrow(1)}
+
+          {/* Month + year jumper. Outer box centres it, inner one animates, so
+              the entrance's transform never fights the centring one. */}
+          {showJump && canJump && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowJump(false)} aria-hidden="true" />
+              <div className="absolute left-1/2 top-full z-50 mt-1.5 w-[min(300px,calc(100vw-2rem))] -translate-x-1/2">
+                <div className="pop-in border border-line bg-paper p-2 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top center' }}>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <button type="button" onClick={() => setJumpYear(y => y - 1)} aria-label="Previous year" className={cx(quietIcon, 'h-9 w-9')}>
+                      <Arrow dir={-1} className="h-3.5 w-3.5" />
+                    </button>
+                    <p className="text-[0.92rem] font-semibold tabular-nums text-ink">{jumpYear}</p>
+                    <button type="button" onClick={() => setJumpYear(y => y + 1)} aria-label="Next year" className={cx(quietIcon, 'h-9 w-9')}>
+                      <Arrow dir={1} className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {MONTHS.map((m, i) => {
+                      const isCur = jumpYear === jumpDate.getFullYear() && i === jumpDate.getMonth();
+                      const isNow = jumpYear === new Date().getFullYear() && i === new Date().getMonth();
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => { onJump(i, jumpYear); setShowJump(false); }}
+                          aria-pressed={isCur}
+                          className={cx(
+                            'press h-9 rounded text-[0.8rem] transition-colors',
+                            isCur ? 'bg-ink font-semibold text-paper'
+                              : isNow ? 'font-semibold text-rose hover:bg-canvas'
+                              : 'text-ink-soft hover:bg-canvas hover:text-ink',
+                          )}
+                        >
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5 justify-center sm:justify-end flex-wrap">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-end">
           {right}
           {!isToday && onToday && (
-            <button type="button" onClick={onToday}
-              className="flex-shrink-0 h-7 px-2.5 rounded-md text-[0.78rem] font-medium transition-colors active:scale-95"
-              style={{ background: chipBg, color: dm ? '#d4d4d8' : '#5c5c66' }}>
+            <button
+              type="button"
+              onClick={onToday}
+              className="press inline-flex h-8 shrink-0 items-center rounded border border-line-strong px-2.5 text-[0.72rem] font-medium text-ink-soft hover:border-ink/40 hover:text-ink"
+            >
               Today
             </button>
           )}
         </div>
       </div>
-
-      {/* ── Month + year jumper ── */}
-      {showJump && canJump && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowJump(false)} aria-hidden="true" />
-          <div className="absolute z-50 rounded-xl p-3 left-1/2 -translate-x-1/2 w-[min(320px,100%)]"
-            style={{
-              top: big ? '3.9rem' : '3.1rem',
-              background: dm ? '#27272a' : '#fff',
-              border: `1px solid ${dm ? '#3f3f46' : '#eadfe4'}`,
-              boxShadow: dm ? '0 16px 40px rgba(0,0,0,0.5)' : '0 16px 40px rgba(60,30,45,0.14)',
-            }}>
-            <div className="flex items-center justify-between mb-2">
-              <button type="button" onClick={() => setJumpYear(y => y - 1)} aria-label="Previous year"
-                className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: muted }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="15 18 9 12 15 6" /></svg>
-              </button>
-              <p className="text-[0.94rem] font-medium tabular-nums" style={{ color: ink }}>{jumpYear}</p>
-              <button type="button" onClick={() => setJumpYear(y => y + 1)} aria-label="Next year"
-                className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: muted }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
-            </div>
-            <div className="grid grid-cols-4 gap-1">
-              {MONTHS.map((m, i) => {
-                const isCur = jumpYear === jumpDate.getFullYear() && i === jumpDate.getMonth();
-                const isNow = jumpYear === new Date().getFullYear() && i === new Date().getMonth();
-                return (
-                  <button key={m} type="button" onClick={() => { onJump(i, jumpYear); setShowJump(false); }}
-                    className="py-1.5 rounded-md text-[0.8rem] transition-colors"
-                    style={isCur
-                      ? { background: dm ? '#ECEDF1' : '#1a1a1f', color: dm ? '#111' : '#fff', fontWeight: 500 }
-                      : { color: isNow ? accent : (dm ? '#d4d4d8' : '#4a4a52'), fontWeight: isNow ? 500 : 400 }}>
-                    {m}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

@@ -5,15 +5,20 @@ import { classesOfReg } from '@/lib/classCatalog';
 import { blockLabel } from '@/lib/timeBlocks';
 import CalendarHeader from './CalendarHeader';
 import { useTimeBlocks } from './useTimeBlocks';
+import { Segmented, cx } from './ui';
 
 // Booksy-style schedule. Day is a real time grid, Week is a 7-column grid you
 // read as a shape (a busy day is visibly dense, a free day is visibly empty, no
 // "Free day" label to read), Month is a density map of type bars.
 //
-// Everything sizes off one small type scale — 11 / 13 / 15 / 20px at weights
+// Everything sizes off one small type scale: 11 / 13 / 15 / 20px at weights
 // 400-600. The previous version mixed 14 different font sizes with 8px tracked
 // all-caps labels, which is why the panel read as a cheaper, older typeface than
 // the rest of the admin even though it was always the same Inter.
+//
+// The grid itself is hairlines and muted labels; the only colour on it is the
+// events, in their kind colours from statusColors, so the day reads as its
+// appointments rather than as its chrome.
 //
 // Navigation lives in one place: the header arrows step by week / week / month
 // depending on the view, so the strip and the month grid no longer carry their
@@ -37,7 +42,7 @@ const DEFAULT_DUR = { bridal: 120, appt: 120, class: 90, consult: 30, block: 60 
 // phone screen spent on a day that usually holds one appointment. 46 keeps an
 // hour block tall enough for both its lines and takes 150px off the page.
 const HOUR_H = 46;
-const WEEK_HOUR_H = 26; // week grid, px per hour — the whole day fits without scrolling
+const WEEK_HOUR_H = 26; // week grid, px per hour: the whole day fits without scrolling
 
 function minToLabel(min) {
   const h = Math.floor(min / 60);
@@ -227,16 +232,8 @@ export default function ScheduleView({
     onChangeDate(keyOf(new Date(year, monthIdx, day)));
   };
 
-  // ── Palette ──
-  const line = dm ? '#2e2e38' : '#efe9e4';
-  const softLine = dm ? '#26262e' : '#f7f2ee';
-  const muted = dm ? '#8b8b95' : '#9c9ca6';
-  const ink = dm ? '#ECEDF1' : '#1a1a1f';
-  const accent = '#C4849A';
-  const surface = dm ? '#1a1a20' : '#fff';
-
-  // The header names whatever the arrows move — the day, the week's span, the
-  // month — and the year always rides underneath it as the small line, so the
+  // The header names whatever the arrows move (the day, the week's span, the
+  // month) and the year always rides underneath it as the small line, so the
   // big line never has to carry four numbers.
   const stripFirst = weekDays[0], stripLast = weekDays[6];
   const headerTitle = activeView === 'day'
@@ -252,30 +249,20 @@ export default function ScheduleView({
 
   // Solid when confirmed, hollow + dashed when the time isn't locked in yet.
   // Blocked time is its own thing: hatched grey with dark ink, like Booksy's
-  // time reservations, so it never reads as a client.
+  // time reservations, so it never reads as a client. Returns the classes and
+  // the one or two values that have to be inline (the kind colour).
   const blockInk = BLOCK_INK[dm ? 'dark' : 'light'];
   const colorOf = (type) => (type === 'block' ? blockInk : EVENT_COLORS[type]);
-  const blockStyle = (ev) => {
+  const blockLook = (ev) => {
     if (ev.type === 'block') {
-      return {
-        background: `${blockHatch(dm)}, ${dm ? '#24222a' : '#F7F5F8'}`,
-        color: dm ? '#d9d2dc' : '#5f5763',
-        border: `1px solid ${dm ? '#4a4450' : '#DDD6DF'}`,
-      };
+      return { cls: 'border border-line-strong bg-paper text-ink-soft', style: { backgroundImage: blockHatch(dm) } };
     }
     const color = EVENT_COLORS[ev.type];
     if (ev.status === 'pending') {
-      return {
-        background: dm ? `${color}2e` : `${color}14`,
-        color: dm ? '#e9dfe5' : color,
-        border: `1.5px dashed ${color}`,
-      };
+      return { cls: 'border-[1.5px] border-dashed text-ink', style: { background: `${color}24`, borderColor: color } };
     }
-    return {
-      background: color,
-      color: '#fff',
-      border: `1px solid ${dm ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.5)'}`,
-    };
+    // A paper-coloured edge keeps two blocks side by side from merging.
+    return { cls: 'border border-paper/50 text-white', style: { background: color } };
   };
 
   // ── Swiping the week strip ────────────────────────────────────────────────
@@ -370,8 +357,15 @@ export default function ScheduleView({
 
   // ── Day: week strip + time grid ──
 
+  // The date as a circle: ink when it's the day on screen, rose when it's
+  // today. The same two signals as the Home week strip.
+  const dateNum = (isSel, isTod) => cx(
+    'flex items-center justify-center rounded-full tabular-nums transition-colors duration-200',
+    isSel ? 'bg-ink font-semibold text-paper' : isTod ? 'font-semibold text-rose' : 'text-ink',
+  );
+
   const renderWeekStrip = () => (
-    <div ref={stripVpRef} className="overflow-hidden mb-2" style={{ touchAction: 'pan-y' }}>
+    <div ref={stripVpRef} className="mb-2 overflow-hidden" style={{ touchAction: 'pan-y' }}>
     <div ref={stripTrackRef} className="grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
       {weekDays.map(d => {
         const k = keyOf(d);
@@ -379,22 +373,18 @@ export default function ScheduleView({
         const isTod = k === todayKey;
         const kinds = kindsByDate.get(k);
         return (
-          <button key={k} onClick={() => onChangeDate(k)}
-            className="flex flex-col items-center gap-1 py-1 min-w-0 select-none"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}>
-            <span className="text-[0.68rem] font-medium" style={{ color: isTod ? accent : muted }}>
+          <button key={k} type="button" onClick={() => onChangeDate(k)} aria-pressed={isSel}
+            className="flex min-w-0 select-none flex-col items-center gap-1 py-1">
+            <span className={cx('text-[0.68rem] font-medium', isTod ? 'text-rose' : 'text-ink-muted')}>
               {DAYS[d.getDay()]}
             </span>
-            <span className="w-8 h-8 rounded-full flex items-center justify-center text-[0.94rem] tabular-nums transition-colors"
-              style={isSel
-                ? { background: dm ? '#ECEDF1' : '#1a1a1f', color: dm ? '#111' : '#fff', fontWeight: 500 }
-                : { color: isTod ? accent : ink, fontWeight: isTod ? 600 : 400 }}>
+            <span className={cx(dateNum(isSel, isTod), 'h-8 w-8 text-[0.92rem]')}>
               {d.getDate()}
             </span>
-            <span className="flex items-center gap-[3px] h-[3px]">
+            <span className="flex h-1 items-center gap-[3px]">
               {kinds && [...kinds].slice(0, 3).map(t => (
-                <span key={t} className="w-[3px] h-[3px] rounded-full"
-                  style={{ background: isSel ? (dm ? '#8a8a94' : '#c9c9d1') : colorOf(t) }} />
+                <span key={t} className="h-1 w-1 rounded-full"
+                  style={{ background: isSel ? 'rgb(var(--c-ink-muted))' : colorOf(t) }} />
               ))}
             </span>
           </button>
@@ -410,26 +400,29 @@ export default function ScheduleView({
           its own line so "No time set" keeps meaning a client to chase. */}
       {untimed.some(ev => ev.type === 'block') && (
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-[0.68rem] font-medium" style={{ color: muted }}>All day</span>
-          {untimed.filter(ev => ev.type === 'block').map(ev => (
-            <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
-              className={`flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md text-[0.8rem] ${ev.onOpen ? 'transition-opacity hover:opacity-75' : 'cursor-default'}`}
-              style={blockStyle(ev)}>
-              <span className="w-1.5 h-1.5 rounded-[1.5px] flex-shrink-0" style={{ background: blockInk }} />
-              <span className="truncate max-w-[200px]">{ev.name}</span>
-            </button>
-          ))}
+          <span className="text-[0.68rem] font-medium text-ink-muted">All day</span>
+          {untimed.filter(ev => ev.type === 'block').map(ev => {
+            const look = blockLook(ev);
+            return (
+              <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
+                className={cx('flex items-center gap-1.5 rounded-[2px] py-1 pl-2 pr-2.5 text-[0.8rem]', look.cls, ev.onOpen ? 'transition-opacity hover:opacity-75' : 'cursor-default')}
+                style={look.style}>
+                <span className="h-1.5 w-1.5 shrink-0" style={{ background: blockInk }} />
+                <span className="max-w-[200px] truncate">{ev.name}</span>
+              </button>
+            );
+          })}
         </div>
       )}
       {untimed.some(ev => ev.type !== 'block') && (
         <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-          <span className="text-[0.68rem] font-medium" style={{ color: muted }}>No time set</span>
+          <span className="text-[0.68rem] font-medium text-ink-muted">No time set</span>
           {untimed.filter(ev => ev.type !== 'block').map(ev => (
-            <button key={ev.id} onClick={ev.onOpen}
-              className="flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-md text-[0.8rem] transition-opacity hover:opacity-75"
-              style={{ background: `${EVENT_COLORS[ev.type]}1a`, color: dm ? '#e4e4e7' : '#33333a' }}>
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: EVENT_COLORS[ev.type] }} />
-              <span className="truncate max-w-[150px]">{ev.name}</span>
+            <button key={ev.id} type="button" onClick={ev.onOpen}
+              className="flex items-center gap-1.5 rounded-[2px] py-1 pl-2 pr-2.5 text-[0.8rem] text-ink transition-opacity hover:opacity-75"
+              style={{ background: `${EVENT_COLORS[ev.type]}1a` }}>
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: EVENT_COLORS[ev.type] }} />
+              <span className="max-w-[150px] truncate">{ev.name}</span>
             </button>
           ))}
         </div>
@@ -440,22 +433,20 @@ export default function ScheduleView({
       <div className="relative" style={{ height: gridH }}>
         {hours.map(m => (
           <div key={m} className="absolute left-0 right-0 flex items-start" style={{ top: ((m - gridStart) / 60) * HOUR_H }}>
-            <span className="w-[46px] flex-shrink-0 text-[0.68rem] -translate-y-1/2 pr-2.5 text-right tabular-nums"
-              style={{ color: muted }}>{minToLabel(m)}</span>
-            <div className="flex-1 h-px" style={{ background: line }} />
+            <span className="w-[46px] shrink-0 -translate-y-1/2 pr-2.5 text-right text-[0.68rem] tabular-nums text-ink-muted">{minToLabel(m)}</span>
+            <div className="h-px flex-1 bg-line" />
           </div>
         ))}
         {hours.slice(0, -1).map(m => (
-          <div key={`h-${m}`} className="absolute right-0 h-px" style={{
+          <div key={`h-${m}`} className="absolute right-0 h-px bg-line/45" style={{
             top: ((m + 30 - gridStart) / 60) * HOUR_H, left: 46,
-            background: softLine,
           }} />
         ))}
 
         {isToday && nowMin >= gridStart && nowMin <= gridEnd && (
-          <div className="absolute right-0 z-20 pointer-events-none flex items-center" style={{ left: 42, top: ((nowMin - gridStart) / 60) * HOUR_H }}>
-            <span className="w-[7px] h-[7px] rounded-full flex-shrink-0 -translate-x-1/2" style={{ background: accent }} />
-            <div className="flex-1 h-px" style={{ background: accent }} />
+          <div className="pointer-events-none absolute right-0 z-20 flex items-center" style={{ left: 42, top: ((nowMin - gridStart) / 60) * HOUR_H }}>
+            <span className="h-[7px] w-[7px] shrink-0 -translate-x-1/2 rounded-full bg-rose" />
+            <div className="h-px flex-1 bg-rose" />
           </div>
         )}
 
@@ -465,31 +456,41 @@ export default function ScheduleView({
             const height = Math.max(((ev.end - ev.start) / 60) * HOUR_H, 24);
             const width = 100 / ev.cols;
             const compact = height < 40;   // a one-hour block still gets both lines
+            const look = blockLook(ev);
             return (
               <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
-                className={`absolute rounded-md text-left overflow-hidden z-10 ${ev.onOpen ? 'transition-opacity hover:opacity-85' : 'cursor-default'}`}
+                className={cx(
+                  'absolute z-10 overflow-hidden rounded-[2px] text-left',
+                  look.cls,
+                  ev.status === 'completed' ? 'opacity-50' : ev.onOpen && 'transition-opacity hover:opacity-85',
+                  !ev.onOpen && 'cursor-default',
+                  compact ? 'px-[7px] py-0.5' : 'px-2 py-[5px]',
+                )}
                 style={{
                   top, height,
                   left: `calc(${ev.col * width}% + ${ev.col === 0 ? 0 : 2}px)`,
                   width: `calc(${width}% - ${ev.cols > 1 ? 2 : 0}px)`,
-                  opacity: ev.status === 'completed' ? 0.5 : 1,
-                  padding: compact ? '2px 7px' : '5px 8px',
-                  ...blockStyle(ev),
+                  ...look.style,
                 }}>
                 {compact ? (
-                  <p className="text-[0.8rem] truncate leading-tight">
-                    <span className="tabular-nums" style={{ opacity: 0.85 }}>{ev.timeStr ? parseRange(ev.timeStr).start : ''}</span>{' '}
-                    <span style={{ fontWeight: 500 }}>{ev.name}</span>
+                  <p className="truncate text-[0.8rem] leading-tight">
+                    <span className="tabular-nums opacity-85">{ev.timeStr ? parseRange(ev.timeStr).start : ''}</span>{' '}
+                    <span className="font-medium">{ev.name}</span>
                   </p>
                 ) : (
                   <>
-                    <p className="text-[0.68rem] tabular-nums leading-tight" style={{ opacity: 0.85 }}>{ev.timeStr}</p>
-                    <p className="text-[0.8rem] truncate leading-snug" style={{ fontWeight: 500 }}>{ev.name}</p>
-                    {height >= 62 && <p className="text-[0.68rem] truncate leading-snug" style={{ opacity: 0.8 }}>{ev.detail}</p>}
+                    <p className="text-[0.68rem] leading-tight tabular-nums opacity-85">{ev.timeStr}</p>
+                    <p className="truncate text-[0.8rem] font-medium leading-snug">{ev.name}</p>
+                    {height >= 62 && <p className="truncate text-[0.68rem] leading-snug opacity-80">{ev.detail}</p>}
                     {/* Needs a taller block than the service line, so it only
                         appears once there's genuinely room for a third row. */}
                     {height >= 80 && ev.location && (
-                      <p className="text-[0.66rem] truncate leading-snug" style={{ opacity: 0.72 }}>◎ {ev.location}</p>
+                      <p className="flex items-center gap-1 text-[0.68rem] leading-snug opacity-75">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-2.5 w-2.5 shrink-0" aria-hidden>
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+                        </svg>
+                        <span className="truncate">{ev.location}</span>
+                      </p>
                     )}
                   </>
                 )}
@@ -525,24 +526,20 @@ export default function ScheduleView({
     return (
       <div>
         {/* Day headers */}
-        <div className="flex mb-1.5">
-          <span className="w-[34px] flex-shrink-0" />
-          <div className="grid flex-1 min-w-0" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+        <div className="mb-1.5 flex">
+          <span className="w-[34px] shrink-0" />
+          <div className="grid min-w-0 flex-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
             {perDay.map(({ d }) => {
               const k = keyOf(d);
               const isTod = k === todayKey;
               const isSel = k === dateKey;
               return (
-                <button key={k} onClick={() => { onChangeDate(k); setView('day'); }}
-                  className="flex flex-col items-center gap-0.5 py-0.5 min-w-0 select-none"
-                  style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}>
-                  <span className="text-[0.68rem] font-medium" style={{ color: isTod ? accent : muted }}>
+                <button key={k} type="button" onClick={() => { onChangeDate(k); setView('day'); }}
+                  className="flex min-w-0 select-none flex-col items-center gap-0.5 py-0.5">
+                  <span className={cx('text-[0.68rem] font-medium', isTod ? 'text-rose' : 'text-ink-muted')}>
                     {DAYS[d.getDay()].charAt(0)}
                   </span>
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-[0.8rem] tabular-nums"
-                    style={isSel
-                      ? { background: dm ? '#ECEDF1' : '#1a1a1f', color: dm ? '#111' : '#fff', fontWeight: 500 }
-                      : { color: isTod ? accent : ink, fontWeight: isTod ? 600 : 400 }}>
+                  <span className={cx(dateNum(isSel, isTod), 'h-6 w-6 text-[0.8rem]')}>
                     {d.getDate()}
                   </span>
                 </button>
@@ -553,15 +550,16 @@ export default function ScheduleView({
 
         {/* Anything without a time, pinned above its column */}
         {anyUntimed && (
-          <div className="flex mb-1">
-            <span className="w-[34px] flex-shrink-0" />
-            <div className="grid flex-1 min-w-0" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+          <div className="mb-1 flex">
+            <span className="w-[34px] shrink-0" />
+            <div className="grid min-w-0 flex-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
               {perDay.map(({ d, untimed: u }) => (
                 <span key={keyOf(d)} className="px-[2px]">
                   {u.length > 0 && (
-                    <button onClick={u[0].onOpen} title={u.map(e => e.name).join(', ')}
-                      className="w-full h-[14px] rounded-[3px] transition-opacity hover:opacity-75"
-                      style={{ background: `${colorOf(u[0].type)}26`, border: `1px dashed ${colorOf(u[0].type)}` }} />
+                    <button type="button" onClick={u[0].onOpen} title={u.map(e => e.name).join(', ')}
+                      aria-label={u.map(e => e.name).join(', ')}
+                      className="h-[14px] w-full rounded-[2px] border border-dashed transition-opacity hover:opacity-75"
+                      style={{ background: `${colorOf(u[0].type)}26`, borderColor: colorOf(u[0].type) }} />
                   )}
                 </span>
               ))}
@@ -571,52 +569,50 @@ export default function ScheduleView({
 
         {/* Time grid */}
         <div className="flex" style={{ height: totalH }}>
-          <div className="w-[34px] flex-shrink-0 relative">
+          <div className="relative w-[34px] shrink-0">
             {wHours.map((m, i) => (
               i % 2 === 0 ? (
-                <span key={m} className="absolute right-1.5 text-[0.68rem] tabular-nums -translate-y-1/2"
-                  style={{ top: ((m - ws) / 60) * WEEK_HOUR_H, color: muted }}>
+                <span key={m} className="absolute right-1.5 -translate-y-1/2 text-[0.68rem] tabular-nums text-ink-muted"
+                  style={{ top: ((m - ws) / 60) * WEEK_HOUR_H }}>
                   {minToLabel(m).replace(' ', '')}
                 </span>
               ) : null
             ))}
           </div>
-          <div className="flex-1 min-w-0 relative">
+          <div className="relative min-w-0 flex-1">
             {/* Hour lines across all 7 columns */}
             {wHours.map(m => (
-              <div key={m} className="absolute left-0 right-0 h-px"
-                style={{ top: ((m - ws) / 60) * WEEK_HOUR_H, background: m % 120 === ws % 120 ? line : softLine }} />
+              <div key={m} className={cx('absolute left-0 right-0 h-px', m % 120 === ws % 120 ? 'bg-line' : 'bg-line/45')}
+                style={{ top: ((m - ws) / 60) * WEEK_HOUR_H }} />
             ))}
-            <div className="grid absolute inset-0" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+            <div className="absolute inset-0 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
               {perDay.map(({ d, timed: t }) => {
                 const k = keyOf(d);
                 const isTod = k === todayKey;
                 return (
-                  <div key={k} className="relative min-w-0" style={{ borderLeft: `1px solid ${softLine}` }}>
-                    {isTod && (
-                      <div className="absolute inset-0 pointer-events-none"
-                        style={{ background: dm ? 'rgba(196,132,154,0.07)' : 'rgba(196,132,154,0.06)' }} />
-                    )}
+                  <div key={k} className="relative min-w-0 border-l border-line/60">
+                    {isTod && <div className="pointer-events-none absolute inset-0 bg-rose/[0.06]" />}
                     {t.map(ev => {
                       const top = ((ev.start - ws) / 60) * WEEK_HOUR_H;
                       const height = Math.max(((ev.end - ev.start) / 60) * WEEK_HOUR_H, 9);
                       const width = 100 / ev.cols;
+                      const look = blockLook(ev);
                       return (
-                        <button key={ev.id} onClick={ev.onOpen}
+                        <button key={ev.id} type="button" onClick={ev.onOpen}
                           title={[ev.timeStr || 'No time', ev.name, ev.detail, ev.location].filter(Boolean).join(' · ')}
-                          className="absolute rounded-[3px] transition-opacity hover:opacity-75 z-10"
+                          aria-label={[ev.timeStr || 'No time', ev.name, ev.detail].filter(Boolean).join(', ')}
+                          className={cx('absolute z-10 rounded-[2px]', look.cls, ev.status === 'completed' ? 'opacity-45' : 'transition-opacity hover:opacity-75')}
                           style={{
                             top, height,
                             left: `calc(${ev.col * width}% + 1px)`,
                             width: `calc(${width}% - 2px)`,
-                            opacity: ev.status === 'completed' ? 0.45 : 1,
-                            ...blockStyle(ev),
+                            ...look.style,
                           }} />
                       );
                     })}
                     {isTod && nowMin >= ws && nowMin <= we && (
-                      <div className="absolute left-0 right-0 h-px z-20 pointer-events-none"
-                        style={{ top: ((nowMin - ws) / 60) * WEEK_HOUR_H, background: accent }} />
+                      <div className="pointer-events-none absolute left-0 right-0 z-20 h-px bg-rose"
+                        style={{ top: ((nowMin - ws) / 60) * WEEK_HOUR_H }} />
                     )}
                   </div>
                 );
@@ -637,9 +633,9 @@ export default function ScheduleView({
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
     return (
       <div>
-        <div className="grid mb-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+        <div className="mb-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
           {DAYS.map(dl => (
-            <span key={dl} className="text-center text-[0.68rem] font-medium py-1" style={{ color: muted }}>
+            <span key={dl} className="py-1 text-center text-[0.68rem] font-medium text-ink-muted">
               {dl.charAt(0)}
             </span>
           ))}
@@ -652,20 +648,16 @@ export default function ScheduleView({
             const isTod = k === todayKey;
             const kinds = kindsByDate.get(k);
             return (
-              <button key={k} onClick={() => { onChangeDate(k); setView('day'); }}
-                className="flex flex-col items-center gap-1 py-0.5 min-w-0 select-none"
-                style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}>
-                <span className="w-8 h-8 rounded-full flex items-center justify-center text-[0.94rem] tabular-nums transition-colors"
-                  style={isSel
-                    ? { background: dm ? '#ECEDF1' : '#1a1a1f', color: dm ? '#111' : '#fff', fontWeight: 500 }
-                    : { color: isTod ? accent : ink, fontWeight: isTod ? 600 : 400 }}>
+              <button key={k} type="button" onClick={() => { onChangeDate(k); setView('day'); }} aria-pressed={isSel}
+                className="flex min-w-0 select-none flex-col items-center gap-1 py-0.5">
+                <span className={cx(dateNum(isSel, isTod), 'h-8 w-8 text-[0.92rem]')}>
                   {d}
                 </span>
                 {/* One bar per kind of thing booked that day: the more bars, the
                     fuller the day. Reads as density without a number to parse. */}
-                <span className="flex items-center gap-[2px] h-[3px]">
+                <span className="flex h-[3px] items-center gap-[2px]">
                   {kinds && [...kinds].slice(0, 3).map(t => (
-                    <span key={t} className="w-[7px] h-[3px] rounded-full" style={{ background: colorOf(t) }} />
+                    <span key={t} className="h-[3px] w-[7px] rounded-full" style={{ background: colorOf(t) }} />
                   ))}
                 </span>
               </button>
@@ -675,6 +667,8 @@ export default function ScheduleView({
       </div>
     );
   };
+
+  const swatch = 'flex items-center gap-1.5 text-[0.66rem] font-medium text-ink-muted';
 
   return (
     <div className="relative">
@@ -693,17 +687,13 @@ export default function ScheduleView({
 
       {/* ── Day / Week / Month switcher (drawer only) ── */}
       {withViews && (
-        <div className="flex p-[3px] rounded-lg mb-3" style={{ background: dm ? '#1e1e24' : '#f4f0f2' }}>
-          {['day', 'week', 'month'].map(v => (
-            <button key={v} onClick={() => setView(v)}
-              className="flex-1 py-1 rounded-md text-[0.8rem] transition-colors capitalize"
-              style={view === v
-                ? { background: surface, color: ink, fontWeight: 500, boxShadow: dm ? 'none' : '0 1px 2px rgba(40,25,35,0.08)' }
-                : { color: muted, fontWeight: 400 }}>
-              {v}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          size="sm"
+          className="mb-3"
+          value={view}
+          onChange={setView}
+          options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]}
+        />
       )}
 
       {activeView === 'day' && (
@@ -715,18 +705,18 @@ export default function ScheduleView({
       {activeView === 'week' && renderWeekGrid()}
       {activeView === 'month' && renderMonthGrid()}
 
-      {/* ── Legend: one line, short labels ── */}
-      <div className="flex items-center gap-x-3 gap-y-1 mt-4 pt-3 flex-wrap" style={{ borderTop: `1px solid ${line}` }}>
+      {/* ── Legend: short labels, every swatch the real thing shrunk ── */}
+      <div className="mt-5 flex flex-wrap items-center gap-x-3.5 gap-y-2 border-t border-line pt-4">
         {Object.entries(SHORT_LABELS).map(([k, label]) => (
-          <span key={k} className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
-            <span className="w-2 h-2 rounded-[3px] inline-block" style={{ background: EVENT_COLORS[k] }} /> {label}
+          <span key={k} className={swatch}>
+            <span className="inline-block h-2.5 w-2.5 rounded-[2px]" style={{ background: EVENT_COLORS[k] }} /> {label}
           </span>
         ))}
-        <span className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
-          <span className="w-2 h-2 rounded-[3px] inline-block" style={{ border: `1.5px dashed ${muted}` }} /> Pending
+        <span className={swatch}>
+          <span className="inline-block h-2.5 w-2.5 rounded-[2px] border-[1.5px] border-dashed border-ink-muted" /> Pending
         </span>
-        <span className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
-          <span className="w-2 h-2 rounded-[3px] inline-block" style={{ background: blockInk, opacity: 0.7 }} /> Blocked
+        <span className={swatch}>
+          <span className="inline-block h-2.5 w-2.5 rounded-[2px] opacity-70" style={{ background: blockInk }} /> Blocked
         </span>
       </div>
     </div>

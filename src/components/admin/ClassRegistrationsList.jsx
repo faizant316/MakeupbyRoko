@@ -1,28 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
-import Collapse from './Collapse';
+import StatusBadge from './StatusBadge';
+import { Archive } from './Glyphs';
 import { groupByTime, relativeDate, daysUntil } from './timeline';
 import { classesOfReg, regTotal } from '@/lib/classCatalog';
 import { phoneHref } from '@/lib/phone';
+import { Chevron, Fold, RowPanel, Segmented, Tag, cx } from './ui';
 
-const ENROLLMENT_STYLES = {
-  pending:   { bg: '#F59E0B', text: '#fff', label: 'Pending'   },
-  confirmed: { bg: '#2563EB', text: '#fff', label: 'Confirmed' },
-  enrolled:  { bg: '#2563EB', text: '#fff', label: 'Enrolled'  },
-  cancelled: { bg: '#EF4444', text: '#fff', label: 'Cancelled' },
-};
+// The enrollment states a registration can show. Anything else (a legacy
+// 'new' or 'contacted' row) reads as pending, the way it always has.
+const ENROLLMENT_STATES = ['pending', 'confirmed', 'enrolled', 'cancelled'];
+export const enrollmentKey = (status) => (ENROLLMENT_STATES.includes(status) ? status : 'pending');
 
-// Online = Zoom blue, In Person = studio violet. Shared look with the detail page.
+// Online or in person. Metadata, so it's a quiet neutral tag rather than a
+// colour of its own. Shared with the detail page.
 export const FORMAT_META = {
-  online:    { label: 'Online',    short: 'Zoom',   color: '#2D8CFF', bg: 'rgba(45,140,255,0.1)'  },
-  in_person: { label: 'In Person', short: 'Studio', color: '#8A63A8', bg: 'rgba(138,99,168,0.12)' },
+  online:    { label: 'Online',    short: 'Zoom' },
+  in_person: { label: 'In Person', short: 'Studio' },
 };
 
-const PAYMENT_META = {
-  unpaid:   { label: 'Unpaid',   color: '#C4849A', bg: 'rgba(212,160,176,0.14)' },
-  paid:     { label: 'Paid',     color: '#15803d', bg: 'rgba(59,130,246,0.1)'    },
-  refunded: { label: 'Refunded', color: '#b91c1c', bg: 'rgba(239,68,68,0.1)'    },
+// Where the money stands, as a small tinted chip. Rose for not paid yet (the
+// same chip the appointments list uses), blue for paid, red for refunded.
+export const PAYMENT_META = {
+  unpaid:   { label: 'Unpaid',   cls: 'bg-rose/10 text-rose' },
+  paid:     { label: 'Paid',     cls: 'bg-tone-confirmed/10 text-tone-confirmed' },
+  refunded: { label: 'Refunded', cls: 'bg-tone-alert/10 text-tone-alert' },
 };
 
 function normalizePaymentStatus(raw) {
@@ -43,9 +46,9 @@ function isClosedReg(reg) {
 
 // The date a class effectively sits on: the confirmed appointment date, else
 // (in person only) the client's chosen Wednesday. One Wednesday per client, so
-// an in-person sign-up's day is already fixed — there's nothing to schedule, so
+// an in-person sign-up's day is already fixed (there's nothing to schedule), so
 // it groups by that Wednesday. An online sign-up with no appointment date is
-// left null on purpose so it lands in "Needs Scheduling" (it still needs a time).
+// left null on purpose so it lands in "Needs scheduling" (it still needs a time).
 function effectiveDate(reg) {
   if (reg.appointment_date) return reg.appointment_date;
   if (reg.class_format === 'in_person') return reg.preferred_date || null;
@@ -61,110 +64,92 @@ function timeAgo(iso) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-// Compact one-line row, mirroring the appointments list. `recent` is the copy
-// shown inside the Just Signed Up band: it swaps the redundant "New" pill for
-// how long ago they signed up, and warms the avatar to match the home card.
-function ClassRow({ reg, onSelect, dm, recent = false }) {
+// The heading colour a group wears, the same scale the appointments list
+// uses: rose for today, tomorrow and anything waiting on her, red for past
+// due, quieter ink for the named days further out.
+function groupTone(group, needsScheduling) {
+  if (group.key === 'pastdue') return 'text-[0.98rem] font-semibold text-tone-alert';
+  if (needsScheduling || (group.accent && group.day)) return 'text-[0.98rem] font-semibold text-rose';
+  if (group.day) return 'text-[0.86rem] font-semibold text-ink-soft';
+  return 'text-[0.98rem] font-semibold text-ink';
+}
+
+// Payment chips beside the status badge, the same size as it. Laptop only.
+const payChip = 'hidden h-[22px] shrink-0 items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] sm:inline-flex';
+
+const iconLink = 'press flex h-8 w-8 items-center justify-center rounded border border-line text-ink-muted hover:border-line-strong hover:text-ink';
+
+// One line, mirroring the appointments list. `recent` is the copy shown
+// inside the Just signed up band: it swaps the redundant New tag for how long
+// ago they signed up.
+//
+// A div, not a <button>: on a laptop the row carries email and text links of
+// its own, and a link inside a button is invalid HTML.
+function ClassRow({ reg, onSelect, recent = false, dimmed = false }) {
   const selectedClasses = classesOfReg(reg);
   const totalPrice = regTotal(reg);
   const classLabel = selectedClasses.length > 0 ? selectedClasses.map(c => c.title).join(' · ') : 'No classes selected';
   const fmt = FORMAT_META[reg.class_format];
-  const meta = ENROLLMENT_STYLES[reg.status || 'pending'] || ENROLLMENT_STYLES.pending;
   const payState = normalizePaymentStatus(reg.payment_status);
   const isRefunded = payState === 'refunded';
   const isUnpaid = payState === 'unpaid' && !reg.stripe_session_id;
   const isNew = reg.created_date && (Date.now() - new Date(reg.created_date).getTime()) < 24 * 60 * 60 * 1000;
   const rel = relativeDate(effectiveDate(reg));
   const initial = (reg.full_name || '?').trim().charAt(0).toUpperCase() || '?';
-  const mutedColor = dm ? '#8e8e99' : '#9c9ca4';
-  const dateColor = rel.tone === 'accent' ? '#A0607A' : rel.tone === 'past' ? '#E0795B' : rel.tone === 'muted' ? mutedColor : (dm ? '#a1a1aa' : '#83838d');
-
-  const iconBtn = 'flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-105';
-  const iconBtnStyle = { color: dm ? '#a1a1aa' : '#9a8e94', border: `1px solid ${dm ? '#3a3a48' : '#E6E6EC'}` };
+  const dateClass = rel.tone === 'accent' ? 'text-rose' : rel.tone === 'past' ? 'text-tone-alert' : 'text-ink-muted';
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(reg)}
-      className="group w-full flex items-center gap-3 sm:gap-3.5 px-3 sm:px-4 py-3 rounded-xl text-left transition-all"
-      style={{
-        background: dm ? '#26262d' : '#FBF9F7',
-        border: `1px solid ${dm ? '#34343d' : '#E4E4EC'}`,
-        boxShadow: dm ? 'none' : '0 1px 2px rgba(30, 30, 40,0.05), 0 2px 5px rgba(30, 30, 40,0.04)',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,160,176,0.6)'; e.currentTarget.style.background = dm ? '#2e2e37' : '#FFFDFB'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#34343d' : '#E4E4EC'; e.currentTarget.style.background = dm ? '#26262d' : '#FBF9F7'; }}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(reg); } }}
+      className={cx(
+        'group flex w-full cursor-pointer items-center gap-3 bg-paper px-4 py-3.5 text-left outline-none transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas sm:gap-3.5 sm:px-5',
+        dimmed && 'opacity-60',
+      )}
     >
-      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[0.9rem]"
-        style={recent
-          ? { background: dm ? 'rgba(154,84,116,0.22)' : '#F1DCE7', color: dm ? '#e7c9d5' : '#8A4A63' }
-          : { background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#A6A6AF' }}>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-wash text-[0.86rem] font-medium text-rose">
         {initial}
-      </div>
+      </span>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-[0.875rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
-          {reg.full_name || 'Unknown'}
-        </p>
-        <p className="text-[0.72rem] truncate mt-0.5 flex items-center gap-1.5" style={{ color: mutedColor }}>
-          {fmt && (
-            <span className="inline-flex flex-shrink-0 text-[0.55rem] font-bold tracking-[0.06em] uppercase px-1.5 py-[1px] rounded"
-              style={{ background: fmt.bg, color: fmt.color }}>
-              {fmt.label}
-            </span>
-          )}
-          <span className="truncate">
-            {classLabel}
-            {totalPrice > 0 && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{` · $${totalPrice.toLocaleString()}`}</span>}
-            {recent && reg.created_date && <span style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>{` · ${timeAgo(reg.created_date)}`}</span>}
-          </span>
-        </p>
-      </div>
-
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <span className="text-[0.72rem] font-semibold whitespace-nowrap" style={{ color: dateColor }}>
-          {rel.label}
-          {reg.appointment_time && <span className="font-normal" style={{ color: mutedColor }}> · {reg.appointment_time}</span>}
-        </span>
-        <div className="flex items-center gap-1.5">
-          {isNew && !recent && (
-            <span className="inline-flex items-center gap-1 text-[0.55rem] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-full"
-              style={{ background: dm ? 'rgba(212,160,176,0.2)' : 'rgba(212,160,176,0.22)', color: dm ? '#e7c9d5' : '#A0607A' }}>
-              <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: dm ? '#e7c9d5' : '#A0607A' }} />
-              New
-            </span>
-          )}
-          {isUnpaid && (
-            <span className="hidden sm:inline-flex text-[0.55rem] font-semibold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
-              style={{ background: PAYMENT_META.unpaid.bg, color: PAYMENT_META.unpaid.color }}>
-              Unpaid
-            </span>
-          )}
-          {isRefunded && (
-            <span className="hidden sm:inline-flex text-[0.55rem] font-semibold tracking-[0.06em] uppercase px-2 py-0.5 rounded-full"
-              style={{ background: PAYMENT_META.refunded.bg, color: PAYMENT_META.refunded.color }}>
-              Refunded
-            </span>
-          )}
-          <span className="px-3 py-1 text-[0.6rem] font-semibold tracking-[0.1em] uppercase rounded-lg flex-shrink-0"
-            style={{ background: meta.bg, color: meta.text }}>
-            {meta.label}
-          </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="min-w-0 break-words text-[0.9rem] font-semibold leading-snug text-ink">{reg.full_name || 'Unknown'}</p>
+          {fmt && <Tag>{fmt.label}</Tag>}
+          {isNew && !recent && <Tag className="bg-ink text-paper">New</Tag>}
         </div>
+        <p className="mt-0.5 truncate text-[0.76rem] text-ink-muted">
+          {classLabel}
+          {totalPrice > 0 && <span className="tabular-nums">{` · $${totalPrice.toLocaleString()}`}</span>}
+          {recent && reg.created_date && <span>{` · ${timeAgo(reg.created_date)}`}</span>}
+        </p>
       </div>
 
-      <div className="hidden md:flex items-center gap-1 flex-shrink-0 w-[60px] justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
+        <span className={cx('whitespace-nowrap text-[0.74rem] font-semibold', dateClass)}>{rel.label}</span>
+        {reg.appointment_time && (
+          <span className="-mt-0.5 whitespace-nowrap text-[0.7rem] tabular-nums text-ink-muted">{reg.appointment_time}</span>
+        )}
+        <span className="flex items-center gap-1.5">
+          {isUnpaid && <span className={cx(payChip, PAYMENT_META.unpaid.cls)}>Unpaid</span>}
+          {isRefunded && <span className={cx(payChip, PAYMENT_META.refunded.cls)}>Refunded</span>}
+          <StatusBadge status={enrollmentKey(reg.status || 'pending')} />
+        </span>
+      </div>
+
+      {/* Reach her without opening the card. Laptop only, and only on hover,
+          so a list of twenty rows isn't forty icons. */}
+      <div className="hidden w-[68px] shrink-0 items-center justify-end gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 md:flex">
         {reg.email && (
           <a
             href={`mailto:${reg.email}?subject=Makeup Class with Roko`}
             onClick={e => e.stopPropagation()}
             aria-label="Email registrant"
-            className={iconBtn}
-            style={iconBtnStyle}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+            className={iconLink}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+              <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" />
             </svg>
           </a>
         )}
@@ -173,22 +158,41 @@ function ClassRow({ reg, onSelect, dm, recent = false }) {
             href={`sms:${phoneHref(reg.phone)}`}
             onClick={e => e.stopPropagation()}
             aria-label="Text registrant"
-            className={iconBtn}
-            style={iconBtnStyle}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D4A0B0'; e.currentTarget.style.color = '#D4A0B0'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E6E6EC'; e.currentTarget.style.color = dm ? '#a1a1aa' : '#9a8e94'; }}
+            className={iconLink}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </a>
         )}
       </div>
+    </div>
+  );
+}
+
+// The heading over a group of rows: dot, title, count, and a chevron when it
+// folds.
+function GroupHead({ dot, title, titleClass, count, hint, open, onToggle, icon }) {
+  const inner = (
+    <>
+      {icon}
+      {dot && <span className={cx('h-1.5 w-1.5 shrink-0 rounded-full', dot)} />}
+      <h3 className={titleClass}>{title}</h3>
+      <span className="text-[0.74rem] tabular-nums text-ink-muted">{count}</span>
+      {hint && <span className="hidden text-[0.74rem] text-ink-muted sm:inline">{hint}</span>}
+      <span className="flex-1" />
+      {onToggle && <Chevron open={open} className="text-ink-muted" />}
+    </>
+  );
+  if (!onToggle) return <div className="mb-2.5 flex w-full items-center gap-2.5">{inner}</div>;
+  return (
+    <button type="button" onClick={onToggle} aria-expanded={open} className="mb-2.5 flex w-full items-center gap-2.5 text-left">
+      {inner}
     </button>
   );
 }
 
-export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExpandId }) {
+export default function ClassRegistrationsList({ darkMode: dm, onSelect }) {
   const { data: rawRegistrations = [], isLoading } = useQuery({
     queryKey: ['class-registrations'],
     queryFn: () => api.entities.ClassRegistration.list('-created_date', 100),
@@ -206,32 +210,29 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     return aDate - bDate;
   });
 
-  // Auto-navigate to a registration when autoExpandId is provided (e.g. from "Just Signed Up")
-  useEffect(() => {
-    if (autoExpandId && registrations.length > 0) {
-      const match = registrations.find(r => r.id === autoExpandId);
-      if (match) onSelect(match);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoExpandId, registrations.length]);
-
+  // Holds the list's shape while the fetch is in flight, so nothing jumps
+  // when it lands.
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-[#e5e5e5] border-t-[#D4A0B0] rounded-full animate-spin" />
-      </div>
+      <RowPanel aria-hidden="true">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex items-center gap-3.5 px-4 py-4 sm:px-5">
+            <span className="h-9 w-9 shrink-0 rounded-full bg-line/50" />
+            <span className="min-w-0 flex-1">
+              <span className="block h-3.5 w-32 bg-line/70" />
+              <span className="mt-2.5 block h-2.5 w-44 max-w-full bg-line/50" />
+            </span>
+          </div>
+        ))}
+      </RowPanel>
     );
   }
 
   if (registrations.length === 0) {
     return (
-      <div className="text-center py-20">
-        <p className="font-serif text-[1.1rem] mb-2" style={{ color: dm ? '#8e8e99' : '#999' }}>
-          No class registrations yet
-        </p>
-        <p className="text-[0.75rem]" style={{ color: dm ? '#7a7a84' : '#ccc' }}>
-          Registrations from the website will appear here
-        </p>
+      <div className="border border-line bg-paper px-5 py-16 text-center">
+        <p className="text-[0.98rem] font-semibold text-ink">No class registrations yet</p>
+        <p className="mt-1.5 text-[0.8rem] text-ink-muted">Registrations from the website will appear here</p>
       </div>
     );
   }
@@ -249,8 +250,8 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
     .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
   // Surface the just-signed-up / not-yet-scheduled sign-ups: pull the
-  // "Unscheduled" bucket to the very top and dress it as an action callout,
-  // then the timeline (This Week → This Month → Later) follows beneath it.
+  // "Unscheduled" bucket to the very top and name it as the job it is, then
+  // the timeline (this week, this month, later) follows beneath it.
   const timeGroups = groupByTime(active, effectiveDate);
   const orderedGroups = [
     ...timeGroups.filter(g => g.key === 'unscheduled'),
@@ -261,151 +262,111 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect, autoExp
   const countOf = (f) => registrations.filter(r => r.class_format === f).length;
 
   // Just signed up: registrations created in the last 24 hrs, newest first. Shown
-  // as a callout at the very top so a fresh sign-up is impossible to miss — even
-  // when its class date lands deep in a collapsed group like "Later".
+  // at the very top so a fresh sign-up is impossible to miss, even when its
+  // class date lands deep in a collapsed group like "Later".
   const recent = active
     .filter(r => r.created_date && (Date.now() - new Date(r.created_date).getTime()) < 24 * 60 * 60 * 1000)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
+  const stats = [
+    { label: 'Needs scheduling', value: unscheduledCount, accent: unscheduledCount > 0 },
+    { label: 'This week', value: weekCount },
+    { label: 'Total', value: active.length },
+  ];
+
   return (
     <div>
-      {/* Time-aware summary glance */}
-      <div className="flex items-stretch gap-2 mb-4">
-        {[
-          { label: 'Needs Scheduling', value: unscheduledCount, accent: unscheduledCount > 0 },
-          { label: 'This Week', value: weekCount },
-          { label: 'Total', value: active.length },
-        ].map(s => (
-          <div key={s.label} className="flex-1 min-w-0 rounded-xl px-3.5 py-2.5"
-            style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#EAEAF0'}` }}>
-            <p className="text-[1.1rem] font-serif leading-none" style={{ color: s.accent ? '#A0607A' : (dm ? '#e4e4e7' : '#1a1a1a') }}>{s.value}</p>
-            <p className="text-[0.55rem] font-semibold tracking-[0.12em] uppercase mt-1.5 truncate" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{s.label}</p>
+      {/* Where things stand, at a glance. One strip on hairlines. */}
+      <div className="mb-5 grid grid-cols-3 divide-x divide-line border border-line bg-paper">
+        {stats.map(s => (
+          <div key={s.label} className="min-w-0 px-4 py-3.5 sm:px-5 sm:py-4">
+            <p className={cx('text-[1.45rem] font-semibold leading-none tabular-nums tracking-[-0.02em]', s.accent ? 'text-rose' : 'text-ink')}>{s.value}</p>
+            <p className="mt-2 text-[0.62rem] font-semibold uppercase leading-snug tracking-[0.12em] text-ink-muted">{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Online / In Person filter — Booksy-style segmented pills */}
-      <div className="inline-flex items-center gap-1 p-1 rounded-xl mb-5"
-        style={{ background: dm ? '#1e1e24' : '#F0F0F5', border: `1px solid ${dm ? '#2e2e38' : '#E6E6EE'}` }}>
-        {[
-          { key: 'all', label: `All · ${registrations.length}` },
-          { key: 'online', label: `Online · ${countOf('online')}`, meta: FORMAT_META.online },
-          { key: 'in_person', label: `In Person · ${countOf('in_person')}`, meta: FORMAT_META.in_person },
-        ].map(f => {
-          const active = formatFilter === f.key;
-          return (
-            <button key={f.key} type="button" onClick={() => setFormatFilter(f.key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.66rem] font-semibold tracking-[0.03em] transition-all"
-              style={active
-                ? { background: dm ? '#34343d' : '#fff', color: f.meta?.color || (dm ? '#e4e4e7' : '#1a1a1a'), boxShadow: dm ? 'none' : '0 1px 4px rgba(30, 30, 40,0.12)' }
-                : { color: dm ? '#8e8e99' : '#9c9ca4' }}>
-              {f.meta && <span className="w-1.5 h-1.5 rounded-full" style={{ background: f.meta.color }} />}
-              {f.label}
-            </button>
-          );
-        })}
-      </div>
+      <Segmented
+        className="mb-6"
+        value={formatFilter}
+        onChange={setFormatFilter}
+        options={[
+          { value: 'all', label: 'All', count: registrations.length },
+          { value: 'online', label: 'Online', count: countOf('online') },
+          { value: 'in_person', label: 'In person', count: countOf('in_person') },
+        ]}
+      />
 
-      {/* Just Signed Up — fresh registrations pulled to the top so they're
-          impossible to miss, even when the class date sits in a folded group.
-          Styled like the home overview's version: a labelled band rather than a
-          pink card sitting inside the page, so it doesn't fight the rows below. */}
+      {/* Just signed up: fresh registrations pulled to the top so they're
+          impossible to miss, even when the class date sits in a folded group. */}
       {recent.length > 0 && (
         <div className="mb-7">
-          <div className="flex items-center gap-2.5 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0" style={{ background: '#A0607A' }} />
-            <h3 className="font-serif text-[1.05rem]" style={{ color: dm ? '#c78fa3' : '#A0607A' }}>Just Signed Up</h3>
-            <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>{recent.length}</span>
-            <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>
-              in the last 24 hours
-            </span>
-          </div>
-          <div className="flex flex-col gap-2">
+          <GroupHead dot="bg-rose" title="Just signed up" titleClass="text-[0.98rem] font-semibold text-rose" count={recent.length} hint="in the last 24 hours" />
+          <RowPanel>
             {recent.map(reg => (
-              <ClassRow key={`recent-${reg.id}`} reg={reg} onSelect={onSelect} dm={dm} recent />
+              <ClassRow key={`recent-${reg.id}`} reg={reg} onSelect={onSelect} recent />
             ))}
-          </div>
+          </RowPanel>
         </div>
       )}
 
       {active.length === 0 && closed.length === 0 && (
-        <p className="text-[0.8rem] italic py-10 text-center" style={{ color: dm ? '#7a7a84' : '#bcbcc4' }}>
+        <p className="py-14 text-center text-[0.86rem] text-ink-muted">
           No {formatFilter === 'online' ? 'online' : 'in-person'} sign-ups yet
         </p>
       )}
 
       {/* Time-grouped rows */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         {orderedGroups.map(group => {
           const open = !collapsedGroups[group.key];
           const isNeedsScheduling = group.key === 'unscheduled';
-          const headAccent = isNeedsScheduling ? (dm ? '#c47a92' : '#A0607A') : group.accent;
-          const headLabel = isNeedsScheduling ? 'Needs Scheduling' : group.label;
+          const dot = isNeedsScheduling || (group.accent && group.day) ? 'bg-rose'
+            : group.key === 'pastdue' ? 'bg-tone-alert' : null;
           return (
             <div key={group.key}>
-              <button
-                type="button"
-                onClick={() => setCollapsedGroups(p => ({ ...p, [group.key]: !p[group.key] }))}
-                className="flex items-center gap-2.5 mb-3 w-full"
-              >
-                {headAccent && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isNeedsScheduling ? 'animate-pulse' : ''}`} style={{ background: headAccent }} />}
-                <h3 className="font-serif text-[1.05rem]" style={{ color: headAccent || (dm ? '#e4e4e7' : '#111') }}>{headLabel}</h3>
-                <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{ background: dm ? '#2e2e38' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
-                  {group.items.length}
-                </span>
-                {isNeedsScheduling && (
-                  <span className="hidden sm:inline text-[0.62rem] italic" style={{ color: dm ? '#a06070' : '#c48090' }}>confirm to send it</span>
-                )}
-                <span className="flex-1" />
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
-                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${open ? '' : '-rotate-90'}`}>
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
-              <Collapse open={open}>
-                <div className="flex flex-col gap-2 pb-1">
+              <GroupHead
+                dot={dot}
+                title={isNeedsScheduling ? 'Needs scheduling' : group.label}
+                titleClass={groupTone(group, isNeedsScheduling)}
+                count={group.items.length}
+                hint={isNeedsScheduling ? 'confirm to send it' : null}
+                open={open}
+                onToggle={() => setCollapsedGroups(p => ({ ...p, [group.key]: !p[group.key] }))}
+              />
+              <Fold open={open}>
+                <RowPanel>
                   {group.items.map(reg => (
-                    <ClassRow key={reg.id} reg={reg} onSelect={onSelect} dm={dm} />
+                    <ClassRow key={reg.id} reg={reg} onSelect={onSelect} />
                   ))}
-                </div>
-              </Collapse>
+                </RowPanel>
+              </Fold>
             </div>
           );
         })}
       </div>
 
-      {/* Cancelled & refunded — kept for the record (money trail, reporting,
-          client history) but tucked into a muted, collapsed-by-default fold so
-          they never crowd the live list. Cancelling or refunding already frees
-          the Wednesday, so nothing here is holding a date. */}
+      {/* Cancelled & refunded: kept for the record (money trail, reporting,
+          client history) but tucked into a fold that starts closed so they
+          never crowd the live list. Cancelling or refunding already frees the
+          Wednesday, so nothing here is holding a date. */}
       {closed.length > 0 && (
-        <div className="mt-8 pt-6" style={{ borderTop: `1px solid ${dm ? '#2a2a32' : '#EDEDF2'}` }}>
-          <button
-            type="button"
-            onClick={() => setClosedOpen(o => !o)}
-            className="flex items-center gap-2.5 mb-3 w-full"
-          >
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dm ? '#52525b' : '#c4c4cc' }} />
-            <h3 className="font-serif text-[1.05rem]" style={{ color: dm ? '#8a8a93' : '#9a9aa3' }}>Cancelled &amp; refunded</h3>
-            <span className="text-[0.6rem] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dm ? '#2a2a32' : '#F0F0F5', color: dm ? '#a1a1aa' : '#9c9ca4' }}>
-              {closed.length}
-            </span>
-            <span className="flex-1" />
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#52525b' : '#bcbcc4'} strokeWidth="2"
-              className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${closedOpen ? '' : '-rotate-90'}`}>
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-          <Collapse open={closedOpen}>
-            <div className="flex flex-col gap-2 pb-1" style={{ opacity: 0.72 }}>
+        <div className="mt-7 border-t border-line pt-6">
+          <GroupHead
+            icon={<Archive className="h-4 w-4 shrink-0 text-ink-muted" />}
+            title="Cancelled & refunded"
+            titleClass="text-[0.98rem] font-semibold text-ink-soft"
+            count={closed.length}
+            open={closedOpen}
+            onToggle={() => setClosedOpen(o => !o)}
+          />
+          <Fold open={closedOpen} lazy>
+            <RowPanel>
               {closed.map(reg => (
-                <ClassRow key={reg.id} reg={reg} onSelect={onSelect} dm={dm} />
+                <ClassRow key={reg.id} reg={reg} onSelect={onSelect} dimmed />
               ))}
-            </div>
-          </Collapse>
+            </RowPanel>
+          </Fold>
         </div>
       )}
     </div>

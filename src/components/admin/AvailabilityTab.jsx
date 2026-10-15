@@ -2,7 +2,7 @@ import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
-import MonthCalendar, { OFF_RED, CLASS_PINK, startTime, dotOf, weekStartOf } from './MonthCalendar';
+import MonthCalendar, { CLASS_PINK, startTime, dotOf, weekStartOf } from './MonthCalendar';
 import CalendarHeader from './CalendarHeader';
 import ScheduleView from './ScheduleView';
 import BlockDaysSheet from './BlockDaysSheet';
@@ -11,6 +11,7 @@ import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { useTimeBlocks } from './useTimeBlocks';
 import { windowMinutes, blockLabel } from '@/lib/timeBlocks';
 import { STATUS_COLORS, CONSULT_INK, BLOCK_INK } from './statusColors';
+import { Chevron, Fold, Label, Panel, Segmented, Tag, buttonClass, cx } from './ui';
 
 const SETTING_KEY = 'max_bookings_per_day';
 const DEFAULT_CAP = 3;
@@ -38,32 +39,47 @@ const groupRuns = (rows) => {
   return runs;
 };
 
+// Lists in the side panels show this many, and fold the rest away.
+const LIST_CAP = 5;
+
+// The panel's full-width actions: 44px on a phone, a touch shorter on a laptop.
+const panelBtn = (variant) => buttonClass(variant, 'md', 'h-11 w-full sm:h-10');
+
+// Closing days is the one destructive thing on this page, so its button is the
+// one filled in the alert red.
+const alertSolid = buttonClass('alert', 'md', 'font-semibold');
+
+const ClockIcon = ({ className = 'h-3.5 w-3.5' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+  </svg>
+);
+
 // ── Circular capacity meter ─────────────────────────────────
-function CapacityRing({ booked, capacity, blocked, dm }) {
-  const size = 92, stroke = 8;
+function CapacityRing({ booked, capacity, blocked }) {
+  const size = 92, stroke = 7;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const ratio = blocked ? 1 : capacity > 0 ? Math.min(1, booked / capacity) : 0;
   const full = !blocked && capacity > 0 && booked >= capacity;
-  const track = dm ? '#2e2e38' : '#EAEAF1';
-  const color = blocked ? OFF_RED : full ? '#E0795B' : booked > 0 ? '#D4A0B0' : (dm ? '#52525b' : '#D2D2DB');
+  const arc = blocked || full ? 'stroke-tone-alert' : booked > 0 ? 'stroke-rose-soft' : 'stroke-line-strong';
   return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-line" />
         <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+          cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke}
           strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ * (1 - ratio)}
-          style={{ transition: 'stroke-dashoffset 0.55s cubic-bezier(0.22,1,0.36,1), stroke 0.3s' }}
+          className={cx(arc, 'transition-[stroke-dashoffset] duration-500 ease-quint')}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {blocked ? (
-          <span className="text-[0.58rem] font-bold tracking-[0.12em] uppercase" style={{ color: OFF_RED }}>Closed</span>
+          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-tone-alert">Closed</span>
         ) : (
           <>
-            <span className="font-serif leading-none" style={{ fontSize: '1.5rem', color: dm ? '#e4e4e7' : '#1a1a1a' }}>{booked}</span>
-            <span className="text-[0.55rem] font-medium mt-1 tracking-wide" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>of {capacity}</span>
+            <span className="text-[1.5rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink">{booked}</span>
+            <span className="mt-1 text-[0.62rem] font-medium tabular-nums text-ink-muted">of {capacity}</span>
           </>
         )}
       </div>
@@ -72,20 +88,21 @@ function CapacityRing({ booked, capacity, blocked, dm }) {
 }
 
 // ── Stepper ─────────────────────────────────────────────────
-function Stepper({ value, onChange, min = 1, max = 20, dm }) {
-  const btn = 'w-9 h-9 flex items-center justify-center transition-colors text-lg select-none';
-  const btnStyle = { color: dm ? '#a1a1aa' : '#999', background: dm ? '#1e1e24' : 'transparent' };
-  const bd = dm ? '#3a3a48' : '#E5E7EB';
+function Stepper({ value, onChange, min = 1, max = 20 }) {
+  const btn = 'flex h-11 w-11 select-none items-center justify-center text-ink-muted transition-colors hover:bg-canvas hover:text-ink sm:h-9 sm:w-9';
   return (
-    <div className="flex items-center rounded-xl overflow-hidden" style={{ border: `1px solid ${bd}` }}>
-      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} className={btn} style={btnStyle}>−</button>
+    <div className="flex items-center overflow-hidden rounded border border-line-strong bg-paper">
+      <button type="button" aria-label="One fewer" onClick={() => onChange(Math.max(min, value - 1))} className={btn}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden><path d="M5 12h14" /></svg>
+      </button>
       <input
         type="number" min={min} max={max} value={value}
         onChange={(e) => onChange(Math.max(min, Math.min(max, parseInt(e.target.value, 10) || min)))}
-        className="w-11 h-9 text-center text-[0.95rem] font-semibold outline-none"
-        style={{ color: dm ? '#e4e4e7' : '#111', borderLeft: `1px solid ${bd}`, borderRight: `1px solid ${bd}`, background: dm ? '#26262e' : '#fff' }}
+        className="h-11 w-11 border-x border-line bg-paper text-center text-[16px] font-semibold tabular-nums text-ink outline-none sm:h-9 sm:text-[0.92rem]"
       />
-      <button type="button" onClick={() => onChange(Math.min(max, value + 1))} className={btn} style={btnStyle}>+</button>
+      <button type="button" aria-label="One more" onClick={() => onChange(Math.min(max, value + 1))} className={btn}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+      </button>
     </div>
   );
 }
@@ -374,7 +391,7 @@ export default function AvailabilityTab({
     return () => cancelAnimationFrame(id);
   }, [selectedDate, selectMode, view]);
 
-  const card = { background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E7EB'}` };
+
   const spotsLeft = effForSelected - selBooked;
 
   // ── Glance stats ── one slim line, not four cards: they're context for the
@@ -385,17 +402,17 @@ export default function AvailabilityTab({
     { label: 'Custom days', value: upcomingOverrides.length, tone: 'accent' },
     { label: 'Days off', value: upcomingBlocked.length, tone: upcomingBlocked.length > 0 ? 'danger' : 'neutral' },
   ];
-  const toneColor = (t) => t === 'warn' ? '#E0795B' : t === 'danger' ? OFF_RED : t === 'accent' ? '#A0607A' : (dm ? '#e4e4e7' : '#1a1a1a');
+  const TONE_TEXT = { warn: 'text-tone-alert', danger: 'text-tone-alert', accent: 'text-rose', neutral: 'text-ink' };
 
+  // Same order and the same swatches as the Home calendar's key.
   const LEGEND = [
     { c: STATUS_COLORS.pending, label: 'Pending' },
     { c: STATUS_COLORS.confirmed, label: 'Confirmed' },
     { c: STATUS_COLORS.completed, label: 'Completed' },
-    { c: CONSULT_INK.light, label: 'Consultation' },
-    { c: CLASS_PINK, label: 'Makeup Class' },
-    { c: BLOCK_INK.light, label: 'Blocked time' },
-    { c: OFF_RED, label: 'Day off' },
+    { c: CONSULT_INK[dm ? 'dark' : 'light'], label: 'Consultation' },
+    { c: CLASS_PINK, label: 'Makeup class' },
   ];
+  const swatch = 'flex items-center gap-1.5 text-[0.66rem] font-medium text-ink-muted';
 
   // Tap a client anywhere on this tab (a day's list, or a chip in the grid)
   // and their card takes over the tab. Jump to the top first, otherwise the
@@ -409,33 +426,128 @@ export default function AvailabilityTab({
     else onSelect?.(ev.raw);
   };
 
+  // A whole row is the target, with a small action of its own on the right.
+  // Enter on that inner button must stay its own, so the row only answers keys
+  // aimed at the row itself.
+  const rowKeys = (go) => (e) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+  };
+
+  const dayOffRow = (run) => {
+    const many = run.items.length > 1;
+    const isSel = run.items.some(i => i.date === selectedDate);
+    return (
+      <div
+        key={`${run.start}-${run.end}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => jumpTo(run.start)}
+        onKeyDown={rowKeys(() => jumpTo(run.start))}
+        className={cx(
+          'flex cursor-pointer items-center justify-between gap-3 py-2 pl-4 pr-2 transition-colors duration-200 sm:pl-5 sm:pr-3',
+          isSel ? 'bg-tone-alert/[0.05]' : 'hover:bg-canvas/60',
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Cross className="h-2.5 w-2.5 shrink-0 text-tone-alert" strokeWidth={3} />
+          <div className="min-w-0">
+            <p className="truncate text-[0.8rem] font-medium text-ink">
+              {many ? `${fmtDay(run.start)} to ${fmtDay(run.end)}` : fmtDay(run.start)}
+            </p>
+            {(many || run.reason) && (
+              <p className="truncate text-[0.74rem] text-ink-muted">
+                {many ? `${run.items.length} days` : ''}{many && run.reason ? ' · ' : ''}{run.reason}
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); unblockMany.mutate(run.items); }}
+          className="press h-9 shrink-0 rounded px-2.5 text-[0.74rem] font-medium text-ink-muted hover:bg-canvas hover:text-rose"
+        >
+          {many ? 'Reopen all' : 'Reopen'}
+        </button>
+      </div>
+    );
+  };
+
+  const timeBlockRow = (t) => {
+    const isSel = t.date === selectedDate;
+    return (
+      <div
+        key={t.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => jumpTo(t.date)}
+        onKeyDown={rowKeys(() => jumpTo(t.date))}
+        className={cx(
+          'flex cursor-pointer items-center justify-between gap-3 py-2 pl-4 pr-2 transition-colors duration-200 sm:pl-5 sm:pr-3',
+          isSel ? 'bg-canvas' : 'hover:bg-canvas/60',
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="h-1.5 w-1.5 shrink-0" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} />
+          <div className="min-w-0">
+            <p className="truncate text-[0.8rem] font-medium tabular-nums text-ink">
+              {fmtDay(t.date)} · {t.time || 'All day'}
+            </p>
+            <p className="truncate text-[0.74rem] text-ink-muted">{blockLabel(t)}</p>
+          </div>
+        </div>
+        {onSelectTimeBlock && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onSelectTimeBlock(t); }}
+            className="press h-9 shrink-0 rounded px-2.5 text-[0.74rem] font-medium text-ink-muted hover:bg-canvas hover:text-ink"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // The first few rows, then the rest folded away behind one line.
+  const foldList = (rows, open, setOpen, render) => (
+    <>
+      <div className="divide-y divide-line">{rows.slice(0, LIST_CAP).map(render)}</div>
+      {rows.length > LIST_CAP && (
+        <>
+          <Fold open={open} lazy>
+            <div className="divide-y divide-line border-t border-line">{rows.slice(LIST_CAP).map(render)}</div>
+          </Fold>
+          <button
+            type="button"
+            onClick={() => setOpen(v => !v)}
+            aria-expanded={open}
+            className="flex w-full items-center justify-center gap-1.5 border-t border-line px-4 py-2.5 text-[0.76rem] font-medium text-ink-soft transition-colors hover:bg-canvas/60 hover:text-ink"
+          >
+            {open ? 'Show less' : `Show all ${rows.length}`}
+            <Chevron open={open} className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
+    </>
+  );
+
   return (
     <div className="pb-4">
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4 xl:gap-5 items-start">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-5">
         {/* ── Calendar ── */}
-        <div className="rounded-xl p-3 sm:p-4 min-w-0" style={{ background: dm ? '#26262e' : '#fff', border: `1px solid ${dm ? '#2e2e38' : '#ECECF1'}` }}>
+        <section className="min-w-0 border border-line bg-paper p-4 sm:p-6">
           {/* View switcher and Select days share one line, so the date and the
               grid start near the top of the card. */}
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-            <div className="flex items-center gap-1">
-              {['Day', 'Week', 'Month'].map(v => {
-                const key = v.toLowerCase();
-                const active = view === key;
-                return (
-                  <button key={v} onClick={() => changeView(key)}
-                    className="px-3 py-1.5 text-[0.68rem] font-semibold tracking-[0.08em] uppercase rounded-full transition-colors"
-                    style={active
-                      ? { background: dm ? '#34343d' : '#EBEBF1', color: dm ? '#ECEDF1' : '#1a1a1a' }
-                      : { background: 'transparent', color: dm ? '#6f6f78' : '#a8a8b1' }}
-                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = dm ? '#a1a1aa' : '#83838d'; }}
-                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = dm ? '#6f6f78' : '#a8a8b1'; }}>
-                    {v}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <Segmented
+              size="sm"
+              value={view}
+              onChange={changeView}
+              options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]}
+            />
 
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex shrink-0 items-center gap-2">
               {/* Block off time, from the page it belongs on. It used to be
                   reachable here only after tapping a day, so the Calendar tab
                   looked like it couldn't do it at all. Starts on the day that's
@@ -443,26 +555,25 @@ export default function AvailabilityTab({
                   while picking days, where every tap means "close this day". */}
               {onBlockTime && !selectMode && (
                 <button
+                  type="button"
                   onClick={() => onBlockTime(selectedDate || (view === 'day' ? tk : null))}
-                  className="inline-flex items-center gap-1.5 text-[0.68rem] font-semibold tracking-[0.06em] px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 flex-shrink-0">
-                    <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
-                  </svg>
+                  className={buttonClass('quiet', 'sm')}
+                >
+                  <ClockIcon />
                   <span className="sm:hidden">Block time</span>
                   <span className="hidden sm:inline">Block off time</span>
                 </button>
               )}
 
-              {/* Select — the whole point: pick days by tapping them. A single
+              {/* Select: the whole point, pick days by tapping them. A single
                   day in Day view is already selected, so there's nothing to pick. */}
               {view !== 'day' && (
                 <button
+                  type="button"
                   onClick={() => (selectMode ? exitSelect() : (setSelectMode(true), setSelectedDate(null)))}
-                  className="text-[0.68rem] font-semibold tracking-[0.06em] px-3.5 py-1.5 rounded-lg transition-all flex-shrink-0 active:scale-95"
-                  style={selectMode
-                    ? { background: '#E05549', color: '#fff' }
-                    : { background: 'transparent', color: dm ? '#a1a1aa' : '#6b6b73', border: `1px solid ${dm ? '#34343d' : '#E5E6EC'}` }}>
+                  aria-pressed={selectMode}
+                  className={buttonClass(selectMode ? 'solid' : 'quiet', 'sm')}
+                >
                   {selectMode ? 'Cancel' : 'Select days'}
                 </button>
               )}
@@ -485,8 +596,8 @@ export default function AvailabilityTab({
             />
           ) : (
             <>
-              {/* The date, centred and large, directly above the grid it names
-                  — and tappable, so a month six months out is two taps rather
+              {/* The date, centred and large, directly above the grid it names,
+                  and tappable, so a month six months out is two taps rather
                   than six presses of an arrow. */}
               <CalendarHeader
                 title={headerTitle}
@@ -526,28 +637,28 @@ export default function AvailabilityTab({
 
           {/* Action bar for the tapped days. Replaces the old typed date range. */}
           {selectMode ? (
-            <div className="mt-4 pt-4 flex items-center gap-2.5 flex-wrap" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-              <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>
+            <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-line pt-4">
+              <span className="text-[0.86rem] font-semibold text-ink">
                 {pickedList.length === 0
                   ? 'Tap the days you want to close'
                   : `${pickedList.length} day${pickedList.length === 1 ? '' : 's'} selected`}
               </span>
-              <div className="flex items-center gap-2 ml-auto flex-wrap">
+              <div className="ml-auto flex flex-wrap items-center gap-2">
                 {toReopen.length > 0 && (
                   <button
+                    type="button"
                     onClick={() => { unblockMany.mutate(toReopen); setBulkDone(`Reopened ${toReopen.length} day${toReopen.length === 1 ? '' : 's'}`); exitSelect(); }}
-                    className="px-3.5 py-2 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-95"
-                    style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#FDF5F8', color: '#A0607A', border: `1.5px solid ${dm ? 'rgba(212,160,176,0.5)' : '#EFD0DE'}` }}>
+                    className={buttonClass('quiet', 'md')}
+                  >
                     Reopen {toReopen.length}
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setPendingBlock(toClose)}
                   disabled={!toClose.length || blockMany.isPending}
-                  className="px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-95"
-                  style={!toClose.length
-                    ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#7a7a84' : '#b4b4bd', cursor: 'not-allowed' }
-                    : { background: '#E05549', color: '#fff', boxShadow: '0 1px 3px rgba(224,85,73,0.25)' }}>
+                  className={alertSolid}
+                >
                   {blockMany.isPending ? 'Closing…' : toClose.length ? `Close ${toClose.length} day${toClose.length === 1 ? '' : 's'} off` : 'Close days off'}
                 </button>
               </div>
@@ -555,89 +666,95 @@ export default function AvailabilityTab({
           ) : (
             /* The numbers and the key, under the calendar rather than over it:
                they're context for the grid, not the headline. */
-            <div className="flex flex-col gap-2.5 mt-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-              <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap min-w-0">
+            <div className="mt-6 flex flex-col gap-3 border-t border-line pt-4">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
                 {stats.map((s, i) => (
                   <Fragment key={s.label}>
-                    {i > 0 && <span className="hidden sm:block w-px h-3" style={{ background: dm ? '#3a3a48' : '#E8E8EF' }} />}
+                    {i > 0 && <span className="hidden h-3 w-px bg-line sm:block" />}
                     <span className="flex items-baseline gap-1.5">
-                      <span className="text-[0.88rem] font-semibold tabular-nums leading-none" style={{ color: toneColor(s.tone) }}>{s.value}</span>
-                      <span className="text-[0.56rem] font-semibold tracking-[0.11em] uppercase whitespace-nowrap" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>{s.label}</span>
+                      <span className={cx('text-[0.92rem] font-semibold leading-none tabular-nums', TONE_TEXT[s.tone])}>{s.value}</span>
+                      <span className="whitespace-nowrap text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{s.label}</span>
                     </span>
                   </Fragment>
                 ))}
               </div>
               {view !== 'day' && (
-                <div className="flex items-center gap-3.5 flex-wrap">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <span className={cx(swatch, 'text-tone-alert')}>
+                    <span className="inline-flex h-3 w-3 items-center justify-center border border-tone-alert/30 bg-tone-alert/[0.06]">
+                      <Cross className="h-1.5 w-1.5" strokeWidth={3.5} />
+                    </span> Day off
+                  </span>
                   {LEGEND.map(l => (
-                    <span key={l.label} className="flex items-center gap-1.5 text-[0.6rem] font-medium" style={{ color: dm ? '#8e8e99' : '#999' }}>
-                      <span className="w-2 h-2 rounded-full inline-block" style={{ background: l.c }} /> {l.label}
+                    <span key={l.label} className={swatch}>
+                      <span className="inline-block h-2 w-2 rounded-full" style={{ background: l.c }} /> {l.label}
                     </span>
                   ))}
+                  <span className={swatch}>
+                    <span className="inline-block h-2 w-2" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} /> Blocked time
+                  </span>
                 </div>
               )}
             </div>
           )}
 
           {bulkDone && (
-            <p className="flex items-center justify-center gap-1.5 text-[0.72rem] font-medium mt-3" style={{ color: '#A0607A' }}>
-              <Check className="w-3 h-3" strokeWidth={3} />{bulkDone}
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.74rem] font-medium text-rose">
+              <Check className="h-3 w-3" strokeWidth={3} />{bulkDone}
             </p>
           )}
           {blockMany.isError && (
-            <p className="text-[0.72rem] mt-3 text-center" style={{ color: '#E05549' }}>Couldn't save that. Check your connection and try again.</p>
+            <p className="mt-3 text-center text-[0.74rem] text-tone-alert">Couldn't save that. Check your connection and try again.</p>
           )}
-        </div>
+        </section>
 
         {/* ── Control panel ── */}
-        <div ref={panelRef} className="xl:sticky xl:top-20 flex flex-col gap-4 min-w-0">
+        <div ref={panelRef} className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-20">
           {selectMode ? (
-            <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.85rem] font-semibold mb-1.5" style={{ color: dm ? '#e4e4e7' : '#111' }}>Picking days</p>
-              <p className="text-[0.72rem] leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+            <section className="border border-line bg-paper px-4 py-4 sm:px-5">
+              <p className="text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">Picking days</p>
+              <p className="mt-1.5 text-[0.8rem] leading-relaxed text-ink-muted">
                 Tap every day you're away, then hit the close button. They don't have to be in a row, and you can jump between months while you pick.
               </p>
               {pickedList.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-3.5">
+                <div className="mt-3.5 flex flex-wrap gap-1.5">
                   {pickedList.map(d => (
-                    <button key={d} onClick={() => togglePick(d)}
-                      className="text-[0.62rem] font-medium px-2 py-1 rounded-lg transition-all"
-                      style={{ background: dm ? 'rgba(224,85,73,0.16)' : '#FFF4F2', color: '#C0392B', border: '1px solid rgba(224,85,73,0.35)' }}>
-                      {fmtDay(d)} <Cross className="w-2 h-2 inline-block align-middle" strokeWidth={3.5} />
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => togglePick(d)}
+                      aria-label={`Remove ${fmtDay(d)}`}
+                      className="press inline-flex h-8 items-center gap-1.5 rounded bg-tone-alert/10 px-2.5 text-[0.74rem] font-medium tabular-nums text-tone-alert hover:bg-tone-alert/15"
+                    >
+                      {fmtDay(d)} <Cross className="h-2 w-2" strokeWidth={3.5} />
                     </button>
                   ))}
                 </div>
               )}
-            </div>
+            </section>
           ) : selectedDate ? (
-            <div className="rounded-xl p-5" style={card}>
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <h3 className="font-serif text-[1.05rem]" style={{ color: dm ? '#e4e4e7' : '#111' }}>
-                  {fmtDay(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' })}
-                </h3>
-                {selHasOverride && !selBlocked && (
-                  <span className="text-[0.55rem] font-bold tracking-[0.1em] uppercase px-2 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: 'rgba(212,160,176,0.16)', color: '#A0607A' }}>Custom</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4">
-                <CapacityRing booked={selBooked} capacity={effForSelected} blocked={selBlocked} dm={dm} />
+            <Panel
+              title={fmtDay(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' })}
+              action={selHasOverride && !selBlocked ? <Tag className="bg-rose/10 text-rose">Custom</Tag> : null}
+              bodyClassName="divide-y divide-line"
+            >
+              <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
+                <CapacityRing booked={selBooked} capacity={effForSelected} blocked={selBlocked} />
                 <div className="min-w-0">
                   {selBlocked ? (
                     <>
-                      <p className="text-[0.85rem] font-semibold" style={{ color: OFF_RED }}>Closed to bookings</p>
-                      <p className="text-[0.72rem] mt-1 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+                      <p className="text-[0.86rem] font-semibold text-tone-alert">Closed to bookings</p>
+                      <p className="mt-1 text-[0.8rem] leading-relaxed text-ink-muted">
                         Clients can't book this day.{blockedRecByDate[selectedDate]?.reason ? ` ${blockedRecByDate[selectedDate].reason}.` : ''}
                         {selEvents.length > 0 && ' Anything already booked still stands.'}
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-[0.92rem] font-semibold" style={{ color: spotsLeft <= 0 ? '#E0795B' : (dm ? '#e4e4e7' : '#1a1a1a') }}>
+                      <p className={cx('text-[0.92rem] font-semibold', spotsLeft <= 0 ? 'text-tone-alert' : 'text-ink')}>
                         {spotsLeft <= 0 ? 'Fully booked' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} open`}
                       </p>
-                      <p className="text-[0.72rem] mt-1 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#83838d' }}>
+                      <p className="mt-1 text-[0.8rem] leading-relaxed tabular-nums text-ink-muted">
                         {selBooked} of {effForSelected} booked
                         {selHasOverride ? ' · custom limit' : ` · default (${defaultCap})`}
                       </p>
@@ -650,246 +767,149 @@ export default function AvailabilityTab({
                   too, which is why the capacity number above says "booked" and
                   doesn't try to count them. */}
               {selEvents.length > 0 && (
-                <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-                  <p className="text-[0.58rem] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
-                    On this day · {selEvents.length}
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    {selEvents.map(ev => {
-                      const dot = dotOf(ev, dm);
-                      return (
-                        <button key={ev.id} onClick={() => openEvent(ev)}
-                          className="w-full flex items-center gap-2.5 text-left rounded-xl px-2.5 py-2 transition-colors"
-                          style={{ background: dm ? '#1e1e24' : '#FAFAFC', border: `1px solid ${dm ? '#3a3a48' : '#EDEDF2'}` }}
-                          onMouseEnter={e => e.currentTarget.style.background = dm ? '#2e2e37' : '#F4F4F8'}
-                          onMouseLeave={e => e.currentTarget.style.background = dm ? '#1e1e24' : '#FAFAFC'}>
-                          <span className={`w-1.5 h-1.5 flex-shrink-0 ${ev.kind === 'block' ? 'rounded-[1.5px]' : 'rounded-full'}`} style={{ background: dot }} />
-                          <span className="text-[0.66rem] font-semibold tabular-nums flex-shrink-0 w-[52px]" style={{ color: dm ? '#8b8b95' : '#9c9ca6' }}>
-                            {startTime(ev.time) || (ev.kind === 'block' ? 'All day' : '—')}
-                          </span>
-                          <span className="flex-1 min-w-0">
-                            <span className="block text-[0.76rem] font-semibold truncate" style={{ color: dm ? '#e4e4e7' : '#1a1a1a' }}>{ev.name}</span>
-                            <span className="block text-[0.65rem] truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{ev.detail}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
+                <div className="px-4 py-4 sm:px-5">
+                  <Label className="tabular-nums">On this day · {selEvents.length}</Label>
+                  <div className="mt-2.5 divide-y divide-line border border-line">
+                    {selEvents.map(ev => (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        onClick={() => openEvent(ev)}
+                        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas"
+                      >
+                        <span className={cx('h-1.5 w-1.5 shrink-0', ev.kind !== 'block' && 'rounded-full')} style={{ background: dotOf(ev, dm) }} />
+                        <span className="w-[52px] shrink-0 text-[0.68rem] font-semibold tabular-nums text-ink-muted">
+                          {startTime(ev.time) || (ev.kind === 'block' ? 'All day' : 'No time')}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[0.8rem] font-semibold text-ink">{ev.name}</span>
+                          <span className="block truncate text-[0.74rem] text-ink-muted">{ev.detail}</span>
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
 
               {!selBlocked && (
-                <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[0.72rem] font-medium" style={{ color: dm ? '#a1a1aa' : '#555' }}>Limit:</span>
-                    <Stepper value={editCap} onChange={setEditCap} dm={dm} />
-                    <span className="text-[0.7rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>spots</span>
+                <div className="px-4 py-4 sm:px-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-[0.8rem] font-medium text-ink-soft">Limit:</span>
+                    <Stepper value={editCap} onChange={setEditCap} />
+                    <span className="text-[0.8rem] text-ink-muted">spots</span>
                     <button
+                      type="button"
                       onClick={() => saveOverride.mutate({ date: selectedDate, capacity: editCap })}
                       disabled={editCap === effForSelected || saveOverride.isPending}
-                      className="ml-auto px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
-                      style={editCap === effForSelected
-                        ? { background: dm ? '#2e2e38' : '#F0F0F4', color: dm ? '#7a7a84' : '#bcae9e', cursor: 'not-allowed' }
-                        : { background: '#D4A0B0', color: '#fff', boxShadow: '0 1px 3px rgba(160,96,122,0.25)' }}>
+                      className={buttonClass('solid', 'sm', 'ml-auto h-11 sm:h-9')}
+                    >
                       {saveOverride.isPending ? 'Saving…'
-                        : daySaved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>
+                        : daySaved ? <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3" strokeWidth={3.2} />Saved</span>
                         : 'Set limit'}
                     </button>
                   </div>
                   {selHasOverride && (
                     <button
+                      type="button"
                       onClick={() => removeOverride.mutate(selectedDate)}
-                      className="mt-3 text-[0.68rem] font-medium transition-colors hover:opacity-70"
-                      style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
-                      ↺ Reset to default ({defaultCap} spots)
+                      className="press -ml-1 mt-2 inline-flex h-9 items-center gap-1.5 rounded px-1 text-[0.76rem] font-medium text-ink-muted hover:text-ink"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" />
+                      </svg>
+                      Reset to default ({defaultCap} spots)
                     </button>
                   )}
                 </div>
               )}
 
-              <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ECEDF1'}` }}>
+              <div className="flex flex-col gap-2 px-4 py-4 sm:px-5">
                 {selBlocked ? (
-                  <button
-                    onClick={() => unblockDay.mutate(selectedDate)}
-                    className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
-                    style={{ background: dm ? 'rgba(212,160,176,0.14)' : '#FDF5F8', color: '#A0607A', border: `1.5px solid ${dm ? 'rgba(212,160,176,0.5)' : '#EFD0DE'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                      <path d="M8 11V7a4 4 0 0 1 8 0M5 11h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/>
+                  <button type="button" onClick={() => unblockDay.mutate(selectedDate)} className={panelBtn('quiet')}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                      <path d="M8 11V7a4 4 0 0 1 8 0M5 11h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" />
                     </svg>
                     Reopen this day
                   </button>
                 ) : (
                   <>
-                  {/* Part of a day, with a note. Same panel as Add Client, opened
-                      on its Block off time side with this date filled in. */}
-                  {onBlockTime && (
-                    <button
-                      onClick={() => onBlockTime(selectedDate)}
-                      className="w-full mb-2 py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
-                      style={{ background: dm ? '#1e1e24' : '#FAF9FA', color: dm ? '#d9d2dc' : '#5f5763', border: `1.5px solid ${dm ? '#3a3a48' : '#E6E1E8'}` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                    {/* Part of a day, with a note. Same panel as Add Client, opened
+                        on its Block off time side with this date filled in. */}
+                    {onBlockTime && (
+                      <button type="button" onClick={() => onBlockTime(selectedDate)} className={panelBtn('quiet')}>
+                        <ClockIcon className="h-4 w-4" />
+                        Block off time
+                      </button>
+                    )}
+                    <button type="button" onClick={() => blockDay.mutate(selectedDate)} className={panelBtn('danger')}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                        <rect x="5" y="11" width="14" height="10" rx="1" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
                       </svg>
-                      Block off time
+                      Close this day off
                     </button>
-                  )}
-                  <button
-                    onClick={() => blockDay.mutate(selectedDate)}
-                    className="w-full py-2.5 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
-                    style={{ background: dm ? 'rgba(239,68,68,0.1)' : '#FFF6F5', color: '#E05549', border: `1.5px solid ${dm ? 'rgba(239,68,68,0.45)' : '#F3CBC6'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                      <rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-                    </svg>
-                    Close this day off
-                  </button>
                   </>
                 )}
               </div>
-            </div>
+            </Panel>
           ) : (
-            <div className="rounded-xl p-6 flex flex-col items-center text-center" style={card}>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(212,160,176,0.12)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <section className="flex flex-col items-center border border-line bg-paper px-6 py-8 text-center">
+              <span className="mb-3 flex h-11 w-11 items-center justify-center bg-rose-wash text-rose">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
                   <rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9h18" /><path d="M8 2.5v4M16 2.5v4" />
                 </svg>
-              </div>
-              <p className="text-[0.85rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>Pick a day</p>
+              </span>
+              <p className="text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">Pick a day</p>
               {/* The how-to that used to be a paragraph above the calendar. It
                   lives here now, in space that was empty anyway. */}
-              <p className="text-[0.72rem] mt-1.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
+              <p className="mt-1.5 max-w-[240px] text-[0.8rem] leading-relaxed text-ink-muted">
                 Tap any date to see what's on it, set its booking limit, or close it off.
               </p>
-              <p className="text-[0.68rem] mt-2.5 leading-relaxed max-w-[230px]" style={{ color: dm ? '#5d5d66' : '#adadb6' }}>
-                Double-tap closes a day straight off. For a whole trip, hit <span className="font-semibold" style={{ color: dm ? '#8b8b95' : '#83838d' }}>Select days</span>. For part of a day, <span className="font-semibold" style={{ color: dm ? '#8b8b95' : '#83838d' }}>Block off time</span>.
+              <p className="mt-2.5 max-w-[240px] text-[0.74rem] leading-relaxed text-ink-muted/80">
+                Double-tap closes a day straight off. For a whole trip, hit <span className="font-semibold text-ink-soft">Select days</span>. For part of a day, <span className="font-semibold text-ink-soft">Block off time</span>.
               </p>
-            </div>
+            </section>
           )}
 
-          {/* Days off — consecutive days collapse into one trip */}
+          {/* Days off: consecutive days collapse into one trip. No inner
+              scrollbar: page-level Lenis owns the wheel, so a nested scroller
+              here just felt stuck. It grows instead, and folds anything past
+              the first few behind a toggle. */}
           {blockedRuns.length > 0 && (
-            <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
-                Days off · {upcomingBlocked.length} coming up
-              </p>
-              {/* No inner scrollbar. Page-level Lenis owns the wheel, so a
-                  nested scroller here just felt stuck. It grows instead, and
-                  folds anything past the first few behind a toggle. */}
-              <div className="flex flex-col gap-1.5">
-                {(showAllDaysOff ? blockedRuns : blockedRuns.slice(0, 5)).map(run => {
-                  const many = run.items.length > 1;
-                  const isSel = run.items.some(i => i.date === selectedDate);
-                  return (
-                    <div key={`${run.start}-${run.end}`}
-                      onClick={() => jumpTo(run.start)}
-                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all"
-                      style={{ background: isSel ? (dm ? '#2e1e1e' : '#FEF2F2') : (dm ? '#1e1e24' : '#FdF8F7'), border: `1px solid ${isSel ? 'rgba(239,68,68,0.5)' : (dm ? '#3a3a48' : '#f3e6e2')}` }}>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Cross className="w-2.5 h-2.5 flex-shrink-0" strokeWidth={3} style={{ color: OFF_RED }} />
-                        <div className="min-w-0">
-                          <p className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>
-                            {many ? `${fmtDay(run.start)} to ${fmtDay(run.end)}` : fmtDay(run.start)}
-                          </p>
-                          {(many || run.reason) && (
-                            <p className="text-[0.63rem] truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>
-                              {many ? `${run.items.length} days` : ''}{many && run.reason ? ' · ' : ''}{run.reason}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); unblockMany.mutate(run.items); }}
-                        className="text-[0.62rem] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0"
-                        style={{ color: dm ? '#a1a1aa' : '#9c9ca4' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = '#A0607A'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#9c9ca4'; }}>
-                        {many ? 'Reopen all' : 'Reopen'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              {blockedRuns.length > 5 && (
-                <button
-                  onClick={() => setShowAllDaysOff(v => !v)}
-                  className="w-full mt-2.5 py-2 rounded-xl text-[0.68rem] font-semibold transition-all"
-                  style={{ background: dm ? '#1e1e24' : '#F7F7FB', color: dm ? '#a1a1aa' : '#83838d' }}>
-                  {showAllDaysOff ? 'Show less' : `Show all ${blockedRuns.length}`}
-                </button>
-              )}
-            </div>
+            <Panel title="Days off" sub={`${upcomingBlocked.length} coming up`}>
+              {foldList(blockedRuns, showAllDaysOff, setShowAllDaysOff, dayOffRow)}
+            </Panel>
           )}
 
-          {/* Blocked time — the part-of-a-day blocks, listed the way Days off
+          {/* Blocked time: the part-of-a-day blocks, listed the way Days off
               lists whole days, so everything she has taken off the schedule
               can be found on this one page. Tapping a row shows its day;
               Edit opens the same panel it was made in, to change or delete. */}
           {upcomingTimeBlocks.length > 0 && (
-            <div className="rounded-xl p-5" style={card}>
-              <p className="text-[0.6rem] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: dm ? '#8e8e99' : '#A6A6AF' }}>
-                Blocked time · {upcomingTimeBlocks.length} coming up
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {(showAllTimeBlocks ? upcomingTimeBlocks : upcomingTimeBlocks.slice(0, 5)).map(t => {
-                  const isSel = t.date === selectedDate;
-                  return (
-                    <div key={t.id}
-                      onClick={() => jumpTo(t.date)}
-                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all"
-                      style={{ background: dm ? '#1e1e24' : '#FAFAFC', border: `1px solid ${isSel ? (dm ? '#6b6470' : '#C9C2CC') : (dm ? '#3a3a48' : '#EDEDF2')}` }}>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-[1.5px] flex-shrink-0" style={{ background: BLOCK_INK[dm ? 'dark' : 'light'] }} />
-                        <div className="min-w-0">
-                          <p className="text-[0.72rem] font-medium truncate" style={{ color: dm ? '#d4d4d8' : '#111' }}>
-                            {fmtDay(t.date)} · {t.time || 'All day'}
-                          </p>
-                          <p className="text-[0.63rem] truncate" style={{ color: dm ? '#8e8e99' : '#9c9ca4' }}>{blockLabel(t)}</p>
-                        </div>
-                      </div>
-                      {onSelectTimeBlock && (
-                        <button onClick={(e) => { e.stopPropagation(); onSelectTimeBlock(t); }}
-                          className="text-[0.62rem] font-semibold px-2 py-1 rounded-lg transition-colors flex-shrink-0"
-                          style={{ color: dm ? '#a1a1aa' : '#9c9ca4' }}
-                          onMouseEnter={e => { e.currentTarget.style.color = dm ? '#e4e4e7' : '#111'; }}
-                          onMouseLeave={e => { e.currentTarget.style.color = dm ? '#a1a1aa' : '#9c9ca4'; }}>
-                          Edit
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              {upcomingTimeBlocks.length > 5 && (
-                <button
-                  onClick={() => setShowAllTimeBlocks(v => !v)}
-                  className="w-full mt-2.5 py-2 rounded-xl text-[0.68rem] font-semibold transition-all"
-                  style={{ background: dm ? '#1e1e24' : '#F7F7FB', color: dm ? '#a1a1aa' : '#83838d' }}>
-                  {showAllTimeBlocks ? 'Show less' : `Show all ${upcomingTimeBlocks.length}`}
-                </button>
-              )}
-            </div>
+            <Panel title="Blocked time" sub={`${upcomingTimeBlocks.length} coming up`}>
+              {foldList(upcomingTimeBlocks, showAllTimeBlocks, setShowAllTimeBlocks, timeBlockRow)}
+            </Panel>
           )}
 
           {/* Default capacity */}
-          <div className="rounded-xl p-5" style={card}>
-            <h3 className="text-[0.78rem] font-semibold mb-1.5" style={{ color: dm ? '#ECEDF1' : '#111' }}>Default capacity</h3>
-            <p className="text-[0.7rem] mb-4 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
+          <Panel title="Default capacity" bodyClassName="px-4 py-4 sm:px-5">
+            <p className="mb-4 text-[0.8rem] leading-relaxed text-ink-muted">
               How many bookings you'll take on a day without its own limit.
             </p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Stepper value={defaultEdit} onChange={setDefaultEdit} dm={dm} />
-              <span className="text-[0.7rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>spots / day</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Stepper value={defaultEdit} onChange={setDefaultEdit} />
+              <span className="text-[0.8rem] text-ink-muted">spots / day</span>
               <button
+                type="button"
                 onClick={() => saveDefault.mutate(defaultEdit)}
                 disabled={defaultEdit === defaultCap || saveDefault.isPending}
-                className="ml-auto px-4 py-2 rounded-xl text-[0.72rem] font-semibold transition-all"
-                style={defaultEdit === defaultCap
-                  ? { background: dm ? '#2e2e38' : '#f3f4f6', color: dm ? '#7a7a84' : '#9ca3af', cursor: 'not-allowed' }
-                  : { background: '#111', color: '#fff' }}>
+                className={buttonClass('solid', 'sm', 'ml-auto h-11 sm:h-9')}
+              >
                 {saveDefault.isPending ? 'Saving…'
-                  : defaultSaved ? <span className="inline-flex items-center gap-1.5"><Check className="w-3 h-3" strokeWidth={3.2} />Saved</span>
+                  : defaultSaved ? <span className="inline-flex items-center gap-1.5"><Check className="h-3 w-3" strokeWidth={3.2} />Saved</span>
                   : 'Save'}
               </button>
             </div>
-          </div>
+          </Panel>
         </div>
       </div>
 

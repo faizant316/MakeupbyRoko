@@ -176,7 +176,7 @@ const LESSON_COLOR = '#C76BA6';
 export default function BookingsList({
   bookings, loading, search, setSearch, statusFilter, setStatusFilter,
   statusCounts, selectedDate, setSelectedDate, onSelect, currentMonth,
-  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient, onBulkImport,
+  allBookings, consultationsOnDate = [], lessonsOnDate = [], darkMode: dm, onAddClient,
   classRegs = [], viewType = 'appointments', setViewType, onSelectClassReg,
   onBulkUpdate, onBulkDelete, onViewAllCalendar, onSelectTimeBlock,
 }) {

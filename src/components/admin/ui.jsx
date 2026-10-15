@@ -18,6 +18,8 @@ const VARIANTS = {
   ghost: 'text-ink-soft hover:bg-canvas hover:text-ink',
   rose: 'bg-rose text-paper hover:bg-rose/90',
   danger: 'border border-line-strong bg-paper text-tone-alert hover:border-tone-alert/60',
+  // The destructive action itself, once she's been asked (Delete, Close the day).
+  alert: 'bg-tone-alert text-paper hover:bg-tone-alert/90',
 };
 
 const SIZES = {
@@ -76,10 +78,6 @@ export function Panel({ title, sub, action, children, className, bodyClassName, 
       <div className={bodyClassName}>{children}</div>
     </Tag>
   );
-}
-
-export function Dot({ color, className, style }) {
-  return <span aria-hidden className={cx('inline-block h-1.5 w-1.5 shrink-0 rounded-full', className)} style={{ background: color, ...style }} />;
 }
 
 // The small uppercase label over a field or a group.

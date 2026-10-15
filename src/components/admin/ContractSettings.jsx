@@ -9,6 +9,7 @@ import {
   healSupersededSection,
 } from '@/lib/contract';
 import ContractEditorModal, { ContractPreview } from './ContractEditorModal';
+import { Button, Panel } from './ui';
 
 // Sample booking used to render the contract with realistic values in the
 // admin preview + live editor, so Roko sees exactly what a client would.
@@ -152,59 +153,43 @@ export default function ContractSettings({ darkMode: dm }) {
     },
   });
 
-  const cardBg = dm ? '#26262e' : '#fff';
-  const border = dm ? '#3a3a48' : '#E5E7EB';
-  const textMain = dm ? '#ECEDF1' : '#111';
-  const textHint = dm ? '#71717a' : '#999';
-
   const sectionCount = savedPreview.sections.length;
 
   return (
-    <div className="rounded-xl p-5 mb-5" style={{ background: cardBg, border: `1px solid ${border}` }}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-1.5">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#D4A0B0]/10 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.5" className="w-3.5 h-3.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="9" y1="15" x2="15" y2="15" />
-            </svg>
-          </div>
-          <span className="text-[0.75rem] font-semibold tracking-tight" style={{ color: textMain }}>Client Contract</span>
-        </div>
-        <button
-          onClick={openEditor}
-          className="px-3.5 py-1.5 rounded-lg text-[0.68rem] font-semibold transition-all bg-[#111] text-white hover:bg-[#222] shadow-sm flex items-center gap-1.5 flex-shrink-0"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+    <Panel
+      className="mb-8"
+      title="Client contract"
+      action={(
+        <Button variant="solid" size="sm" onClick={openEditor}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
           Edit contract
-        </button>
-      </div>
-      <p className="text-[0.7rem] mb-4 leading-[1.6]" style={{ color: textHint }}>
+        </Button>
+      )}
+      bodyClassName="px-4 pb-5 pt-4 sm:px-5"
+    >
+      <p className="mb-4 max-w-[640px] text-[0.8rem] leading-relaxed text-ink-muted">
         The full agreement every client signs. Edit the title, intro, and every section, or add your own. Dynamic details (deposit, date, names) fill in per booking.
       </p>
 
-      {/* Live preview of the current saved contract — tap to edit */}
+      {/* The saved contract, cut off after a few lines. Tap anywhere to edit. */}
       <button
+        type="button"
         onClick={openEditor}
-        className="group relative w-full text-left rounded-xl overflow-hidden transition-colors"
-        style={{ border: `1px solid ${border}`, background: dm ? '#1c1c22' : '#FBF7F9' }}
+        className="group block w-full border border-line bg-canvas text-left transition-colors duration-200 hover:border-ink/30"
       >
-        <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: `1px solid ${border}` }}>
-          <span className="text-[0.58rem] font-semibold tracking-[0.14em] uppercase" style={{ color: textHint }}>{savedPreview.title}</span>
-          <span className="text-[0.58rem]" style={{ color: textHint }}>{sectionCount} sections</span>
-        </div>
-        {/* Clamp the preview to a teaser height with a fade-out at the bottom */}
-        <div className="relative px-4 py-3.5" style={{ maxHeight: 200, overflow: 'hidden' }}>
+        <span className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+          <span className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{savedPreview.title}</span>
+          <span className="shrink-0 text-[0.68rem] tabular-nums text-ink-muted">{sectionCount} sections</span>
+        </span>
+        <span className="block max-h-[200px] overflow-hidden px-4 py-3.5">
           <ContractPreview c={savedPreview} dm={dm} />
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 flex items-end justify-center pb-2.5"
-            style={{ background: `linear-gradient(to bottom, transparent, ${dm ? '#1c1c22' : '#FBF7F9'} 78%)` }}
-          >
-            <span className="text-[0.66rem] font-semibold text-[#C4849A] group-hover:underline underline-offset-2">
-              View &amp; edit full contract
-            </span>
-          </div>
-        </div>
+        </span>
+        <span className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-[0.78rem] font-medium text-ink">
+          View &amp; edit full contract
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 text-ink-muted transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </span>
       </button>
 
       {editorOpen && (
@@ -225,6 +210,6 @@ export default function ContractSettings({ darkMode: dm }) {
           saved={saved}
         />
       )}
-    </div>
+    </Panel>
   );
 }

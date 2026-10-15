@@ -1,3 +1,6 @@
+// A stand-in for the public service card, shown inside the service form. It
+// copies the website's look on purpose (white card, serif title, the site's
+// own button), so it does not follow the dashboard's palette or dark mode.
 export default function ServicePreview({ form }) {
   const isBridal = form.category === 'bridal';
 
@@ -15,9 +18,9 @@ export default function ServicePreview({ form }) {
               <span className="text-[0.55rem] font-semibold tracking-[0.14em] uppercase text-[#D4A0B0] block mb-1">Featured Service</span>
               <h3 className="font-serif text-[1.3rem] font-normal text-[#111] leading-tight mb-1.5">{form.title || 'Service Name'}</h3>
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className="font-serif text-[1.1rem] text-[#111]">{form.price || '$—'}</span>
+                <span className="font-serif text-[1.1rem] text-[#111]">{form.price || 'Price'}</span>
                 <span className="text-[#ddd]">·</span>
-                <span className="text-[0.75rem] text-[#888]">{form.duration || '—'}</span>
+                <span className="text-[0.75rem] text-[#888]">{form.duration || 'Duration'}</span>
                 {form.deposit && (
                   <>
                     <span className="text-[#ddd]">·</span>
@@ -59,9 +62,9 @@ export default function ServicePreview({ form }) {
         <div>
           <h3 className="font-serif text-[1rem] font-normal text-[#111] leading-tight mb-1">{form.title || 'Service Name'}</h3>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[0.8rem] font-medium text-[#111]">{form.price || '$—'}</span>
+            <span className="text-[0.8rem] font-medium text-[#111]">{form.price || 'Price'}</span>
             <span className="text-[#ccc]">·</span>
-            <span className="text-[0.7rem] text-[#999]">{form.duration || '—'}</span>
+            <span className="text-[0.7rem] text-[#999]">{form.duration || 'Duration'}</span>
           </div>
           {form.description && (
             <p className="text-[0.72rem] text-[#aaa] leading-[1.5] line-clamp-2">{form.description}</p>

@@ -11,23 +11,6 @@
 // What the alert needs isn't a decision, it's an acknowledgment, and opening
 // the client card is acknowledgment enough.
 
-export const DEPOSIT_INK = {
-  // Money just arrived and she hasn't looked yet. The only attention-worthy one.
-  new:     { key: '#2563EB', light: { fg: '#1D4ED8', bg: 'rgba(37,99,235,0.10)',  line: '#D7E2F7' },
-                             dark:  { fg: '#93B4F7', bg: 'rgba(59,130,246,0.16)', line: '#33415C' } },
-  // Nothing sent yet.
-  waiting: { key: '#F59E0B', light: { fg: '#A9660B', bg: 'rgba(245,158,11,0.12)', line: '#F0E0C4' },
-                             dark:  { fg: '#F5B83C', bg: 'rgba(245,158,11,0.16)', line: '#4A3D24' } },
-  // Settled history. Deliberately quiet so it doesn't read as a task.
-  in:      { key: '#64748B', light: { fg: '#64748B', bg: 'rgba(100,116,139,0.10)', line: '#E2E5EA' },
-                             dark:  { fg: '#A7B2C4', bg: 'rgba(148,163,184,0.14)', line: '#3A414D' } },
-};
-
-export function depositTone(kind, dm) {
-  const set = DEPOSIT_INK[kind] || DEPOSIT_INK.in;
-  return { key: set.key, ...(dm ? set.dark : set.light) };
-}
-
 // "just now" / "20m ago" / "3h ago" / "2 days ago". Coarse past a day on
 // purpose: it matters that it was Tuesday, not that it was 51 hours.
 export function timeAgo(iso) {

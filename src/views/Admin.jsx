@@ -22,7 +22,6 @@ import ClassRegistrationsList from '../components/admin/ClassRegistrationsList';
 import ClassRegistrationDetail from '../components/admin/ClassRegistrationDetail';
 import ReportsTab from '../components/admin/ReportsTab';
 import AddClientModal from '../components/admin/AddClientModal';
-import BulkImportModal from '../components/admin/BulkImportModal';
 import ClientsTab from '../components/admin/ClientsTab';
 import ResizableColumns from '../components/admin/ResizableColumns';
 import HomeTop from '../components/admin/HomeTop';
@@ -51,8 +50,6 @@ export default function Admin() {
   // otherwise which side it opens on, the day it starts on, and the blocked
   // time being edited (when she tapped one on a calendar).
   const [entryPanel, setEntryPanel] = useState(null);
-  const [showBulkImport, setShowBulkImport] = useState(false);
-  const [autoExpandClassRegId, setAutoExpandClassRegId] = useState(null);
   const [selectedClassReg, setSelectedClassReg] = useState(null);
   const [authGranted, setAuthGranted] = useState(false);
   const queryClient = useQueryClient();
@@ -389,7 +386,7 @@ export default function Admin() {
                     onSelect={setSelectedBooking} currentMonth={currentMonth}
                     allBookings={bookings} consultationsOnDate={consultationsOnDate} lessonsOnDate={lessonsOnDate}
                     darkMode={dm} onAddClient={() => setEntryPanel({ mode: 'client', date: selectedDate })}
-                    onSelectTimeBlock={(t) => setEntryPanel({ mode: 'block', editBlock: t })} onBulkImport={() => setShowBulkImport(true)}
+                    onSelectTimeBlock={(t) => setEntryPanel({ mode: 'block', editBlock: t })}
                     classRegs={classRegs} viewType={viewType} setViewType={setViewType}
                     onSelectClassReg={(r) => { setActiveTab('classes'); setSelectedClassReg(r); }}
                     onViewAllCalendar={(jumpTo) => {
@@ -404,16 +401,6 @@ export default function Admin() {
                 </div>
               }
             />
-            {showBulkImport && (
-              <BulkImportModal
-                onClose={() => setShowBulkImport(false)}
-                onDone={() => {
-                  queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-                  setShowBulkImport(false);
-                }}
-                darkMode={dm}
-              />
-            )}
           </>
         )}
 
@@ -502,7 +489,6 @@ export default function Admin() {
           <ClassRegistrationsList
             darkMode={dm}
             onSelect={setSelectedClassReg}
-            autoExpandId={autoExpandClassRegId}
           />
         )}
 

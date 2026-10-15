@@ -5,22 +5,171 @@ import StatusBadge from './StatusBadge';
 import EditBookingModal from './EditBookingModal';
 import BookingReferencePhotos from './BookingReferencePhotos';
 import EmailLogPanel from './EmailLogPanel';
-import { lenisScrollTo, lenisStop, lenisStart } from '@/lib/lenis';
+import { lenisScrollTo } from '@/lib/lenis';
 import { openZoomRoom, meetingIdFromUrl } from '@/lib/zoomHost';
 import confetti from 'canvas-confetti';
 import { buildContract } from '@/lib/contract';
 import { useContractOverrides } from '@/lib/useContractOverrides';
 import { AdminDatePicker } from './SchedulePicker';
 import TimeWindowPicker from './TimeWindowPicker';
-import { Check, Cross } from './Glyphs';
+import { Cross } from './Glyphs';
 import ConfirmDialog from './ConfirmDialog';
 import ScheduleView from './ScheduleView';
 import { parseRange, apptToMin } from '@/lib/timeWindow';
 import { formatPhone, phoneHref } from '@/lib/phone';
-import { STATUS_COLORS, EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
+import { EVENT_COLORS, CONSULT_INK, isBridalService } from './statusColors';
 import { isDepositUnseen, daysSince, shortDateTime } from './depositState';
 import { isBookingUnseen } from './bookingSeen';
 import { STUDIO_TOWN } from '@/lib/studio';
+import { cx, Button, buttonClass, IconButton, Panel, Tag, Label, inputClass, Fold, Chevron, Sheet } from './ui';
+
+// ---- small parts -------------------------------------------------------------------
+
+// The icons this card uses more than once. 1.7 strokes, the weight of the rest
+// of the dashboard's line icons.
+const ICON = {
+  calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>,
+  pencil: <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></>,
+  mail: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></>,
+  close: <path d="M18 6 6 18M6 6l12 12" />,
+  check: <path d="M20 6 9 17l-5-5" />,
+  video: <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" />,
+  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  pin: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></>,
+  external: <><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><path d="M15 3h6v6M10 14 21 3" /></>,
+  send: <><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></>,
+  download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5M12 15V3" /></>,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" /></>,
+  lock: <><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>,
+  back: <path d="M19 12H5M12 19l-7-7 7-7" />,
+  right: <path d="m9 18 6-6-6-6" />,
+  up: <path d="m18 15-6-6-6 6" />,
+  undo: <><path d="M9 14 4 9l5-5" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" /></>,
+  refresh: <><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></>,
+  trash: <><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>,
+  gift: <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />,
+  clear: <><circle cx="12" cy="12" r="9" /><path d="m8.6 8.6 6.8 6.8" /></>,
+};
+
+function Icon({ name, className = 'h-4 w-4', strokeWidth = 1.7 }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={cx('shrink-0', className)}>
+      {ICON[name]}
+    </svg>
+  );
+}
+
+// Button-shaped icons for <Button icon={...}>, which passes a className.
+const iconOf = (name) => function ButtonIcon({ className }) { return <Icon name={name} className={className} />; };
+const CalendarIcon = iconOf('calendar');
+const PencilIcon = iconOf('pencil');
+const MailIcon = iconOf('mail');
+const SendIcon = iconOf('send');
+const DownloadIcon = iconOf('download');
+const ExternalIcon = iconOf('external');
+const VideoIcon = iconOf('video');
+const TrashIcon = iconOf('trash');
+const RefreshIcon = iconOf('refresh');
+
+// A small text button for the corner of a section (New link, Edit a note).
+const MINI = 'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded px-2.5 text-[0.74rem] font-medium text-ink-soft hover:bg-canvas hover:text-ink disabled:pointer-events-none disabled:opacity-40';
+// A square, icon-only partner for the quiet buttons beside it.
+const SQUARE = 'press inline-flex h-9 w-9 shrink-0 items-center justify-center rounded border border-line-strong bg-paper text-ink-muted hover:border-ink/50 hover:text-ink max-sm:h-11 max-sm:w-11';
+
+// A small spinner for the buttons that wait on a send.
+function Spinner({ className }) {
+  return <span aria-hidden className={cx('h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent', className)} />;
+}
+
+// Label/value rows on hairlines, the way Mission Paradise lays out a booking's
+// facts. Two to a row where there's room (`two`), one otherwise. The wrapper
+// clips the top hairline of the first row in each column, so a list never opens
+// with a line sitting under the panel's own.
+function Specs({ two = false, className, children }) {
+  return (
+    <div className={cx('overflow-hidden', className)}>
+      <dl className={cx('-mt-px grid text-[0.86rem]', two && 'sm:grid-cols-2 sm:gap-x-10')}>{children}</dl>
+    </div>
+  );
+}
+
+// One row of Specs. Rows with nothing to say drop out entirely, so a sparse
+// booking stays short instead of listing a column of blanks. `accent` is for
+// the answers worth catching the eye (their ready-by, a no on photos).
+function Spec({ label, value, accent = false, href, children }) {
+  if (children == null && (value === null || value === undefined || value === '')) return null;
+  return (
+    <div className="flex min-w-0 items-baseline justify-between gap-6 border-t border-line py-3">
+      <dt className="shrink-0 text-ink-muted">{label}</dt>
+      <dd className={cx('min-w-0 break-words text-right', accent ? 'font-medium text-rose' : 'text-ink')}>
+        {children ?? (href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">{value}</a>
+        ) : value)}
+      </dd>
+    </div>
+  );
+}
+
+// Status as a dot, in the same tones as the badge, for the history lists.
+const STATUS_DOT = {
+  pending: 'bg-tone-pending',
+  confirmed: 'bg-tone-confirmed',
+  completed: 'bg-tone-done',
+  cancelled: 'bg-tone-alert',
+};
+
+// The status buttons' chosen state: the badge's tint, at button size.
+const STATUS_ON = {
+  pending: 'border-tone-pending/40 bg-tone-pending/10 font-semibold text-tone-pending',
+  confirmed: 'border-tone-confirmed/40 bg-tone-confirmed/10 font-semibold text-tone-confirmed',
+  completed: 'border-tone-done/40 bg-tone-done/10 font-semibold text-tone-done',
+  cancelled: 'border-tone-alert/40 bg-tone-alert/10 font-semibold text-tone-alert',
+};
+
+// The toast's dot. Plain "done" gets the soft rose; a status change gets its
+// own tone.
+const TOAST_DOT = {
+  ink: 'bg-rose-soft',
+  confirmed: 'bg-tone-confirmed',
+  pending: 'bg-tone-pending',
+  alert: 'bg-tone-alert',
+};
+
+// An on/off switch, iOS-shaped. Drawn only: the row around it is the control.
+// The knob stays white in both themes, the way a system switch does.
+function Switch({ on, disabled = false }) {
+  return (
+    <span aria-hidden className={cx('relative h-6 w-10 shrink-0 rounded-full transition-colors duration-200', on ? 'bg-rose' : 'bg-line-strong', disabled && 'opacity-40')}>
+      <span className={cx('absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-300 ease-quint', on ? 'translate-x-[18px]' : 'translate-x-0.5')} />
+    </span>
+  );
+}
+
+// A whole-row checkbox with a title and a line saying what ticking it does.
+function CheckRow({ checked, onClick, title, children }) {
+  return (
+    <button type="button" role="checkbox" aria-checked={checked} onClick={onClick}
+      className={cx(
+        'flex w-full items-start gap-3 rounded border px-3.5 py-3 text-left transition-colors duration-200',
+        checked ? 'border-ink/30 bg-canvas' : 'border-line bg-paper hover:border-line-strong',
+      )}>
+      <span className={cx(
+        'mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors duration-150',
+        checked ? 'border-ink bg-ink text-paper' : 'border-line-strong bg-paper',
+      )}>
+        {checked && <Icon name="check" className="h-3 w-3" strokeWidth={3} />}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[0.86rem] font-semibold text-ink">{title}</span>
+        <span className="mt-0.5 block text-[0.74rem] leading-relaxed text-ink-muted">{children}</span>
+      </span>
+    </button>
+  );
+}
+
+// The rose, as the hex the date and time pickers still take for their accent.
+// The same two values as --c-rose in admin.css.
+const ROSE_HEX = { light: '#A0607A', dark: '#E2AFC2' };
 
 // The whole Zelle deposit section, deliberately one line.
 //
@@ -30,7 +179,7 @@ import { STUDIO_TOWN } from '@/lib/studio';
 // decision on the page: it's one collapsed line that opens to the screenshot,
 // with the manual override tucked underneath for the rare cases the automatic
 // path can't cover (cash, Venmo, a screenshot that's clearly wrong).
-function DepositStrip({ booking, onUpdateBooking, dm }) {
+function DepositStrip({ booking, onUpdateBooking }) {
   const [expanded, setExpanded] = useState(false);
   const [signedUrls, setSignedUrls] = useState([]);
   const [loadingUrl, setLoadingUrl] = useState(false);
@@ -45,10 +194,6 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
   const gap = booking.zelle_uploaded_at && booking.created_date
     ? daysSince(booking.created_date) - daysSince(booking.zelle_uploaded_at)
     : null;
-
-  const tone = isIn
-    ? { fg: dm ? '#86efac' : '#16a34a', bg: dm ? 'rgba(34,197,94,0.10)' : '#F4FBF6', line: dm ? 'rgba(34,197,94,0.24)' : '#DCEFE3', key: '#22c55e' }
-    : { fg: dm ? '#F5B83C' : '#A9660B', bg: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', line: dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9', key: '#F59E0B' };
 
   // How many screenshots are on file. The list is on the row itself, so the
   // count is right before the strip is ever opened.
@@ -84,43 +229,40 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
     }
   };
 
-  const overrideCls = 'text-[0.72rem] font-medium px-3 py-1.5 rounded-lg transition-colors';
-
+  // Money that's in is settled history, so it reads in ink. Money that hasn't
+  // come is the one state here that wants her, so it alone wears the amber.
   return (
-    <div className="rounded-[10px] overflow-hidden" style={{ border: `1px solid ${tone.line}` }}>
+    <div>
       <button
+        type="button"
         onClick={handleExpand}
         aria-expanded={expanded}
-        className="w-full flex items-center gap-2.5 px-4 py-3 text-left transition-colors"
-        style={{ background: tone.bg }}
+        className={cx(
+          'flex min-h-[56px] w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-200 sm:px-5',
+          isIn ? 'hover:bg-canvas/60' : 'bg-tone-pending/[0.05] hover:bg-tone-pending/[0.08]',
+        )}
       >
-        <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: dm ? 'rgba(255,255,255,0.08)' : '#fff' }}>
-          {isIn ? (
-            <svg viewBox="0 0 24 24" fill="none" stroke={tone.key} strokeWidth="2.8" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-          ) : (
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.key }} />
-          )}
+        <span className={cx(
+          'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
+          isIn ? 'bg-ink text-paper' : 'border border-tone-pending/40',
+        )}>
+          {isIn
+            ? <Icon name="check" className="h-3 w-3" strokeWidth={3} />
+            : <span className="h-1.5 w-1.5 rounded-full bg-tone-pending" />}
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="text-[0.78rem] font-semibold" style={{ color: tone.fg }}>{headline}</span>
-          {detail && (
-            <span className="text-[0.72rem] ml-1.5" style={{ color: dm ? '#8b8b95' : '#8a8a93' }}>· {detail}</span>
-          )}
+          <span className={cx('block text-[0.86rem] font-semibold leading-snug', isIn ? 'text-ink' : 'text-tone-pending')}>{headline}</span>
+          {detail && <span className="mt-0.5 block text-[0.74rem] tabular-nums text-ink-muted">{detail}</span>}
         </span>
 
-        <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#71717a' : '#aaa'} strokeWidth="2"
-          className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
-          style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+        <Chevron open={expanded} className="text-ink-muted" />
       </button>
 
-      {expanded && (
-        <div className="p-3 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
+      <Fold open={expanded}>
+        <div className="flex flex-col gap-3 border-t border-line px-4 py-4 sm:px-5">
           {hasProof && loadingUrl && (
-            <p className="text-[0.72rem] text-center py-4" style={{ color: dm ? '#8e8e99' : '#aaa' }}>Loading…</p>
+            <p className="py-4 text-center text-[0.8rem] text-ink-muted">Loading…</p>
           )}
           {hasProof && signedUrls.length > 0 && (
             <div>
@@ -131,45 +273,41 @@ function DepositStrip({ booking, onUpdateBooking, dm }) {
                     key={url}
                     src={url}
                     alt={`Zelle screenshot ${i + 1}`}
-                    className={`w-full rounded-lg object-contain cursor-pointer ${signedUrls.length > 1 ? 'max-h-[320px]' : 'max-h-[400px]'}`}
-                    style={signedUrls.length > 1 ? { background: dm ? '#26262e' : '#F7F7F9' } : undefined}
+                    className={cx('w-full cursor-pointer border border-line bg-canvas object-contain', signedUrls.length > 1 ? 'max-h-[320px]' : 'max-h-[400px]')}
                     onClick={() => window.open(url, '_blank')}
                     title="Click to open full size"
                   />
                 ))}
               </div>
-              <p className="text-[0.62rem] text-center mt-2" style={{ color: dm ? '#7a7a84' : '#bbb' }}>Click {signedUrls.length > 1 ? 'a screenshot' : 'image'} to open full size</p>
+              <p className="mt-2 text-center text-[0.68rem] text-ink-muted">Click {signedUrls.length > 1 ? 'a screenshot' : 'image'} to open full size</p>
             </div>
           )}
 
           {/* The escape hatches. Out of the way because the automatic path
               covers almost every deposit. */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             {isIn ? (
-              <button
-                type="button"
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => onUpdateBooking({ deposit_received: false, deposit_confirmed_at: null })}
-                className={overrideCls}
-                style={{ color: dm ? '#fca5a5' : '#b91c1c', border: `1px solid ${dm ? 'rgba(185,28,28,0.4)' : 'rgba(239,68,68,0.25)'}` }}
               >
                 Mark as not received
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
+                size="sm"
                 onClick={() => onUpdateBooking({ deposit_received: true, deposit_confirmed_at: new Date().toISOString() })}
-                className={overrideCls}
-                style={{ color: dm ? '#86efac' : '#16a34a', border: `1px solid ${dm ? 'rgba(34,197,94,0.35)' : 'rgba(22,163,74,0.25)'}` }}
               >
                 {hasProof ? 'Mark received after all' : 'Paid another way? Mark received'}
-              </button>
+              </Button>
             )}
-            <span className="text-[0.68rem]" style={{ color: dm ? '#7a7a84' : '#b0b0b8' }}>
+            <span className="text-[0.74rem] text-ink-muted">
               {isIn ? 'Only if the screenshot turned out to be wrong.' : 'For anything paid outside the site.'}
             </span>
           </div>
         </div>
-      )}
+      </Fold>
     </div>
   );
 }
@@ -193,7 +331,7 @@ function fmtCancelStamp(iso) {
   } catch { return ''; }
 }
 
-function CopyableAddress({ address, dm }) {
+function CopyableAddress({ address }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(address);
@@ -204,21 +342,19 @@ function CopyableAddress({ address, dm }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="text-left w-full group"
+      className="group w-full text-left"
       title="Tap to copy address"
     >
-      <p className="text-[0.85rem] font-medium leading-snug" style={{ color: dm ? '#e4e4e7' : '#111' }}>
+      <p className="text-[0.86rem] font-medium leading-snug text-ink">
         {address}
       </p>
-      {/* #52525b sat at ~1.9:1 on the dark card, so the copy hint under every
-          address was effectively invisible. #71717a is the muted token the rest
-          of this file already uses. */}
-      <span className="text-[0.62rem] mt-0.5 inline-flex items-center gap-1 transition-colors"
-        style={{ color: copied ? '#22c55e' : dm ? '#8e8e99' : '#bbb' }}>
+      {/* The hint is ink-muted, not anything fainter: a lighter grey sat at
+          about 1.9:1 on the dark card and was effectively invisible. */}
+      <span className={cx('mt-1 inline-flex items-center gap-1 text-[0.68rem] transition-colors', copied ? 'font-medium text-ink' : 'text-ink-muted group-hover:text-ink-soft')}>
         {copied ? (
-          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!</>
+          <><Icon name="check" className="h-2.5 w-2.5" strokeWidth={2.6} /> Copied</>
         ) : (
-          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-2.5 h-2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Tap to copy</>
+          <><svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-2.5 w-2.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Tap to copy</>
         )}
       </span>
     </button>
@@ -246,17 +382,6 @@ const APPT_TIMES = [
   '3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM',
   '6:00 PM','6:30 PM','7:00 PM','7:30 PM','8:00 PM',
 ];
-
-// Booksy-style hero gradients per status (banner behind CONFIRMED / PENDING...)
-const HERO_GRADIENTS = {
-  pending:   'linear-gradient(150deg, #D97706, #F59E0B)',
-  confirmed: 'linear-gradient(150deg, #1D4ED8, #3B82F6)',
-  completed: 'linear-gradient(150deg, #475569, #64748B)',
-  cancelled: 'linear-gradient(150deg, #DC2626, #EF4444)',
-};
-
-// Brand plum (matches the front-end bridal cards)
-const PLUM = '#C4849A';
 
 // Universal Google Maps link — works on desktop + mobile, no API key required.
 function mapsUrl(address) {
@@ -327,12 +452,12 @@ function fmtShort(d) {
   return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
 }
 
-// One label/value pair in the bridal details "spec sheet" grid.
 // The one money figure Roko types by hand, and the only thing that can put a
 // number in a travel client's confirmation email. Saved on blur so it behaves
 // like every other quiet field on this card; blank clears it back to null,
-// which returns the email to "Roko will confirm the exact amount".
-function CashDueField({ booking, onUpdateBooking, dm }) {
+// which returns the email to "Roko will confirm the exact amount". Laid out as
+// one more row of the details list, with the box where the value would be.
+function CashDueField({ booking, onUpdateBooking }) {
   const [draft, setDraft] = useState(booking.cash_due == null ? '' : String(booking.cash_due));
   useEffect(() => { setDraft(booking.cash_due == null ? '' : String(booking.cash_due)); }, [booking.id, booking.cash_due]);
 
@@ -345,107 +470,96 @@ function CashDueField({ booking, onUpdateBooking, dm }) {
   };
 
   return (
-    <div className="min-w-0">
-      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-        Balance on the day
-      </p>
-      <div className="flex items-center gap-1">
-        <span className="text-[0.86rem]" style={{ color: dm ? '#8f8a93' : '#A89098' }}>$</span>
-        <input
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-          inputMode="decimal"
-          placeholder="not set"
-          className="w-full bg-transparent outline-none text-[0.86rem] font-medium border-b transition-colors"
-          style={{ color: PLUM, borderColor: dm ? '#3a3a48' : '#EFE3E9' }}
-        />
+    <div className="flex items-center justify-between gap-6 border-t border-line py-2.5">
+      <div className="min-w-0">
+        <dt className="text-ink-muted">Balance on the day</dt>
+        <p className="mt-0.5 text-[0.74rem] leading-snug text-ink-muted/80">Goes in their confirmation email</p>
       </div>
-      <p className="text-[0.62rem] mt-1 leading-snug" style={{ color: dm ? '#6f6a73' : '#B3A7AD' }}>
-        Goes in their confirmation email
-      </p>
-    </div>
-  );
-}
-
-function BField({ label, value, dm, accent = false, href }) {
-  if (value === null || value === undefined || value === '') return null;
-  const valueColor = accent ? PLUM : (dm ? '#e4e4e7' : '#1E1E27');
-  return (
-    <div className="min-w-0">
-      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>{label}</p>
-      {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer"
-          className="text-[0.86rem] font-medium leading-snug break-words transition-opacity hover:opacity-70"
-          style={{ color: valueColor }}>{value}</a>
-      ) : (
-        <p className="text-[0.86rem] font-medium leading-snug break-words" style={{ color: valueColor }}>{value}</p>
-      )}
+      <dd className="shrink-0">
+        <label className="flex h-11 w-32 items-center gap-1 rounded border border-line bg-paper px-3 transition-colors duration-200 focus-within:border-ink/60 sm:h-10">
+          <span className="text-ink-muted">$</span>
+          <input
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            inputMode="decimal"
+            placeholder="not set"
+            aria-label="Balance on the day"
+            className="min-w-0 flex-1 bg-transparent text-right text-[16px] font-medium tabular-nums text-ink outline-none placeholder:font-normal placeholder:text-ink-muted/70 sm:text-[0.86rem]"
+          />
+        </label>
+      </dd>
     </div>
   );
 }
 
 // Every signature the client has given on this booking, oldest first, on a
 // numbered rail. Roko's question when a time changes is "did they actually
-// re-sign, and when?" — so each row leads with the timestamp and says what
+// re-sign, and when?", so each row leads with the timestamp and says what
 // window that signature covered. `superseded` marks the last row as the one
 // currently on file but already replaced by an unsigned request.
-function SignatureChain({ chain, dm, fmt, superseded = false }) {
+function SignatureChain({ chain, fmt, superseded = false }) {
   if (!chain?.length) return null;
   return (
-    <div className="flex flex-col gap-2">
+    <ol className="flex flex-col">
       {chain.map((sig, i) => {
         const isLast = i === chain.length - 1;
         const current = isLast && !superseded;
         const label = current ? 'Current' : i === 0 ? 'Original' : `Revision ${i}`;
         return (
-          <div key={`${sig.signed_at}-${i}`} className="flex items-start gap-2.5">
-            <span className="mt-[1px] w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[0.55rem] font-bold"
-              style={current
-                ? { background: '#22c55e', color: '#fff' }
-                : { background: dm ? '#3a3a48' : '#E8E2DC', color: dm ? '#a1a1aa' : '#8A7A80' }}>
+          <li key={`${sig.signed_at}-${i}`} className="relative flex items-start gap-3 pb-3 last:pb-0">
+            {/* The rail between the numbers, the way a progress track joins its steps. */}
+            {!isLast && <span aria-hidden className="absolute bottom-0 left-[9.5px] top-6 w-px bg-line-strong" />}
+            <span className={cx(
+              'relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[0.62rem] font-semibold tabular-nums',
+              current ? 'border-ink bg-ink text-paper' : 'border-line-strong bg-paper text-ink-muted',
+            )}>
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[0.72rem] font-medium leading-snug" style={{ color: dm ? '#e4e4e7' : '#1E1E27' }}>
+              <p className="text-[0.8rem] font-medium leading-snug tabular-nums text-ink">
                 {fmt(sig.signed_at)}
-                <span className="ml-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.06em]"
-                  style={{ color: current ? (dm ? '#86efac' : '#16a34a') : (dm ? '#8e8e99' : '#A89098') }}>
+                <span className={cx('ml-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em]', current ? 'text-ink' : 'text-ink-muted')}>
                   {label}
                 </span>
               </p>
-              <p className="text-[0.66rem] leading-snug mt-0.5" style={{ color: dm ? '#8f8a93' : '#8A7A80' }}>
+              <p className="mt-0.5 text-[0.74rem] leading-snug text-ink-muted">
                 Signed by {sig.name || 'client'}{sig.signed_for ? ` · covers ${sig.signed_for}` : ''}
               </p>
             </div>
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
 
-const CONSULT_COLOR = CONSULT_INK.light;
-const CONSULT_DM = CONSULT_INK.dark;
-const CONSULT_BG = 'rgba(107,90,147,0.09)';
-const CONSULT_BORDER = 'rgba(107,90,147,0.24)';
-
-// Numbered step marker for the bridal pipeline (1 = time, 2 = confirm+consult).
-// done = green check, active = filled number, warn = amber, todo = hollow gray.
-function StepDot({ n, state, dm, color = '#C4849A' }) {
-  const styles = {
-    done: { background: '#22c55e', color: '#fff' },
-    active: { background: color, color: '#fff' },
-    warn: { background: '#D97706', color: '#fff' },
-    todo: { background: 'transparent', color: dm ? '#8e8e99' : '#b6aeb2', border: `1.5px solid ${dm ? '#3f3f46' : '#D4D4DD'}` },
-  }[state] || {};
+// Numbered step marker for the guided pipeline (1 = time, 2 = confirm, plus
+// the consultation for a bride). Drawn like the steps of a progress track: ink
+// with a check once done, a rose ring on the step she's on, amber when a step
+// was skipped past and still needs doing, a hairline circle for what's next.
+function StepDot({ n, state }) {
   return (
-    <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[0.62rem] font-bold" style={styles}>
-      {state === 'done'
-        ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-        : n}
+    <span className={cx(
+      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[0.68rem] font-semibold tabular-nums',
+      state === 'done' ? 'border-ink bg-ink text-paper'
+        : state === 'active' ? 'border-rose bg-paper text-rose'
+        : state === 'warn' ? 'border-tone-pending bg-tone-pending/10 text-tone-pending'
+        : 'border-line-strong bg-paper text-ink-muted',
+    )}>
+      {state === 'done' ? <Icon name="check" className="h-3 w-3" strokeWidth={2.8} /> : n}
     </span>
+  );
+}
+
+// A step's marker and its name, the heading of each stage of the pipeline.
+function StepHead({ n, state, children, className }) {
+  return (
+    <div className={cx('flex items-center gap-2.5', className)}>
+      <StepDot n={n} state={state} />
+      <Label className={state === 'warn' ? 'text-tone-pending' : state === 'done' || state === 'todo' ? 'text-ink-muted' : 'text-ink'}>{children}</Label>
+    </div>
   );
 }
 
@@ -520,7 +634,7 @@ const RAIL_START = 8 * 60;  // 8 AM
 const RAIL_END = 20 * 60;   // 8 PM
 const RAIL_TICKS = [9, 12, 15, 18]; // hours labelled under the rail
 
-function DayPeek({ dateKey, bookings = [], classRegs = [], dm, excludeConsultOf, draftTime, onOpenFull }) {
+function DayPeek({ dateKey, bookings = [], classRegs = [], excludeConsultOf, draftTime, onOpenFull, consultInk }) {
   if (!dateKey) return null;
   const events = [];
   const add = (id, color, time, name) => {
@@ -558,62 +672,57 @@ function DayPeek({ dateKey, bookings = [], classRegs = [], dm, excludeConsultOf,
   })();
 
   const pct = (min) => Math.max(0, Math.min(100, ((min - RAIL_START) / (RAIL_END - RAIL_START)) * 100));
-  const railBg = dm ? '#23232b' : '#F4F1F3';
-  const muted = dm ? '#8b8b95' : '#9c9ca6';
 
   return (
-    <div className="mt-2.5">
-      <div className="flex items-baseline gap-2 mb-1.5">
-        <span className="text-[0.8rem] font-medium tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1a1a1f' }}>
+    <div className="mt-3">
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-[0.8rem] font-semibold tabular-nums text-ink">
           {weekday} {d.getDate()}
         </span>
-        <span className="text-[0.68rem]" style={{ color: muted }}>
+        <span className="text-[0.74rem] text-ink-muted">
           {timed.length + untimed.length === 0 ? 'open' : `${timed.length + untimed.length} booked`}
         </span>
         <span className="flex-1" />
         {onOpenFull && (
-          <button type="button" onClick={onOpenFull} title="Open full schedule"
-            className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors"
-            style={{ color: muted, background: dm ? '#26262e' : '#F4F1F3' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3">
-              <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+          <button type="button" onClick={onOpenFull} title="Open full schedule" aria-label="Open full schedule"
+            className="press -mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+            <Icon name="calendar" className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
 
-      {/* The rail */}
-      <div className="relative rounded-[5px] overflow-hidden" style={{ height: 26, background: railBg }}>
+      {/* The rail. The blocks are the calendar's own event colours. */}
+      <div className="relative h-[26px] overflow-hidden bg-canvas shadow-[inset_0_0_0_1px_rgb(var(--c-line))]">
         {timed.map(ev => (
-          <span key={ev.id} title={ev.name} className="absolute top-0 bottom-0"
+          <span key={ev.id} title={ev.name} className="absolute bottom-0 top-0"
             style={{ left: `${pct(ev.start)}%`, width: `${Math.max(pct(ev.end) - pct(ev.start), 1.5)}%`, background: ev.color }} />
         ))}
         {draft && (
-          <span className="absolute top-0 bottom-0 rounded-[3px]"
+          <span className="absolute bottom-0 top-0"
             style={{
               left: `${pct(draft.start)}%`,
               width: `${Math.max(pct(draft.end) - pct(draft.start), 1.5)}%`,
-              background: `${CONSULT_COLOR}2e`,
-              border: `1.5px dashed ${CONSULT_COLOR}`,
+              background: `${consultInk}2e`,
+              border: `1.5px dashed ${consultInk}`,
             }} />
         )}
       </div>
 
       {/* Hour ticks */}
-      <div className="relative h-3 mt-0.5">
+      <div className="relative mt-1 h-3.5">
         {RAIL_TICKS.map(h => (
-          <span key={h} className="absolute text-[0.68rem] tabular-nums -translate-x-1/2"
-            style={{ left: `${pct(h * 60)}%`, color: muted }}>
+          <span key={h} className="absolute -translate-x-1/2 text-[0.68rem] tabular-nums text-ink-muted"
+            style={{ left: `${pct(h * 60)}%` }}>
             {h > 12 ? h - 12 : h}
           </span>
         ))}
       </div>
 
       {untimed.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
           {untimed.map(ev => (
-            <span key={ev.id} className="flex items-center gap-1.5 text-[0.68rem]" style={{ color: muted }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: ev.color }} />
+            <span key={ev.id} className="flex items-center gap-1.5 text-[0.74rem] text-ink-muted">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: ev.color }} />
               {ev.name}, no time set
             </span>
           ))}
@@ -770,146 +879,121 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
     }
   };
 
-  const border = dm ? '#3a3a48' : '#e5e5e5';
-  const inputBg = dm ? '#1c1c28' : '#fafafa';
-  const inputColor = dm ? '#e4e4e7' : '#111';
-  const textMuted = dm ? '#8e8e99' : '#999';
-  const inputStyle = { border: `1px solid ${border}`, background: inputBg, color: inputColor, fontSize: '16px' };
+  const consultInk = CONSULT_INK[dm ? 'dark' : 'light'];
+  const sendLabel = migrated ? 'Send welcome + notify client'
+    : hasConsult ? 'Reschedule & notify client'
+    : consultOnly ? 'Schedule & notify client'
+    : 'Confirm & notify client';
 
   return (
     <div className={bridal ? '' : 'mb-6'}>
       {!bridal && (
-        <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Consultation</p>
+        <Label className="mb-3 block">Consultation</Label>
       )}
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
-        <div className="flex items-center justify-between px-4 py-4 rounded-2xl transition-all"
-          style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>
-                {booking.consultation_type} · {booking.consultation_time}
-              </p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#999' }}>
+        <div className="flex items-center justify-between gap-3 border border-line bg-paper px-4 py-3.5">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-[0.86rem] font-semibold tabular-nums text-tone-consult">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-tone-consult" />
+              {booking.consultation_type} · {booking.consultation_time}
+            </p>
+            <div className="pl-3.5">
+              <p className="mt-0.5 text-[0.8rem] text-ink-muted">
                 {booking.consultation_date && new Date(booking.consultation_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </p>
               {(meetingId || parsed.meetingId) ? (
                 <button type="button"
                   onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
-                  className="text-[0.65rem] mt-1.5 inline-flex items-center gap-1.5 font-semibold"
-                  style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5">
-                    <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
-                  </svg>
+                  className="press mt-2 inline-flex h-8 items-center gap-1.5 rounded bg-rose px-3 text-[0.74rem] font-semibold text-paper hover:bg-rose/90">
+                  <Icon name="video" className="h-3.5 w-3.5" strokeWidth={2} />
                   Join
                 </button>
               ) : parsed.link ? (
                 <a href={parsed.link} target="_blank" rel="noopener noreferrer"
-                  className="text-[0.65rem] mt-1 block truncate underline underline-offset-2"
-                  style={{ color: dm ? '#8e8e99' : '#999' }}>
+                  className="mt-1 block truncate text-[0.74rem] text-ink-muted underline underline-offset-2 hover:text-ink">
                   {parsed.link}
                 </a>
               ) : null}
               {parsed.notes && (
-                <p className="text-[0.65rem] mt-0.5" style={{ color: dm ? '#7a7a84' : '#bbb' }}>{parsed.notes}</p>
+                <p className="mt-1 text-[0.74rem] leading-snug text-ink-muted">{parsed.notes}</p>
               )}
             </div>
           </div>
-          <button onClick={() => { setExpanded(true); setSent(false); }}
-            className="ml-3 flex-shrink-0 px-3.5 py-1.5 rounded-full text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all active:scale-95"
-            style={{ background: CONSULT_BG, color: dm ? CONSULT_DM : CONSULT_COLOR, border: `1px solid ${CONSULT_BORDER}` }}>
+          <Button size="sm" onClick={() => { setExpanded(true); setSent(false); }} className="max-sm:h-11">
             Reschedule
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state. Unconfirmed bridal: this row IS step 2's only action, so
+          it's the solid button rather than the quiet dashed placeholder. */}
       {!hasConsult && !expanded && (
-        <button onClick={() => setExpanded(true)}
-          className="w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all touch-manipulation active:scale-[0.99] hover:opacity-90"
-          style={leadStep
-            ? { background: dm ? '#2c2333' : '#FBF4F8', border: `1px solid ${CONSULT_BORDER}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(120, 80, 110, 0.07)' }
-            : { background: dm ? '#27272a' : '#fff', border: `1px dashed ${dm ? '#4a4a58' : '#d9cfe8'}` }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: leadStep ? (dm ? CONSULT_DM : CONSULT_COLOR) : CONSULT_BG }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={leadStep ? (dm ? '#1c1c28' : '#fff') : CONSULT_COLOR} strokeWidth="1.5" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <div className="text-left">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{leadStep ? 'Pick a consultation time' : 'Schedule Consultation'}</p>
-              <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8b8792' : '#a89ba2' }}>
+        <button type="button" onClick={() => setExpanded(true)}
+          className={cx(
+            'press flex w-full items-center justify-between gap-3 rounded px-4 py-3.5 text-left',
+            leadStep ? 'bg-ink text-paper hover:bg-ink/85' : 'border border-dashed border-line-strong bg-paper text-ink hover:border-ink/40',
+          )}>
+          <span className="flex min-w-0 items-center gap-3">
+            <Icon name="calendar" className={cx('h-4 w-4', leadStep ? 'text-paper/75' : 'text-tone-consult')} />
+            <span className="min-w-0">
+              <span className="block text-[0.92rem] font-semibold">{leadStep ? 'Pick a consultation time' : 'Schedule consultation'}</span>
+              <span className={cx('mt-0.5 block text-[0.8rem] leading-snug', leadStep ? 'text-paper/70' : 'text-ink-muted')}>
                 {leadStep ? 'Then one email sends the confirmation + upload link'
                   : bridal ? 'Sends the consultation details, with a Zoom link if you add one'
                   : 'Set date, time & meeting type'}
-              </p>
-            </div>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="2" className={`w-3.5 h-3.5 ${leadStep ? 'opacity-80' : 'opacity-40'}`}>
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
+              </span>
+            </span>
+          </span>
+          <Icon name="right" className={cx('h-4 w-4', leadStep ? 'text-paper/70' : 'text-ink-muted')} />
         </button>
       )}
 
       {/* Picker */}
       {expanded && (
-        <div className="rounded-2xl overflow-hidden"
-          style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3.5"
-            style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#EDEDF3'}` }}>
-            <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: CONSULT_BG }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={CONSULT_COLOR} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
-              </svg>
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>{hasConsult ? 'Reschedule Consultation' : 'Schedule Consultation'}</p>
-              <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#9A9AA3' }}>
+        <div className="border border-line bg-paper">
+          <div className="flex items-center gap-3 border-b border-line py-1.5 pl-4 pr-1.5 sm:pl-5">
+            <div className="min-w-0 flex-1 py-1.5">
+              <p className="text-[0.92rem] font-semibold tracking-[-0.01em] text-ink">{hasConsult ? 'Reschedule consultation' : 'Schedule consultation'}</p>
+              <p className="mt-0.5 truncate text-[0.74rem] text-ink-muted">
                 {hasConsult
                   ? 'Client gets an updated email'
                   : (bridal && !confirmed ? 'One email: confirmation, details, upload link' : 'Date, time and meeting type')}
               </p>
             </div>
-            <button onClick={() => { setExpanded(false); setShowConfirmSend(false); }} aria-label="Close scheduler"
-              className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-              style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <IconButton label="Close scheduler" onClick={() => { setExpanded(false); setShowConfirmSend(false); }} className="text-ink-muted hover:text-ink">
+              <Icon name="close" className="h-4 w-4" strokeWidth={1.9} />
+            </IconButton>
           </div>
 
-          <div className="p-5 flex flex-col gap-5" style={{ background: dm ? '#27272a' : '#fff' }}>
+          <div className="flex flex-col gap-5 p-4 sm:p-5">
             {/* Date + Time window */}
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>Date</label>
-                <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={CONSULT_COLOR}
-                  openTo={consultMonth} marker={apptMarker} autoOpen={!hasConsult} />
-                {/* What that day already holds, so picking a time never means
-                    leaving the card to go check the schedule. */}
-                {renderDayPeek?.(form.date, form.time)}
-              </div>
-              <div>
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
-                  Time <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#7a7a84' : '#c4b8bf' }}>· 30 min meeting</span>
-                </label>
-                <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIME_SLOTS} dm={dm} accent={CONSULT_COLOR} />
-              </div>
+            <div>
+              <Label className="mb-2 block">Date</Label>
+              <AdminDatePicker value={form.date} onChange={v => set('date', v)} dm={dm} accent={consultInk}
+                openTo={consultMonth} marker={apptMarker} autoOpen={!hasConsult} />
+              {/* What that day already holds, so picking a time never means
+                  leaving the card to go check the schedule. */}
+              {renderDayPeek?.(form.date, form.time)}
+            </div>
+            <div>
+              <Label className="mb-2 block">
+                Time <span className="font-normal normal-case tracking-normal text-ink-muted/80">· 30 min meeting</span>
+              </Label>
+              <TimeWindowPicker value={form.time} onChange={v => set('time', v)} slots={TIME_SLOTS} dm={dm} accent={consultInk} />
             </div>
 
             {/* Type */}
             <div>
-              <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>Meeting Type</label>
-              <div className="flex gap-2">
+              <Label className="mb-2 block">Meeting type</Label>
+              <div role="radiogroup" aria-label="Meeting type" className="grid grid-cols-2 gap-2">
                 {['Zoom', 'Phone'].map(key => (
-                  <button key={key} type="button" onClick={() => set('type', key)}
-                    className="flex-1 py-3 rounded-[6px] text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all touch-manipulation"
-                    style={form.type === key
-                      ? { background: '#111', color: '#fff', border: '1px solid #111' }
-                      : { background: inputBg, color: dm ? '#8e8e99' : '#888', border: `1px solid ${border}` }
-                    }>
+                  <button key={key} type="button" role="radio" aria-checked={form.type === key} onClick={() => set('type', key)}
+                    className={cx(
+                      'press h-11 rounded border text-[0.86rem] font-medium',
+                      form.type === key ? 'border-ink bg-ink text-paper' : 'border-line-strong bg-paper text-ink-soft hover:border-ink/50 hover:text-ink',
+                    )}>
                     {key}
                   </button>
                 ))}
@@ -919,43 +1003,32 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             {/* Zoom meeting link */}
             {form.type === 'Zoom' && (
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: textMuted }}>Zoom Link</label>
+                <div className="mb-2 flex min-h-[32px] items-center justify-between">
+                  <Label>Zoom link</Label>
                   {meetLink && (
                     <button type="button" onClick={generateZoomLink} disabled={generatingLink}
-                      className="flex items-center gap-1 text-[0.65rem] font-semibold px-2.5 py-1 rounded-lg transition-all"
-                      style={{ background: dm ? '#2a2a32' : '#f7f2f6', color: CONSULT_COLOR, border: `1px solid ${border}` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                      New Link
+                      className={cx(MINI, '-mr-2')}>
+                      <Icon name="refresh" className="h-3 w-3" strokeWidth={2.2} />
+                      New link
                     </button>
                   )}
                 </div>
 
                 {!meetLink ? (
-                  <button type="button" onClick={generateZoomLink} disabled={generatingLink}
-                    className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
-                    style={{ minHeight: '48px', fontSize: '14px', background: generatingLink ? (dm ? '#1c1c28' : '#EDEDF3') : CONSULT_COLOR, color: generatingLink ? (dm ? '#7a7a84' : '#bbb') : '#fff', border: 'none', boxShadow: 'none' }}>
-                    {generatingLink ? (
-                      <><div className="w-4 h-4 rounded-full animate-spin border-2" style={{ borderColor: `${CONSULT_COLOR}30`, borderTopColor: CONSULT_COLOR }} /> Generating…</>
-                    ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                          <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
-                        </svg>
-                        Generate Zoom Link
-                      </>
-                    )}
-                  </button>
+                  <Button size="lg" icon={generatingLink ? undefined : VideoIcon} onClick={generateZoomLink} disabled={generatingLink} className="w-full">
+                    {generatingLink ? <><Spinner /> Generating…</> : 'Generate Zoom link'}
+                  </Button>
                 ) : (
                   <button type="button" onClick={copyMeetLink}
-                    className="w-full px-4 rounded-xl text-left transition-all flex items-center justify-between gap-3 touch-manipulation"
-                    style={{ minHeight: '48px', background: linkCopied ? (dm ? '#14532d' : '#f0fdf4') : inputBg, border: `1.5px solid ${linkCopied ? '#22c55e' : CONSULT_COLOR}` }}>
-                    <span className="text-[0.73rem] font-medium truncate" style={{ color: linkCopied ? '#16a34a' : (dm ? CONSULT_DM : CONSULT_COLOR) }}>
+                    className={cx(
+                      'flex min-h-[48px] w-full items-center justify-between gap-3 rounded border px-3.5 text-left transition-colors duration-200',
+                      linkCopied ? 'border-ink bg-canvas' : 'border-line-strong bg-paper hover:border-ink/50',
+                    )}>
+                    <span className="truncate text-[0.8rem] font-medium text-ink-soft">
                       {meetLink}
                     </span>
-                    <span className="text-[0.65rem] font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg"
-                      style={{ background: linkCopied ? '#22c55e' : CONSULT_COLOR, color: '#fff' }}>
-                      {linkCopied ? <span className="inline-flex items-center gap-1"><Check className="w-2.5 h-2.5" strokeWidth={3.5} />Copied</span> : 'Copy'}
+                    <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded bg-ink px-2.5 text-[0.74rem] font-semibold text-paper">
+                      {linkCopied ? <><Icon name="check" className="h-2.5 w-2.5" strokeWidth={3.5} />Copied</> : 'Copy'}
                     </span>
                   </button>
                 )}
@@ -964,108 +1037,86 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 
             {/* Notes */}
             <div>
-              <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: textMuted }}>
-                Notes <span style={{ color: dm ? '#7a7a84' : '#C9C9D2', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
-              </label>
+              <Label className="mb-2 block">
+                Notes <span className="font-normal normal-case tracking-normal text-ink-muted/80">(optional)</span>
+              </Label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}
                 placeholder="Any extra info for the client…"
-                className="w-full px-4 py-3 rounded-[10px] outline-none resize-none transition-shadow focus:ring-2 focus:ring-[#6B5A93]/25"
-                style={{ ...inputStyle, minHeight: '80px' }} />
+                aria-label="Consultation notes"
+                className={cx(inputClass, 'h-auto min-h-[80px] resize-none py-2.5 leading-relaxed')} />
             </div>
 
             {/* CTA */}
             {!showConfirmSend ? (
-              <button onClick={() => { if (confirmBlocked) { onBlockedByTime?.(); return; } if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date && !confirmBlocked}
-                className="w-full rounded-xl font-semibold flex items-center justify-center gap-2 transition-all touch-manipulation active:scale-[0.99]"
-                style={{
-                  minHeight: '50px', fontSize: '14px',
-                  ...(confirmBlocked
-                    ? { background: dm ? 'rgba(245,158,11,0.10)' : '#FEF9EF', color: dm ? '#F5B83C' : '#B26A04', border: `1px dashed ${dm ? 'rgba(245,158,11,0.32)' : '#F0DDBC'}` }
-                    : !form.date
-                      ? { background: dm ? '#2e2e38' : '#ECECF0', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
-                      : { background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }),
-                }}>
-                {confirmBlocked
-                  ? 'Set the appointment time first'
-                  : migrated ? 'Send Welcome + Notify Client' : hasConsult ? 'Reschedule & Notify Client' : consultOnly ? 'Schedule & Notify Client' : 'Confirm & Notify Client'}
+              <button type="button" onClick={() => { if (confirmBlocked) { onBlockedByTime?.(); return; } if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date && !confirmBlocked}
+                className={cx(
+                  'press flex h-12 w-full items-center justify-center gap-2 rounded text-[0.92rem] font-semibold',
+                  confirmBlocked
+                    ? 'border border-dashed border-tone-pending/50 bg-tone-pending/[0.06] text-tone-pending'
+                    : 'bg-ink text-paper hover:bg-ink/85 disabled:pointer-events-none disabled:opacity-40',
+                )}>
+                {confirmBlocked ? 'Set the appointment time first' : sendLabel}
               </button>
             ) : (
-              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
-                <div className="px-4 py-4" style={{ background: dm ? '#1c1c28' : '#FBF9F7' }}>
-                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>{migrated ? 'Send Welcome Email?' : hasConsult ? 'Send Updated Time?' : consultOnly ? 'Send Consultation Details?' : 'Confirm & Send Email?'}</p>
-                  <div className="flex flex-col gap-1.5 mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[0.72rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Date</span>
-                      <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.date ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : '—'}</span>
+              <div className="border border-line bg-canvas/60 p-4">
+                <p className="text-[0.92rem] font-semibold text-ink">{migrated ? 'Send welcome email?' : hasConsult ? 'Send updated time?' : consultOnly ? 'Send consultation details?' : 'Confirm & send email?'}</p>
+                <Specs className="mt-1.5">
+                  <Spec label="Date" value={form.date ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Not set'} />
+                  <Spec label="Time" value={form.time} />
+                  <Spec label="Type" value={form.type} />
+                </Specs>
+                {/* Exactly what the one email contains, so there's never a
+                    "wait, what am I sending?" moment before the tap. */}
+                {(() => {
+                  const zoomIncluded = form.type === 'Zoom' && !!meetLink;
+                  const items = migrated
+                    ? ['A warm welcome to the new booking site', `Their ${booking.service || 'appointment'} details`, 'The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])]
+                    : hasConsult
+                    ? ['The updated consultation time', ...(zoomIncluded ? ['The Zoom link to join'] : [])]
+                    : bridal && !consultOnly
+                    ? [
+                        `Their confirmation: ${booking.service || 'appointment'}${dateFormatted ? ` on ${dateFormatted}` : ''}`,
+                        'The consultation details above',
+                        ...(zoomIncluded ? ['The Zoom link to join'] : []),
+                        // Mirrors confirm-bridal: proof already sent counts,
+                        // so nobody gets asked for a deposit twice.
+                        (booking.deposit_received || booking.zelle_uploaded_at)
+                          ? 'Their personal photo upload link'
+                          : 'Zelle deposit info + their photo upload link',
+                      ]
+                    : ['The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])];
+                  return (
+                    <div className="mt-1 border-t border-line pt-3">
+                      <p className="text-[0.8rem] text-ink-muted">
+                        One email to <span className="font-medium text-ink">{booking.email}</span> with:
+                      </p>
+                      <ul className="mt-2 flex flex-col gap-1.5">
+                        {items.map((it, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[0.8rem] leading-snug text-ink-soft">
+                            <Icon name="check" className="mt-[3px] h-3 w-3 text-ink" strokeWidth={2.6} />
+                            <span className="min-w-0">{it}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[0.72rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Time</span>
-                      <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.time}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[0.72rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Type</span>
-                      <span className="text-[0.82rem] font-semibold" style={{ color: dm ? '#e4e4e7' : '#111' }}>{form.type}</span>
-                    </div>
-                  </div>
-                  {/* Exactly what the one email contains, so there's never a
-                      "wait, what am I sending?" moment before the tap. */}
-                  {(() => {
-                    const zoomIncluded = form.type === 'Zoom' && !!meetLink;
-                    const items = migrated
-                      ? ['A warm welcome to the new booking site', `Their ${booking.service || 'appointment'} details`, 'The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])]
-                      : hasConsult
-                      ? ['The updated consultation time', ...(zoomIncluded ? ['The Zoom link to join'] : [])]
-                      : bridal && !consultOnly
-                      ? [
-                          `Their confirmation: ${booking.service || 'appointment'}${dateFormatted ? ` on ${dateFormatted}` : ''}`,
-                          'The consultation details above',
-                          ...(zoomIncluded ? ['The Zoom link to join'] : []),
-                          // Mirrors confirm-bridal: proof already sent counts,
-                          // so nobody gets asked for a deposit twice.
-                          (booking.deposit_received || booking.zelle_uploaded_at)
-                            ? 'Their personal photo upload link'
-                            : 'Zelle deposit info + their photo upload link',
-                        ]
-                      : ['The consultation details above', ...(zoomIncluded ? ['The Zoom link to join'] : [])];
-                    return (
-                      <div className="mb-4">
-                        <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-2" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>
-                          One email to <span style={{ color: dm ? CONSULT_DM : CONSULT_COLOR, textTransform: 'none', letterSpacing: 0 }}>{booking.email}</span> with:
-                        </p>
-                        <div className="flex flex-col gap-1.5">
-                          {items.map((it, i) => (
-                            <p key={i} className="flex items-start gap-2 text-[0.72rem] leading-snug" style={{ color: dm ? '#a1a1aa' : '#666' }}>
-                              <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" className="w-3 h-3 mt-[2px] flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
-                              <span className="min-w-0">{it}</span>
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowConfirmSend(false)}
-                      className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
-                      style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#8e8e99' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                      Cancel
-                    </button>
-                    <button onClick={() => { setShowConfirmSend(false); handleSend(); }} disabled={saving}
-                      className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation flex items-center justify-center gap-2"
-                      style={{ background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
-                      {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Yes, Send Email'}
-                    </button>
-                  </div>
+                  );
+                })()}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button size="lg" onClick={() => setShowConfirmSend(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="solid" size="lg" onClick={() => { setShowConfirmSend(false); handleSend(); }} disabled={saving}>
+                    {saving ? <><Spinner /> Sending…</> : 'Yes, send email'}
+                  </Button>
                 </div>
               </div>
             )}
 
             {sent && (
-              <div className="flex items-center justify-center gap-1.5 py-1">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-blue-500">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <p className="text-[0.75rem] font-medium text-blue-600">{migrated ? 'Welcome email sent, client notified.' : hasConsult ? 'Consultation rescheduled, client notified.' : 'Consultation scheduled, client notified.'}</p>
-              </div>
+              <p className="flex items-center justify-center gap-1.5 py-1 text-[0.8rem] font-medium text-ink-soft">
+                <Icon name="check" className="h-3.5 w-3.5 text-ink" strokeWidth={2.6} />
+                {migrated ? 'Welcome email sent, client notified.' : hasConsult ? 'Consultation rescheduled, client notified.' : 'Consultation scheduled, client notified.'}
+              </p>
             )}
           </div>
         </div>
@@ -1075,18 +1126,17 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 }
 
 // One appointment line in the client profile panel's Upcoming / Past lists.
-function ApptRow({ b, isCurrent, last, dm }) {
+function ApptRow({ b, isCurrent }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3.5"
-      style={{ borderBottom: last ? 'none' : `1px solid ${dm ? '#2a2a32' : '#ECECF2'}` }}>
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
+    <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-7">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className={cx('h-2 w-2 shrink-0 rounded-full', STATUS_DOT[b.status] || 'bg-ink-muted')} />
         <div className="min-w-0">
-          <p className="text-[0.85rem] font-medium flex items-center gap-2 min-w-0" style={{ color: dm ? '#ECEDF1' : '#111' }}>
+          <p className="flex min-w-0 items-center gap-2 text-[0.86rem] font-medium text-ink">
             <span className="truncate">{b.service || 'Appointment'}</span>
-            {isCurrent && <span className="flex-shrink-0 text-[0.68rem] font-medium tracking-[0.06em] uppercase px-1.5 py-0.5 rounded" style={{ background: 'rgba(196,132,154,0.15)', color: '#C4849A' }}>This one</span>}
+            {isCurrent && <Tag className="bg-rose/10 text-rose">This one</Tag>}
           </p>
-          <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#aaa' }}>
+          <p className="mt-0.5 text-[0.74rem] tabular-nums text-ink-muted">
             {b.date ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'No date set'}
             {b.time ? ` · ${b.time}` : ''}
           </p>
@@ -1381,7 +1431,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     if (!willEmail) {
       setShowTimePicker(false);
       if (snapshot) { const rec = { ...snapshot, emailed: false }; setUndoTime(rec); saveUndo(booking.id, rec); }
-      showToast(changed ? 'Appointment updated' : 'No changes made', '#888');
+      showToast(changed ? 'Appointment updated' : 'No changes made', 'ink');
       if (changed && booking.status === 'confirmed' && booking.email) {
         // Quiet change on a confirmed booking — leave the reminder banner so the
         // client (who still believes the old details) doesn't get forgotten.
@@ -1416,7 +1466,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setShowReconfirmBanner(false);
       if (panelAttach) { setUpdateNoticeSent(true); setLastChange(null); }
       if (snapshot) { const rec = { ...snapshot, emailed: true }; setUndoTime(rec); saveUndo(booking.id, rec); }
-      showToast(panelAttach ? `Update sent, awaiting re-sign` : `Update emailed to ${firstName}`, '#22c55e');
+      showToast(panelAttach ? `Update sent, awaiting re-sign` : `Update emailed to ${firstName}`, 'ink');
     } catch (err) {
       alert(`The change was saved, but the email didn't send (${err?.message || 'unknown error'}). You can message ${firstName} from the card.`);
       setShowTimePicker(false);
@@ -1448,7 +1498,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setLastChange({ items: [{ key: 'time', label: 'Appointment time', to: 'not set yet' }] });
       setShowReconfirmBanner(true);
     }
-    showToast('Time cleared', '#888');
+    showToast('Time cleared', 'ink');
   };
 
   // Put the appointment back the way it was. If the client was already emailed
@@ -1480,7 +1530,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     }
     setUndoTime(null);
     clearUndo(booking.id);
-    showToast('Change undone', '#888');
+    showToast('Change undone', 'ink');
   };
 
   // What the appointment was before that change, in one short phrase.
@@ -1569,7 +1619,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       setShowCompose(false);
       setShowReconfirmBanner(false);
       if (attachContract) { setUpdateNoticeSent(true); setLastChange(null); }
-      showToast(attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client', '#22c55e');
+      showToast(attachContract ? 'Update sent, awaiting re-sign' : 'Email sent to client', 'ink');
     } catch (err) {
       alert(err?.message || 'Failed to send email. Please try again.');
     } finally {
@@ -1580,8 +1630,9 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   const consultRef = useRef(null);
   const composeRef = useRef(null);
 
-  const showToast = (msg, color) => {
-    setToast({ message: msg, color });
+  // `tone` colours the toast's dot: 'ink' for done, or a status tone.
+  const showToast = (msg, tone = 'ink') => {
+    setToast({ message: msg, tone });
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 1800);
     setTimeout(() => setToast(null), 2200);
@@ -1591,7 +1642,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     const v = adminNotes.trim();
     onUpdateBooking({ admin_notes: v || null });
     setNotesEditing(false);
-    showToast('Notes saved', '#888');
+    showToast('Notes saved', 'ink');
   };
 
   // Travel is recorded as a note flag by the booking form. The confirmation
@@ -1599,23 +1650,8 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // send a travel client to entirely the wrong place.
   const travels = /travel|✈/i.test(booking.notes || '');
 
-  // Lock the page behind the "are you sure?" dialog so the background can't
-  // scroll while it's open. overflow:hidden alone doesn't stop the wheel on the
-  // Lenis-driven site, so pause Lenis too — same pattern as the full modals.
-  useEffect(() => {
-    if (!pendingStatus) return;
-    // No padding-right compensation here any more. `scrollbar-gutter: stable`
-    // on <html> (see index.css) keeps the scrollbar's strip reserved whether or
-    // not a scrollbar is painted, so hiding overflow no longer changes the page
-    // width. Re-adding the old padding would now SHIFT the page by a scrollbar
-    // width rather than hold it still.
-    document.body.style.overflow = 'hidden';
-    lenisStop();
-    return () => {
-      document.body.style.overflow = '';
-      lenisStart();
-    };
-  }, [pendingStatus]);
+  // The "are you sure?" dialog locks the page behind itself (ConfirmDialog
+  // takes the shared scroll lock), so there's no second lock here.
 
   // ── The one rule the card enforces ────────────────────────────────────────
   // Nothing is confirmed until step 1 is actually finished.
@@ -1632,7 +1668,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
   // still has to be closable.
   const refuseConfirm = () => {
     setTimeHighlight(true);
-    showToast('Set the appointment time first', '#B26A04');
+    showToast('Set the appointment time first', 'pending');
     setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 40);
     setTimeout(() => setTimeHighlight(false), 3000);
   };
@@ -1663,7 +1699,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.3, x: 0.5 }, colors: ['#F0C27A', '#D4A0B0', '#B8A0D4', '#60A5FA'], scalar: 1.0 });
       setTimeout(() => setCelebrate(false), 2200);
     } else if (s === 'confirmed') {
-      showToast(isReconfirm ? 'Reconfirmed, client notified' : 'Appointment confirmed', '#2563EB');
+      showToast(isReconfirm ? 'Reconfirmed, client notified' : 'Appointment confirmed', 'confirmed');
       // Bridal confirmations go out through the combined consultation email, so
       // never fire the standalone confirmation email for them.
       if (booking.email && !isBridal) {
@@ -1674,7 +1710,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         }).catch(err => console.error('confirmed email error:', err));
       }
     } else if (s === 'cancelled') {
-      showToast('Cancelled and filed away', '#ef4444');
+      showToast('Cancelled and filed away', 'alert');
       // Cancelling is the end of this card, so it closes itself and hands her
       // back the list the appointment has just left. Staying on a red card that
       // no longer appears anywhere else was the half-finished version of this:
@@ -1876,7 +1912,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to send'); }
       onUpdateBooking({ status: 'confirmed' });
       setConfirmLaterOpen(false);
-      showToast('Confirmed, client notified', '#2563EB');
+      showToast('Confirmed, client notified', 'confirmed');
     } catch (err) {
       alert(`Couldn't send the confirmation (${err?.message || 'unknown error'}). Please try again.`);
     } finally {
@@ -1903,7 +1939,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           dateKey={d}
           bookings={allBookings}
           classRegs={classRegs}
-          dm={dm}
+          consultInk={CONSULT_INK[dm ? 'dark' : 'light']}
           excludeConsultOf={booking.id}
           draftTime={t}
           onOpenFull={() => { setScheduleDay(d); setShowSchedule(true); }}
@@ -1913,7 +1949,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         booking.consultation_date ? 'Rescheduled, client notified'
           : isBridal && booking.status !== 'confirmed' ? 'Confirmed, client notified'
           : 'Consultation scheduled, client notified',
-        '#22c55e')}
+        'ink')}
     />
   );
 
@@ -2019,14 +2055,14 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         ? new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
         : dateFormatted;
       if (newStatus === 'confirmed' && !isBridal) {
-        showToast('Appointment confirmed', '#2563EB');
+        showToast('Appointment confirmed', 'confirmed');
         fetch('/api/send-booking-confirmed', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: booking.email, firstName: (data.name || booking.name)?.split(' ')[0] || 'there', serviceName: data.service || booking.service, dateFormatted: editDate, time: data.time || booking.time, travels, bookingId: booking.id }),
         }).catch(err => console.error('confirmed email error:', err));
       } else if (newStatus === 'cancelled') {
-        showToast('Appointment cancelled', '#ef4444');
+        showToast('Appointment cancelled', 'alert');
         fetch('/api/on-booking-cancelled', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2043,419 +2079,268 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
     }
   };
 
-  const heroStart = parseRange(booking.time || '').start;
-  const heroEnd = parseRange(booking.time || '').end;
   const heroDate = booking.date
     ? new Date(booking.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
     : 'No date set';
   const bookedOn = booking.created_date
     ? new Date(booking.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
+  const roseAccent = ROSE_HEX[dm ? 'dark' : 'light'];
+
+  // ── Layout ─────────────────────────────────────────────────────────────────
+  // On a wide laptop the card splits the way Mission Paradise's booking page
+  // does: the work on the left (the time, the pipeline, notes, status), the
+  // file on the right (who she is, the paperwork, the money, the emails).
+  // Anything narrower is one column in the card's long-standing order, which
+  // puts the contact details first, where a phone wants them: every section
+  // carries its place in that order (`slot`), and the two column wrappers step
+  // aside (display: contents) so the sections interleave. With the schedule
+  // drawer docked the card is too narrow to split, so the columns stack
+  // instead, and the Appointment box she just opened the drawer from stays
+  // where it was rather than dropping below the contact panel.
+  const layout = viewportW < 1280 ? 'one' : (showSchedule && docked ? 'stack' : 'split');
+  const column = layout === 'one' ? 'contents' : 'flex min-w-0 flex-col gap-4';
+  const slot = (n) => ({ order: n, '--i': Math.min(n, 6) });
+
+  const printButton = (
+    <button type="button" onClick={printAgreement}
+      className="press inline-flex min-h-[36px] items-center gap-2 rounded border border-line-strong bg-paper px-3.5 py-2 text-left text-[0.8rem] font-medium text-ink hover:border-ink/50 max-sm:min-h-[44px]">
+      <Icon name="download" className="h-3.5 w-3.5" />
+      View / print agreement (save as PDF)
+    </button>
+  );
+
+  const hasContact = !!(booking.email || booking.phone);
+  const showClientLocation = !!booking.location && !bridalInquiry?.event_location;
 
   // No transition on the margin below: the card used to animate its own width
   // for 300ms while the drawer slid in, re-laying out this whole card every
   // frame, and that was the choppiness. The width change lands in one go now
   // and only the drawer animates, on the compositor.
   return (
-    <div className="max-w-[1100px] mx-auto"
+    <div className="mx-auto max-w-[1100px]"
       style={{ marginRight: showSchedule && docked ? scheduleW + 20 : undefined }}>
-      {/* ── Booksy-style status hero ── */}
-      <div className="relative mb-6">
-        <div className="rounded-2xl px-5 pt-4 pb-14 text-center"
-          style={{ background: HERO_GRADIENTS[booking.status] || HERO_GRADIENTS.pending }}>
-          <div className="flex items-center justify-between">
-            <button onClick={onBack} aria-label="Back to list"
-              className="w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center transition-all active:scale-90 hover:bg-white/10">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
-                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-              </svg>
-            </button>
-            <div className="min-w-0 px-2">
-              <p className="text-white font-bold tracking-[0.16em] uppercase text-[1.25rem] leading-none">{booking.status || 'pending'}</p>
-              <p className="text-white/70 text-[0.64rem] mt-1.5 truncate tabular-nums">
-                ID: {String(booking.id || '').slice(0, 8).toUpperCase()}{bookedOn ? ` · Booked ${bookedOn}` : ''}
+      {/* ── The header ────────────────────────────────────────────────────────
+          Calm on purpose. The status used to be a full-width banner in its own
+          saturated colour, with the start and date on a card floating over it.
+          It's the badge now, beside the name, and colour is kept for the parts
+          of the card that still want something from her. */}
+      <header className="rise-in mb-6 sm:mb-8">
+        {/* Back. A phone has Back in its top bar while a card is open, so this
+            one is for the laptop, where there is no bar. */}
+        <div className="-mx-2 mb-2 hidden lg:flex">
+          <button type="button" onClick={onBack} aria-label="Back to list"
+            className="group inline-flex h-11 items-center gap-1.5 px-2 text-[0.86rem] text-ink-muted transition-colors duration-200 hover:text-ink">
+            <Icon name="back" className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" strokeWidth={1.8} />
+            Back
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <StatusBadge status={booking.status || 'pending'} />
+          {isBridal && <Tag className="bg-rose/10 text-rose">Bridal</Tag>}
+          {booking.source === 'booksy' && <Tag title="Imported from Booksy">Booksy import</Tag>}
+          <span className="text-[0.74rem] tabular-nums text-ink-muted">
+            ID {String(booking.id || '').slice(0, 8).toUpperCase()}{bookedOn ? ` · Booked ${bookedOn}` : ''}
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+          <div className="min-w-0">
+            {/* The name opens the client's profile. data-bar-title lets the
+                phone's top bar take the name over once it scrolls away. */}
+            <h1 data-bar-title={booking.name || 'Client'} className="text-balance text-[clamp(1.6rem,4vw,2.2rem)] font-semibold leading-[1.12] tracking-[-0.025em] text-ink">
+              <button type="button" onClick={() => setShowClientPanel(true)} className="group text-left">
+                {booking.name || 'Client'}
+                <span className="sr-only">, open profile</span>
+                <Icon name="right" className="ml-1 inline h-5 w-5 -translate-y-px text-ink-muted/60 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
+              </button>
+            </h1>
+            {booking.service && <p className="mt-2 text-[0.92rem] leading-relaxed text-ink-soft">{booking.service}</p>}
+            <p className={cx('text-[0.92rem] leading-relaxed text-ink-muted', !booking.service && 'mt-2')}>
+              {/* The date and time open the Appointment box, the one place
+                  either of them is changed. */}
+              <button type="button"
+                onClick={() => {
+                  openTimePicker();
+                  setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 60);
+                }}
+                className="text-left tabular-nums underline decoration-transparent underline-offset-4 transition-colors duration-200 hover:text-ink hover:decoration-line-strong">
+                {heroDate}{' · '}
+                {booking.time ? booking.time : <span className="font-medium text-tone-pending">Set time</span>}
+              </button>
+            </p>
+          </div>
+
+          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+            {booking.email && !showCompose && (
+              <Button icon={MailIcon} onClick={openCompose} className="max-sm:h-11">
+                Message client
+              </Button>
+            )}
+            <Button icon={PencilIcon} onClick={() => setShowEdit(true)} className={cx('max-sm:h-11', !(booking.email && !showCompose) && 'col-span-2')}>
+              Edit
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className={layout === 'split'
+        ? 'grid grid-cols-[minmax(0,1fr)_320px] items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]'
+        : 'flex flex-col gap-4'}>
+
+        {/* ── The work ────────────────────────────────────────────────────── */}
+        <div className={column}>
+
+          {/* Contact composer: Roko's personal email, sent as roko@makeupbyroko.org */}
+          {showCompose && (
+            <section ref={composeRef} className="rise-in border border-line bg-paper" style={slot(3)}>
+              <header className="flex items-center gap-3 border-b border-line py-1.5 pl-4 pr-1.5 sm:pl-5">
+                <div className="min-w-0 flex-1 py-1.5">
+                  <h2 className="text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">Message client</h2>
+                  <p className="mt-0.5 truncate text-[0.74rem] text-ink-muted">
+                    To <span className="font-medium text-ink">{booking.email}</span> · sends from roko@makeupbyroko.org
+                  </p>
+                </div>
+                <IconButton label="Close composer" onClick={() => setShowCompose(false)} className="text-ink-muted hover:text-ink">
+                  <Icon name="close" className="h-4 w-4" strokeWidth={1.9} />
+                </IconButton>
+              </header>
+
+              <div className="flex flex-col gap-4 px-4 py-4 sm:px-5 sm:py-5">
+                {/* Date/time changes don't live here, so route her to the one panel. */}
+                <button type="button" onClick={() => { setShowCompose(false); openTimePicker(); }}
+                  className="press inline-flex min-h-[36px] items-center gap-2 self-start rounded bg-canvas px-3 py-2 text-left text-[0.8rem] font-medium text-ink-soft hover:text-ink">
+                  <Icon name="calendar" className="h-3.5 w-3.5" />
+                  Changing the date or time? Do it here
+                  <Icon name="right" className="h-3.5 w-3.5" />
+                </button>
+
+                <label className="block">
+                  <Label className="mb-1.5 block">Subject</Label>
+                  <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)} className={inputClass} />
+                </label>
+
+                <label className="block">
+                  <Label className="mb-1.5 block">Message</Label>
+                  <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
+                    placeholder="Write your message…"
+                    className={cx(inputClass, 'h-auto min-h-[150px] resize-y py-2.5 leading-relaxed')} />
+                  <span className="mt-1.5 block text-[0.74rem] text-ink-muted">Sent on your branded template. Line breaks are kept.</span>
+                </label>
+
+                {/* Attach updated agreement, for scope changes that aren't date
+                    or time (a date/time change re-signs from the Appointment panel). */}
+                <CheckRow checked={attachContract} onClick={() => setAttachContract(a => !a)} title="Attach updated Service Agreement">
+                  For a service, location, or price change. Adds a Review &amp; Sign link so their agreement matches. (Date or time changes re-sign from the Appointment panel.)
+                </CheckRow>
+
+                <div className="flex gap-2 pt-1">
+                  <Button size="lg" onClick={() => setShowCompose(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="solid" size="lg" onClick={sendCompose} disabled={sending} className="flex-1">
+                    {sending
+                      ? <><Spinner /> Sending…</>
+                      : <><Icon name="send" className="h-4 w-4" />{attachContract ? 'Send email + agreement' : 'Send email'}</>}
+                  </Button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Update-sent indicator. The booking stays confirmed the whole time.
+              Driven by awaitingResign so it survives a refresh: before, this was
+              local-only state and the waiting phase vanished on reload. The fresh
+              signature appears in the Service Agreement panel once the client
+              re-signs; no bounce back to pending. */}
+          {awaitingResign && !showCompose && (
+            <div className="rise-in flex items-start gap-3 border border-tone-confirmed/25 bg-tone-confirmed/[0.04] px-4 py-3.5 sm:px-5" style={slot(4)}>
+              <Icon name="send" className="mt-0.5 h-4 w-4 text-tone-confirmed" />
+              <p className="text-[0.86rem] leading-relaxed text-ink-soft">
+                Update sent to {firstName}, awaiting their quick re-sign. Their booking stays confirmed the whole time, and the new signature shows up under Service agreement once they sign.
               </p>
             </div>
-            {/* My Schedule used to sit here in the hero. It's now in the
-                Appointment box, right beside the time she's deciding on —
-                the moment she needs her day is the moment she's answering
-                "does that time work?", not while reading the status banner. */}
-            <button onClick={() => setShowEdit(true)}
-              className="px-3 py-2 -mr-1 rounded-lg text-[0.8rem] font-semibold text-white transition-all active:scale-95 hover:bg-white/10">
-              Edit
-            </button>
-          </div>
-        </div>
+          )}
 
-        {/* START | DATE card, overlapping the banner like Booksy */}
-        <button type="button"
-          onClick={() => {
-            openTimePicker();
-            setTimeout(() => { if (timeSectionRef.current) lenisScrollTo(timeSectionRef.current, { offset: -80 }); }, 60);
-          }}
-          className="relative w-[calc(100%-24px)] sm:w-[calc(100%-40px)] mx-auto -mt-10 grid grid-cols-[minmax(0,0.82fr)_auto_minmax(0,1.18fr)] sm:grid-cols-[1fr_auto_1fr] items-center rounded-xl px-1 py-3.5 text-left transition-all active:scale-[0.995]"
-          style={{
-            background: dm ? '#27272a' : '#fff',
-            border: `1px solid ${dm ? '#3f3f46' : '#eee'}`,
-            boxShadow: dm ? '0 10px 30px rgba(0,0,0,0.35)' : '0 10px 30px rgba(28, 28, 38,0.12)',
-          }}>
-          <div className="px-3 sm:px-4 min-w-0">
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Start</p>
-            <p className="text-[0.98rem] sm:text-[1.05rem] font-semibold mt-0.5 truncate tabular-nums"
-              style={{ color: heroStart ? (dm ? '#ECEDF1' : '#111') : '#C4849A' }}>
-              {heroStart || 'Set time'}
-            </p>
-            {heroEnd && <p className="text-[0.64rem] tabular-nums" style={{ color: dm ? '#8e8e99' : '#a8a8b1' }}>until {heroEnd}</p>}
-          </div>
-          <div className="w-px self-stretch" style={{ background: dm ? '#3a3a44' : '#EAEAF0' }} />
-          <div className="px-3 sm:px-4 min-w-0 flex items-center justify-between gap-1.5 sm:gap-2">
-            <div className="min-w-0">
-              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8e8e99' : '#A2A2AA' }}>Date</p>
-              <p className="text-[0.98rem] sm:text-[1.05rem] font-semibold mt-0.5 truncate whitespace-nowrap" style={{ color: dm ? '#ECEDF1' : '#111' }}>{heroDate}</p>
-            </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#7a7a84' : '#bcbcc4'} strokeWidth="2" className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </button>
-      </div>
+          {/* ── Appointment hub ───────────────────────────────────────────────
+              One always-visible place for everything about timing: the
+              appointment window, what the client asked to be ready by, and the
+              next step of the pipeline. Changing the time and opening the day
+              schedule both live here, so there's no separate time section
+              further down the card.
 
-      <div className="rounded-[6px] p-6 sm:p-8 mb-6" style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3f3f46' : '#e5e5e5'}` }}>
-        {/* Header. No status chip here: the hero above already states it in
-            colour, at size, a few hundred pixels up the same screen. */}
-        <div className="flex items-start mb-6 gap-3">
-          <div className="flex items-center gap-3.5 min-w-0">
-            {/* Avatar + name both open the full client profile screen. */}
-            <button type="button" onClick={() => setShowClientPanel(true)} aria-label={`View ${booking.name || 'client'} profile`}
-              className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 font-serif text-[1rem] transition-all active:scale-95"
-              style={{ background: dm ? 'rgba(212,160,176,0.16)' : '#F5E6EC', color: dm ? '#e7c9d5' : '#8A4A63' }}>
-              {(booking.name || '?').trim().charAt(0).toUpperCase()}
-            </button>
-            <div className="min-w-0">
-              {booking.service && (
-                <span className="inline-block mb-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-[0.04em] text-[0.82rem] leading-none"
-                  style={{ background: dm ? 'rgba(196,132,154,0.20)' : '#F7E4EC', color: dm ? '#EDB8CB' : '#B0587A' }}>
-                  {booking.service}
-                </span>
-              )}
-              {booking.source === 'booksy' && (
-                <span className="inline-block mb-1.5 ml-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-[0.08em] text-[0.6rem] leading-none align-middle"
-                  style={{ background: dm ? 'rgba(14,165,175,0.18)' : '#E0F5F6', color: dm ? '#5EEAD4' : '#0E8F98' }}
-                  title="Imported from Booksy">
-                  Booksy import
-                </span>
-              )}
-              <button onClick={() => setShowClientPanel(true)}
-                className="group font-serif text-[1.5rem] leading-tight transition-colors text-left flex items-center gap-1.5 max-w-full"
-                style={{ color: dm ? '#e4e4e7' : '#111' }}>
-                <span className="truncate">{booking.name}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#5b5560' : '#c9bcc3'} strokeWidth="2.4" className="w-3.5 h-3.5 flex-shrink-0 transition-transform group-active:translate-x-0.5"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-              {booking.phone && (
-                <p className="text-[0.8rem] mt-0.5 truncate tabular-nums" style={{ color: dm ? '#8e8e99' : '#999' }}>
-                  {formatPhone(booking.phone)}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Info grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-          <div>
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-1">Date & Time</p>
-            <p className="text-[0.9rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>{dateFormatted}</p>
-            {booking.time && <p className="text-[0.85rem]" style={{ color: dm ? '#D4A0B0' : '#888' }}>{booking.time}</p>}
-          </div>
-          <div>
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-1">Contact</p>
-            {booking.email && <a href={`mailto:${booking.email}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block" style={{ color: dm ? '#e4e4e7' : '#111' }}>{booking.email}</a>}
-            {booking.phone && <a href={`sms:${phoneHref(booking.phone)}`} className="text-[0.85rem] hover:text-[#D4A0B0] underline underline-offset-2 transition-colors block mt-0.5 tabular-nums" style={{ color: dm ? '#8e8e99' : '#999' }}>{formatPhone(booking.phone)}</a>}
-            {booking.email && !showCompose && (
-              <button
-                type="button"
-                onClick={openCompose}
-                className="mt-2.5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: '#C4849A', color: '#fff' }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
-                Message client
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Non-bridal appointment details.
-            A bride's card has a whole panel built from her inquiry; a non-bridal
-            client had nothing but a service name and a couple of chips buried
-            further down, so "what is this booking actually for" was a question
-            you answered by reading a notes string. Same shape as the bridal
-            panel, built from what a non-bridal booking actually carries.
-
-            The cash figure is editable here because this is where Roko settles
-            it. A travel job is priced from $750 and lands wherever the drive
-            puts it, so nothing can compute it, and until she writes it down the
-            client's confirmation email can only say "Roko will confirm the
-            exact amount". Typing it here is what puts a number in that email. */}
-        {!isBridal && (
-          <div className="mb-6 pb-6" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-              Appointment Details
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-5">
-              <BField dm={dm} label="Service" value={booking.service} />
-              <BField dm={dm} label="Occasion" value={notes.occasion} accent />
-              <BField dm={dm} label="Ready by (requested)" value={notes.readyBy} accent />
-              <BField dm={dm} label="Where" value={booking.location || `Roko's studio · ${STUDIO_TOWN}`} />
-              {notes.flags.map((f, i) => (
-                <BField key={i} dm={dm} label={/early|⏰/i.test(f) ? 'Early arrival' : 'Travel'} value={f} />
-              ))}
-              <CashDueField booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
-            </div>
-            {notes.comment && (
-              <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F5EDF1'}` }}>
-                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>What they told you</p>
-                <p className="text-[0.86rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#e4e4e7' : '#1E1E27' }}>{notes.comment}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Client location (0015). Only shown when there IS one: a blank here
-            means a studio appointment or an import with nothing on file, and
-            an empty "Location —" row would read as missing data rather than as
-            "she isn't driving anywhere". Suppressed only when the inquiry's own
-            Get Ready Location block below is already showing an address, so a
-            bride imported from Booksy (who has no inquiry) still gets one. */}
-        {booking.location && !bridalInquiry?.event_location && (
-          <div className="mb-6 pb-6 flex items-start justify-between gap-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
-            <div className="flex items-start gap-2.5 min-w-0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-              </svg>
-              <div className="min-w-0">
-                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-                  Client Location
-                  {booking.travel_fee != null && (
-                    <span className="ml-2 normal-case tracking-normal" style={{ color: dm ? '#8e8e99' : '#b0a4aa' }}>
-                      travel fee ${Number(booking.travel_fee).toLocaleString()}
-                    </span>
-                  )}
-                </p>
-                <CopyableAddress address={booking.location} dm={dm} />
-              </div>
-            </div>
-            <a href={mapsUrl(booking.location)} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-opacity hover:opacity-80 flex-shrink-0"
-              style={{ borderRadius: 2, border: `1px solid ${dm ? '#5a4750' : '#E2C4D2'}`, color: '#C4849A', background: dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              Maps
-            </a>
-          </div>
-        )}
-
-        {/* Contact composer — Roko's personal email, sent as roko@makeupbyroko.org */}
-        {showCompose && (
-          <div ref={composeRef} className="mb-6 rounded-2xl overflow-hidden"
-            style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, boxShadow: dm ? 'none' : '0 2px 10px rgba(30, 30, 40,0.05)' }}>
-            <div className="flex items-center gap-3 px-4 py-3.5" style={{ background: dm ? '#27272a' : '#fff', borderBottom: `1px solid ${dm ? '#3a3a48' : '#EDEDF3'}` }}>
-              <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: dm ? 'rgba(212,160,176,0.14)' : 'rgba(212,160,176,0.16)' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
-                </svg>
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Message Client</p>
-                <p className="text-[0.68rem] mt-0.5 truncate" style={{ color: dm ? '#a1a1aa' : '#9A9AA3' }}>
-                  To <span style={{ color: dm ? '#e7c9d5' : '#8A4A63', fontWeight: 600 }}>{booking.email}</span> · sends from roko@makeupbyroko.org
-                </p>
-              </div>
-              <button type="button" onClick={() => setShowCompose(false)} aria-label="Close composer"
-                className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-                style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-
-            <div className="p-4 flex flex-col gap-3" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-              {/* Date/time changes don't live here — route her to the one panel. */}
-              <button type="button" onClick={() => { setShowCompose(false); openTimePicker(); }}
-                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.64rem] font-semibold transition-all hover:opacity-85"
-                style={{ background: dm ? '#2e2e38' : '#FBF5F7', color: dm ? '#e7c9d5' : '#8A4A63', border: `1px solid ${dm ? '#3a3a48' : '#EFDFE6'}` }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Changing the date or time? Do it here →
-              </button>
-
-              <div>
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Subject</label>
-                <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                  style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
-              </div>
-
-              <div>
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Message</label>
-                <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={7}
-                  placeholder="Write your message…"
-                  className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                  style={{ fontSize: '15px', minHeight: '150px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
-                <p className="text-[0.62rem] mt-1.5" style={{ color: dm ? '#7a7a84' : '#b6b6bf' }}>Sent on your branded template. Line breaks are kept.</p>
-              </div>
-
-              {/* Attach updated agreement — for scope changes that aren't date or
-                  time (a date/time change re-signs from the Appointment panel). */}
-              <button type="button" onClick={() => setAttachContract(a => !a)}
-                className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
-                style={{ background: attachContract ? (dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), border: `1px solid ${attachContract ? '#D4A0B0' : (dm ? '#3a3a48' : '#e5e5e5')}` }}>
-                <span className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
-                  style={attachContract ? { background: '#D4A0B0', border: '1px solid #D4A0B0' } : { background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#52525b' : '#ccc'}` }}>
-                  {attachContract && <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
-                </span>
-                <span>
-                  <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
-                  <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                    For a service, location, or price change. Adds a Review &amp; Sign link so their agreement matches. (Date or time changes re-sign from the Appointment panel above.)
-                  </span>
-                </span>
-              </button>
-
-              <div className="flex items-center gap-2 pt-1">
-                <button type="button" onClick={() => setShowCompose(false)}
-                  className="px-5 py-3 rounded-xl text-[0.72rem] font-semibold transition-all active:scale-[0.98]"
-                  style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
-                  Cancel
-                </button>
-                <button type="button" onClick={sendCompose} disabled={sending}
-                  className="flex-1 py-3 rounded-xl text-[0.75rem] font-semibold tracking-[0.04em] transition-all active:scale-[0.99] flex items-center justify-center gap-2"
-                  style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: sending ? 0.7 : 1 }}>
-                  {sending
-                    ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
-                    : <>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                        {attachContract ? 'Send email + agreement' : 'Send email'}
-                      </>}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Update-sent indicator — the booking stays confirmed the whole time.
-            Driven by awaitingResign so it survives a refresh: before, this was
-            local-only state and the waiting phase vanished on reload. The fresh
-            signature appears in the Service Agreement panel once the client
-            re-signs; no bounce back to pending. */}
-        {awaitingResign && !showCompose && (
-          <div className="mb-6 flex items-start gap-2.5 px-4 py-3 rounded-[8px]"
-            style={{ background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.28)' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0 mt-0.5">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-            <p className="text-[0.75rem] leading-[1.5] font-medium" style={{ color: dm ? '#93b4f5' : '#2563EB' }}>
-              Update sent to {firstName}, awaiting their quick re-sign. Their booking stays confirmed the whole time, the new signature will appear below once they sign.
-            </p>
-          </div>
-        )}
-
-        {/* ── Appointment & Notes hub ───────────────────────────────────────────
-            One always-visible place for everything about timing: the appointment
-            window, what the client asked to be ready by, and Roko's own private
-            notes. Changing the time and opening the day schedule both live here,
-            so there's no separate time section further down the card. */}
-        <div ref={timeSectionRef} className="mb-6 flex flex-col gap-3">
-          {/* Appointment / ready-by card */}
-          {/* The amber ring only appears for a few seconds, and only right after
-              something was refused for want of a time. She has just been
-              scrolled here from somewhere else on the card, so the box has to
-              say "this one" without her hunting for it. */}
-          <div className="rounded-[14px] overflow-hidden" style={{
-            border: `1px solid ${timeHighlight ? '#F59E0B' : needsTime ? (dm ? '#5c4550' : '#E7C6D3') : (dm ? '#3a3a48' : '#E5E5EC')}`,
-            background: dm ? '#1e1e24' : '#fff',
-            boxShadow: timeHighlight
-              ? `0 0 0 4px ${dm ? 'rgba(245,158,11,0.20)' : 'rgba(245,158,11,0.16)'}`
-              : needsTime ? (dm ? 'none' : '0 2px 14px rgba(196,132,154,0.13)') : 'none',
-            transition: 'border-color 240ms ease, box-shadow 240ms ease',
-          }}>
-            {/* Narrow screens stack the label above the buttons: side by side,
-                the label plus two pills overflow and the pill text wraps mid
-                word. Stacked, each pill gets a full-width tap target. */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-2 px-4 py-3" style={{
-              borderBottom: `1px solid ${needsTime ? (dm ? '#3d2f36' : '#F2DFE6') : (dm ? '#2e2e38' : '#EDEDF3')}`,
-              background: needsTime ? (dm ? 'rgba(196,132,154,0.09)' : '#FCF5F8') : 'transparent',
-            }}>
-              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Appointment</p>
-              <div className="flex items-center gap-2 sm:gap-1.5">
+              While a time is still missing the box wears a pending wash instead
+              of looking as settled as every other section. The stronger wash
+              only appears for a few seconds, right after something was refused
+              for want of a time: she has just been scrolled here from somewhere
+              else on the card, so the box has to say "this one" without her
+              hunting for it. */}
+          <section ref={timeSectionRef} style={slot(5)}
+            className={cx(
+              'rise-in border bg-paper transition-colors duration-300',
+              timeHighlight ? 'border-tone-pending/70' : needsTime ? 'border-tone-pending/30' : 'border-line',
+            )}>
+            {/* Narrow screens stack the title above the buttons: side by side
+                they overflow and the button text wraps mid word. Stacked, each
+                gets a full-size tap target. */}
+            <header className={cx(
+              'flex flex-col gap-3 border-b px-4 py-3 transition-colors duration-300 sm:min-h-[56px] sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-5',
+              needsTime || timeHighlight ? 'border-tone-pending/20' : 'border-line',
+              timeHighlight ? 'bg-tone-pending/[0.12]' : needsTime ? 'bg-tone-pending/[0.05]' : '',
+            )}>
+              <h2 className="text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">Appointment</h2>
+              <div className="flex items-center gap-2">
                 {/* Her day, one tap from the time she's setting. It stays in
                     this same spot in every state of the box (deciding, picking,
                     already set) so it never moves out from under her. */}
-                <button type="button" onClick={toggleSchedule} aria-label="My Schedule" aria-expanded={showSchedule} title="See your day side by side"
-                  className="inline-flex items-center gap-1.5 h-9 sm:h-[30px] px-3 sm:px-2.5 rounded-full text-[0.78rem] font-medium whitespace-nowrap transition-colors flex-shrink-0"
-                  style={{ background: dm ? '#2e2e38' : '#F4EFF1', color: dm ? '#d8c3cc' : '#8A5F71', border: `1px solid ${dm ? '#3a3a48' : '#EADCE2'}` }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3.5 h-3.5 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <Button size="sm" icon={CalendarIcon} onClick={toggleSchedule} aria-label="My Schedule" aria-expanded={showSchedule} title="See your day side by side"
+                  className={cx('max-sm:h-11', showSchedule && 'bg-canvas')}>
                   My Schedule
-                </button>
-                {/* Clear. It stands on its own rather than only existing
-                    inside the picker: a time can go on by mistake and the fix
-                    is "there shouldn't be one", not "pick another".
-                    Icon only, because a labelled pill made a small corrective
-                    action look like a third headline button and, on a phone,
-                    took a quarter of the row to say a word she doesn't need
-                    read to her every time she opens the card. */}
+                </Button>
+                {/* Clear. It stands on its own rather than only existing inside
+                    the picker: a time can go on by mistake and the fix is
+                    "there shouldn't be one", not "pick another". Icon only, so
+                    a small corrective action doesn't read as a third headline
+                    button. */}
                 {!showTimePicker && booking.time && (
                   <button type="button" onClick={clearTime} aria-label="Clear the time" title="Clear the time"
-                    className="inline-flex items-center justify-center w-9 h-9 sm:w-[30px] sm:h-[30px] rounded-full transition-colors flex-shrink-0 active:scale-90"
-                    style={{ background: 'transparent', color: dm ? '#8e8e99' : '#a3a3ad', border: `1px solid ${dm ? '#3a3a48' : '#E9E9EF'}` }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#C4849A'; e.currentTarget.style.borderColor = dm ? '#5c4550' : '#EAD3DC'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = dm ? '#8e8e99' : '#a3a3ad'; e.currentTarget.style.borderColor = dm ? '#3a3a48' : '#E9E9EF'; }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="w-[15px] h-[15px]">
-                      <circle cx="12" cy="12" r="9" /><line x1="8.6" y1="8.6" x2="15.4" y2="15.4" />
-                    </svg>
+                    className={SQUARE}>
+                    <Icon name="clear" className="h-[15px] w-[15px]" strokeWidth={1.9} />
                   </button>
                 )}
                 {!showTimePicker && !(readyByMin != null && !booking.time) && (
-                  <button type="button" onClick={() => openTimePicker()}
-                    className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-full text-[0.8rem] font-medium whitespace-nowrap transition-opacity hover:opacity-90"
-                    style={{ background: '#C4849A', color: '#fff' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <Button size="sm" variant={booking.time ? 'quiet' : 'solid'} icon={PencilIcon} onClick={() => openTimePicker()} className="flex-1 max-sm:h-11 sm:flex-none">
                     {booking.time ? 'Change time' : 'Set time'}
-                  </button>
+                  </Button>
                 )}
                 {showTimePicker && (
-                  <button type="button" onClick={() => setShowTimePicker(false)} aria-label="Close"
-                    className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full transition-all active:scale-90"
-                    style={{ background: dm ? '#3f3f46' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
+                  <IconButton label="Close" onClick={() => setShowTimePicker(false)} className="-my-1 -mr-2.5 ml-auto text-ink-muted hover:text-ink sm:ml-0">
+                    <Icon name="close" className="h-4 w-4" strokeWidth={1.9} />
+                  </IconButton>
                 )}
               </div>
-            </div>
+            </header>
 
             {/* Undo. Sits directly under the header so it's part of the box she
                 just changed, not a toast that's already gone by the time she
                 realises she picked the wrong hour. */}
             {undoTime && !showTimePicker && (
-              <div className="flex items-center gap-2 px-4 py-2"
-                style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}`, background: dm ? '#232329' : '#FBF8F9' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#7d7881' : '#B7A9AF'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0">
-                  <polyline points="9 14 4 9 9 4" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-                </svg>
-                <p className="text-[0.7rem] leading-snug flex-1 min-w-0 truncate" style={{ color: dm ? '#9a949d' : '#988c92' }}>
-                  Was {undoWasLabel}
+              <div className="flex items-center gap-2 border-b border-line bg-canvas/60 pl-4 pr-0.5 sm:pl-5">
+                <Icon name="undo" className="h-3.5 w-3.5 text-ink-muted" strokeWidth={2} />
+                <p className="min-w-0 flex-1 truncate text-[0.8rem] leading-snug text-ink-muted">
+                  Was <span className="tabular-nums">{undoWasLabel}</span>
                   {undoTime.emailed && <span> · {firstName} was emailed the new time</span>}
                 </p>
                 <button type="button" onClick={undoTimeChange}
-                  className="flex-shrink-0 text-[0.72rem] font-semibold transition-opacity hover:opacity-70 active:scale-95"
-                  style={{ color: '#A0607A' }}>
+                  className="press h-9 shrink-0 rounded px-2.5 text-[0.8rem] font-semibold text-rose hover:bg-rose/10">
                   Undo
                 </button>
                 {/* Dismiss: she's happy with the change and doesn't want the row
                     sitting there for the rest of the day. */}
-                <button type="button" onClick={() => { setUndoTime(null); clearUndo(booking.id); }} aria-label="Dismiss"
-                  className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded-full transition-colors active:scale-90"
-                  style={{ color: dm ? '#6b656f' : '#c2b7bc' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="w-2.5 h-2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+                <IconButton label="Dismiss" onClick={() => { setUndoTime(null); clearUndo(booking.id); }} className="text-ink-muted hover:text-ink">
+                  <Icon name="close" className="h-3.5 w-3.5" strokeWidth={2} />
+                </IconButton>
               </div>
             )}
 
@@ -2463,44 +2348,28 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               readyByMin != null && !booking.time ? (
                 /* ── Decision row: no time yet, but the client said when they
                    want to be ready. Lead with the question, not two neutral
-                   facts — "does that work?" is the actual decision. ── */
-                <div className="px-4 py-4">
-                  {showSteps && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <StepDot n={1} state="active" dm={dm} />
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Set the time</p>
-                    </div>
+                   facts: "does that work?" is the actual decision. ── */
+                <div className="px-4 py-5 sm:px-5">
+                  {showSteps && <StepHead n={1} state="active" className="mb-4">Set the time</StepHead>}
+                  <p className="text-[1.15rem] font-semibold leading-snug tracking-[-0.01em] text-ink">
+                    {firstName} wants to be ready by <span className="tabular-nums text-rose">{notes.readyBy}</span>
+                  </p>
+                  {booking.date && (
+                    <p className="mt-1 text-[0.8rem] tabular-nums text-ink-muted">{fmtLong(booking.date)}</p>
                   )}
-                  <div className="flex items-center gap-3">
-                    <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-5 h-5"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[1.08rem] font-semibold leading-snug" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>
-                        {firstName} wants to be ready by <span style={{ color: '#C4849A', fontSize: '1.18rem' }} className="tabular-nums">{notes.readyBy}</span>
-                      </p>
-                      {booking.date && (
-                        <p className="text-[0.7rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>{fmtLong(booking.date)}</p>
-                      )}
-                      <p className="text-[0.95rem] font-semibold leading-snug mt-1.5" style={{ color: dm ? '#c9c9d1' : '#4a3c42' }}>Does that work for you?</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 mt-3.5">
-                    <button type="button" onClick={() => openTimePicker('', { allowNotify: false })}
-                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation active:scale-[0.99]"
-                      style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                  <p className="mt-3 text-[0.98rem] font-semibold text-ink-soft">Does that work for you?</p>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <Button variant="solid" size="lg" onClick={() => openTimePicker('', { allowNotify: false })}>
                       Yes
-                    </button>
-                    <button type="button" onClick={() => openTimePicker('', { notify: true })}
-                      className="flex-1 py-3 px-4 rounded-[10px] text-[0.78rem] font-semibold transition-all touch-manipulation active:scale-[0.99]"
-                      style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#e4e4e7' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#e2cdd6'}` }}>
+                    </Button>
+                    <Button size="lg" onClick={() => openTimePicker('', { notify: true })}>
                       No, pick another time
-                    </button>
+                    </Button>
                   </div>
                   {showSteps && (
-                    <div className="flex items-center gap-2 mt-3.5 pt-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
-                      <StepDot n={2} state="todo" dm={dm} />
-                      <span className="text-[0.68rem]" style={{ color: dm ? '#8e8e99' : '#b6aeb2' }}>
+                    <div className="mt-5 flex items-center gap-2.5 border-t border-line pt-4">
+                      <StepDot n={2} state="todo" />
+                      <span className="text-[0.8rem] text-ink-muted">
                         {isBridal ? <>Then: confirm &amp; schedule the consultation</> : <>Then: confirm &amp; notify {firstName}</>}
                       </span>
                     </div>
@@ -2509,74 +2378,57 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               ) : (
               <>
                 {railReady ? (
-                  /* ── Step 1 done: her working window as a simple start→done
-                     rail. The ready-by sits beside the header as the client's
-                     ask — context, not part of Roko's working time. ── */
-                  <div className="px-4 py-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      {showSteps && <StepDot n={1} state="done" dm={dm} />}
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Your time</p>
+                  /* ── Step 1 done: her working window as a simple start to
+                     done rail. The ready-by sits beside it as the client's
+                     ask: context, not part of Roko's working time. ── */
+                  <div className="px-4 py-5 sm:px-5">
+                    <div className="mb-4 flex items-center gap-2.5">
+                      {showSteps && <StepDot n={1} state="done" />}
+                      <Label>Your time</Label>
                     </div>
-                    {/* Compact start→done rail tucked left; the client's ask gets
-                        its own clear spot on the right instead of a tiny caption. */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3">
                         <div className="min-w-0">
-                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>{parseRange(booking.time).start}</p>
-                          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You start</p>
+                          <p className="text-[1.05rem] font-semibold leading-tight tabular-nums text-ink">{parseRange(booking.time).start}</p>
+                          <p className="mt-1 text-[0.74rem] text-ink-muted">You start</p>
                         </div>
-                        <div className="flex items-center flex-shrink-0" aria-hidden="true">
-                          <span className="w-2 h-2 rounded-full" style={{ background: '#C4849A' }} />
-                          <span className="w-10 h-[2.5px] mx-1 rounded-full" style={{ background: '#C4849A' }} />
-                          <span className="w-2 h-2 rounded-full" style={{ background: '#C4849A' }} />
+                        <div className="flex shrink-0 items-center" aria-hidden="true">
+                          <span className="h-2 w-2 rounded-full bg-rose" />
+                          <span className="mx-1 h-px w-10 bg-rose" />
+                          <span className="h-2 w-2 rounded-full bg-rose" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[0.95rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>{parseRange(booking.time).end}</p>
-                          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mt-0.5" style={{ color: dm ? '#8f8a93' : '#A89098' }}>You're done</p>
+                          <p className="text-[1.05rem] font-semibold leading-tight tabular-nums text-ink">{parseRange(booking.time).end}</p>
+                          <p className="mt-1 text-[0.74rem] text-ink-muted">You&apos;re done</p>
                         </div>
                       </div>
-                      <div className="sm:text-right pt-3 sm:pt-0 border-t sm:border-t-0" style={{ borderColor: dm ? '#2e2e38' : '#EDEDF3' }}>
-                        <p className="text-[1.05rem] font-semibold leading-tight tabular-nums" style={{ color: runsPastReady ? (dm ? '#F5B83C' : '#B26A04') : '#C4849A' }}>Ready by {notes.readyBy}</p>
-                        <p className="text-[0.62rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>what {firstName} asked for</p>
+                      <div className="border-t border-line pt-3 sm:border-t-0 sm:pt-0 sm:text-right">
+                        <p className={cx('text-[1.05rem] font-semibold leading-tight tabular-nums', runsPastReady ? 'text-tone-pending' : 'text-rose')}>Ready by {notes.readyBy}</p>
+                        <p className="mt-1 text-[0.74rem] text-ink-muted">what {firstName} asked for</p>
                       </div>
                     </div>
                     {runsPastReady && (
-                      <p className="mt-2 text-[0.68rem] font-medium" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>
+                      <p className="mt-3 text-[0.8rem] font-medium text-tone-pending">
                         Heads up: this ends after the {notes.readyBy} ready-by.
                       </p>
                     )}
                   </div>
                 ) : (
-                <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
-                  {/* Appointment window */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(196,132,154,0.12)' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.6" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </span>
+                  <div className="grid grid-cols-1 gap-4 px-4 py-5 sm:grid-cols-2 sm:px-5">
+                    {/* The window, and beside it the ready-by, so the two read together. */}
                     <div className="min-w-0">
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Appointment</p>
-                      <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: booking.time ? (dm ? '#ECEDF1' : '#1E1E27') : (dm ? '#8e8e99' : '#b6aeb2') }}>
+                      <Label>Time</Label>
+                      <p className={cx('mt-1.5 text-[1.05rem] font-semibold leading-tight tabular-nums', booking.time ? 'text-ink' : 'text-ink-muted')}>
                         {booking.time || 'Not set yet'}
                       </p>
                     </div>
-                  </div>
-
-                  {/* Ready-by — beside the appointment so the two read together */}
-                  {notes.readyBy ? (
-                    <>
-                      <div className="hidden sm:block w-px self-stretch" style={{ background: dm ? '#2e2e38' : '#EAEAF0' }} />
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Wants to be ready by</p>
-                          <p className="text-[1.02rem] font-semibold leading-tight tabular-nums" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>{notes.readyBy}</p>
-                        </div>
+                    {notes.readyBy ? (
+                      <div className="min-w-0">
+                        <Label>Wants to be ready by</Label>
+                        <p className="mt-1.5 text-[1.05rem] font-semibold leading-tight tabular-nums text-ink">{notes.readyBy}</p>
                       </div>
-                    </>
-                  ) : <span className="hidden sm:block" />}
-                </div>
+                    ) : null}
+                  </div>
                 )}
 
                 {/* ── Their morning ────────────────────────────────────────
@@ -2584,49 +2436,39 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     around the hairstylist and the venue, so those answers
                     belong beside the window rather than in an email she'd
                     have to go find. Her own start sits in the sequence, in
-                    plum, so the whole morning reads in one pass. */}
+                    rose, so the whole morning reads in one pass. */}
                 {isBridal && dayRail.length > (apptStartMin != null ? 1 : 0) && (
-                  <div className="px-4 pb-4">
-                    <div className="pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-3" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-                        {firstName}&apos;s morning
-                      </p>
-                      <div className="flex flex-wrap gap-x-5 gap-y-3">
-                        {dayRail.map((s, i) => (
-                          <div key={i} className="flex items-start gap-2 min-w-0">
-                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[0.42rem]"
-                              style={{ background: s.mine ? '#C4849A' : (dm ? '#52525b' : '#D8D8E0') }} />
-                            <div className="min-w-0">
-                              <p className="text-[0.86rem] font-semibold leading-tight tabular-nums"
-                                style={{ color: s.mine ? '#C4849A' : (dm ? '#ECEDF1' : '#1E1E27') }}>{s.time}</p>
-                              <p className="text-[0.66rem] leading-tight mt-0.5" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>{s.label}</p>
-                            </div>
+                  <div className="border-t border-line px-4 py-4 sm:px-5">
+                    <Label className="mb-3 block">{firstName}&apos;s morning</Label>
+                    <ol className="flex flex-wrap gap-x-6 gap-y-3">
+                      {dayRail.map((s, i) => (
+                        <li key={i} className="flex min-w-0 items-start gap-2">
+                          <span className={cx('mt-[0.42rem] h-1.5 w-1.5 shrink-0 rounded-full', s.mine ? 'bg-rose' : 'bg-line-strong')} />
+                          <div className="min-w-0">
+                            <p className={cx('text-[0.86rem] font-semibold leading-tight tabular-nums', s.mine ? 'text-rose' : 'text-ink')}>{s.time}</p>
+                            <p className="mt-0.5 text-[0.74rem] leading-tight text-ink-muted">{s.label}</p>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 )}
 
-                {/* What it's for, then travel / early-arrival flags.
-                    The occasion is a fact about the booking, not a warning, so
-                    it gets the plum treatment rather than the amber one — two
-                    engagements and a baby shower on the same page should read
-                    as three different mornings at a glance. */}
+                {/* What it's for, then travel / early-arrival flags. The
+                    occasion is a fact about the booking, not a warning, so it
+                    wears the rose rather than the amber: two engagements and a
+                    baby shower on the same page should read as three different
+                    mornings at a glance. */}
                 {(notes.occasion || notes.flags.length > 0) && (
-                  <div className="px-4 pb-4 -mt-1 flex flex-wrap gap-2">
+                  <div className={cx('flex flex-wrap gap-2 px-4 pb-5 sm:px-5', isBridal && dayRail.length > (apptStartMin != null ? 1 : 0) ? 'pt-0' : '-mt-1')}>
                     {notes.occasion && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
-                        style={{ background: dm ? 'rgba(196,132,154,0.14)' : '#FBF1F5', border: `1px solid ${dm ? 'rgba(196,132,154,0.3)' : '#F0DCE5'}`, color: dm ? '#e5aec0' : '#B0708A' }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-3 h-3 flex-shrink-0">
-                          <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-                        </svg>
+                      <span className="inline-flex h-7 items-center gap-1.5 bg-rose/10 px-2.5 text-[0.74rem] font-medium text-rose">
+                        <Icon name="gift" className="h-3 w-3" />
                         {notes.occasion}
                       </span>
                     )}
                     {notes.flags.map((f, i) => (
-                      <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-full text-[0.72rem] font-medium"
-                        style={{ background: dm ? 'rgba(240,194,122,0.12)' : '#FBF3E8', border: `1px solid ${dm ? 'rgba(240,194,122,0.25)' : '#F0E0C8'}`, color: dm ? '#e8c89a' : '#C76BA6' }}>
+                      <span key={i} className="inline-flex h-7 items-center px-2.5 text-[0.74rem] font-medium text-ink-soft shadow-[inset_0_0_0_1px_rgb(var(--c-line-strong))]">
                         {f}
                       </span>
                     ))}
@@ -2636,89 +2478,66 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               )
             ) : (
               /* ── The ONE reschedule panel: pick the date + window, optionally
-                 notify the client (note + agreement) — one CTA does it all. ── */
-              <div className="px-4 py-4">
+                 notify the client (note + agreement). One button does it all. ── */
+              <div className="px-4 py-5 sm:px-5">
                 {notes.readyBy && (
-                  <div className="mb-4 flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#2e2e38' : 'rgba(212,160,176,0.12)' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#D4A0B0" strokeWidth="1.6" className="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="14" r="8"/><path d="M5 3 2 6M22 6l-3-3"/></svg>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[0.92rem] font-semibold leading-tight" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>
-                        {firstName} wants to be ready by <span className="tabular-nums" style={{ color: '#C4849A' }}>{notes.readyBy}</span>
-                      </p>
-                      {booking.date && (
-                        <p className="text-[0.68rem] mt-0.5 tabular-nums" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>{fmtLong(booking.date)}</p>
-                      )}
-                    </div>
+                  <div className="mb-5 bg-canvas px-4 py-3">
+                    <p className="text-[0.92rem] font-semibold leading-snug text-ink">
+                      {firstName} wants to be ready by <span className="tabular-nums text-rose">{notes.readyBy}</span>
+                    </p>
+                    {booking.date && (
+                      <p className="mt-0.5 text-[0.74rem] tabular-nums text-ink-muted">{fmtLong(booking.date)}</p>
+                    )}
                   </div>
                 )}
 
-                {/* Date — quiet by default; most reschedules are time-only */}
-                <div className="mb-4">
-                  <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>
-                    Date {pendingDate && pendingDate !== booking.date && <span className="tabular-nums" style={{ textTransform: 'none', letterSpacing: 0, color: '#C4849A' }}>· moving to {fmtShort(pendingDate)}</span>}
-                  </label>
-                  <AdminDatePicker value={pendingDate} onChange={onPickDate} dm={dm} accent="#C4849A" />
+                {/* Date: quiet by default; most reschedules are time-only */}
+                <div className="mb-5">
+                  <Label className="mb-2 block">
+                    Date {pendingDate && pendingDate !== booking.date && <span className="font-medium normal-case tracking-normal tabular-nums text-rose">· moving to {fmtShort(pendingDate)}</span>}
+                  </Label>
+                  <AdminDatePicker value={pendingDate} onChange={onPickDate} dm={dm} accent={roseAccent} />
                 </div>
 
-                <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Time</label>
-                <TimeWindowPicker value={pendingWindow} onChange={onPickWindow} slots={APPT_TIMES} dm={dm} accent="#D4A0B0" />
+                <Label className="mb-2 block">Time</Label>
+                <TimeWindowPicker value={pendingWindow} onChange={onPickWindow} slots={APPT_TIMES} dm={dm} accent={roseAccent} />
 
-                {/* Notify the client — hidden on the "yes, that works" path (nothing
-                    to tell them); pre-flipped for everything else. */}
+                {/* Notify the client. Hidden on the "yes, that works" path
+                    (nothing to tell them); pre-flipped for everything else. */}
                 {allowNotify && (
-                <div className="mt-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${notifyClient ? '#D4A0B0' : (dm ? '#3a3a48' : '#E0E0E8')}` }}>
-                  <button type="button" onClick={() => booking.email && setNotifyClient(v => !v)}
-                    className="w-full flex items-center justify-between gap-3 px-3.5 py-3 text-left transition-all"
-                    style={{ background: notifyClient ? (dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), cursor: booking.email ? 'pointer' : 'default' }}>
-                    <span className="min-w-0">
-                      <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Email {firstName} about this change</span>
-                      <span className="block text-[0.64rem] mt-0.5" style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>
-                        {!booking.email ? 'No email on file, so it just updates quietly.'
-                          : notifyClient ? 'They get your note below with the new date & time.'
-                          : 'Off. It updates quietly, no email.'}
+                  <div className={cx('mt-5 border transition-colors duration-200', notifyClient && booking.email ? 'border-ink/25' : 'border-line')}>
+                    <button type="button" role="switch" aria-checked={notifyClient} onClick={() => booking.email && setNotifyClient(v => !v)}
+                      className={cx('flex min-h-[60px] w-full items-center justify-between gap-3 px-4 py-3 text-left', booking.email ? 'cursor-pointer' : 'cursor-default')}>
+                      <span className="min-w-0">
+                        <span className="block text-[0.86rem] font-semibold text-ink">Email {firstName} about this change</span>
+                        <span className="mt-0.5 block text-[0.74rem] text-ink-muted">
+                          {!booking.email ? 'No email on file, so it just updates quietly.'
+                            : notifyClient ? 'They get your note below with the new date & time.'
+                            : 'Off. It updates quietly, no email.'}
+                        </span>
                       </span>
-                    </span>
-                    <span className="w-10 h-6 rounded-full flex-shrink-0 relative transition-all"
-                      style={{ background: notifyClient ? '#C4849A' : (dm ? '#3f3f46' : '#ddd'), opacity: booking.email ? 1 : 0.4 }}>
-                      <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all" style={{ left: notifyClient ? 18 : 2, boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
-                    </span>
-                  </button>
+                      <Switch on={notifyClient} disabled={!booking.email} />
+                    </button>
 
-                  {notifyClient && booking.email && (
-                    <div className="px-3.5 py-3.5 flex flex-col gap-3" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#f0e8ec'}`, background: dm ? '#1e1e24' : '#fff' }}>
-                      <div>
-                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>Subject</label>
-                        <input value={panelSubject} onChange={e => { setPanelSubject(e.target.value); setPanelEdited(true); }}
-                          className="w-full px-3.5 py-2.5 rounded-[10px] outline-none transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                          style={{ fontSize: '15px', border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
-                      </div>
-                      <div>
-                        <label className="block text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: dm ? '#8e8e99' : '#9A9AA3' }}>
-                          Message <span style={{ textTransform: 'none', letterSpacing: 0, color: dm ? '#7a7a84' : '#c4b8bf' }}>(written for you, edit freely)</span>
+                    <Fold open={notifyClient && !!booking.email}>
+                      <div className="flex flex-col gap-4 border-t border-line px-4 py-4">
+                        <label className="block">
+                          <Label className="mb-1.5 block">Subject</Label>
+                          <input value={panelSubject} onChange={e => { setPanelSubject(e.target.value); setPanelEdited(true); }} className={inputClass} />
                         </label>
-                        <textarea value={panelBody} onChange={e => { setPanelBody(e.target.value); setPanelEdited(true); }} rows={6}
-                          className="w-full px-3.5 py-2.5 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                          style={{ fontSize: '15px', minHeight: '130px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
+                        <label className="block">
+                          <Label className="mb-1.5 block">
+                            Message <span className="font-normal normal-case tracking-normal text-ink-muted/80">(written for you, edit freely)</span>
+                          </Label>
+                          <textarea value={panelBody} onChange={e => { setPanelBody(e.target.value); setPanelEdited(true); }} rows={6}
+                            className={cx(inputClass, 'h-auto min-h-[130px] resize-y py-2.5 leading-relaxed')} />
+                        </label>
+                        <CheckRow checked={panelAttach} onClick={togglePanelAttach} title="Attach updated Service Agreement">
+                          They review &amp; sign with the new date &amp; time, and everything stays confirmed.
+                        </CheckRow>
                       </div>
-                      <button type="button" onClick={togglePanelAttach}
-                        className="flex items-start gap-3 text-left px-3 py-3 rounded-[6px] transition-all"
-                        style={{ background: panelAttach ? (dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7') : (dm ? '#27272a' : '#fafafa'), border: `1px solid ${panelAttach ? '#D4A0B0' : (dm ? '#3a3a48' : '#e5e5e5')}` }}>
-                        <span className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
-                          style={panelAttach ? { background: '#D4A0B0', border: '1px solid #D4A0B0' } : { background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#52525b' : '#ccc'}` }}>
-                          {panelAttach && <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
-                        </span>
-                        <span>
-                          <span className="block text-[0.76rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>Attach updated Service Agreement</span>
-                          <span className="block text-[0.66rem] mt-0.5 leading-relaxed" style={{ color: dm ? '#a1a1aa' : '#888' }}>
-                            They review &amp; sign with the new date &amp; time, and everything stays confirmed.
-                          </span>
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                    </Fold>
+                  </div>
                 )}
 
                 {/* Emptying the window used to dead-end on a disabled button.
@@ -2728,20 +2547,20 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   type="button"
                   disabled={(!pendingStart && !booking.time) || panelSending}
                   onClick={!pendingStart && booking.time ? clearTime : commitChange}
-                  className="w-full mt-4 py-3.5 rounded-[8px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation flex items-center justify-center gap-2"
-                  style={pendingStart || booking.time
-                    ? { background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', opacity: panelSending ? 0.7 : 1 }
-                    : { background: dm ? '#27272a' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', cursor: 'not-allowed' }
-                  }
+                  className={cx(
+                    'press mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded px-4 py-3 text-center text-[0.92rem] font-semibold disabled:pointer-events-none',
+                    pendingStart || booking.time ? 'bg-ink text-paper hover:bg-ink/85' : 'bg-canvas text-ink-muted',
+                    panelSending && 'opacity-70',
+                  )}
                 >
                   {panelSending
-                    ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                    ? <><Spinner /> Sending…</>
                     : !pendingStart
                       ? (booking.time ? 'Leave this appointment with no time' : 'Tap a start time above')
                       : (() => {
                           const dateMoved = pendingDate && pendingDate !== booking.date;
                           const willEmail = allowNotify && notifyClient && booking.email && (dateMoved || pendingWindow !== booking.time);
-                          return <>Set to <span className="tabular-nums">{dateMoved ? `${fmtShort(pendingDate)} · ` : ''}{pendingWindow}</span>{willEmail ? <>&nbsp;&amp; email {firstName}</> : ''}</>;
+                          return <span>Set to <span className="tabular-nums">{dateMoved ? `${fmtShort(pendingDate)} · ` : ''}{pendingWindow}</span>{willEmail ? <>&nbsp;&amp; email {firstName}</> : ''}</span>;
                         })()}
                 </button>
               </div>
@@ -2750,27 +2569,19 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             {/* ── Step 2, non-bridal ────────────────────────────────────────
                 Same shape as bridal's next-step block, one stop shorter: no
                 consultation to book, so the time leads straight to confirming.
-                One tap here does what the status pills at the bottom did, via
+                One tap here does what the status buttons at the bottom do, via
                 the same code path, so the email and toast stay identical. ── */}
             {confirmInHub && !showTimePicker && (
-              <div className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <StepDot n={2} state="active" dm={dm} />
-                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: '#C4849A' }}>Confirm</p>
-                </div>
-                <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
+              <div className="border-t border-line px-4 py-5 sm:px-5">
+                <StepHead n={2} state="active">Confirm</StepHead>
+                <p className="mt-2 text-[0.86rem] leading-relaxed text-ink-muted">
                   {booking.email
-                    ? <>Time's set. Confirming emails {firstName} the details and locks it in.</>
-                    : <>Time's set. No email on file, so confirming just locks it in here.</>}
+                    ? <>Time&apos;s set. Confirming emails {firstName} the details and locks it in.</>
+                    : <>Time&apos;s set. No email on file, so confirming just locks it in here.</>}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setPendingStatus('confirmed')}
-                  className="w-full py-3 px-4 rounded-[10px] text-[0.78rem] font-semibold tracking-[0.02em] transition-all touch-manipulation active:scale-[0.99]"
-                  style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}
-                >
-                  {booking.email ? <>Confirm &amp; Notify {firstName}</> : 'Confirm Appointment'}
-                </button>
+                <Button variant="solid" size="lg" onClick={() => setPendingStatus('confirmed')} className="mt-4 w-full">
+                  {booking.email ? <>Confirm &amp; notify {firstName}</> : 'Confirm appointment'}
+                </Button>
               </div>
             )}
 
@@ -2779,211 +2590,157 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 live HERE, so finishing the time leads straight into the next
                 thing instead of a scroll hunt to the bottom of the card. ── */}
             {schedulerInHub && !showTimePicker && (
-              <div ref={consultRef} className="px-4 pb-4 pt-3.5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
+              <div ref={consultRef} className="border-t border-line px-4 py-5 sm:px-5">
                 {booking.status === 'pending' ? (
                   <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <StepDot n={2} state="active" dm={dm} color={CONSULT_COLOR} />
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>Confirm &amp; consultation</p>
-                    </div>
-                    <div className="mt-2.5">{consultScheduler}</div>
+                    <StepHead n={2} state="active">Confirm &amp; consultation</StepHead>
+                    <div className="mt-3">{consultScheduler}</div>
                     {!consultExpanded && booking.email && !confirmLaterOpen && (
                       <button type="button" onClick={() => setConfirmLaterOpen(true)}
-                        className="mt-2.5 text-[0.72rem] font-medium underline underline-offset-4 transition-opacity hover:opacity-75"
-                        style={{ color: dm ? '#8f8a93' : '#9A9AA3' }}>
+                        className="mt-3 min-h-[36px] text-[0.8rem] font-medium text-ink-muted underline decoration-line-strong underline-offset-4 transition-colors hover:text-ink">
                         or confirm now, pick a time later
                       </button>
                     )}
-                    {!consultExpanded && confirmLaterOpen && (
-                      <div className="mt-3 rounded-xl px-4 py-4" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}`, background: dm ? '#1c1c28' : '#FBF9F7' }}>
-                        <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#ECEDF1' : '#111' }}>Confirm without a consultation time?</p>
-                        <p className="text-[0.7rem] leading-relaxed mb-3.5" style={{ color: dm ? '#8e8e99' : '#888' }}>
-                          One email goes to <span style={{ color: '#C4849A' }}>{booking.email}</span> right now with the confirmation and photo upload link. This card will keep reminding you to schedule the consultation.
+                    <Fold open={!consultExpanded && confirmLaterOpen}>
+                      <div className="mt-3 border border-line bg-canvas/60 p-4">
+                        <p className="text-[0.92rem] font-semibold text-ink">Confirm without a consultation time?</p>
+                        <p className="mt-1 text-[0.8rem] leading-relaxed text-ink-muted">
+                          One email goes to <span className="font-medium text-ink">{booking.email}</span> right now with the confirmation and photo upload link. This card will keep reminding you to schedule the consultation.
                         </p>
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => setConfirmLaterOpen(false)}
-                            className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation"
-                            style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#8e8e99' : '#888', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <Button size="lg" onClick={() => setConfirmLaterOpen(false)}>
                             Cancel
-                          </button>
-                          <button type="button" onClick={confirmNowScheduleLater} disabled={confirmLaterSending}
-                            className="flex-1 py-3 rounded-[6px] text-[0.75rem] font-semibold transition-all touch-manipulation flex items-center justify-center gap-2"
-                            style={{ background: '#111', color: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', opacity: confirmLaterSending ? 0.7 : 1 }}>
-                            {confirmLaterSending ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Yes, Confirm & Send'}
-                          </button>
+                          </Button>
+                          <Button variant="solid" size="lg" onClick={confirmNowScheduleLater} disabled={confirmLaterSending}>
+                            {confirmLaterSending ? <><Spinner /> Sending…</> : 'Yes, confirm & send'}
+                          </Button>
                         </div>
                       </div>
-                    )}
+                    </Fold>
                   </>
                 ) : !booking.consultation_date ? (
                   <>
-                    <div className="flex items-center gap-2 mb-1">
-                      <StepDot n={2} state="warn" dm={dm} />
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>Consultation not scheduled yet</p>
-                    </div>
-                    <p className="text-[0.8rem] mb-3" style={{ color: dm ? '#a1a1aa' : '#8a8087' }}>
+                    <StepHead n={2} state="warn">Consultation not scheduled yet</StepHead>
+                    <p className="mb-3 mt-2 text-[0.86rem] leading-relaxed text-ink-muted">
                       {firstName} is confirmed. Schedule the consultation once you two settle on a time.
                     </p>
                     {consultScheduler}
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 mb-2">
-                      <StepDot n={2} state="done" dm={dm} />
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? CONSULT_DM : CONSULT_COLOR }}>Confirmed &amp; consultation set</p>
-                    </div>
+                    <StepHead n={2} state="done" className="mb-3">Confirmed &amp; consultation set</StepHead>
                     {consultScheduler}
                   </>
                 )}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Reconfirm banner — appears when the time changes on a confirmed booking */}
+          {/* Reconfirm banner: appears when the time changes on a confirmed booking */}
           {showReconfirmBanner && booking.status === 'confirmed' && (
-            <div className="flex items-center justify-between px-4 py-3 rounded-[10px]"
-              style={{
-                background: dm ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.07)',
-                border: '1px solid rgba(59,130,246,0.3)',
-                animation: 'fadeSlideDown 0.3s ease-out',
-              }}>
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                </div>
+            <div className="rise-in flex flex-col gap-3 border border-tone-confirmed/25 bg-tone-confirmed/[0.04] py-3 pl-4 pr-2 sm:flex-row sm:items-center sm:justify-between sm:pl-5" style={slot(6)}>
+              <div className="flex min-w-0 items-start gap-3">
+                <Icon name="info" className="mt-0.5 h-4 w-4 text-tone-confirmed" strokeWidth={1.9} />
                 <div className="min-w-0">
-                  <p className="text-[0.75rem] font-semibold" style={{ color: '#2563EB' }}>Booking updated</p>
-                  <p className="text-[0.65rem]" style={{ color: dm ? '#8e8e99' : '#999' }}>Review &amp; send {firstName} the update to re-sign</p>
+                  <p className="text-[0.86rem] font-semibold text-tone-confirmed">Booking updated</p>
+                  <p className="mt-0.5 text-[0.8rem] text-ink-muted">Review &amp; send {firstName} the update to re-sign</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                <button
-                  onClick={() => openChangeNotice()}
-                  className="px-3 py-1.5 rounded-lg text-[0.68rem] font-semibold text-white transition-all"
-                  style={{ background: '#2563EB' }}>
-                  Message {firstName} →
-                </button>
-                <button
-                  onClick={() => setShowReconfirmBanner(false)}
-                  className="w-6 h-6 flex items-center justify-center rounded-lg"
-                  style={{ background: 'rgba(0,0,0,0.06)', color: dm ? '#8e8e99' : '#aaa' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button variant="solid" size="sm" onClick={() => openChangeNotice()} className="max-sm:h-11 max-sm:flex-1">
+                  Message {firstName}
+                </Button>
+                <IconButton label="Dismiss" onClick={() => setShowReconfirmBanner(false)} className="text-ink-muted hover:text-ink">
+                  <Icon name="close" className="h-4 w-4" strokeWidth={1.9} />
+                </IconButton>
               </div>
             </div>
           )}
 
-          {/* Notes card — the client's own comment, plus Roko's private notes */}
-          <div className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}`, background: dm ? '#1e1e24' : '#fff' }}>
-            <div className="px-4 py-3" style={{ borderBottom: `1px solid ${dm ? '#2e2e38' : '#EDEDF3'}` }}>
-              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Notes</p>
-            </div>
-            <div className="px-4 py-4 flex flex-col gap-4">
-              {/* Client's additional comments */}
-              {notes.comment && (
-                <div>
-                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: PLUM }}>From the client</p>
-                  <div className="px-4 py-3" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7' }}>
-                    <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{notes.comment}</p>
-                  </div>
-                </div>
-              )}
+          {/* Notes: the client's own comment, plus Roko's private notes */}
+          <Panel title="Notes" className="rise-in" style={slot(7)} bodyClassName="divide-y divide-line">
+            {notes.comment && (
+              <div className="px-4 py-4 sm:px-5">
+                <Label className="mb-2 block">From the client</Label>
+                <p className="whitespace-pre-wrap bg-canvas px-4 py-3 text-[0.86rem] leading-relaxed text-ink-soft">{notes.comment}</p>
+              </div>
+            )}
 
-              {/* Roko's private notes */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>
-                    My Notes <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400, color: dm ? '#7a7a84' : '#c4b8bf' }}>· private, only you</span>
-                  </p>
-                  {!notesEditing && (
-                    <button type="button" onClick={() => setNotesEditing(true)}
-                      className="inline-flex items-center gap-1 text-[0.62rem] font-semibold transition-opacity hover:opacity-75" style={{ color: '#C4849A' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-3 h-3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      {adminNotes ? 'Edit' : 'Add'}
-                    </button>
-                  )}
-                </div>
-
-                {notesEditing ? (
-                  <div>
-                    <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} autoFocus
-                      placeholder="Jot anything just for you: allergies, skin notes, reminders…"
-                      className="w-full px-3.5 py-3 rounded-[10px] outline-none resize-y transition-shadow focus:ring-2 focus:ring-[#D4A0B0]/30"
-                      style={{ fontSize: '15px', minHeight: '84px', lineHeight: 1.6, border: `1px solid ${dm ? '#3a3a48' : '#E3E3EA'}`, background: dm ? '#27272a' : '#FBF9F7', color: dm ? '#e4e4e7' : '#111' }} />
-                    <div className="flex gap-2 mt-2">
-                      <button type="button" onClick={() => { setAdminNotes(booking.admin_notes || ''); setNotesEditing(false); }}
-                        className="px-4 py-2.5 rounded-[8px] text-[0.72rem] font-semibold transition-all"
-                        style={{ background: 'transparent', color: dm ? '#a1a1aa' : '#83838d', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
-                        Cancel
-                      </button>
-                      <button type="button" onClick={saveAdminNotes}
-                        className="flex-1 py-2.5 rounded-[8px] text-[0.73rem] font-semibold tracking-[0.04em] transition-all"
-                        style={{ background: '#111', color: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
-                        Save note
-                      </button>
-                    </div>
-                  </div>
-                ) : adminNotes ? (
+            {/* Roko's private notes */}
+            <div className="px-4 py-4 sm:px-5">
+              <div className="mb-2 flex min-h-[32px] items-center justify-between gap-3">
+                <Label>
+                  My notes <span className="font-normal normal-case tracking-normal text-ink-muted/80">· private, only you</span>
+                </Label>
+                {!notesEditing && (
                   <button type="button" onClick={() => setNotesEditing(true)}
-                    className="w-full text-left px-4 py-3 rounded-[10px] transition-all hover:opacity-90"
-                    style={{ background: dm ? '#27272a' : '#FBF9F7', border: `1px solid ${dm ? '#3a3a48' : '#eee'}` }}>
-                    <p className="text-[0.85rem] leading-relaxed whitespace-pre-wrap" style={{ color: dm ? '#d4d4d8' : '#4a4a52' }}>{adminNotes}</p>
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => setNotesEditing(true)}
-                    className="w-full flex items-center gap-2 px-4 py-3 rounded-[10px] transition-all hover:opacity-90"
-                    style={{ background: dm ? '#1e1e24' : '#fafafa', border: `1px dashed ${dm ? '#3a3a48' : '#D2D2D9'}`, color: dm ? '#8e8e99' : '#A1A1A9' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-3.5 h-3.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    <span className="text-[0.78rem] font-medium">Add a private note…</span>
+                    className={cx(MINI, '-mr-2')}>
+                    <Icon name="pencil" className="h-3 w-3" strokeWidth={1.9} />
+                    {adminNotes ? 'Edit' : 'Add'}
                   </button>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Bridal Inquiry Details */}
-        {isBridal && bridalInquiry && (
-          <div className="mb-6 overflow-hidden" style={{ borderRadius: 6, border: `1px solid ${dm ? '#3a3a48' : '#E2E2E8'}` }}>
-            {/* Section header */}
-            <div className="px-5 py-3.5" style={{ background: dm ? 'rgba(196,132,154,0.12)' : '#FBF5F7', borderBottom: `1px solid ${dm ? '#3a3a48' : '#F0E0E9'}` }}>
-              <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: PLUM }}>Bridal Inquiry Details</p>
+              {notesEditing ? (
+                <div>
+                  <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={3} autoFocus
+                    placeholder="Jot anything just for you: allergies, skin notes, reminders…"
+                    aria-label="My notes"
+                    className={cx(inputClass, 'h-auto min-h-[84px] resize-y py-2.5 leading-relaxed')} />
+                  <div className="mt-2 flex gap-2">
+                    <Button onClick={() => { setAdminNotes(booking.admin_notes || ''); setNotesEditing(false); }} className="max-sm:h-11">
+                      Cancel
+                    </Button>
+                    <Button variant="solid" onClick={saveAdminNotes} className="flex-1 max-sm:h-11">
+                      Save note
+                    </Button>
+                  </div>
+                </div>
+              ) : adminNotes ? (
+                <button type="button" onClick={() => setNotesEditing(true)}
+                  className="w-full bg-canvas/70 px-4 py-3 text-left transition-colors duration-200 hover:bg-canvas">
+                  <p className="whitespace-pre-wrap text-[0.86rem] leading-relaxed text-ink-soft">{adminNotes}</p>
+                </button>
+              ) : (
+                <button type="button" onClick={() => setNotesEditing(true)}
+                  className="press flex min-h-[48px] w-full items-center gap-2 rounded border border-dashed border-line-strong px-4 text-ink-muted hover:border-ink/40 hover:text-ink-soft">
+                  <Icon name="pencil" className="h-3.5 w-3.5" />
+                  <span className="text-[0.8rem] font-medium">Add a private note…</span>
+                </button>
+              )}
             </div>
+          </Panel>
 
-            <div className="px-5 py-5" style={{ background: dm ? '#1e1e24' : '#fff' }}>
-              {/* Wedding timeline */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5">
-                <BField dm={dm} label={isTrialBooking ? 'Trial Date' : 'Wedding Date'} value={biWedding} />
-                {/* Preferred Appt only when it actually differs from the wedding
-                    date — otherwise it just repeats the same day (redundant). */}
+          {/* Bridal inquiry details */}
+          {isBridal && bridalInquiry && (
+            <Panel title="Bridal inquiry details" className="rise-in" style={slot(8)}>
+              {/* The day, in the order she'll be asked about it */}
+              <Specs two className="px-4 sm:px-5">
+                <Spec label={isTrialBooking ? 'Trial date' : 'Wedding date'} value={biWedding} />
+                {/* Preferred appt only when it actually differs from the wedding
+                    date; otherwise it just repeats the same day. */}
                 {bridalInquiry.preferred_date && bridalInquiry.preferred_date !== bridalInquiry.wedding_date && (
-                  <BField dm={dm} label="Preferred Appt" value={biPreferred} />
+                  <Spec label="Preferred appt" value={biPreferred} />
                 )}
                 {/* The requested ready-by sometimes lives only in the booking
-                    notes, but it's still an inquiry answer — always show it here. */}
-                <BField dm={dm} label="Ready By (Requested)" value={bridalInquiry.makeup_ready_by_time || notes.readyBy} accent />
-                <BField dm={dm} label={isTrialBooking ? 'Preferred Time' : 'Event Starts'} value={bridalInquiry.event_start_time} />
-                <BField dm={dm} label="Venue Access" value={bridalInquiry.venue_access_time} />
-                <BField dm={dm} label="Hairstylist Arrive By" value={bridalInquiry.ready_by_time} />
-                <BField dm={dm} label="Photographer Arrives" value={bridalInquiry.photographer_arrival_time} />
-              </div>
+                    notes, but it's still an inquiry answer, so always show it here. */}
+                <Spec label="Ready by (requested)" value={bridalInquiry.makeup_ready_by_time || notes.readyBy} accent />
+                <Spec label={isTrialBooking ? 'Preferred time' : 'Event starts'} value={bridalInquiry.event_start_time} />
+                <Spec label="Venue access" value={bridalInquiry.venue_access_time} />
+                <Spec label="Hairstylist arrive by" value={bridalInquiry.ready_by_time} />
+                <Spec label="Photographer arrives" value={bridalInquiry.photographer_arrival_time} />
+              </Specs>
 
-              {/* Get Ready Location */}
+              {/* Get ready location */}
               {bridalInquiry.event_location && (
-                <div className="mt-5 pt-5 flex items-start justify-between gap-3" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <svg viewBox="0 0 24 24" fill="none" stroke={PLUM} strokeWidth="1.5" className="w-4 h-4 flex-shrink-0 mt-0.5">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <div className="min-w-0">
-                      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Get Ready Location</p>
-                      <CopyableAddress address={bridalInquiry.event_location} dm={dm} />
-                    </div>
+                <div className="flex items-start justify-between gap-3 border-t border-line px-4 py-4 sm:px-5">
+                  <div className="min-w-0">
+                    <Label className="mb-1.5 block">Get ready location</Label>
+                    <CopyableAddress address={bridalInquiry.event_location} />
                   </div>
                   <a href={mapsUrl(bridalInquiry.event_location)} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[0.68rem] font-medium tracking-[0.06em] uppercase transition-opacity hover:opacity-80 flex-shrink-0"
-                    style={{ borderRadius: 2, border: `1px solid ${dm ? '#5a4750' : '#E2C4D2'}`, color: PLUM, background: dm ? 'rgba(196,132,154,0.1)' : '#FBF5F7' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    className={buttonClass('quiet', 'sm', 'max-sm:h-11')}>
+                    <ExternalIcon className="h-3.5 w-3.5" />
                     Maps
                   </a>
                 </div>
@@ -2991,461 +2748,491 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
               {/* Vendors */}
               {(bridalInquiry.photographer || bridalInquiry.hairstylist) && (
-                <div className="mt-5 pt-5 grid grid-cols-2 gap-x-4 gap-y-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
-                  <BField dm={dm} label="Photographer" value={bridalInquiry.photographer}
+                <Specs two className="border-t border-line px-4 sm:px-5">
+                  <Spec label="Photographer" value={bridalInquiry.photographer}
                     href={bridalInquiry.photographer ? `https://instagram.com/${bridalInquiry.photographer.replace('@','')}` : undefined} />
-                  <BField dm={dm} label="Hairstylist" value={bridalInquiry.hairstylist}
+                  <Spec label="Hairstylist" value={bridalInquiry.hairstylist}
                     href={bridalInquiry.hairstylist ? `https://instagram.com/${bridalInquiry.hairstylist.replace('@','')}` : undefined} />
-                </div>
+                </Specs>
               )}
 
-              {/* Details */}
-              <div className="mt-5 pt-5 grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#F0E8EC'}` }}>
-                <BField dm={dm} label="Bride" value={biBrideName} />
-                <BField dm={dm} label="People Needing Glam" value={bridalInquiry.num_people_glam} />
-                <BField dm={dm} label="Out of State" value={biOosLabel} accent={biOos} />
+              {/* About her */}
+              <Specs two className="border-t border-line px-4 sm:px-5">
+                <Spec label="Bride" value={biBrideName} />
+                <Spec label="People needing glam" value={bridalInquiry.num_people_glam} />
+                <Spec label="Out of state" value={biOosLabel} accent={biOos} />
                 {/* Only an out-of-state inquiry has one, so it sits right after the
                     flag it qualifies and disappears for every local bride. */}
-                <BField dm={dm} label="Destination" value={bridalInquiry.destination_location} accent={biOos} />
-                <BField dm={dm} label="Instagram / TikTok" value={bridalInquiry.instagram_handle}
+                <Spec label="Destination" value={bridalInquiry.destination_location} accent={biOos} />
+                <Spec label="Instagram / TikTok" value={bridalInquiry.instagram_handle}
                   href={bridalInquiry.instagram_handle ? `https://instagram.com/${bridalInquiry.instagram_handle.replace('@','')}` : undefined} />
-                <BField dm={dm} label="How They Heard" value={bridalInquiry.how_heard} />
-              </div>
+                <Spec label="How they heard" value={bridalInquiry.how_heard} />
+              </Specs>
 
               {/* Makeup vision note */}
               {bridalInquiry.additional_details && (
-                <div className="mt-5 px-4 py-3.5" style={{ borderRadius: 10, background: dm ? 'rgba(196,132,154,0.08)' : '#FBF5F7' }}>
-                  <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase mb-1.5" style={{ color: PLUM }}>Makeup Vision &amp; Additional Details</p>
-                  <p className="text-[0.84rem] leading-[1.7]" style={{ color: dm ? '#cbb3bf' : '#6B4055' }}>{bridalInquiry.additional_details}</p>
+                <div className="border-t border-line px-4 py-4 sm:px-5">
+                  <Label className="mb-2 block">Makeup vision &amp; additional details</Label>
+                  <p className="text-[0.86rem] leading-[1.7] text-ink-soft">{bridalInquiry.additional_details}</p>
                 </div>
               )}
-            </div>
-          </div>
-        )}
+            </Panel>
+          )}
 
-        {/* No inquiry row to show. Rendering nothing here is what made a saving
-            bug invisible for a week: the section simply vanished and the card
-            read as if the bride had never answered anything. Say it out loud
-            instead, and point at the copy that does exist (the inquiry email),
-            so a gap always looks like a gap. */}
-        {bridalInquiryMissing && (
-          <div className="mb-6 flex items-start gap-2.5 px-4 py-3.5 rounded-[8px]"
-            style={{ background: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', border: `1px solid ${dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9'}` }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#F5B83C' : '#B26A04'} strokeWidth="1.9" strokeLinecap="round" className="w-4 h-4 flex-shrink-0 mt-0.5">
-              <circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/>
-            </svg>
-            <div className="min-w-0">
-              <p className="text-[0.78rem] font-semibold" style={{ color: dm ? '#F5B83C' : '#A9660B' }}>No inquiry form linked to this booking</p>
-              <p className="text-[0.72rem] leading-[1.55] mt-0.5" style={{ color: dm ? '#c9a86a' : '#8A6420' }}>
-                The wedding details (hairstylist, photographer, venue access, guest count) aren&apos;t on file here.
-                Your &ldquo;New Bridal Inquiry&rdquo; email for {firstName} has the full copy.
-              </p>
+          {/* No inquiry row to show. Rendering nothing here is what made a saving
+              bug invisible for a week: the section simply vanished and the card
+              read as if the bride had never answered anything. Say it out loud
+              instead, and point at the copy that does exist (the inquiry email),
+              so a gap always looks like a gap. */}
+          {bridalInquiryMissing && (
+            <div className="rise-in flex items-start gap-3 border border-tone-pending/25 bg-tone-pending/[0.04] px-4 py-3.5 sm:px-5" style={slot(9)}>
+              <Icon name="info" className="mt-0.5 h-4 w-4 text-tone-pending" strokeWidth={1.9} />
+              <div className="min-w-0">
+                <p className="text-[0.86rem] font-semibold text-tone-pending">No inquiry form linked to this booking</p>
+                <p className="mt-1 text-[0.8rem] leading-relaxed text-ink-soft">
+                  The wedding details (hairstylist, photographer, venue access, guest count) aren&apos;t on file here.
+                  Your &ldquo;New Bridal Inquiry&rdquo; email for {firstName} has the full copy.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Signed Service Agreement (contract) */}
-        {(
-          <div className="mb-6">
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Service Agreement</p>
-            {awaitingResign ? (
-              /* A new agreement went out and the client hasn't signed it yet.
-                 Amber, not green: what's on file no longer matches the booking,
-                 and that gap is the whole thing Roko needs to see. */
-              <div className="rounded-[6px] overflow-hidden" style={{ background: dm ? 'rgba(245,158,11,0.10)' : '#FDF8EF', border: `1px solid ${dm ? 'rgba(245,158,11,0.24)' : '#F0E3C9'}` }}>
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#F59E0B' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
-                    </div>
-                    <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#F5B83C' : '#A9660B' }}>New agreement sent, waiting on signature</span>
-                  </div>
-                  <p className="text-[0.72rem] leading-[1.6] mb-3" style={{ color: dm ? '#d4b483' : '#8A6520' }}>
-                    {firstName} was emailed a Review &amp; Sign link{booking.contract_resign_requested_for ? <> for <strong>{booking.contract_resign_requested_for}</strong></> : ''}. The booking stays as it is until they sign, and this turns green the moment they do.
+          {/* Reference Photos */}
+          <BookingReferencePhotos booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} className="rise-in" style={slot(13)} />
+
+          {/* Status. The consultation scheduler renders here only when it isn't
+              already living in the Appointment hub above (bridal with a set time). */}
+          <Panel title={isBridal && !schedulerInHub ? 'Status & consultation' : 'Update status'} className="rise-in" style={slot(14)} bodyClassName="px-4 py-4 sm:px-5 sm:py-5">
+            {/* Bridal cancel REQUEST: the bride asked to cancel from her email.
+                Nothing was changed and her date is still held, so this is a
+                call-her prompt. */}
+            {booking.cancel_requested_at && booking.status !== 'cancelled' && (
+              <div className="mb-4 border border-tone-pending/25 bg-tone-pending/[0.04] px-4 py-3.5">
+                <p className="flex items-center gap-2 text-[0.86rem] font-semibold text-tone-pending">
+                  <Icon name="clock" className="h-4 w-4" strokeWidth={1.9} />
+                  Cancellation requested{fmtCancelStamp(booking.cancel_requested_at)}
+                </p>
+                {booking.cancel_request_message && (
+                  <p className="mt-1.5 text-[0.86rem] italic leading-snug text-ink-soft">
+                    &ldquo;{booking.cancel_request_message}&rdquo;
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <BField dm={dm} label="Sent" value={resignRequestedAt} />
-                    <BField dm={dm} label="Signed So Far" value={signatureChain.length ? `${signatureChain.length} ${signatureChain.length === 1 ? 'signature' : 'signatures'}` : 'None yet'} />
-                  </div>
-                </div>
-                {/* What's still legally on file while we wait. */}
-                {signatureChain.length > 0 && (
-                  <div className="px-4 py-3" style={{ borderTop: `1px solid ${dm ? 'rgba(245,158,11,0.2)' : '#F0E3C9'}`, background: dm ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.6)' }}>
-                    <p className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>On file until they sign</p>
-                    <SignatureChain chain={signatureChain} dm={dm} fmt={fmtSignedAt} superseded />
-                    <button onClick={printAgreement}
-                      className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
-                      style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                      View / Print Agreement (Save as PDF)
-                    </button>
-                  </div>
                 )}
-              </div>
-            ) : booking.contract_signed ? (
-              <div className="rounded-[6px] overflow-hidden" style={{ background: dm ? 'rgba(59,130,246,0.08)' : '#f3faf5', border: `1px solid ${dm ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.25)'}` }}>
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#22c55e' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
-                    <span className="text-[0.8rem] font-semibold" style={{ color: dm ? '#60A5FA' : '#15803d' }}>{hasResignHistory ? 'Re-signed' : 'Signed'}</span>
-                    <span className="text-[0.62rem] ml-auto" style={{ color: dm ? '#8e8e99' : '#9ca3af' }}>Agreement {booking.contract_version || 'v1'}</span>
-                  </div>
-                  {hasResignHistory && (
-                    <p className="text-[0.72rem] leading-[1.6] mb-3" style={{ color: dm ? '#93b4f5' : '#2563EB' }}>
-                      The agreement below is the current one. {firstName} signed {signatureChain.length} times as the details changed, all of them are kept.
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <BField dm={dm} label="Signed By" value={booking.contract_signed_name} />
-                    <BField dm={dm} label={hasResignHistory ? 'Re-signed On' : 'Signed On'} value={contractSignedAt} />
-                    <BField dm={dm} label="Covers" value={booking.contract_signed_for} />
-                    <BField dm={dm} label="Photo Permission"
-                      value={booking.contract_photo_consent === true ? 'Yes, may post' : booking.contract_photo_consent === false ? 'No, keep private' : null}
-                      accent={booking.contract_photo_consent === false} />
-                  </div>
-                  <button onClick={printAgreement}
-                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-[0.72rem] font-medium transition-all hover:opacity-80"
-                    style={{ background: dm ? '#2e2e38' : '#fff', color: dm ? '#e4e4e7' : '#111', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    View / Print Agreement (Save as PDF)
-                  </button>
-                </div>
-                {/* The paper trail, only worth the space once there's more than one. */}
-                {hasResignHistory && (
-                  <div className="px-4 py-3" style={{ borderTop: `1px solid ${dm ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.18)'}`, background: dm ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.6)' }}>
-                    <p className="text-[0.6rem] font-semibold tracking-[0.08em] uppercase mb-2" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Signature history</p>
-                    <SignatureChain chain={signatureChain} dm={dm} fmt={fmtSignedAt} />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-[6px] p-4 flex items-center gap-2.5" style={{ background: dm ? '#27272a' : '#fafafa', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#3a3a48' : '#e5e5e5' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#a1a1aa' : '#9ca3af'} strokeWidth="2" className="w-3 h-3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-                <span className="text-[0.76rem]" style={{ color: dm ? '#a1a1aa' : '#9ca3af' }}>No signed agreement on file (booked before the contract was added).</span>
+                <p className="mt-1.5 text-[0.8rem] leading-snug text-ink-muted">
+                  Call the bride before doing anything. Her date is still held.
+                </p>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Zelle Deposit — one line that opens to the screenshot. */}
-        <div className="mb-6">
-          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Zelle Deposit</p>
-          <DepositStrip booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
-        </div>
-
-        {/* Emails — sits right under the deposit because they answer the same
-            worry: has this client actually been told what to do next. */}
-        <EmailLogPanel booking={booking} dm={dm} />
-
-        {/* Reference Photos */}
-        <BookingReferencePhotos booking={booking} onUpdateBooking={onUpdateBooking} dm={dm} />
-
-        {/* Status — the consultation scheduler renders here only when it isn't
-            already living in the Appointment hub above (bridal with a set time). */}
-        <div className="mb-6 pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">
-            {isBridal && !schedulerInHub ? 'Status & Consultation' : 'Update Status'}
-          </p>
-
-          {/* Bridal cancel REQUEST: the bride asked to cancel from her email. Nothing
-              was changed and her date is still held — this is a call-her prompt. */}
-          {booking.cancel_requested_at && booking.status !== 'cancelled' && (
-            <div className="mb-4 rounded-[12px] p-3.5" style={{ background: dm ? 'rgba(217,119,6,0.12)' : '#FEF6EC', border: `1px solid ${dm ? 'rgba(217,119,6,0.35)' : '#F3DFC0'}` }}>
-              <div className="flex items-center gap-2 mb-1">
-                <span style={{ fontSize: 13 }}>⏳</span>
-                <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f0b666' : '#B45309' }}>
-                  Cancellation requested{fmtCancelStamp(booking.cancel_requested_at)}
-                </span>
-              </div>
-              {booking.cancel_request_message && (
-                <p className="text-[0.76rem] italic leading-snug mb-1.5" style={{ color: dm ? '#e0c197' : '#8a5a12' }}>
-                  &ldquo;{booking.cancel_request_message}&rdquo;
-                </p>
-              )}
-              <p className="text-[0.7rem] leading-snug" style={{ color: dm ? '#c9a877' : '#a97a2e' }}>
-                Call the bride before doing anything. Her date is still held.
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {STATUSES.map(s => {
-              const isActive = booking.status === s;
-              // Confirmed is off the table until there's a time on the booking.
-              // Still tappable on purpose: tapping it is how she finds out why,
-              // and it scrolls her to the box that fixes it.
-              const locked = s === 'confirmed' && !booking.time && !isActive;
-              return (
-                <button key={s} onClick={() => handleStatusChange(s)}
-                  aria-disabled={locked}
-                  title={locked ? 'Set the appointment time first' : undefined}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-[6px] transition-all hover:opacity-90"
-                  style={isActive
-                    ? { background: STATUS_COLORS[s], color: '#fff' }
-                    : locked
-                      ? { background: dm ? '#26262e' : '#FAFAFB', color: dm ? '#5a5a63' : '#c9c9d1', border: `1px dashed ${dm ? '#3a3a48' : '#E4E4EC'}` }
-                      : { background: dm ? '#2e2e38' : '#f5f5f5', color: dm ? '#7a7a84' : '#bbb', border: `1px solid ${dm ? '#3a3a48' : '#E8E9EE'}` }
-                  }
-                >
-                  {locked && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3 flex-shrink-0">
-                      <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
-                    </svg>
-                  )}
-                  <span className="truncate">{s}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Why Confirmed is locked, said in the same place it's locked. */}
-          {!booking.time && booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
-            <button type="button"
-              onClick={refuseConfirm}
-              className="w-full flex items-start gap-2 mt-3 px-3 py-2.5 rounded-[10px] text-left transition-opacity hover:opacity-80"
-              style={{ background: dm ? 'rgba(245,158,11,0.10)' : '#FEF9EF', border: `1px solid ${dm ? 'rgba(245,158,11,0.26)' : '#F3E4C8'}` }}>
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[7px]" style={{ background: '#F59E0B' }} />
-              <span className="text-[0.72rem] leading-snug" style={{ color: dm ? '#F5B83C' : '#B26A04' }}>
-                No appointment time set yet, so this can&rsquo;t be confirmed.{' '}
-                <span className="font-semibold underline underline-offset-2">Set the time in the Appointment panel</span>, then come back.
-              </span>
-            </button>
-          )}
-
-          {/* The client cancelled this themselves, from their email link. Shows
-              who + when + their reason, so a cancelled booking is never a mystery. */}
-          {booking.status === 'cancelled' && booking.cancelled_by === 'client' && (
-            <div className="mt-3 rounded-[12px] p-3.5" style={{ background: dm ? 'rgba(220,38,38,0.10)' : '#FDECEC', border: `1px solid ${dm ? 'rgba(220,38,38,0.30)' : '#F6D2D2'}` }}>
-              <div className="flex items-center gap-2 mb-1">
-                <Cross className="w-3 h-3" strokeWidth={3} style={{ color: dm ? '#f28b82' : '#B91C1C' }} />
-                <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
-                  Cancelled by client{fmtCancelStamp(booking.cancelled_at)}
-                </span>
-              </div>
-              {booking.cancel_reason
-                ? <p className="text-[0.76rem] italic leading-snug" style={{ color: dm ? '#e0a5a1' : '#a13b3b' }}>&ldquo;{booking.cancel_reason}&rdquo;</p>
-                : <p className="text-[0.72rem] leading-snug" style={{ color: dm ? '#c98f8b' : '#c07a7a' }}>No reason given.</p>}
-            </div>
-          )}
-
-          {isBridal && !schedulerInHub && booking.time && booking.status !== 'confirmed' && !booking.consultation_date && (
-            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
-              Tap <span className="font-semibold" style={{ color: '#2563EB' }}>Confirmed</span> or schedule below. One email goes out with their confirmation, consultation details &amp; upload link.
-            </p>
-          )}
-          {isBridal && schedulerInHub && booking.status === 'pending' && (
-            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
-              Confirming lives in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. One email goes out with the confirmation, consultation details &amp; upload link.
-            </p>
-          )}
-          {confirmInHub && (
-            <p className="text-[0.68rem] mt-3 leading-relaxed" style={{ color: dm ? '#8e8e99' : '#999' }}>
-              Step 2 is waiting in the <span className="font-semibold" style={{ color: '#C4849A' }}>Appointment</span> panel above. These pills do the same thing, for when you need to jump straight to completed or cancelled.
-            </p>
-          )}
-
-          {/* Consultation scheduler lives under status only when not in the hub.
-              Bridal-only: consultations are part of the bridal pipeline, and the
-              isBridal check was missing here, so every non-bridal card offered
-              to schedule one it would never have.
-              An unconfirmed bride with no time gets sent back to step 1 instead,
-              because scheduling her consultation is also what confirms her. */}
-          {isBridal && !schedulerInHub && (
-            <div ref={consultRef} className="mt-5 pt-5" style={{ borderTop: `1px solid ${dm ? '#2e2e38' : '#ECECF0'}` }}>
-              {!booking.time && booking.status === 'pending' ? (
-                <button type="button" onClick={refuseConfirm}
-                  className="w-full flex items-center gap-3 px-4 py-4 rounded-[12px] text-left transition-opacity hover:opacity-85"
-                  style={{ background: dm ? '#1e1e24' : '#FBF8F9', border: `1px dashed ${dm ? '#3a3a48' : '#E7DDE1'}` }}>
-                  <StepDot n={1} state="active" dm={dm} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[0.82rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#1E1E27' }}>
-                      Set the appointment time first
-                    </span>
-                    <span className="block text-[0.72rem] leading-snug mt-0.5" style={{ color: dm ? '#8e8e99' : '#9A8E92' }}>
-                      Booking the consultation is what confirms {firstName}, and her email carries the appointment time. It has to exist first.
-                    </span>
-                  </span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#7a7a84' : '#bcbcc4'} strokeWidth="2" className="w-4 h-4 flex-shrink-0">
-                    <polyline points="18 15 12 9 6 15" />
-                  </svg>
-                </button>
-              ) : consultScheduler}
-            </div>
-          )}
-        </div>
-
-        {/* Delete. Cancelling already takes a booking off the calendar and out
-            of the list, so this is only for a row that should never have
-            existed — a test, a duplicate, a wrong number. The line under it is
-            there because the two now look like the same action from a
-            distance, and only one of them is recoverable. */}
-        <div className="pt-6" style={{ borderTop: `1px solid ${dm ? '#3a3a48' : '#ebebeb'}` }}>
-          {!confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[0.68rem] font-medium tracking-[0.06em] uppercase rounded-lg transition-all"
-              style={{ color: dm ? '#f87171' : '#dc2626', border: `1px solid ${dm ? 'rgba(185,28,28,0.3)' : 'rgba(239,68,68,0.25)'}` }}
-              onMouseEnter={e => { e.currentTarget.style.background = dm ? 'rgba(120,20,20,0.2)' : 'rgba(244,63,63,0.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              Delete Appointment
-            </button>
-          ) : (
-            <div className="flex items-center gap-3">
-              <span className="text-[0.75rem] text-red-400">Are you sure?</span>
-              <button onClick={onDelete} className="px-4 py-2 text-[0.68rem] font-medium uppercase bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">Yes, Delete</button>
-              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2 text-[0.68rem] font-medium uppercase rounded-lg transition-all"
-                style={{ color: dm ? '#8e8e99' : '#999', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>Cancel</button>
-            </div>
-          )}
-          <p className="text-[0.68rem] leading-relaxed mt-2.5 max-w-[440px]" style={{ color: dm ? '#7a7a84' : '#a8a0a4' }}>
-            Deleting erases this booking for good. To call one off, use{' '}
-            <span className="font-semibold" style={{ color: dm ? '#f0918a' : '#C0473B' }}>Cancelled</span>{' '}
-            above: it emails the client, takes the day back and files the booking in the archive, where you can still find it.
-          </p>
-        </div>
-      </div>
-
-      {/* Client history */}
-      {clientBookings.length > 0 && (
-        <div className="rounded-[6px] p-6 sm:p-8" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#e5e5e5'}` }}>
-          <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-4">Appointment History</p>
-          <div className="flex flex-col">
-            {clientBookings.map((b, idx) => (
-              <div key={b.id} className="flex items-center justify-between py-3"
-                style={{ borderBottom: idx < clientBookings.length - 1 ? `1px solid ${dm ? '#2e2e38' : '#F1F1F5'}` : 'none' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[b.status] || '#999' }} />
-                  <div>
-                    <p className="text-[0.85rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>{b.service}</p>
-                    <p className="text-[0.72rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#aaa' }}>
-                      {b.date
-                        ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : 'No date set'}
-                    </p>
-                  </div>
-                </div>
-                <StatusBadge status={b.status} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Client profile panel ──────────────────────────────────────────────
-          Tapping the client's name/avatar on the card opens this full screen.
-          Its own back button returns to the booking card (just closes it), so on
-          mobile it reads as a proper client screen ↔ booking-card navigation. */}
-      {showClientPanel && (
-        <div className="fixed inset-0 z-[9997] overflow-y-auto overscroll-contain"
-          style={{ background: dm ? '#141418' : '#F3F3F6', animation: 'fadeSlideDown 0.2s ease-out' }}>
-          {/* Sticky header with back */}
-          <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3"
-            style={{ background: dm ? 'rgba(20,20,24,0.92)' : 'rgba(243, 243, 246,0.92)', backdropFilter: 'blur(8px)', borderBottom: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}` }}>
-            <button type="button" onClick={() => setShowClientPanel(false)} aria-label="Back to appointment"
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-              style={{ background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#eadfe4'}` }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke={dm ? '#e4e4e7' : '#111'} strokeWidth="2.2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#8f8a93' : '#A89098' }}>Client Profile</p>
-          </div>
-
-          <div className="max-w-[640px] mx-auto px-5 py-7 flex flex-col gap-6">
-            {/* Hero */}
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center font-serif text-[2rem]"
-                style={{ background: dm ? 'rgba(212,160,176,0.16)' : '#F5E6EC', color: dm ? '#e7c9d5' : '#8A4A63' }}>
-                {(booking.name || '?').trim().charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <h2 className="font-serif text-[1.7rem] leading-tight" style={{ color: dm ? '#f4f4f5' : '#111' }}>{booking.name || 'Client'}</h2>
-                {booking.phone && <p className="text-[0.85rem] mt-1 tabular-nums" style={{ color: dm ? '#a1a1aa' : '#8a8a92' }}>{formatPhone(booking.phone)}</p>}
-                {booking.email && <p className="text-[0.8rem] mt-0.5 break-all" style={{ color: dm ? '#8e8e99' : '#a0969c' }}>{booking.email}</p>}
-              </div>
-            </div>
-
-            {/* Contact actions: Call / Text / Email */}
-            <div className="grid grid-cols-3 gap-2.5">
-              {[
-                { label: 'Call', href: booking.phone ? `tel:${phoneHref(booking.phone)}` : null, icon: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/> },
-                { label: 'Text', href: booking.phone ? `sms:${phoneHref(booking.phone)}` : null, icon: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/> },
-                { label: 'Email', href: booking.email ? `mailto:${booking.email}` : null, icon: <><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></> },
-              ].map(({ label, href, icon }) => {
-                const inner = (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">{icon}</svg>
-                    <span className="text-[0.68rem] font-medium tracking-[0.06em] uppercase" style={{ color: dm ? '#d4d4d8' : '#6B4055' }}>{label}</span>
-                  </>
-                );
-                const cardStyle = { background: dm ? '#27272a' : '#fff', border: `1px solid ${dm ? '#3a3a48' : '#E5E5EC'}` };
-                return href ? (
-                  <a key={label} href={href} className="flex flex-col items-center gap-1.5 py-3.5 rounded-2xl transition-all active:scale-95" style={cardStyle}>{inner}</a>
-                ) : (
-                  <div key={label} className="flex flex-col items-center gap-1.5 py-3.5 rounded-2xl opacity-40" style={cardStyle}>{inner}</div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {STATUSES.map(s => {
+                const isActive = booking.status === s;
+                // Confirmed is off the table until there's a time on the booking.
+                // Still tappable on purpose: tapping it is how she finds out why,
+                // and it scrolls her to the box that fixes it.
+                const locked = s === 'confirmed' && !booking.time && !isActive;
+                return (
+                  <button key={s} type="button" onClick={() => handleStatusChange(s)}
+                    aria-disabled={locked}
+                    aria-pressed={isActive}
+                    title={locked ? 'Set the appointment time first' : undefined}
+                    className={cx(
+                      'press flex h-11 items-center justify-center gap-1.5 rounded border px-3 text-[0.86rem] capitalize',
+                      isActive ? STATUS_ON[s]
+                        : locked ? 'border-dashed border-line-strong font-medium text-ink-muted/70'
+                        : 'border-line-strong bg-paper font-medium text-ink-soft hover:border-ink/50 hover:text-ink',
+                    )}
+                  >
+                    {locked && <Icon name="lock" className="h-3 w-3" strokeWidth={2} />}
+                    <span className="truncate">{s}</span>
+                  </button>
                 );
               })}
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#E5E5EC'}` }}>
-              {[['Total', totalVisits], ['Completed', completedVisits], ['Upcoming', upcomingBookings.length]].map(([label, n]) => (
-                <div key={label} className="text-center">
-                  <div className="font-serif text-[1.6rem]" style={{ color: dm ? '#ECEDF1' : '#111' }}>{n}</div>
-                  <div className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mt-0.5">{label}</div>
+            {/* Why Confirmed is locked, said in the same place it's locked. */}
+            {!booking.time && booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+              <button type="button"
+                onClick={refuseConfirm}
+                className="mt-3 flex w-full items-start gap-2.5 rounded bg-tone-pending/[0.06] px-3.5 py-3 text-left transition-colors duration-200 hover:bg-tone-pending/10">
+                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-tone-pending" />
+                <span className="text-[0.8rem] leading-snug text-tone-pending">
+                  No appointment time set yet, so this can&rsquo;t be confirmed.{' '}
+                  <span className="font-semibold underline underline-offset-2">Set the time in the Appointment panel</span>, then come back.
+                </span>
+              </button>
+            )}
+
+            {/* The client cancelled this themselves, from their email link. Shows
+                who + when + their reason, so a cancelled booking is never a mystery. */}
+            {booking.status === 'cancelled' && booking.cancelled_by === 'client' && (
+              <div className="mt-3 border border-tone-alert/25 bg-tone-alert/[0.04] px-4 py-3.5">
+                <p className="flex items-center gap-2 text-[0.86rem] font-semibold text-tone-alert">
+                  <Cross className="h-3 w-3" strokeWidth={3} />
+                  Cancelled by client{fmtCancelStamp(booking.cancelled_at)}
+                </p>
+                {booking.cancel_reason
+                  ? <p className="mt-1.5 text-[0.86rem] italic leading-snug text-ink-soft">&ldquo;{booking.cancel_reason}&rdquo;</p>
+                  : <p className="mt-1.5 text-[0.8rem] leading-snug text-ink-muted">No reason given.</p>}
+              </div>
+            )}
+
+            {isBridal && !schedulerInHub && booking.time && booking.status !== 'confirmed' && !booking.consultation_date && (
+              <p className="mt-3 text-[0.8rem] leading-relaxed text-ink-muted">
+                Tap <span className="font-semibold text-tone-confirmed">Confirmed</span> or schedule below. One email goes out with their confirmation, consultation details &amp; upload link.
+              </p>
+            )}
+            {isBridal && schedulerInHub && booking.status === 'pending' && (
+              <p className="mt-3 text-[0.8rem] leading-relaxed text-ink-muted">
+                Confirming lives in the <span className="font-semibold text-ink">Appointment</span> panel above. One email goes out with the confirmation, consultation details &amp; upload link.
+              </p>
+            )}
+            {confirmInHub && (
+              <p className="mt-3 text-[0.8rem] leading-relaxed text-ink-muted">
+                Step 2 is waiting in the <span className="font-semibold text-ink">Appointment</span> panel above. These buttons do the same thing, for when you need to jump straight to completed or cancelled.
+              </p>
+            )}
+
+            {/* Consultation scheduler lives under status only when not in the hub.
+                Bridal-only: consultations are part of the bridal pipeline, and the
+                isBridal check was missing here, so every non-bridal card offered
+                to schedule one it would never have.
+                An unconfirmed bride with no time gets sent back to step 1 instead,
+                because scheduling her consultation is also what confirms her. */}
+            {isBridal && !schedulerInHub && (
+              <div ref={consultRef} className="mt-5 border-t border-line pt-5">
+                {!booking.time && booking.status === 'pending' ? (
+                  <button type="button" onClick={refuseConfirm}
+                    className="press flex w-full items-center gap-3 rounded border border-dashed border-line-strong px-4 py-3.5 text-left hover:border-ink/40">
+                    <StepDot n={1} state="active" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[0.92rem] font-semibold text-ink">
+                        Set the appointment time first
+                      </span>
+                      <span className="mt-0.5 block text-[0.8rem] leading-snug text-ink-muted">
+                        Booking the consultation is what confirms {firstName}, and her email carries the appointment time. It has to exist first.
+                      </span>
+                    </span>
+                    <Icon name="up" className="h-4 w-4 text-ink-muted" strokeWidth={2} />
+                  </button>
+                ) : consultScheduler}
+              </div>
+            )}
+          </Panel>
+
+          {/* Delete. Cancelling already takes a booking off the calendar and out
+              of the list, so this is only for a row that should never have
+              existed: a test, a duplicate, a wrong number. The line under it is
+              there because the two look like the same action from a distance,
+              and only one of them is recoverable. */}
+          <section className="rise-in border border-line bg-paper px-4 py-4 sm:px-5" style={slot(15)}>
+            {!confirmDelete ? (
+              <Button variant="danger" icon={TrashIcon} onClick={() => setConfirmDelete(true)} className="max-sm:h-11">
+                Delete appointment
+              </Button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[0.86rem] font-medium text-tone-alert">Are you sure?</span>
+                <Button variant="alert" onClick={onDelete} className="max-sm:h-11">
+                  Yes, delete
+                </Button>
+                <Button onClick={() => setConfirmDelete(false)} className="max-sm:h-11">Cancel</Button>
+              </div>
+            )}
+            <p className="mt-3 max-w-[460px] text-[0.8rem] leading-relaxed text-ink-muted">
+              Deleting erases this booking for good. To call one off, use{' '}
+              <span className="font-semibold text-tone-alert">Cancelled</span>{' '}
+              above: it emails the client, takes the day back and files the booking in the archive, where you can still find it.
+            </p>
+          </section>
+        </div>
+
+        {/* ── The file ────────────────────────────────────────────────────── */}
+        <div className={column}>
+          {/* Who she is and how to reach her. */}
+          {(hasContact || showClientLocation) && (
+            <Panel title="Contact" className="rise-in" style={slot(1)}>
+              {hasContact && (
+                <Specs className="px-4 sm:px-5">
+                  {booking.phone && (
+                    <Spec label="Phone">
+                      <a href={`sms:${phoneHref(booking.phone)}`} className="tabular-nums underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+                        {formatPhone(booking.phone)}
+                      </a>
+                    </Spec>
+                  )}
+                  {booking.email && (
+                    <Spec label="Email">
+                      <a href={`mailto:${booking.email}`} className="break-all underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+                        {booking.email}
+                      </a>
+                    </Spec>
+                  )}
+                </Specs>
+              )}
+
+              {/* Client location (0015). Only shown when there IS one: a blank
+                  here means a studio appointment or an import with nothing on
+                  file, and an empty "Location" row would read as missing data
+                  rather than as "she isn't driving anywhere". Suppressed only
+                  when the inquiry's own Get Ready Location is already showing an
+                  address, so a bride imported from Booksy (who has no inquiry)
+                  still gets one. */}
+              {showClientLocation && (
+                <div className={cx('flex items-start justify-between gap-3 px-4 py-4 sm:px-5', hasContact && 'border-t border-line')}>
+                  <div className="min-w-0">
+                    <p className="mb-1.5 flex flex-wrap items-baseline gap-x-2">
+                      <Label>Client location</Label>
+                      {booking.travel_fee != null && (
+                        <span className="text-[0.74rem] tabular-nums text-ink-muted">
+                          travel fee ${Number(booking.travel_fee).toLocaleString()}
+                        </span>
+                      )}
+                    </p>
+                    <CopyableAddress address={booking.location} />
+                  </div>
+                  <a href={mapsUrl(booking.location)} target="_blank" rel="noopener noreferrer"
+                    className={buttonClass('quiet', 'sm', 'max-sm:h-11')}>
+                    <ExternalIcon className="h-3.5 w-3.5" />
+                    Maps
+                  </a>
+                </div>
+              )}
+            </Panel>
+          )}
+
+          {/* Non-bridal appointment details.
+              A bride's card has a whole panel built from her inquiry; a non-bridal
+              client had nothing but a service name and a couple of chips buried
+              further down, so "what is this booking actually for" was a question
+              you answered by reading a notes string. Same shape as the bridal
+              panel, built from what a non-bridal booking actually carries.
+
+              The cash figure is editable here because this is where Roko settles
+              it. A travel job is priced from $750 and lands wherever the drive
+              puts it, so nothing can compute it, and until she writes it down the
+              client's confirmation email can only say "Roko will confirm the
+              exact amount". Typing it here is what puts a number in that email. */}
+          {!isBridal && (
+            <Panel title="Appointment details" className="rise-in" style={slot(2)}>
+              <Specs className="px-4 sm:px-5">
+                <Spec label="Service" value={booking.service} />
+                <Spec label="Occasion" value={notes.occasion} accent />
+                <Spec label="Ready by (requested)" value={notes.readyBy} accent />
+                <Spec label="Where" value={booking.location || `Roko's studio · ${STUDIO_TOWN}`} />
+                {notes.flags.map((f, i) => (
+                  <Spec key={i} label={/early|⏰/i.test(f) ? 'Early arrival' : 'Travel'} value={f} />
+                ))}
+                <CashDueField booking={booking} onUpdateBooking={onUpdateBooking} />
+              </Specs>
+              {notes.comment && (
+                <div className="border-t border-line px-4 py-4 sm:px-5">
+                  <Label className="mb-1.5 block">What they told you</Label>
+                  <p className="whitespace-pre-wrap text-[0.86rem] leading-relaxed text-ink">{notes.comment}</p>
+                </div>
+              )}
+            </Panel>
+          )}
+
+          {/* Signed Service Agreement (contract) */}
+          <Panel
+            title="Service agreement"
+            className="rise-in"
+            style={slot(10)}
+            action={booking.contract_signed && !awaitingResign
+              ? <span className="text-[0.74rem] tabular-nums text-ink-muted">Agreement {booking.contract_version || 'v1'}</span>
+              : null}
+          >
+            {awaitingResign ? (
+              /* A new agreement went out and the client hasn't signed it yet.
+                 Amber: what's on file no longer matches the booking, and that
+                 gap is the whole thing Roko needs to see. */
+              <>
+                <div className="bg-tone-pending/[0.05] px-4 py-4 sm:px-5">
+                  <p className="flex items-center gap-2 text-[0.86rem] font-semibold text-tone-pending">
+                    <Icon name="clock" className="h-4 w-4" strokeWidth={1.9} />
+                    New agreement sent, waiting on signature
+                  </p>
+                  <p className="mt-1.5 text-[0.8rem] leading-relaxed text-ink-soft">
+                    {firstName} was emailed a Review &amp; Sign link{booking.contract_resign_requested_for ? <> for <strong className="font-semibold text-ink">{booking.contract_resign_requested_for}</strong></> : ''}. The booking stays as it is until they sign, and their new signature shows here the moment they do.
+                  </p>
+                </div>
+                <Specs className="border-t border-line px-4 sm:px-5">
+                  <Spec label="Sent" value={resignRequestedAt} />
+                  <Spec label="Signed so far" value={signatureChain.length ? `${signatureChain.length} ${signatureChain.length === 1 ? 'signature' : 'signatures'}` : 'None yet'} />
+                </Specs>
+                {/* What's still legally on file while we wait. */}
+                {signatureChain.length > 0 && (
+                  <div className="border-t border-line px-4 py-4 sm:px-5">
+                    <Label className="mb-3 block">On file until they sign</Label>
+                    <SignatureChain chain={signatureChain} fmt={fmtSignedAt} superseded />
+                    <div className="mt-4">{printButton}</div>
+                  </div>
+                )}
+              </>
+            ) : booking.contract_signed ? (
+              <>
+                <div className="px-4 pt-4 sm:px-5">
+                  <p className="flex items-center gap-2 text-[0.86rem] font-semibold text-ink">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-paper">
+                      <Icon name="check" className="h-3 w-3" strokeWidth={3} />
+                    </span>
+                    {hasResignHistory ? 'Re-signed' : 'Signed'}
+                  </p>
+                  {hasResignHistory && (
+                    <p className="mt-1.5 text-[0.8rem] leading-relaxed text-ink-muted">
+                      The agreement below is the current one. {firstName} signed {signatureChain.length} times as the details changed, all of them are kept.
+                    </p>
+                  )}
+                </div>
+                <Specs className="mt-2 px-4 sm:px-5">
+                  <Spec label="Signed by" value={booking.contract_signed_name} />
+                  <Spec label={hasResignHistory ? 'Re-signed on' : 'Signed on'} value={contractSignedAt} />
+                  <Spec label="Covers" value={booking.contract_signed_for} />
+                  <Spec label="Photo permission"
+                    value={booking.contract_photo_consent === true ? 'Yes, may post' : booking.contract_photo_consent === false ? 'No, keep private' : null}
+                    accent={booking.contract_photo_consent === false} />
+                </Specs>
+                <div className="px-4 pb-4 pt-1 sm:px-5">{printButton}</div>
+                {/* The paper trail, only worth the space once there's more than one. */}
+                {hasResignHistory && (
+                  <div className="border-t border-line bg-canvas/50 px-4 py-4 sm:px-5">
+                    <Label className="mb-3 block">Signature history</Label>
+                    <SignatureChain chain={signatureChain} fmt={fmtSignedAt} />
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="flex items-start gap-2.5 px-4 py-4 text-[0.86rem] leading-snug text-ink-muted sm:px-5">
+                <Icon name="clock" className="mt-px h-4 w-4" />
+                No signed agreement on file (booked before the contract was added).
+              </p>
+            )}
+          </Panel>
+
+          {/* Zelle Deposit: one line that opens to the screenshot. */}
+          <Panel title="Zelle deposit" className="rise-in" style={slot(11)}>
+            <DepositStrip booking={booking} onUpdateBooking={onUpdateBooking} />
+          </Panel>
+
+          {/* Emails. Next to the deposit because they answer the same worry:
+              has this client actually been told what to do next. */}
+          <EmailLogPanel booking={booking} dm={dm} className="rise-in" style={slot(12)} />
+
+          {/* Client history */}
+          {clientBookings.length > 0 && (
+            <Panel title="Appointment history" className="rise-in" style={slot(16)} bodyClassName="divide-y divide-line">
+              {clientBookings.map(b => (
+                <div key={b.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={cx('h-2 w-2 shrink-0 rounded-full', STATUS_DOT[b.status] || 'bg-ink-muted')} />
+                    <div className="min-w-0">
+                      <p className="truncate text-[0.86rem] font-medium text-ink">{b.service}</p>
+                      <p className="mt-0.5 text-[0.74rem] tabular-nums text-ink-muted">
+                        {b.date
+                          ? new Date(b.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'No date set'}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge status={b.status} />
                 </div>
               ))}
-            </div>
-
-            {/* Upcoming */}
-            {upcomingBookings.length > 0 && (
-              <div>
-                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-2.5">Upcoming</p>
-                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#E5E5EC'}` }}>
-                  {upcomingBookings.map((b, idx) => (
-                    <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} last={idx === upcomingBookings.length - 1} dm={dm} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Past & Completed */}
-            {pastBookings.length > 0 && (
-              <div>
-                <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-2.5">Past &amp; Completed</p>
-                <div className="rounded-2xl overflow-hidden" style={{ background: dm ? '#1e1e24' : '#fff', border: `1px solid ${dm ? '#2a2a32' : '#E5E5EC'}` }}>
-                  {pastBookings.map((b, idx) => (
-                    <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} last={idx === pastBookings.length - 1} dm={dm} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button type="button" onClick={() => setShowClientPanel(false)}
-              className="mt-1 w-full py-3.5 rounded-xl text-[0.78rem] font-semibold transition-all active:scale-[0.99]"
-              style={{ background: dm ? '#27272a' : '#fff', color: dm ? '#a1a1aa' : '#6B4055', border: `1px solid ${dm ? '#3a3a48' : '#E0E0E8'}` }}>
-              Back to appointment
-            </button>
-          </div>
+            </Panel>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* ── Client profile ────────────────────────────────────────────────────
+          Tapping the client's name opens this: everything she has booked, and
+          the three ways to reach her. A sheet like every other pop-up (from
+          the bottom on a phone), and closing it is the way back to the card. */}
+      <Sheet
+        open={showClientPanel}
+        onClose={() => setShowClientPanel(false)}
+        eyebrow="Client profile"
+        title={booking.name || 'Client'}
+        closeLabel="Back to appointment"
+        bodyClassName="pb-2"
+        headerExtra={(booking.phone || booking.email) ? (
+          <p className="mt-1 text-[0.86rem] text-ink-muted">
+            {booking.phone && <span className="tabular-nums">{formatPhone(booking.phone)}</span>}
+            {booking.phone && booking.email && <span aria-hidden> · </span>}
+            {booking.email && <span className="break-all">{booking.email}</span>}
+          </p>
+        ) : null}
+        footer={(
+          <Button size="lg" onClick={() => setShowClientPanel(false)} className="w-full">
+            Back to appointment
+          </Button>
+        )}
+      >
+        {/* Contact actions: Call / Text / Email */}
+        <div className="grid grid-cols-3 divide-x divide-line border-b border-line">
+          {[
+            { label: 'Call', href: booking.phone ? `tel:${phoneHref(booking.phone)}` : null, icon: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" /> },
+            { label: 'Text', href: booking.phone ? `sms:${phoneHref(booking.phone)}` : null, icon: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /> },
+            { label: 'Email', href: booking.email ? `mailto:${booking.email}` : null, icon: ICON.mail },
+          ].map(({ label, href, icon }) => (
+            <a
+              key={label}
+              href={href || undefined}
+              aria-disabled={!href}
+              className={cx(
+                'flex h-14 items-center justify-center gap-2 text-[0.86rem] font-medium text-ink-soft transition-colors duration-200',
+                href ? 'hover:bg-canvas/60 hover:text-ink active:bg-canvas' : 'pointer-events-none opacity-35',
+              )}
+            >
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">{icon}</svg>
+              {label}
+            </a>
+          ))}
+        </div>
+
+        {/* Stats */}
+        <dl className="grid grid-cols-3 divide-x divide-line border-b border-line">
+          {[['Total', totalVisits], ['Completed', completedVisits], ['Upcoming', upcomingBookings.length]].map(([label, n]) => (
+            <div key={label} className="px-5 py-4 sm:px-7">
+              <dt><Label>{label}</Label></dt>
+              <dd className="mt-1.5 text-[1.6rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink">{n}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* Upcoming */}
+        {upcomingBookings.length > 0 && (
+          <div className="border-b border-line">
+            <Label className="block px-5 pb-1 pt-5 sm:px-7">Upcoming</Label>
+            <div className="divide-y divide-line">
+              {upcomingBookings.map(b => (
+                <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Past & Completed */}
+        {pastBookings.length > 0 && (
+          <div>
+            <Label className="block px-5 pb-1 pt-5 sm:px-7">Past &amp; completed</Label>
+            <div className="divide-y divide-line">
+              {pastBookings.map(b => (
+                <ApptRow key={b.id} b={b} isCurrent={b.id === booking.id} />
+              ))}
+            </div>
+          </div>
+        )}
+      </Sheet>
 
       {/* Floating twin of the Appointment box's My Schedule. Fades in the moment
           that box scrolls off, so her day is always one tap away no matter how
           far down the card she is. Stays out of the way while the drawer is open. */}
       <button type="button" onClick={toggleSchedule} title="See your day side by side"
         aria-hidden={!(apptOut && !showSchedule)} tabIndex={apptOut && !showSchedule ? 0 : -1}
-        className="fixed bottom-5 right-5 z-[9994] inline-flex items-center gap-2 h-12 px-5 rounded-full text-[0.82rem] font-semibold text-white transition-all duration-200 active:scale-95"
-        style={{
-          background: '#C4849A',
-          boxShadow: '0 10px 30px rgba(150,90,115,0.42)',
-          opacity: apptOut && !showSchedule ? 1 : 0,
-          transform: apptOut && !showSchedule ? 'translateY(0)' : 'translateY(14px)',
-          pointerEvents: apptOut && !showSchedule ? 'auto' : 'none',
-        }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-4 h-4 flex-shrink-0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        className={cx(
+          'fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[150] inline-flex h-12 items-center gap-2 rounded bg-ink px-5 text-[0.86rem] font-semibold text-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-[opacity,transform] duration-300 ease-quint active:scale-[0.97] active:duration-75',
+          apptOut && !showSchedule ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0',
+        )}>
+        <Icon name="calendar" className="h-4 w-4" strokeWidth={1.8} />
         My Schedule
       </button>
 
@@ -3455,62 +3242,44 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           backdrop); on smaller screens it's a dimmed sheet. The proposed window
           shows as a pending (dashed) block so she can see exactly where it lands. */}
       {!docked && (
-        // Dim only, never a backdrop blur: the filter forces the whole page
-        // behind it through a re-raster and text goes soft on ordinary laptop
-        // displays. The dim alone reads as "the sheet is on top" just as well.
-        // Always mounted so it can fade with the panel instead of appearing
-        // fully black on frame one.
-        <div className="fixed inset-0 z-[9995]"
-          style={{
-            background: 'rgba(0,0,0,0.4)',
-            opacity: showSchedule ? 1 : 0,
-            pointerEvents: showSchedule ? 'auto' : 'none',
-            transition: 'opacity 0.24s ease',
-          }}
+        // Dim only, never a backdrop blur over the whole page: the filter forces
+        // everything behind it through a re-raster and text goes soft on
+        // ordinary laptop displays. Always mounted so it can fade with the
+        // panel instead of appearing fully black on frame one.
+        <div
+          className={cx('fixed inset-0 z-[340] bg-black/40 transition-opacity duration-200', showSchedule ? 'opacity-100' : 'pointer-events-none opacity-0')}
           onClick={() => setShowSchedule(false)} aria-hidden="true" />
       )}
+      {/* Square, on a hairline, frosted. The blur is only the drawer's own
+          width, which is cheap; the page under it never repaints for the slide,
+          which runs on its own layer. */}
       <aside
         aria-hidden={!showSchedule}
-        className="fixed inset-y-0 right-0 z-[9996] flex flex-col"
-        style={{
-          width: `min(${scheduleW}px, 92vw)`,
-          transform: showSchedule ? 'translateX(0)' : 'translateX(calc(100% + 64px))',
-          // Quick and decisive, and on its own layer so the slide never asks the
-          // page behind it to repaint.
-          transition: 'transform 0.24s cubic-bezier(0.22,0.61,0.36,1)',
-          willChange: 'transform',
-          background: dm ? '#141418' : '#fff',
-          borderLeft: `1px solid ${dm ? '#2a2a32' : '#eadfe4'}`,
-          boxShadow: '-16px 0 40px rgba(30,20,25,0.16)',
-          pointerEvents: showSchedule ? 'auto' : 'none',
-        }}
+        aria-label="My Schedule"
+        className={cx(
+          'fixed inset-y-0 right-0 z-[350] flex flex-col border-l border-line bg-paper/95 shadow-[0_12px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl backdrop-saturate-150 transition-transform duration-[280ms] ease-quint will-change-transform',
+          showSchedule ? 'translate-x-0' : 'pointer-events-none translate-x-[calc(100%+64px)]',
+        )}
+        style={{ width: `min(${scheduleW}px, 92vw)` }}
       >
         {/* Drag the left edge to make the calendar wider or narrower */}
         <div
-          className="hidden sm:flex absolute inset-y-0 left-0 w-3.5 -ml-1.5 z-10 items-center justify-center"
-          style={{ cursor: 'ew-resize', touchAction: 'none' }}
+          className="group absolute inset-y-0 left-0 z-10 -ml-1.5 hidden w-3.5 cursor-ew-resize touch-none items-center justify-center sm:flex"
           onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={resizeSchedule}
           onPointerUp={persistScheduleW}
           title="Drag to resize"
         >
-          <span className="w-[3px] h-10 rounded-full" style={{ background: dm ? '#3a3a48' : '#e2d6dc' }} />
+          <span className="h-10 w-[3px] rounded-full bg-line-strong transition-colors duration-200 group-hover:bg-ink-muted" />
         </div>
-        <div className="flex items-center gap-3 px-4 py-3.5 flex-shrink-0"
-          style={{ borderBottom: `1px solid ${dm ? '#2a2a32' : '#f0e8ec'}` }}>
-          <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: dm ? '#27272a' : 'rgba(212,160,176,0.14)' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#C4849A" strokeWidth="1.7" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[0.8rem] font-medium" style={{ color: dm ? '#ECEDF1' : '#111' }}>My Schedule</p>
-          </div>
-          <button type="button" onClick={() => setShowSchedule(false)} aria-label="Close schedule"
-            className="w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 flex-shrink-0"
-            style={{ background: dm ? '#27272a' : '#EDEDF3', color: dm ? '#a1a1aa' : '#83838d' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line pl-4 pr-1.5 sm:pl-5">
+          <Icon name="calendar" className="h-4 w-4 text-ink-muted" />
+          <p className="min-w-0 flex-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">My Schedule</p>
+          <IconButton label="Close schedule" onClick={() => setShowSchedule(false)} className="text-ink-muted hover:text-ink">
+            <Icon name="close" className="h-4 w-4" strokeWidth={1.9} />
+          </IconButton>
         </div>
-        <div className="flex-1 overflow-y-auto px-3.5 py-4" data-lenis-prevent>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-4" data-lenis-prevent>
           <ScheduleView
             bookings={(() => {
               // While a picker is open, ghost the draft onto the day as a dashed
@@ -3549,36 +3318,20 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         </div>
       </aside>
 
-      {/* Toast notification */}
+      {/* Toast: an ink bar with a small dot in the tone of what happened, the
+          same as Mission Paradise's. From the top on a phone, the way iOS
+          banners arrive; along the bottom on a laptop. */}
       {toast && (
-        <div
-          className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
-          style={{
-            transition: 'opacity 0.45s ease, transform 0.45s cubic-bezier(0.34,1.56,0.64,1)',
-            opacity: toastVisible ? 1 : 0,
-            transform: `translateX(-50%) translateY(${toastVisible ? '0px' : '-16px'})`,
-          }}
-        >
-          <div
-            className="flex items-center gap-3 rounded-2xl"
-            style={{
-              background: '#fff',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
-              border: `1.5px solid ${toast.color}28`,
-              padding: '12px 20px',
-              minWidth: '220px',
-              maxWidth: '360px',
-            }}
-          >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: `${toast.color}18` }}
-            >
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: toast.color }} />
-            </div>
-            <p className="text-[0.8rem] font-semibold text-[#111] leading-snug whitespace-nowrap">
-              {toast.message}
-            </p>
+        <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+12px)] z-[9999] flex justify-center px-4 lg:bottom-8 lg:top-auto">
+          {/* In and out by animation rather than transition: the toast mounts
+              already visible, so there's no earlier frame to transition from. */}
+          <style>{'@keyframes bd-toast-in{from{opacity:0;transform:translate3d(0,-8px,0) scale(.98)}}@keyframes bd-toast-out{to{opacity:0;transform:translate3d(0,-6px,0)}}@media (prefers-reduced-motion: reduce){.bd-toast{animation:none!important}}'}</style>
+          <div className={cx(
+            'bd-toast flex w-full max-w-sm items-start gap-3 bg-ink px-4 py-3 text-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)]',
+            toastVisible ? 'animate-[bd-toast-in_380ms_cubic-bezier(0.22,1,0.36,1)_both]' : 'animate-[bd-toast-out_300ms_ease-in_both]',
+          )}>
+            <span className={cx('mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full', TOAST_DOT[toast.tone] || TOAST_DOT.ink)} />
+            <p className="min-w-0 text-[0.86rem] leading-snug">{toast.message}</p>
           </div>
         </div>
       )}
@@ -3590,9 +3343,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
         const cancelling = statusKey === 'cancelled';
         return (
           <ConfirmDialog
-            dm={dm}
             tone={cancelling ? 'danger' : 'default'}
-            icon={cancelling ? 'cross' : 'check'}
             title={isReconfirm ? 'Reconfirm appointment?' : cancelling ? 'Cancel this appointment?' : `Mark as ${statusKey}?`}
             body={isReconfirm ? "The client's time has changed. A new confirmation email will be sent."
               : statusKey === 'confirmed' ? 'A confirmation email will be sent to the client.'
@@ -3605,21 +3356,18 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           >
             {cancelling && (
               <>
-                <div className="flex items-center justify-between mb-2.5">
+                <div className="mb-3 flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[0.7rem] font-semibold" style={{ color: dm ? '#b6b6c0' : '#8a7d82', letterSpacing: '0.06em' }}>
-                      NOTE FROM YOU
-                    </p>
-                    <p className="text-[0.68rem] mt-0.5" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
+                    <Label>Note from you</Label>
+                    <p className="mt-1 text-[0.8rem] text-ink-muted">
                       {includeReason ? 'Optional. On, printed in their email.' : 'Optional. Off, no note sent.'}
                     </p>
                   </div>
                   <button type="button" onClick={() => setIncludeReason(v => !v)}
                     aria-pressed={includeReason}
-                    className="relative w-12 h-7 rounded-full transition-colors duration-200 flex items-center px-0.5 flex-shrink-0"
-                    style={{ background: includeReason ? '#D4A0B0' : (dm ? '#3f3f46' : '#e2e8f0') }}>
-                    <div className="w-6 h-6 rounded-full shadow transition-transform duration-200"
-                      style={{ background: '#fff', transform: includeReason ? 'translateX(20px)' : 'translateX(0px)' }} />
+                    aria-label="Include a note"
+                    className="press -m-2 flex h-11 w-14 shrink-0 items-center justify-center">
+                    <Switch on={includeReason} />
                   </button>
                 </div>
                 {includeReason ? (
@@ -3631,22 +3379,15 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       onBlur={() => setReasonFocus(false)}
                       rows={3}
                       placeholder={DEFAULT_CANCEL_REASON}
-                      className="w-full text-[0.85rem] leading-relaxed rounded-[16px] px-3.5 py-3 resize-none outline-none"
-                      style={{
-                        background: dm ? '#1f1f24' : '#FBF7F8',
-                        color: dm ? '#e8e8ec' : '#3a3238',
-                        border: `1px solid ${reasonFocus ? (dm ? '#C4849A' : '#D4A0B0') : (dm ? '#3a3a42' : '#ECE0E4')}`,
-                        boxShadow: reasonFocus ? `0 0 0 3px ${dm ? 'rgba(196,132,154,0.16)' : 'rgba(212,160,176,0.16)'}` : 'none',
-                        transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
-                      }}
+                      aria-label="Note from you"
+                      className={cx(inputClass, 'h-auto resize-none py-2.5 leading-relaxed')}
                     />
-                    <p className="text-[0.7rem] mt-2 leading-snug" style={{ color: dm ? '#8e8e99' : '#b3a6ab' }}>
+                    <p className="mt-2 text-[0.74rem] leading-snug text-ink-muted">
                       Prints in their email under &ldquo;Note from Roko&rdquo;. Edit it, or leave it as is.
                     </p>
                   </>
                 ) : (
-                  <p className="text-[0.75rem] leading-snug rounded-[16px] px-3.5 py-3"
-                    style={{ background: dm ? '#1f1f24' : '#FBF7F8', border: `1px dashed ${dm ? '#3a3a42' : '#ECE0E4'}`, color: dm ? '#8f8f99' : '#a99ca1' }}>
+                  <p className="rounded border border-dashed border-line-strong px-3.5 py-3 text-[0.8rem] leading-snug text-ink-muted">
                     No note will be included. The email still reads warmly, it just says the booking is cancelled.
                   </p>
                 )}
@@ -3655,8 +3396,6 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
           </ConfirmDialog>
         );
       })()}
-
-      {/* Celebration confetti only */}
 
       {/* Edit modal */}
       {showEdit && (

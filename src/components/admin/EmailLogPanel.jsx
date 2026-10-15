@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { shortDateTime } from './depositState';
+import { Panel, cx } from './ui';
 
 // "Did she actually get the email?" — answered on the card, where the question
 // gets asked.
@@ -14,30 +15,24 @@ import { shortDateTime } from './depositState';
 // Two states are kept deliberately distinct. "Sent" means the mail service
 // accepted the message. "Delivered" means it came back to say the receiving
 // server took it. Collapsing those into one green tick would be the same false
-// comfort as before.
+// comfort as before, so the two differ in shape as well as in word: delivered
+// is a filled tint, sent is only an outline.
 
 const INK = {
   // Confirmed by the receiving mail server. Quiet, because it is the boring case.
-  delivered: { light: { fg: '#3F7D50', bg: 'rgba(22,163,74,0.09)',   line: '#D3E6D8' },
-               dark:  { fg: '#7DC08F', bg: 'rgba(22,163,74,0.16)',   line: '#2C4433' } },
-  // Handed over, nothing heard back yet. Neutral, NOT green.
-  sent:      { light: { fg: '#64748B', bg: 'rgba(100,116,139,0.09)', line: '#E2E5EA' },
-               dark:  { fg: '#A7B2C4', bg: 'rgba(148,163,184,0.14)', line: '#3A414D' } },
+  delivered: { dot: 'bg-tone-done', chip: 'bg-tone-done/10 text-tone-done' },
+  // Handed over, nothing heard back yet. Neutral, and not the delivered tint.
+  sent:      { dot: 'bg-ink-muted', chip: 'text-ink-muted shadow-[inset_0_0_0_1px_rgb(var(--c-line-strong))]' },
   // Slow, but not lost: the mail service retries these itself.
-  delayed:   { light: { fg: '#A9660B', bg: 'rgba(245,158,11,0.12)',  line: '#F0E0C4' },
-               dark:  { fg: '#F5B83C', bg: 'rgba(245,158,11,0.16)',  line: '#4A3D24' } },
+  delayed:   { dot: 'bg-tone-pending', chip: 'bg-tone-pending/10 text-tone-pending' },
   // She definitely did not get it. The whole reason the panel exists.
-  bounced:   { light: { fg: '#B91C1C', bg: 'rgba(220,38,38,0.09)',   line: '#F6D2D2' },
-               dark:  { fg: '#F28B82', bg: 'rgba(220,38,38,0.16)',   line: '#4A2C2C' } },
+  bounced:   { dot: 'bg-tone-alert', chip: 'bg-tone-alert/10 text-tone-alert' },
 };
 INK.failed = INK.bounced;
 INK.complained = INK.delayed;
 INK.queued = INK.delayed;
 
-const tone = (status, dm) => {
-  const set = INK[status] || INK.sent;
-  return dm ? set.dark : set.light;
-};
+const tone = (status) => INK[status] || INK.sent;
 
 const STATUS_LABEL = {
   delivered: 'Delivered', sent: 'Sent', delayed: 'Delayed',
@@ -77,7 +72,11 @@ const kindLabel = (k) => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-export default function EmailLogPanel({ booking, registration, dm }) {
+// A panel of its own. `className` defaults to the bottom margin the class
+// registration card spaces its sections with; the client card passes its own.
+// `dm` is still accepted from both callers; the colours switch themselves now.
+// eslint-disable-next-line no-unused-vars
+export default function EmailLogPanel({ booking, registration, dm, className = 'mb-6', style }) {
   const queryClient = useQueryClient();
   const [resending, setResending] = useState(null);
   const [note, setNote] = useState(null);
@@ -117,9 +116,6 @@ export default function EmailLogPanel({ booking, registration, dm }) {
     }
   };
 
-  const border = dm ? '#3a3a48' : '#EBEBEB';
-  const muted = dm ? '#8e8e99' : '#999';
-
   if (!bookingId && !registrationId) return null;
 
   const list = data?.rows || [];
@@ -134,100 +130,93 @@ export default function EmailLogPanel({ booking, registration, dm }) {
     && !!(booking?.email || registration?.email);
 
   return (
-    <div className="mb-6">
-      <p className="text-[0.68rem] font-medium tracking-[0.06em] uppercase text-[#A89098] mb-3">Emails</p>
-
-      {isPending && <p className="text-[0.76rem]" style={{ color: muted }}>Checking&hellip;</p>}
+    <Panel title="Emails" className={className} style={style}>
+      {isPending && <p className="px-4 py-4 text-[0.86rem] text-ink-muted sm:px-5">Checking&hellip;</p>}
 
       {/* An unreachable log means we don't know, and saying so is the only
           honest option. It must never read as "nothing was sent". */}
       {isError && (
-        <p className="text-[0.76rem]" style={{ color: muted }}>
+        <p className="px-4 py-4 text-[0.86rem] leading-relaxed text-ink-muted sm:px-5">
           Couldn&apos;t load the email history just now. That doesn&apos;t mean nothing was sent.
         </p>
       )}
 
       {!isPending && !isError && list.length === 0 && (
-        <div className="rounded-[10px] p-3.5" style={{
-          background: worrying ? (dm ? 'rgba(245,158,11,0.12)' : '#FEF6EC') : (dm ? '#27272a' : '#fafafa'),
-          border: `1px solid ${worrying ? (dm ? 'rgba(245,158,11,0.35)' : '#F3DFC0') : (dm ? '#3a3a48' : '#e5e5e5')}`,
-        }}>
-          {worrying ? (
-            <>
-              <p className="text-[0.78rem] font-semibold mb-1" style={{ color: dm ? '#f0b666' : '#B45309' }}>
-                No email on record for this booking
-              </p>
-              <p className="text-[0.72rem] leading-snug" style={{ color: dm ? '#c9a877' : '#a97a2e' }}>
-                She may never have received her deposit details or her upload link.
-                Use Message Client above to send them.
-              </p>
-            </>
-          ) : (
-            <p className="text-[0.76rem]" style={{ color: muted }}>
-              {data?.since && bookedAt && new Date(bookedAt) <= new Date(data.since)
-                ? 'This booking predates email tracking, so nothing is listed. It does not mean she was never emailed.'
-                : 'Nothing recorded yet.'}
+        worrying ? (
+          <div className="bg-tone-pending/[0.05] px-4 py-4 sm:px-5">
+            <p className="text-[0.86rem] font-semibold text-tone-pending">
+              No email on record for this booking
             </p>
-          )}
-        </div>
+            <p className="mt-1 text-[0.8rem] leading-relaxed text-ink-soft">
+              She may never have received her deposit details or her upload link.
+              Use Message Client above to send them.
+            </p>
+          </div>
+        ) : (
+          <p className="px-4 py-4 text-[0.86rem] leading-relaxed text-ink-muted sm:px-5">
+            {data?.since && bookedAt && new Date(bookedAt) <= new Date(data.since)
+              ? 'This booking predates email tracking, so nothing is listed. It does not mean she was never emailed.'
+              : 'Nothing recorded yet.'}
+          </p>
+        )
       )}
 
       {!isPending && !isError && list.length > 0 && (
-        <div className="rounded-[10px] overflow-hidden" style={{ border: `1px solid ${border}` }}>
-          {list.map((row, i) => {
-            const t = tone(row.status, dm);
+        <ul className="divide-y divide-line">
+          {list.map((row) => {
+            const t = tone(row.status);
             const isClient = row.audience === 'client';
             const stamp = row.sent_at || row.created_at;
             return (
-              <div key={row.id} className="flex items-start gap-3 p-3.5"
-                style={{ borderTop: i ? `1px solid ${border}` : 'none', background: dm ? '#27272a' : '#fff' }}>
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[7px]" style={{ background: t.fg }} />
+              <li key={row.id} className="flex items-start gap-3 px-4 py-3.5 sm:px-5">
+                <span className={cx('mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full', t.dot)} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-[0.78rem] font-semibold" style={{ color: dm ? '#ECEDF1' : '#111' }}>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-[0.86rem] font-semibold leading-snug text-ink">
                       {kindLabel(row.kind)}
                     </span>
-                    <span className="text-[0.66rem] font-medium tracking-[0.05em] uppercase px-1.5 py-[2px] rounded-[4px]"
-                      style={{ color: t.fg, background: t.bg, border: `1px solid ${t.line}` }}>
+                    <span className={cx('inline-flex h-5 shrink-0 items-center px-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.1em]', t.chip)}>
                       {STATUS_LABEL[row.status] || row.status}
                     </span>
-                    {!isClient && <span className="text-[0.68rem]" style={{ color: muted }}>your copy</span>}
+                    {!isClient && <span className="text-[0.74rem] text-ink-muted">your copy</span>}
                   </div>
-                  <p className="text-[0.72rem] mt-1 break-all" style={{ color: muted }}>
-                    {row.recipient}{stamp ? ` · ${shortDateTime(stamp)}` : ''}
+                  <p className="mt-1 text-[0.74rem] leading-snug text-ink-muted">
+                    <span className="break-all">{row.recipient}</span>
+                    {stamp ? <span className="whitespace-nowrap tabular-nums"> · {shortDateTime(stamp)}</span> : null}
                   </p>
                   {/* The only subtitle left, and the only one that ever told
                       Roko something she could act on. */}
                   {row.error && (
-                    <p className="text-[0.72rem] mt-1 leading-snug" style={{ color: dm ? '#f28b82' : '#B91C1C' }}>
+                    <p className="mt-1 text-[0.74rem] leading-snug text-tone-alert">
                       {row.error}
                     </p>
                   )}
+                  {/* Under the row rather than beside it, so the address and
+                      the time keep the width they need in a narrow column. */}
+                  {isClient && (
+                    <button type="button" onClick={() => resend(row)} disabled={resending === row.id}
+                      className="press mt-2.5 inline-flex h-8 items-center rounded border border-line-strong bg-paper px-3 text-[0.74rem] font-medium text-ink hover:border-ink/50 disabled:pointer-events-none disabled:opacity-40 max-sm:h-10">
+                      {resending === row.id ? 'Sending…' : 'Send again'}
+                    </button>
+                  )}
                 </div>
-                {isClient && (
-                  <button type="button" onClick={() => resend(row)} disabled={resending === row.id}
-                    className="flex-shrink-0 text-[0.7rem] font-medium px-2.5 py-1.5 rounded-[6px] transition-opacity hover:opacity-80 disabled:opacity-50"
-                    style={{ color: dm ? '#ECEDF1' : '#111', background: dm ? '#33333d' : '#f5f5f5', border: `1px solid ${border}` }}>
-                    {resending === row.id ? 'Sending…' : 'Send again'}
-                  </button>
-                )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
 
       {note && (
-        <p className="text-[0.72rem] mt-2" style={{ color: note.ok ? (dm ? '#7DC08F' : '#3F7D50') : (dm ? '#f28b82' : '#B91C1C') }}>
+        <p className={cx('border-t border-line px-4 py-3 text-[0.8rem] sm:px-5', note.ok ? 'text-ink-soft' : 'text-tone-alert')}>
           {note.text}
         </p>
       )}
 
       {list.length > 0 && (
-        <p className="text-[0.68rem] mt-2 leading-snug" style={{ color: muted }}>
+        <p className="border-t border-line px-4 py-3 text-[0.74rem] leading-snug text-ink-muted sm:px-5">
           Send again resends the original email exactly as it was.
         </p>
       )}
-    </div>
+    </Panel>
   );
 }
