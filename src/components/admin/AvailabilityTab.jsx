@@ -2,10 +2,11 @@ import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scrollToTarget } from '@/lib/lenis';
-import MonthCalendar, { CLASS_PINK, startTime, dotOf, weekStartOf } from './MonthCalendar';
+import MonthCalendar, { CLASS_PINK, weekStartOf } from './MonthCalendar';
 import CalendarHeader from './CalendarHeader';
 import ScheduleView from './ScheduleView';
 import BlockDaysSheet from './BlockDaysSheet';
+import { AgendaCard, DayHead } from './DayAgenda';
 import { Check, Cross } from './Glyphs';
 import { buildEventMap, buildBookedMap } from './calendarEvents';
 import { useTimeBlocks } from './useTimeBlocks';
@@ -57,7 +58,7 @@ const ClockIcon = ({ className = 'h-3.5 w-3.5' }) => (
 
 // ── Circular capacity meter ─────────────────────────────────
 function CapacityRing({ booked, capacity, blocked }) {
-  const size = 92, stroke = 7;
+  const size = 76, stroke = 6;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const ratio = blocked ? 1 : capacity > 0 ? Math.min(1, booked / capacity) : 0;
@@ -78,7 +79,7 @@ function CapacityRing({ booked, capacity, blocked }) {
           <span className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-tone-alert">Closed</span>
         ) : (
           <>
-            <span className="text-[1.5rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink">{booked}</span>
+            <span className="text-[1.3rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink">{booked}</span>
             <span className="mt-1 text-[0.62rem] font-medium tabular-nums text-ink-muted">of {capacity}</span>
           </>
         )}
@@ -534,7 +535,9 @@ export default function AvailabilityTab({
 
   return (
     <div className="pb-4">
-      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-5">
+      {/* The side panel is where a day is actually read, so it gets real
+          width; the grid beside it is the overview and gives some up. */}
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-5">
         {/* ── Calendar ── */}
         <section className="min-w-0 rounded-card border border-line bg-paper p-4 sm:p-6">
           {/* View switcher and Select days share one line, so the date and the
@@ -733,11 +736,13 @@ export default function AvailabilityTab({
               )}
             </section>
           ) : selectedDate ? (
-            <Panel
-              title={fmtDay(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' })}
-              action={selHasOverride && !selBlocked ? <Tag className="bg-rose/10 text-rose">Custom</Tag> : null}
-              bodyClassName="divide-y divide-line"
-            >
+            <Panel bodyClassName="divide-y divide-line">
+              <DayHead
+                dateKey={selectedDate}
+                action={selHasOverride && !selBlocked ? <Tag className="bg-rose/10 text-rose">Custom</Tag> : null}
+                className="px-4 py-5 sm:px-5"
+              />
+
               <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
                 <CapacityRing booked={selBooked} capacity={effForSelected} blocked={selBlocked} />
                 <div className="min-w-0">
@@ -769,24 +774,12 @@ export default function AvailabilityTab({
               {selEvents.length > 0 && (
                 <div className="px-4 py-4 sm:px-5">
                   <Label className="tabular-nums">On this day · {selEvents.length}</Label>
-                  <div className="mt-2.5 divide-y divide-line rounded-ctl overflow-hidden border border-line">
-                    {selEvents.map(ev => (
-                      <button
-                        key={ev.id}
-                        type="button"
-                        onClick={() => openEvent(ev)}
-                        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas"
-                      >
-                        <span className={cx('h-1.5 w-1.5 shrink-0', ev.kind !== 'block' && 'rounded-full')} style={{ background: dotOf(ev, dm) }} />
-                        <span className="w-[52px] shrink-0 text-[0.68rem] font-semibold tabular-nums text-ink-muted">
-                          {startTime(ev.time) || (ev.kind === 'block' ? 'All day' : 'No time')}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[0.8rem] font-semibold text-ink">{ev.name}</span>
-                          <span className="block truncate text-[0.74rem] text-ink-muted">{ev.detail}</span>
-                        </span>
-                      </button>
-                    ))}
+                  {/* A card each, sized to be read: what it is, who, when and
+                      where, and where it stands. These were 12px rows in a
+                      320px column, the smallest type on the page for the one
+                      thing she opened the panel to see. */}
+                  <div className="mt-3 flex flex-col gap-2">
+                    {selEvents.map(ev => <AgendaCard key={ev.id} ev={ev} onOpen={openEvent} dm={dm} />)}
                   </div>
                 </div>
               )}

@@ -120,7 +120,11 @@ export default function MonthCalendar({
     while (cells.length % 7 !== 0) cells.push(null);
   }
 
-  const maxChips = weekOf ? 6 : 4;
+  // The month is the overview, so each chip is one line (a dot and the name)
+  // and a busy day folds into "+2 more": the side panel beside it has the room
+  // for times and detail. The week view is the close-up and keeps both lines.
+  const maxChips = weekOf ? 6 : 3;
+  const twoLine = !!weekOf;
 
   // One handler for both, because a phone has no double-CLICK. A second tap on
   // the same day inside the window counts as a double.
@@ -141,7 +145,7 @@ export default function MonthCalendar({
   const cellPad = dense ? 'px-1 py-2 sm:py-2.5' : 'px-0.5 py-1 sm:p-2';
   const cellMinH = dense
     ? 'min-h-[66px] sm:min-h-[78px]'
-    : (weekOf ? 'min-h-[104px] sm:min-h-[150px]' : 'min-h-[70px] sm:min-h-[118px] xl:min-h-[132px]');
+    : (weekOf ? 'min-h-[104px] sm:min-h-[150px]' : 'min-h-[70px] sm:min-h-[96px] xl:min-h-[104px]');
 
   return (
     <>
@@ -281,16 +285,6 @@ export default function MonthCalendar({
                         {day}
                       </span>
                     </span>
-                    {/* Counts EVERY item on the day, so it never disagrees with
-                        the booking line below. Laptop only: a phone cell is
-                        ~43px, and beside a two-digit date the count slid over
-                        it ("1(1" for the 11th). There the dots and the booked
-                        line already say what the day holds. */}
-                    {events.length > 0 && !selectMode && (
-                      <span className="hidden h-[18px] shrink-0 items-center bg-canvas px-1.5 text-[0.56rem] font-semibold tabular-nums text-ink-muted sm:flex">
-                        {events.length}
-                      </span>
-                    )}
                   </div>
 
                   {/* Day off, with the reason she typed. Phones get the cross
@@ -333,7 +327,8 @@ export default function MonthCalendar({
                             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onEventClick(ev); }
                           }}
                           className={cx(
-                            'w-full px-1.5 py-1 text-left transition-colors duration-150',
+                            'w-full px-1.5 text-left transition-colors duration-150',
+                            twoLine ? 'py-1' : 'py-[3px]',
                             // Blocked time wears its hatching on a hairline, so
                             // it reads as taken but never as a client.
                             isBlock ? 'bg-paper shadow-[inset_0_0_0_1px_rgb(var(--c-line))]' : 'bg-canvas',
@@ -343,22 +338,24 @@ export default function MonthCalendar({
                           style={isBlock ? { backgroundImage: blockHatch(dm) } : undefined}
                           title={`${ev.name}${ev.time ? ` · ${ev.time}` : ''} · ${ev.detail || ''}`}
                         >
-                          {/* Name on its own line, time under it. Sharing one
-                              line with a time and two badges left the name about
-                              sixty pixels, which is why every client in the grid
-                              read as "Merc...". The name is what makes a day
-                              recognisable, so it gets the width and the rest
-                              goes on the line below. */}
+                          {/* The name gets the whole line. Sharing it with a
+                              time and two badges left about sixty pixels, which
+                              is why every client read as "Merc...". The week
+                              view puts the time on a line below; the month
+                              leaves it to the day panel. */}
                           <span className="flex min-w-0 items-center gap-1.5">
                             <span className={cx('h-[6px] w-[6px] shrink-0', !isBlock && 'rounded-full')} style={{ background: dotOf(ev, dm) }} />
                             <span className={cx('min-w-0 truncate text-[0.68rem] font-medium', isBlock ? 'text-ink-soft' : 'text-ink', cancelled && 'line-through')}>
-                              {ev.name}
+                              {/* First name in the month: a whole one, "Daniela",
+                                  reads better than "Dani..." and the panel beside
+                                  the grid has the full name. */}
+                              {twoLine || isBlock ? ev.name : (ev.name || '').trim().split(/\s+/)[0]}
                             </span>
                             {/* Bridal mark: a drawn dot, so it can't be read
                                 as a full stop typed after the name. */}
                             {ev.bridal && <span className="h-[3px] w-[3px] shrink-0 rounded-full bg-rose" title="Bridal" />}
                           </span>
-                          <span className="flex items-center gap-1 pl-[13px]">
+                          {twoLine && <span className="flex items-center gap-1 pl-[13px]">
                             {(startTime(ev.time) || isBlock) && (
                               <span className="text-[0.62rem] font-semibold tabular-nums text-ink-muted">
                                 {startTime(ev.time) || 'All day'}
@@ -372,7 +369,7 @@ export default function MonthCalendar({
                                 B
                               </span>
                             )}
-                          </span>
+                          </span>}
                         </div>
                       );
                     })}
@@ -385,8 +382,10 @@ export default function MonthCalendar({
 
                   {/* Booking capacity, spelled out. Consultations and classes
                       are deliberately NOT in this number, which is why it says
-                      "booked" rather than sitting bare as "0/4". */}
-                  {cap != null && !off && (
+                      "booked" rather than sitting bare as "0/4". Only on days
+                      with something booked: "0/4 booked" on every empty day
+                      was thirty lines of noise saying nothing. */}
+                  {cap != null && !off && booked > 0 && (
                     <span className={cx(
                       'mt-auto whitespace-nowrap pl-0.5 text-[0.56rem] font-semibold tabular-nums tracking-wide',
                       full ? 'text-tone-alert' : booked > 0 ? 'text-ink-soft' : 'text-ink-muted/70',

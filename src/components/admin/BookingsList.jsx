@@ -15,6 +15,7 @@ import { useTimeBlocks } from './useTimeBlocks';
 import { blockLabel } from '@/lib/timeBlocks';
 import { isDepositUnseen, timeAgo as depositTimeAgo, daysSince } from './depositState';
 import { Button, Chevron, Fold, RowPanel, SearchLine, Segmented, cx } from './ui';
+import { AgendaRow, DayHead } from './DayAgenda';
 
 // Thumbnail of the client's uploaded Zelle screenshot, so a deposit can be
 // checked and cleared from the list without opening the card. Signed URLs are
@@ -311,6 +312,48 @@ export default function BookingsList({
       if (ab !== bb) return ab - bb;
       return (a.created_date || '').localeCompare(b.created_date || '');
     });
+
+  // A day picked on the calendar reads as one agenda: appointments,
+  // consultations, lessons and her own blocked time interleaved by the clock,
+  // under the day's name, the same way the Calendar tab's day panel reads it.
+  // It used to be a "Showing" box over up to four separate panels (blocked
+  // time, consultations, lessons, appointments), each with its own header.
+  // Select mode keeps the plain rows, because those carry the tick circles.
+  const dayAgenda = !!selectedDate && viewType === 'appointments' && !selectMode;
+  const agendaEvents = !dayAgenda ? [] : [
+    ...visibleActive.map(b => ({
+      id: b.id, kind: 'appt', name: b.name || 'Client', time: b.time, detail: b.service || 'Appointment',
+      status: b.status, bridal: isBridalBooking(b), raw: b,
+    })),
+    // Bookings already listed as appointments aren't repeated as consultations.
+    ...consultationsOnDate.filter(b => !(bookings || []).some(fb => fb.id === b.id)).map(b => {
+      const url = b.consultation_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1];
+      return {
+        id: `consult-${b.id}`, kind: 'consult', name: b.name || 'Client', time: b.consultation_time,
+        detail: `${b.consultation_type || 'Zoom'} consultation`, status: b.status, raw: b,
+        join: { url, meetingId: parseMeetingId(b.consultation_notes) || meetingIdFromUrl(url) },
+      };
+    }),
+    ...lessonsOnDate.map(r => {
+      const url = r.lesson_notes?.match(/^Link: (https?:\/\/\S+)/m)?.[1];
+      return {
+        id: `class-${r.id}`, kind: 'class', name: r.full_name || 'Client', time: r.appointment_time,
+        detail: classesOfReg(r)[0]?.title || 'Makeup Lesson', status: r.status, raw: r,
+        join: r.consultation_type === 'Zoom' ? { url, meetingId: parseMeetingId(r.lesson_notes) || meetingIdFromUrl(url) } : null,
+      };
+    }),
+    ...blocksOnDay.map(t => ({ id: `block-${t.id}`, kind: 'block', name: blockLabel(t), time: t.time || '', raw: t })),
+  ].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+  const openAgenda = (ev) => (ev.kind === 'class' ? onSelectClassReg?.(ev.raw)
+    : ev.kind === 'block' ? onSelectTimeBlock?.(ev.raw)
+    : onSelect(ev.raw));
+  // An empty day points at the next one with something on it, one tap away.
+  const filtering = !!search?.trim() || (statusFilter && statusFilter !== 'all') || typeFilter !== 'both';
+  const nextBooked = dayAgenda && !agendaEvents.length && !filtering
+    ? (allBookings || [])
+      .filter(b => b.date && b.date > selectedDate && ['pending', 'confirmed'].includes(b.status))
+      .sort((a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.time) - timeToMinutes(b.time))[0]
+    : null;
 
   // Bucket by how soon each appointment is, so the list reads as a timeline
   // instead of one endless run. "Later" folds away by default.
@@ -651,8 +694,69 @@ export default function BookingsList({
         );
       })()}
 
-      {/* The day picked on the calendar, and the way back to everything. */}
-      {selectedDate && (
+      {/* The day picked on the calendar, as one agenda, and the way back to
+          everything. */}
+      {dayAgenda && (
+        <div className="mb-6 overflow-hidden rounded-card border border-line bg-paper">
+          <DayHead
+            dateKey={selectedDate}
+            className="border-b border-line px-4 py-4 sm:px-5"
+            action={
+              <Button size="sm" onClick={() => setSelectedDate(null)} aria-label="Show all appointments">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3 w-3" aria-hidden><path d="M18 6 6 18M6 6l12 12" /></svg>
+                Show all
+              </Button>
+            }
+          />
+
+          {/* Closed: said once, on a line, with the reason she gave. Anything
+              already booked on it still lists underneath. */}
+          {dayOff && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-tone-alert/[0.04] px-4 py-3 sm:px-5">
+              <span className="inline-flex items-center gap-1.5 text-[0.8rem] font-semibold text-tone-alert">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-2.5 w-2.5" aria-hidden><path d="M6 6l12 12M18 6 6 18" /></svg>
+                Day off{(dayOff.reason || '').trim() ? ` · ${dayOff.reason.trim()}` : ''}
+              </span>
+              <span className="text-[0.76rem] text-ink-muted">Clients can't book this day.</span>
+              {onViewAllCalendar && (
+                <button type="button" onClick={() => onViewAllCalendar(selectedDate)} className="ml-auto text-[0.76rem] font-medium text-ink-soft hover:text-ink">
+                  Reopen in Calendar
+                </button>
+              )}
+            </div>
+          )}
+
+          {loading ? null : agendaEvents.length > 0 ? (
+            <div className="divide-y divide-line">
+              {agendaEvents.map(ev => <AgendaRow key={ev.id} ev={ev} onOpen={openAgenda} dm={dm} />)}
+            </div>
+          ) : (
+            <div className="px-4 py-5 sm:px-5">
+              <p className="text-[0.88rem] text-ink">
+                {filtering ? 'Nothing on this day matches your filter.'
+                  : dayOff ? 'Nothing booked.'
+                  : selectedDate < todayKey ? 'Nothing was on.' : 'Nothing on yet. The day is open.'}
+              </p>
+              {nextBooked && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(nextBooked.date)}
+                  className="group -ml-1 mt-1.5 inline-flex min-h-[40px] items-center gap-1 px-1 text-left text-[0.8rem] text-ink-muted transition-colors hover:text-ink"
+                >
+                  Next:{' '}
+                  <span className="font-medium text-ink">
+                    {new Date(nextBooked.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </span>
+                  {' '}· {nextBooked.name || 'Client'}
+                  <Chevron className="h-3.5 w-3.5 -rotate-90" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedDate && !dayAgenda && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-line bg-paper py-2.5 pl-4 pr-2.5">
           <div className="min-w-0">
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">Showing</p>
@@ -669,7 +773,7 @@ export default function BookingsList({
 
       {/* A closed day: the reason, in place of a list that would otherwise read
           as "nothing here". */}
-      {dayOff && (() => {
+      {dayOff && !dayAgenda && (() => {
         const reason = (dayOff.reason || '').trim();
         const onDay = (bookings || []).filter(b => b.date === selectedDate && b.status !== 'cancelled').length;
         return (
@@ -692,7 +796,7 @@ export default function BookingsList({
 
       {/* Her own blocked time on the day. Hatched and grey, the same way the
           day schedule draws it, so it reads as "taken, not a client". */}
-      {blocksOnDay.length > 0 && (
+      {blocksOnDay.length > 0 && !dayAgenda && (
         <RowPanel className="mb-5">
           {blocksOnDay.map(t => (
             <button
@@ -720,7 +824,7 @@ export default function BookingsList({
       )}
 
       {/* Consultations on the selected date. */}
-      {selectedDate && consultationsOnDate.length > 0 && (() => {
+      {selectedDate && !dayAgenda && consultationsOnDate.length > 0 && (() => {
         // Don't repeat bookings already listed as regular appointments.
         const uniqueConsults = consultationsOnDate
           .filter(b => !bookings.some(fb => fb.id === b.id))
@@ -757,7 +861,7 @@ export default function BookingsList({
       })()}
 
       {/* Makeup lessons on the selected date. */}
-      {selectedDate && lessonsOnDate.length > 0 && (
+      {selectedDate && !dayAgenda && lessonsOnDate.length > 0 && (
         <div className="mb-6 rounded-card border border-line bg-paper">
           <PanelHead dot="rgb(var(--c-rose))" label="Makeup lessons" count={lessonsOnDate.length} />
           <div className="divide-y divide-line">
@@ -914,7 +1018,7 @@ export default function BookingsList({
           ))}
         </RowPanel>
       ) : visibleActiveCount === 0 && visibleArchived.length === 0 ? (
-        dayOff ? null : (
+        dayOff || dayAgenda ? null : (
           <p className="py-20 text-center text-[0.86rem] text-ink-muted">
             No {typeFilter === 'bridal' ? 'bridal ' : typeFilter === 'nonbridal' ? 'non-bridal ' : ''}appointments found
           </p>
@@ -924,8 +1028,12 @@ export default function BookingsList({
           {visibleActiveCount === 0 ? (
             // No active appointments: the archive below renders flat in its place.
             null
+          ) : dayAgenda ? (
+            // Already listed in the day's agenda above.
+            null
           ) : selectedDate ? (
-            // A single day is picked: its appointments flat, nothing folded.
+            // A single day is picked in select mode: its appointments flat,
+            // with their tick circles.
             <RowPanel>
               {visibleActive.map(b => (
                 <BookingRow key={b.id} booking={b} bridal={isBridalBooking(b)} hideDate
