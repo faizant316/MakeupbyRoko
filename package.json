@@ -28,7 +28,6 @@
     "recharts": "^2.15.4",
     "resend": "^3.2.0",
     "stripe": "^14.21.0",
-    "tailwindcss-animate": "^1.0.7",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
