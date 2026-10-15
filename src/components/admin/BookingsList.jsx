@@ -44,7 +44,7 @@ function ZelleThumb({ bookingId, onOpen }) {
       type="button"
       onClick={(e) => { e.stopPropagation(); if (url) { onOpen?.(urls); } }}
       aria-label={url ? `Open ${urls.length > 1 ? `all ${urls.length} Zelle screenshots` : 'the Zelle screenshot'} full size` : 'Zelle screenshot loading'}
-      className="press relative flex h-[50px] w-[38px] shrink-0 items-center justify-center overflow-hidden border border-line bg-canvas"
+      className="press relative flex h-[50px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-ctl border border-line bg-canvas"
     >
       {url ? (
         <>
@@ -88,7 +88,7 @@ function MonthSelect({ value, onChange, options }) {
     <button
       type="button"
       onClick={() => { if (!isIOS) setOpen(o => !o); }}
-      className={cx('press inline-flex h-9 items-center gap-1.5 rounded px-2 text-[0.78rem] font-medium transition-colors', hasFilter ? 'text-rose' : 'text-ink-muted hover:text-ink')}
+      className={cx('press inline-flex h-9 items-center gap-1.5 rounded-ctl px-2 text-[0.78rem] font-medium transition-colors', hasFilter ? 'text-rose' : 'text-ink-muted hover:text-ink')}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-[15px] w-[15px] shrink-0" aria-hidden>
         <rect x="3" y="4.5" width="18" height="16" rx="2" /><path d="M3 9h18M8 2.5v4M16 2.5v4" />
@@ -114,7 +114,7 @@ function MonthSelect({ value, onChange, options }) {
     <div ref={ref} className="relative inline-flex">
       {trigger}
       {open && (
-        <div className="pop-in absolute right-0 top-full z-50 mt-1 max-h-[280px] min-w-[200px] overflow-y-auto border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" data-lenis-prevent>
+        <div className="pop-in absolute right-0 top-full z-50 mt-1 max-h-[280px] min-w-[200px] overflow-y-auto rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" data-lenis-prevent>
           {options.map(o => {
             const isSel = o.value === value;
             return (
@@ -155,7 +155,7 @@ const ZoomIcon = ({ className = 'h-3.5 w-3.5' }) => (
   </svg>
 );
 
-const joinClass = 'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded bg-rose px-3 text-[0.72rem] font-semibold text-paper hover:bg-rose/90';
+const joinClass = 'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-ctl bg-rose px-3 text-[0.72rem] font-semibold text-paper hover:bg-rose/90';
 const listRowClass = 'group flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas sm:px-5';
 
 const BRIDAL_KEYWORDS = ['bridal', 'bride', 'wedding', 'full day'];
@@ -437,7 +437,7 @@ export default function BookingsList({
               onClick={() => { setSearchOpen(v => !v); if (!searchOpen) setTimeout(() => searchInputRef.current?.focus(), 20); else setSearch(''); }}
               aria-label="Search appointments"
               aria-expanded={searchOpen}
-              className={cx('press flex h-10 w-10 shrink-0 items-center justify-center rounded border border-line-strong text-ink-soft sm:hidden', (searchOpen || search) ? 'bg-canvas' : 'bg-paper')}
+              className={cx('press flex h-10 w-10 shrink-0 items-center justify-center rounded-ctl border border-line-strong text-ink-soft sm:hidden', (searchOpen || search) ? 'bg-canvas' : 'bg-paper')}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-4 w-4" aria-hidden>
                 <circle cx="11" cy="11" r="7" /><path d="m20 20-3.8-3.8" />
@@ -490,14 +490,14 @@ export default function BookingsList({
       {pendingZelleReviews.length > 0 && (() => {
         const lead = pendingZelleReviews[0];
         return (
-          <div className="mb-4 border border-line bg-paper">
+          <div className="mb-4 rounded-card border border-line bg-paper">
             <button
               type="button"
               onClick={() => toggleRail('deposit')}
               aria-expanded={showZellePanel}
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-canvas/50 sm:px-5"
             >
-              <span className="flex h-7 min-w-[28px] shrink-0 items-center justify-center bg-tone-confirmed/10 px-1.5 text-[0.8rem] font-semibold tabular-nums text-tone-confirmed">
+              <span className="flex h-7 min-w-[28px] shrink-0 items-center justify-center rounded-full bg-tone-confirmed/10 px-1.5 text-[0.8rem] font-semibold tabular-nums text-tone-confirmed">
                 {pendingZelleReviews.length}
               </span>
               <span className="min-w-0 flex-1">
@@ -619,7 +619,7 @@ export default function BookingsList({
               type="button"
               onClick={() => setFilterOpen(v => !v)}
               aria-expanded={filterOpen}
-              className={cx('press inline-flex h-9 items-center gap-2 rounded border px-3 text-[0.8rem] font-medium transition-colors', filterOpen ? 'border-ink/40 bg-paper text-ink' : 'border-line-strong bg-paper text-ink hover:border-ink/40')}
+              className={cx('press inline-flex h-9 items-center gap-2 rounded-ctl border px-3 text-[0.8rem] font-medium transition-colors', filterOpen ? 'border-ink/40 bg-paper text-ink' : 'border-line-strong bg-paper text-ink hover:border-ink/40')}
             >
               {current.dot && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: current.dot }} />}
               <span>{current.label}</span>
@@ -629,7 +629,7 @@ export default function BookingsList({
             {filterOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} aria-hidden="true" />
-                <div className="pop-in absolute left-0 top-full z-50 mt-1 w-[min(280px,88vw)] border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top left' }}>
+                <div className="pop-in absolute left-0 top-full z-50 mt-1 w-[min(280px,88vw)] rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top left' }}>
                   {options.map(o => (
                     <Fragment key={o.key}>
                       {o.key === 'courses' && <div className="mx-2 my-1 h-px bg-line" />}
@@ -653,7 +653,7 @@ export default function BookingsList({
 
       {/* The day picked on the calendar, and the way back to everything. */}
       {selectedDate && (
-        <div className="mb-4 flex items-center justify-between gap-3 border border-line bg-paper py-2.5 pl-4 pr-2.5">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-card border border-line bg-paper py-2.5 pl-4 pr-2.5">
           <div className="min-w-0">
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">Showing</p>
             <p className="truncate text-[0.92rem] font-semibold text-ink">
@@ -727,7 +727,7 @@ export default function BookingsList({
           .sort((a, b) => timeToMinutes(a.consultation_time) - timeToMinutes(b.consultation_time));
         if (uniqueConsults.length === 0) return null;
         return (
-          <div className="mb-6 border border-line bg-paper">
+          <div className="mb-6 rounded-card border border-line bg-paper">
             <PanelHead dot="rgb(var(--c-consult))" label="Consultations" count={uniqueConsults.length} />
             <div className="divide-y divide-line">
               {uniqueConsults.map(b => {
@@ -758,7 +758,7 @@ export default function BookingsList({
 
       {/* Makeup lessons on the selected date. */}
       {selectedDate && lessonsOnDate.length > 0 && (
-        <div className="mb-6 border border-line bg-paper">
+        <div className="mb-6 rounded-card border border-line bg-paper">
           <PanelHead dot="rgb(var(--c-rose))" label="Makeup lessons" count={lessonsOnDate.length} />
           <div className="divide-y divide-line">
             {[...lessonsOnDate].sort((a, b) => timeToMinutes(a.appointment_time) - timeToMinutes(b.appointment_time)).map((r) => {
@@ -798,7 +798,7 @@ export default function BookingsList({
                     </button>
                   ) : isPhone && r.phone ? (
                     <a href={`tel:${phoneHref(r.phone)}`} onClick={(e) => e.stopPropagation()}
-                      className="press inline-flex h-8 shrink-0 items-center rounded border border-rose/30 px-3 text-[0.72rem] font-semibold tabular-nums text-rose">
+                      className="press inline-flex h-8 shrink-0 items-center rounded-ctl border border-rose/30 px-3 text-[0.72rem] font-semibold tabular-nums text-rose">
                       {formatPhone(r.phone)}
                     </a>
                   ) : null}
@@ -838,8 +838,8 @@ export default function BookingsList({
                   </span>
                   <span className="flex shrink-0 items-center gap-1.5">
                     {isUnpaid && <span className="inline-flex h-[22px] items-center bg-rose/10 px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-rose">Unpaid</span>}
-                    {isRefunded && <span className="inline-flex h-[22px] items-center bg-tone-alert/10 px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-tone-alert">Refunded</span>}
-                    <span className={cx('inline-flex h-[22px] items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em]', status === 'pending' ? 'bg-tone-pending/10 text-tone-pending' : 'bg-tone-confirmed/10 text-tone-confirmed')}>
+                    {isRefunded && <span className="inline-flex h-[22px] items-center rounded-full bg-tone-alert/10 px-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-tone-alert">Refunded</span>}
+                    <span className={cx('inline-flex h-[22px] items-center rounded-full px-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.1em]', status === 'pending' ? 'bg-tone-pending/10 text-tone-pending' : 'bg-tone-confirmed/10 text-tone-confirmed')}>
                       {status}
                     </span>
                   </span>
@@ -945,7 +945,7 @@ export default function BookingsList({
                       <h3 className={groupTone(group)}>{group.label}</h3>
                       <span className="text-[0.74rem] tabular-nums text-ink-muted">{group.rows.length}</span>
                       {group.key === 'today' && blockedToday && (
-                        <span className="inline-flex h-[18px] shrink-0 items-center bg-tone-alert/10 px-1.5 text-[0.56rem] font-bold uppercase tracking-[0.1em] text-tone-alert"
+                        <span className="inline-flex h-[18px] shrink-0 items-center rounded-full bg-tone-alert/10 px-2 text-[0.56rem] font-bold uppercase tracking-[0.1em] text-tone-alert"
                           title={blockedToday.reason || 'Closed to new bookings'}>
                           Day off
                         </span>
@@ -955,7 +955,7 @@ export default function BookingsList({
                     </button>
                     <Fold open={open}>
                       {group.rows.length === 0 ? (
-                        <p className="border border-line bg-paper px-4 py-3.5 text-[0.82rem] text-ink-muted sm:px-5">
+                        <p className="rounded-card border border-line bg-paper px-4 py-3.5 text-[0.82rem] text-ink-muted sm:px-5">
                           {blockedToday
                             ? `You're off today${blockedToday.reason ? ` · ${blockedToday.reason}` : ''}. Clients can't book this day.`
                             : "Nothing scheduled today. You're all clear."}
@@ -1031,7 +1031,7 @@ export default function BookingsList({
           className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[120] w-[calc(100%-1.5rem)] max-w-[560px]"
           style={{ transform: 'translateX(-50%)', animation: 'fadeSlideUp 0.28s cubic-bezier(0.22,1,0.36,1)' }}
         >
-          <div className="border border-line bg-paper shadow-[0_16px_44px_rgba(0,0,0,0.18)]">
+          <div className="rounded-card border border-line bg-paper shadow-[0_16px_44px_rgba(0,0,0,0.18)]">
             <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
               <span className={cx('text-[0.86rem] font-semibold', selectedCount ? 'text-ink' : 'text-ink-muted')}>
                 {selectedCount > 0 ? `${selectedCount} selected` : 'Tap appointments to select'}

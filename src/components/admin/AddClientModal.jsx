@@ -62,7 +62,7 @@ function StyledDropdown({ value, onChange, options, placeholder }) {
         <Chevron open={open} className="h-3.5 w-3.5 text-ink-muted" />
       </button>
       {open && (
-        <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 max-h-[260px] overflow-y-auto overscroll-contain border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+        <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 max-h-[260px] overflow-y-auto overscroll-contain rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
           style={{ '--origin': 'top left' }} data-lenis-prevent>
           {options.length === 0 && <p className="px-3 py-2.5 text-[0.8rem] text-ink-muted">Loading…</p>}
           {options.map(o => (
@@ -84,7 +84,7 @@ function StyledDropdown({ value, onChange, options, placeholder }) {
 // question nobody has answered yet simply has no ink cell.
 function Tiles({ options, value, onChange, label, className = 'grid-cols-2' }) {
   return (
-    <div role="radiogroup" aria-label={label} className={cx('grid gap-px border border-line bg-line', className)}>
+    <div role="radiogroup" aria-label={label} className={cx('grid gap-px rounded-ctl overflow-hidden border border-line bg-line', className)}>
       {options.map(o => {
         const on = o.value === value;
         return (
@@ -875,7 +875,7 @@ export default function AddClientModal({
                         const sel = cls.slot === w;
                         return (
                           <button key={w} type="button" onClick={() => setC('slot', sel ? '' : w)} aria-pressed={sel}
-                            className={cx('press h-11 rounded border px-2 text-center text-[0.8rem] font-medium tabular-nums transition-colors',
+                            className={cx('press h-11 rounded-ctl border px-2 text-center text-[0.8rem] font-medium tabular-nums transition-colors',
                               sel ? 'border-ink bg-ink text-paper' : 'border-line bg-paper text-ink-soft hover:border-ink/40 hover:text-ink')}>
                             {parseRange(w).start}
                           </button>
@@ -901,7 +901,7 @@ export default function AddClientModal({
                   </Field>
                 )}
                 {cls.format === 'in_person' && (
-                  <div className="border border-line px-4 py-3">
+                  <div className="rounded-card border border-line px-4 py-3">
                     <Label className="block">Studio location</Label>
                     <p className="mt-1 text-[0.86rem] text-ink">{STUDIO_DISPLAY}</p>
                   </div>

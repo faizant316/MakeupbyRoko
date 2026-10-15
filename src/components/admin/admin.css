@@ -22,11 +22,14 @@
   --c-ink-muted: 128 104 116;
   --c-line: 240 228 232;
   --c-line-strong: 226 207 214;
-  --c-rose: 160 96 122;
+  /* The three that are read as small text (rose labels, the PENDING and
+     CONFIRMED badges) are a shade deeper than their old values so they clear
+     4.5:1 even on their own 10% tint and on the bridal wash. */
+  --c-rose: 142 79 105;
   --c-rose-soft: 212 160 176;
   --c-rose-wash: 252 244 248;
-  --c-pending: 180 83 9;
-  --c-confirmed: 37 99 235;
+  --c-pending: 161 74 11;
+  --c-confirmed: 29 78 216;
   --c-alert: 192 54 44;
   --c-done: 100 116 139;
   --c-consult: 107 90 147;

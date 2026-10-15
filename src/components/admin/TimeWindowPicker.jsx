@@ -54,7 +54,7 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
   const hint = !start ? 'Tap the start time' : !end ? 'Now tap the end time' : 'Window set';
 
   // The box waiting for a tap is drawn the way a focused field is.
-  const box = (active) => cx('min-w-0 flex-1 rounded border bg-paper px-3 py-2 transition-colors duration-200', active ? 'border-ink/60' : 'border-line');
+  const box = (active) => cx('min-w-0 flex-1 rounded-ctl border bg-paper px-3 py-2 transition-colors duration-200', active ? 'border-ink/60' : 'border-line');
   const boxLabel = (active) => cx('text-[0.62rem] font-semibold uppercase tracking-[0.14em]', active ? 'text-ink' : 'text-ink-muted');
 
   const Between = () => (
@@ -120,7 +120,7 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
       </div>
 
       {/* Desktop: tap grid, window highlighted */}
-      <div className="hidden border border-line p-1.5 md:block" data-lenis-prevent>
+      <div className="hidden rounded-ctl border border-line p-1.5 md:block" data-lenis-prevent>
         <div className="grid max-h-[236px] grid-cols-4 gap-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
           {slots.map(t => {
             const tMin = apptToMin(t);
@@ -130,7 +130,7 @@ export default function TimeWindowPicker({ value, onChange, slots = [], dm, acce
             return (
               <button key={t} type="button" onClick={() => pick(t)} aria-pressed={isStart || isEnd}
                 className={cx(
-                  'press relative h-9 rounded text-center text-[0.74rem] tabular-nums transition-colors',
+                  'press relative h-9 rounded-ctl text-center text-[0.74rem] tabular-nums transition-colors',
                   isStart || isEnd ? 'bg-ink font-semibold text-paper'
                     : inRange ? 'bg-ink/[0.07] font-medium text-ink'
                     : 'font-medium text-ink-soft hover:bg-canvas hover:text-ink',

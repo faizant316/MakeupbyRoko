@@ -75,9 +75,9 @@ function groupTone(group, needsScheduling) {
 }
 
 // Payment chips beside the status badge, the same size as it. Laptop only.
-const payChip = 'hidden h-[22px] shrink-0 items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] sm:inline-flex';
+const payChip = 'hidden h-[22px] shrink-0 items-center rounded-full px-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.1em] sm:inline-flex';
 
-const iconLink = 'press flex h-8 w-8 items-center justify-center rounded border border-line text-ink-muted hover:border-line-strong hover:text-ink';
+const iconLink = 'press flex h-8 w-8 items-center justify-center rounded-ctl border border-line text-ink-muted hover:border-line-strong hover:text-ink';
 
 // One line, mirroring the appointments list. `recent` is the copy shown
 // inside the Just signed up band: it swaps the redundant New tag for how long
@@ -230,7 +230,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect }) {
 
   if (registrations.length === 0) {
     return (
-      <div className="border border-line bg-paper px-5 py-16 text-center">
+      <div className="rounded-card border border-line bg-paper px-5 py-16 text-center">
         <p className="text-[0.98rem] font-semibold text-ink">No class registrations yet</p>
         <p className="mt-1.5 text-[0.8rem] text-ink-muted">Registrations from the website will appear here</p>
       </div>
@@ -277,7 +277,7 @@ export default function ClassRegistrationsList({ darkMode: dm, onSelect }) {
   return (
     <div>
       {/* Where things stand, at a glance. One strip on hairlines. */}
-      <div className="mb-5 grid grid-cols-3 divide-x divide-line border border-line bg-paper">
+      <div className="mb-5 grid grid-cols-3 divide-x divide-line rounded-card overflow-hidden border border-line bg-paper">
         {stats.map(s => (
           <div key={s.label} className="min-w-0 px-4 py-3.5 sm:px-5 sm:py-4">
             <p className={cx('text-[1.45rem] font-semibold leading-none tabular-nums tracking-[-0.02em]', s.accent ? 'text-rose' : 'text-ink')}>{s.value}</p>

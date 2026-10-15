@@ -29,7 +29,7 @@ const SIZES = {
 };
 
 export const buttonClass = (variant = 'quiet', size = 'md', className) => cx(
-  'press inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded font-medium tracking-[-0.005em]',
+  'press inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-ctl font-medium tracking-[-0.005em]',
   'disabled:pointer-events-none disabled:opacity-40',
   VARIANTS[variant],
   SIZES[size],
@@ -51,7 +51,7 @@ export function IconButton({ label, className, children, ...rest }) {
     <button
       type="button"
       aria-label={label}
-      className={cx('press flex h-11 w-11 shrink-0 items-center justify-center rounded text-ink', className)}
+      className={cx('press flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl text-ink', className)}
       {...rest}
     >
       {children}
@@ -65,7 +65,7 @@ export function IconButton({ label, className, children, ...rest }) {
 // the way an app titles a group: sentence case, semibold.
 export function Panel({ title, sub, action, children, className, bodyClassName, as: Tag = 'section', ...rest }) {
   return (
-    <Tag className={cx('border border-line bg-paper', className)} {...rest}>
+    <Tag className={cx('rounded-card border border-line bg-paper', className)} {...rest}>
       {title || action ? (
         <header className="flex min-h-[52px] items-center justify-between gap-4 border-b border-line px-4 py-3 sm:px-5">
           <div className="min-w-0">
@@ -92,19 +92,19 @@ export function Label({ children, className, ...rest }) {
 // Boxed inputs. 16px on a phone: anything smaller and iOS zooms the page in
 // when the field is tapped.
 export const inputClass =
-  'h-11 w-full rounded border border-line bg-paper px-3 text-[16px] text-ink placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 focus:outline-none sm:text-[0.9rem]';
+  'h-11 w-full rounded-ctl border border-line bg-paper px-3 text-[16px] text-ink placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 focus:outline-none sm:text-[0.9rem]';
 
 // A group of rows in one panel, on hairlines: square, no shadows, the whole
 // row is the target. Rows inside should pad px-4 sm:px-5.
 export function RowPanel({ children, className, ...rest }) {
-  return <div className={cx('divide-y divide-line border border-line bg-paper', className)} {...rest}>{children}</div>;
+  return <div className={cx('divide-y divide-line overflow-hidden rounded-card border border-line bg-paper', className)} {...rest}>{children}</div>;
 }
 
 // A small uppercase tag beside a name (Bridal, Booksy, Signed). Pass the tone
 // as classes, e.g. "bg-rose/10 text-rose", or leave it neutral.
 export function Tag({ className, children, title }) {
   return (
-    <span title={title} className={cx('inline-flex h-[18px] shrink-0 items-center gap-1 px-1.5 text-[0.56rem] font-semibold uppercase tracking-[0.1em]', className || 'text-ink-muted shadow-[inset_0_0_0_1px_rgb(var(--c-line-strong))]')}>
+    <span title={title} className={cx('inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-[0.56rem] font-semibold uppercase tracking-[0.1em]', className || 'text-ink-muted shadow-[inset_0_0_0_1px_rgb(var(--c-line-strong))]')}>
       {children}
     </span>
   );
@@ -115,7 +115,7 @@ export function Tag({ className, children, title }) {
 // iOS-style, squared off. The selected segment is a white tile on the canvas.
 export function Segmented({ options, value, onChange, className, size = 'md' }) {
   return (
-    <div role="tablist" className={cx('inline-flex rounded border border-line bg-canvas p-0.5', className)}>
+    <div role="tablist" className={cx('inline-flex rounded-ctl border border-line bg-canvas p-0.5', className)}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -126,7 +126,7 @@ export function Segmented({ options, value, onChange, className, size = 'md' }) 
             aria-selected={on}
             onClick={() => onChange(o.value)}
             className={cx(
-              'flex items-center gap-1.5 rounded-[3px] font-medium transition-[color,background-color,box-shadow] duration-200',
+              'flex items-center gap-1.5 rounded-[6px] font-medium transition-[color,background-color,box-shadow] duration-200',
               size === 'sm' ? 'h-7 px-2.5 text-[0.74rem]' : 'h-8 px-3 text-[0.78rem] sm:px-3.5',
               on ? 'bg-paper text-ink shadow-[0_0_0_1px_rgb(var(--c-line))]' : 'text-ink-muted hover:text-ink',
             )}
@@ -255,7 +255,7 @@ export function Sheet({ open, onClose, title, eyebrow, children, footer, size = 
           aria-modal="true"
           aria-label={typeof title === 'string' ? title : undefined}
           tabIndex={-1}
-          className={cx('sheet-panel pointer-events-auto flex max-h-[92svh] w-full flex-col bg-paper text-ink outline-none sm:max-h-[88svh] sm:border sm:border-line', WIDTHS[size])}
+          className={cx('sheet-panel pointer-events-auto flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-[18px] bg-paper sm:rounded-card text-ink outline-none sm:max-h-[88svh] sm:border sm:border-line', WIDTHS[size])}
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
             <div className="min-w-0">

@@ -59,7 +59,7 @@ export default function ClassSignupsCard({ classRegs = [], onOpenAll, onOpenReg,
   }, [classRegs]);
 
   return (
-    <section className="mb-8 w-full border border-line bg-paper">
+    <section className="mb-8 w-full rounded-card border border-line bg-paper">
       {/* Header: opens the full Class Sign-Ups tab */}
       <button
         type="button"

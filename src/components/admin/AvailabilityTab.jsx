@@ -91,7 +91,7 @@ function CapacityRing({ booked, capacity, blocked }) {
 function Stepper({ value, onChange, min = 1, max = 20 }) {
   const btn = 'flex h-11 w-11 select-none items-center justify-center text-ink-muted transition-colors hover:bg-canvas hover:text-ink sm:h-9 sm:w-9';
   return (
-    <div className="flex items-center overflow-hidden rounded border border-line-strong bg-paper">
+    <div className="flex items-center overflow-hidden rounded-ctl border border-line-strong bg-paper">
       <button type="button" aria-label="One fewer" onClick={() => onChange(Math.max(min, value - 1))} className={btn}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden><path d="M5 12h14" /></svg>
       </button>
@@ -465,7 +465,7 @@ export default function AvailabilityTab({
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); unblockMany.mutate(run.items); }}
-          className="press h-9 shrink-0 rounded px-2.5 text-[0.74rem] font-medium text-ink-muted hover:bg-canvas hover:text-rose"
+          className="press h-9 shrink-0 rounded-ctl px-2.5 text-[0.74rem] font-medium text-ink-muted hover:bg-canvas hover:text-rose"
         >
           {many ? 'Reopen all' : 'Reopen'}
         </button>
@@ -500,7 +500,7 @@ export default function AvailabilityTab({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onSelectTimeBlock(t); }}
-            className="press h-9 shrink-0 rounded px-2.5 text-[0.74rem] font-medium text-ink-muted hover:bg-canvas hover:text-ink"
+            className="press h-9 shrink-0 rounded-ctl px-2.5 text-[0.74rem] font-medium text-ink-muted hover:bg-canvas hover:text-ink"
           >
             Edit
           </button>
@@ -536,7 +536,7 @@ export default function AvailabilityTab({
     <div className="pb-4">
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-5">
         {/* ── Calendar ── */}
-        <section className="min-w-0 border border-line bg-paper p-4 sm:p-6">
+        <section className="min-w-0 rounded-card border border-line bg-paper p-4 sm:p-6">
           {/* View switcher and Select days share one line, so the date and the
               grid start near the top of the card. */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -711,7 +711,7 @@ export default function AvailabilityTab({
         {/* ── Control panel ── */}
         <div ref={panelRef} className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-20">
           {selectMode ? (
-            <section className="border border-line bg-paper px-4 py-4 sm:px-5">
+            <section className="rounded-card border border-line bg-paper px-4 py-4 sm:px-5">
               <p className="text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">Picking days</p>
               <p className="mt-1.5 text-[0.8rem] leading-relaxed text-ink-muted">
                 Tap every day you're away, then hit the close button. They don't have to be in a row, and you can jump between months while you pick.
@@ -724,7 +724,7 @@ export default function AvailabilityTab({
                       type="button"
                       onClick={() => togglePick(d)}
                       aria-label={`Remove ${fmtDay(d)}`}
-                      className="press inline-flex h-8 items-center gap-1.5 rounded bg-tone-alert/10 px-2.5 text-[0.74rem] font-medium tabular-nums text-tone-alert hover:bg-tone-alert/15"
+                      className="press inline-flex h-8 items-center gap-1.5 rounded-ctl bg-tone-alert/10 px-2.5 text-[0.74rem] font-medium tabular-nums text-tone-alert hover:bg-tone-alert/15"
                     >
                       {fmtDay(d)} <Cross className="h-2 w-2" strokeWidth={3.5} />
                     </button>
@@ -769,7 +769,7 @@ export default function AvailabilityTab({
               {selEvents.length > 0 && (
                 <div className="px-4 py-4 sm:px-5">
                   <Label className="tabular-nums">On this day · {selEvents.length}</Label>
-                  <div className="mt-2.5 divide-y divide-line border border-line">
+                  <div className="mt-2.5 divide-y divide-line rounded-ctl overflow-hidden border border-line">
                     {selEvents.map(ev => (
                       <button
                         key={ev.id}
@@ -812,7 +812,7 @@ export default function AvailabilityTab({
                     <button
                       type="button"
                       onClick={() => removeOverride.mutate(selectedDate)}
-                      className="press -ml-1 mt-2 inline-flex h-9 items-center gap-1.5 rounded px-1 text-[0.76rem] font-medium text-ink-muted hover:text-ink"
+                      className="press -ml-1 mt-2 inline-flex h-9 items-center gap-1.5 rounded-ctl px-1 text-[0.76rem] font-medium text-ink-muted hover:text-ink"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
                         <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" />
@@ -852,8 +852,8 @@ export default function AvailabilityTab({
               </div>
             </Panel>
           ) : (
-            <section className="flex flex-col items-center border border-line bg-paper px-6 py-8 text-center">
-              <span className="mb-3 flex h-11 w-11 items-center justify-center bg-rose-wash text-rose">
+            <section className="flex flex-col items-center rounded-card border border-line bg-paper px-6 py-8 text-center">
+              <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-rose-wash text-rose">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
                   <rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9h18" /><path d="M8 2.5v4M16 2.5v4" />
                 </svg>

@@ -175,7 +175,7 @@ export default function EmailLogPanel({ booking, registration, dm, className = '
                     <span className="text-[0.86rem] font-semibold leading-snug text-ink">
                       {kindLabel(row.kind)}
                     </span>
-                    <span className={cx('inline-flex h-5 shrink-0 items-center px-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.1em]', t.chip)}>
+                    <span className={cx('inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em]', t.chip)}>
                       {STATUS_LABEL[row.status] || row.status}
                     </span>
                     {!isClient && <span className="text-[0.74rem] text-ink-muted">your copy</span>}
@@ -195,7 +195,7 @@ export default function EmailLogPanel({ booking, registration, dm, className = '
                       the time keep the width they need in a narrow column. */}
                   {isClient && (
                     <button type="button" onClick={() => resend(row)} disabled={resending === row.id}
-                      className="press mt-2.5 inline-flex h-8 items-center rounded border border-line-strong bg-paper px-3 text-[0.74rem] font-medium text-ink hover:border-ink/50 disabled:pointer-events-none disabled:opacity-40 max-sm:h-10">
+                      className="press mt-2.5 inline-flex h-8 items-center rounded-ctl border border-line-strong bg-paper px-3 text-[0.74rem] font-medium text-ink hover:border-ink/50 disabled:pointer-events-none disabled:opacity-40 max-sm:h-10">
                       {resending === row.id ? 'Sending…' : 'Send again'}
                     </button>
                   )}

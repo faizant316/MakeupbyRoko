@@ -127,7 +127,7 @@ export default function ContractEditorModal({
   const hovered = hoverToken && CONTRACT_PLACEHOLDERS.find(p => p.token === hoverToken);
 
   // One white group on hairlines; the edge darkens while you type inside it.
-  const group = 'border border-line bg-paper transition-colors duration-200 focus-within:border-ink/30';
+  const group = 'rounded-card border border-line bg-paper transition-colors duration-200 focus-within:border-ink/30';
 
   return (
     <Sheet
@@ -202,7 +202,7 @@ export default function ContractEditorModal({
                     onClick={() => insertToken(p.token)}
                     title={`${p.label} · e.g. ${p.sample}`}
                     className={cx(
-                      'press inline-flex h-7 items-center rounded border border-line-strong bg-paper px-2 text-[0.74rem] font-medium text-ink-soft hover:border-ink/40 hover:text-ink',
+                      'press inline-flex h-7 items-center rounded-ctl border border-line-strong bg-paper px-2 text-[0.74rem] font-medium text-ink-soft hover:border-ink/40 hover:text-ink',
                       !armed && 'opacity-55',
                     )}
                   >
@@ -363,7 +363,7 @@ export default function ContractEditorModal({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4" data-lenis-prevent>
             {/* Sit the contract on a sheet of paper so it reads as a document */}
-            <div className="border border-line bg-paper p-5">
+            <div className="rounded-card border border-line bg-paper p-5">
               <ContractPreview c={preview} dm={dm} />
             </div>
           </div>
@@ -405,7 +405,7 @@ function GroupLabel({ children, right }) {
 const rowInput = 'h-10 bg-transparent text-right text-[16px] text-ink outline-none placeholder:text-ink-muted/70 sm:text-[0.86rem]';
 
 // A boxed textarea inside a group.
-const areaClass = 'block w-full resize-none rounded border border-line bg-paper px-3 py-2.5 text-[16px] leading-relaxed outline-none placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 sm:text-[0.86rem]';
+const areaClass = 'block w-full resize-none rounded-ctl border border-line bg-paper px-3 py-2.5 text-[16px] leading-relaxed outline-none placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 sm:text-[0.86rem]';
 
 // One row of a grouped inset list: label left, value right. The group draws
 // the hairlines between rows.
@@ -451,7 +451,7 @@ function IconBtn({ children, onClick, disabled, danger, label }) {
       aria-label={label}
       title={label}
       className={cx(
-        'press flex h-10 w-10 items-center justify-center rounded transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-25 sm:h-8 sm:w-8',
+        'press flex h-10 w-10 items-center justify-center rounded-ctl transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-25 sm:h-8 sm:w-8',
         danger ? 'text-tone-alert' : 'text-ink-muted hover:text-ink',
       )}
     >
@@ -468,7 +468,7 @@ export function ContractPreview({ c, dm }) {
     <div>
       <p className="mb-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-rose">{c.title}</p>
       {c.summary?.length > 0 && (
-        <dl className="mb-3 divide-y divide-line border border-line bg-paper px-3 py-1">
+        <dl className="mb-3 divide-y divide-line rounded-card border border-line bg-paper px-3 py-1">
           {c.summary.map(row => (
             <div key={row.label} className="flex items-baseline justify-between gap-3 py-1.5">
               <dt className="shrink-0 text-[0.68rem] text-ink-muted">{row.label}</dt>

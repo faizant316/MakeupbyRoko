@@ -175,7 +175,7 @@ export default function ContractSettings({ darkMode: dm }) {
       <button
         type="button"
         onClick={openEditor}
-        className="group block w-full border border-line bg-canvas text-left transition-colors duration-200 hover:border-ink/30"
+        className="group block w-full rounded-card border border-line bg-canvas text-left transition-colors duration-200 hover:border-ink/30"
       >
         <span className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
           <span className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{savedPreview.title}</span>

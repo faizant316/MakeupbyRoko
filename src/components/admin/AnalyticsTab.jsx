@@ -89,7 +89,7 @@ function TrafficTrend({ metric, daily, loading }) {
   const yFmt    = m.dur ? (v => v === 0 ? '' : fmtDur(v)) : undefined;
 
   return (
-    <section className="border border-line bg-paper">
+    <section className="rounded-card border border-line bg-paper">
       <PanelHead dot eyebrow="Last 30 days" title={m.title} />
 
       {loading ? (
@@ -142,8 +142,8 @@ export default function AnalyticsTab({ darkMode }) {
 
   if (!loading && data?.notConfigured) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 border border-line bg-paper px-6 py-14 text-center">
-        <span className="flex h-12 w-12 items-center justify-center border border-line text-rose">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-card border border-line bg-paper px-6 py-14 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full border border-line text-rose">
           <BarChart2 size={20} strokeWidth={1.5} />
         </span>
         <div>
@@ -158,7 +158,7 @@ export default function AnalyticsTab({ darkMode }) {
 
   if (!loading && err) {
     return (
-      <div className="flex flex-col items-center justify-center gap-1.5 border border-line bg-paper px-6 py-14 text-center">
+      <div className="flex flex-col items-center justify-center gap-1.5 rounded-card border border-line bg-paper px-6 py-14 text-center">
         <p className="text-[0.86rem] font-semibold text-ink">Failed to load analytics</p>
         <p className="text-[0.74rem] text-ink-muted">{err}</p>
       </div>
@@ -173,7 +173,7 @@ export default function AnalyticsTab({ darkMode }) {
     <div className="flex flex-col gap-8">
 
       {/* Realtime. A dot that breathes for people on the site right now. */}
-      <div className="flex items-center gap-3 border border-line bg-paper px-4 py-3.5 sm:px-5">
+      <div className="flex items-center gap-3 rounded-card border border-line bg-paper px-4 py-3.5 sm:px-5">
         <span className="live-dot h-2 w-2 shrink-0 rounded-full bg-tone-alert" />
         <div className="min-w-0 flex-1">
           {loading
@@ -190,7 +190,7 @@ export default function AnalyticsTab({ darkMode }) {
           chart below. */}
       <div>
         <SectionHead label="Your visitors" desc="How many people came to the site in the last 30 days, and how they spent their time. Tap a card to chart it." />
-        <div className="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px rounded-card overflow-hidden border border-line bg-line lg:grid-cols-4">
           <StatTile label="Visitors"  value={fmt(ov?.activeUsers)}                         sub="Unique people who visited"     loading={loading}
             active={metric === 'visitors'} onClick={() => setMetric('visitors')} />
           <StatTile label="Sessions"  value={fmt(ov?.sessions)}                            sub="Total visits (1 person can visit multiple times)" loading={loading}
@@ -208,7 +208,7 @@ export default function AnalyticsTab({ darkMode }) {
       {/* Traffic sources */}
       <div>
         <SectionHead label="Where your visitors come from" desc="How people are finding the site, so you know what's actually working" />
-        <div className="divide-y divide-line border border-line bg-paper">
+        <div className="divide-y divide-line rounded-card overflow-hidden border border-line bg-paper">
           {loading
             ? [1, 2, 3, 4].map(i => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
@@ -227,7 +227,7 @@ export default function AnalyticsTab({ darkMode }) {
                   const bar = totalTrafficSess ? (ch.sessions / totalTrafficSess) * 100 : 0;
                   return (
                     <div key={ch.channel} className="flex items-center gap-3.5 px-4 py-3.5 sm:px-5">
-                      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center border border-line text-[0.8rem] font-semibold text-ink-soft">
+                      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line text-[0.8rem] font-semibold text-ink-soft">
                         {m.letter}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -248,7 +248,7 @@ export default function AnalyticsTab({ darkMode }) {
       {/* Top pages */}
       <div>
         <SectionHead label="Where they go on your site" desc="The pages people visit most. Your booking page ranking high is a good sign" />
-        <div className="divide-y divide-line border border-line bg-paper">
+        <div className="divide-y divide-line rounded-card overflow-hidden border border-line bg-paper">
           {loading
             ? [1, 2, 3, 4, 5].map(i => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3 sm:px-5">
@@ -286,7 +286,7 @@ export default function AnalyticsTab({ darkMode }) {
         {/* Devices */}
         <div className="flex flex-col">
           <SectionHead label="What they use" desc="Phone vs. computer" />
-          <div className="flex flex-1 flex-col gap-4 border border-line bg-paper px-4 py-4 sm:px-5">
+          <div className="flex flex-1 flex-col gap-4 rounded-card border border-line bg-paper px-4 py-4 sm:px-5">
             {loading
               ? [1, 2, 3].map(i => (
                   <div key={i} className="flex flex-col gap-2">
@@ -319,7 +319,7 @@ export default function AnalyticsTab({ darkMode }) {
         {/* Locations */}
         <div className="flex flex-col">
           <SectionHead label="Where they're based" desc="Cities & countries" />
-          <div className="flex-1 divide-y divide-line border border-line bg-paper">
+          <div className="flex-1 divide-y divide-line rounded-card overflow-hidden border border-line bg-paper">
             {loading
               ? [1, 2, 3, 4, 5].map(i => (
                   <div key={i} className="flex items-center gap-2.5 px-4 py-3 sm:px-5">
@@ -346,7 +346,7 @@ export default function AnalyticsTab({ darkMode }) {
       </div>
 
       {/* Page views total, and the GA property this is all read from. */}
-      <div className="grid gap-px border border-line bg-line sm:grid-cols-2">
+      <div className="grid gap-px rounded-card overflow-hidden border border-line bg-line sm:grid-cols-2">
         {!loading && ov && (
           <div className="bg-paper px-4 py-4 sm:px-5 sm:py-5">
             <Label className="block">Total page views</Label>
@@ -361,7 +361,7 @@ export default function AnalyticsTab({ darkMode }) {
               G-HE25CGQHH4
             </p>
           </div>
-          <span className="inline-flex h-6 w-fit items-center gap-1.5 bg-tone-confirmed/10 px-2 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-tone-confirmed">
+          <span className="inline-flex h-6 w-fit items-center gap-1.5 rounded-full bg-tone-confirmed/10 px-2.5 text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-tone-confirmed">
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-tone-confirmed" />
             Tracking active
           </span>
@@ -373,10 +373,10 @@ export default function AnalyticsTab({ darkMode }) {
         href={`${GA}/reports/intelligenthome`}
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex min-h-[64px] items-center justify-between gap-3 border border-line bg-paper px-4 py-3.5 transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas sm:px-5"
+        className="group flex min-h-[64px] items-center justify-between gap-3 rounded-card border border-line bg-paper px-4 py-3.5 transition-colors duration-200 hover:bg-canvas/60 active:bg-canvas sm:px-5"
       >
         <span className="flex min-w-0 items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-line text-ink-soft">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line text-ink-soft">
             <BarChart2 size={15} strokeWidth={1.5} />
           </span>
           <span className="min-w-0">

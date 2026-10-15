@@ -40,7 +40,7 @@ export default function ReviewsList({ reviews, loading, onApprove, onDelete, dar
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-20 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center border border-line bg-paper">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-line bg-paper">
             <StarOutline className="h-5 w-5 text-rose-soft" />
           </div>
           <p className="text-[0.86rem] text-ink-muted">
@@ -63,7 +63,7 @@ function ReviewCard({ review, onApprove, onDelete }) {
   const rating = review.rating || 0;
 
   return (
-    <article className="flex flex-col border border-line bg-paper p-5">
+    <article className="flex flex-col rounded-card border border-line bg-paper p-5">
       {/* Header */}
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -78,7 +78,7 @@ function ReviewCard({ review, onApprove, onDelete }) {
             </p>
           )}
         </div>
-        <span className={cx('inline-flex h-[22px] shrink-0 items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em]', STATUS_TONE[review.status] || STATUS_TONE.pending)}>
+        <span className={cx('inline-flex h-[22px] shrink-0 items-center rounded-full px-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.1em]', STATUS_TONE[review.status] || STATUS_TONE.pending)}>
           {review.status}
         </span>
       </div>
@@ -92,7 +92,7 @@ function ReviewCard({ review, onApprove, onDelete }) {
 
       {/* Client photo */}
       {review.photo && (
-        <a href={review.photo} target="_blank" rel="noopener noreferrer" className="mb-3 block overflow-hidden border border-line">
+        <a href={review.photo} target="_blank" rel="noopener noreferrer" className="mb-3 block overflow-hidden rounded-ctl border border-line">
           <img src={review.photo} alt="Client look" className="max-h-[150px] w-full object-cover" />
         </a>
       )}

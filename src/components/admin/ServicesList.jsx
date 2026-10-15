@@ -120,7 +120,7 @@ export default function ServicesList({ darkMode: dm }) {
                 ) : (
                   <button type="button" onClick={e => { e.stopPropagation(); setDeleteConfirm(svc.id); }}
                     aria-label="Delete service"
-                    className="press flex h-9 w-9 items-center justify-center rounded text-ink-muted transition-colors hover:bg-tone-alert/[0.06] hover:text-tone-alert focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                    className="press flex h-9 w-9 items-center justify-center rounded-ctl text-ink-muted transition-colors hover:bg-tone-alert/[0.06] hover:text-tone-alert focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-3.5 w-3.5" aria-hidden>
                       <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                     </svg>
@@ -138,7 +138,7 @@ export default function ServicesList({ darkMode: dm }) {
       )}
 
       {services.length === 0 && (
-        <div className="border border-line bg-paper px-5 py-14 text-center">
+        <div className="rounded-card border border-line bg-paper px-5 py-14 text-center">
           <p className="mb-4 text-[0.86rem] text-ink-muted">No services yet</p>
           <Button variant="solid" onClick={openNew}>
             Create your first service

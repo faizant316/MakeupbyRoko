@@ -72,9 +72,9 @@ const TrashIcon = iconOf('trash');
 const RefreshIcon = iconOf('refresh');
 
 // A small text button for the corner of a section (New link, Edit a note).
-const MINI = 'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded px-2.5 text-[0.74rem] font-medium text-ink-soft hover:bg-canvas hover:text-ink disabled:pointer-events-none disabled:opacity-40';
+const MINI = 'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-ctl px-2.5 text-[0.74rem] font-medium text-ink-soft hover:bg-canvas hover:text-ink disabled:pointer-events-none disabled:opacity-40';
 // A square, icon-only partner for the quiet buttons beside it.
-const SQUARE = 'press inline-flex h-9 w-9 shrink-0 items-center justify-center rounded border border-line-strong bg-paper text-ink-muted hover:border-ink/50 hover:text-ink max-sm:h-11 max-sm:w-11';
+const SQUARE = 'press inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-ctl border border-line-strong bg-paper text-ink-muted hover:border-ink/50 hover:text-ink max-sm:h-11 max-sm:w-11';
 
 // A small spinner for the buttons that wait on a send.
 function Spinner({ className }) {
@@ -150,11 +150,11 @@ function CheckRow({ checked, onClick, title, children }) {
   return (
     <button type="button" role="checkbox" aria-checked={checked} onClick={onClick}
       className={cx(
-        'flex w-full items-start gap-3 rounded border px-3.5 py-3 text-left transition-colors duration-200',
+        'flex w-full items-start gap-3 rounded-ctl border px-3.5 py-3 text-left transition-colors duration-200',
         checked ? 'border-ink/30 bg-canvas' : 'border-line bg-paper hover:border-line-strong',
       )}>
       <span className={cx(
-        'mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors duration-150',
+        'mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-ctl border transition-colors duration-150',
         checked ? 'border-ink bg-ink text-paper' : 'border-line-strong bg-paper',
       )}>
         {checked && <Icon name="check" className="h-3 w-3" strokeWidth={3} />}
@@ -273,7 +273,7 @@ function DepositStrip({ booking, onUpdateBooking }) {
                     key={url}
                     src={url}
                     alt={`Zelle screenshot ${i + 1}`}
-                    className={cx('w-full cursor-pointer border border-line bg-canvas object-contain', signedUrls.length > 1 ? 'max-h-[320px]' : 'max-h-[400px]')}
+                    className={cx('w-full cursor-pointer rounded-ctl border border-line bg-canvas object-contain', signedUrls.length > 1 ? 'max-h-[320px]' : 'max-h-[400px]')}
                     onClick={() => window.open(url, '_blank')}
                     title="Click to open full size"
                   />
@@ -476,7 +476,7 @@ function CashDueField({ booking, onUpdateBooking }) {
         <p className="mt-0.5 text-[0.74rem] leading-snug text-ink-muted/80">Goes in their confirmation email</p>
       </div>
       <dd className="shrink-0">
-        <label className="flex h-11 w-32 items-center gap-1 rounded border border-line bg-paper px-3 transition-colors duration-200 focus-within:border-ink/60 sm:h-10">
+        <label className="flex h-11 w-32 items-center gap-1 rounded-ctl border border-line bg-paper px-3 transition-colors duration-200 focus-within:border-ink/60 sm:h-10">
           <span className="text-ink-muted">$</span>
           <input
             value={draft}
@@ -685,7 +685,7 @@ function DayPeek({ dateKey, bookings = [], classRegs = [], excludeConsultOf, dra
         <span className="flex-1" />
         {onOpenFull && (
           <button type="button" onClick={onOpenFull} title="Open full schedule" aria-label="Open full schedule"
-            className="press -mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+            className="press -mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-ctl text-ink-muted hover:bg-canvas hover:text-ink">
             <Icon name="calendar" className="h-3.5 w-3.5" />
           </button>
         )}
@@ -893,7 +893,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 
       {/* Scheduled state */}
       {hasConsult && !expanded && (
-        <div className="flex items-center justify-between gap-3 border border-line bg-paper px-4 py-3.5">
+        <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-paper px-4 py-3.5">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-[0.86rem] font-semibold tabular-nums text-tone-consult">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-tone-consult" />
@@ -906,7 +906,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
               {(meetingId || parsed.meetingId) ? (
                 <button type="button"
                   onClick={() => openZoomRoom(meetLink || parsed.link, meetingId || parsed.meetingId)}
-                  className="press mt-2 inline-flex h-8 items-center gap-1.5 rounded bg-rose px-3 text-[0.74rem] font-semibold text-paper hover:bg-rose/90">
+                  className="press mt-2 inline-flex h-8 items-center gap-1.5 rounded-ctl bg-rose px-3 text-[0.74rem] font-semibold text-paper hover:bg-rose/90">
                   <Icon name="video" className="h-3.5 w-3.5" strokeWidth={2} />
                   Join
                 </button>
@@ -932,7 +932,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
       {!hasConsult && !expanded && (
         <button type="button" onClick={() => setExpanded(true)}
           className={cx(
-            'press flex w-full items-center justify-between gap-3 rounded px-4 py-3.5 text-left',
+            'press flex w-full items-center justify-between gap-3 rounded-ctl px-4 py-3.5 text-left',
             leadStep ? 'bg-ink text-paper hover:bg-ink/85' : 'border border-dashed border-line-strong bg-paper text-ink hover:border-ink/40',
           )}>
           <span className="flex min-w-0 items-center gap-3">
@@ -952,7 +952,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
 
       {/* Picker */}
       {expanded && (
-        <div className="border border-line bg-paper">
+        <div className="rounded-card border border-line bg-paper">
           <div className="flex items-center gap-3 border-b border-line py-1.5 pl-4 pr-1.5 sm:pl-5">
             <div className="min-w-0 flex-1 py-1.5">
               <p className="text-[0.92rem] font-semibold tracking-[-0.01em] text-ink">{hasConsult ? 'Reschedule consultation' : 'Schedule consultation'}</p>
@@ -991,7 +991,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 {['Zoom', 'Phone'].map(key => (
                   <button key={key} type="button" role="radio" aria-checked={form.type === key} onClick={() => set('type', key)}
                     className={cx(
-                      'press h-11 rounded border text-[0.86rem] font-medium',
+                      'press h-11 rounded-ctl border text-[0.86rem] font-medium',
                       form.type === key ? 'border-ink bg-ink text-paper' : 'border-line-strong bg-paper text-ink-soft hover:border-ink/50 hover:text-ink',
                     )}>
                     {key}
@@ -1021,13 +1021,13 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 ) : (
                   <button type="button" onClick={copyMeetLink}
                     className={cx(
-                      'flex min-h-[48px] w-full items-center justify-between gap-3 rounded border px-3.5 text-left transition-colors duration-200',
+                      'flex min-h-[48px] w-full items-center justify-between gap-3 rounded-ctl border px-3.5 text-left transition-colors duration-200',
                       linkCopied ? 'border-ink bg-canvas' : 'border-line-strong bg-paper hover:border-ink/50',
                     )}>
                     <span className="truncate text-[0.8rem] font-medium text-ink-soft">
                       {meetLink}
                     </span>
-                    <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded bg-ink px-2.5 text-[0.74rem] font-semibold text-paper">
+                    <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-ctl bg-ink px-2.5 text-[0.74rem] font-semibold text-paper">
                       {linkCopied ? <><Icon name="check" className="h-2.5 w-2.5" strokeWidth={3.5} />Copied</> : 'Copy'}
                     </span>
                   </button>
@@ -1050,7 +1050,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
             {!showConfirmSend ? (
               <button type="button" onClick={() => { if (confirmBlocked) { onBlockedByTime?.(); return; } if (form.date && form.time) setShowConfirmSend(true); }} disabled={!form.date && !confirmBlocked}
                 className={cx(
-                  'press flex h-12 w-full items-center justify-center gap-2 rounded text-[0.92rem] font-semibold',
+                  'press flex h-12 w-full items-center justify-center gap-2 rounded-ctl text-[0.92rem] font-semibold',
                   confirmBlocked
                     ? 'border border-dashed border-tone-pending/50 bg-tone-pending/[0.06] text-tone-pending'
                     : 'bg-ink text-paper hover:bg-ink/85 disabled:pointer-events-none disabled:opacity-40',
@@ -1058,7 +1058,7 @@ function ConsultationScheduler({ booking, onUpdateBooking, dm, onSent, bridal, c
                 {confirmBlocked ? 'Set the appointment time first' : sendLabel}
               </button>
             ) : (
-              <div className="border border-line bg-canvas/60 p-4">
+              <div className="rounded-ctl border border-line bg-canvas/60 p-4">
                 <p className="text-[0.92rem] font-semibold text-ink">{migrated ? 'Send welcome email?' : hasConsult ? 'Send updated time?' : consultOnly ? 'Send consultation details?' : 'Confirm & send email?'}</p>
                 <Specs className="mt-1.5">
                   <Spec label="Date" value={form.date ? new Date(form.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Not set'} />
@@ -2104,7 +2104,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
   const printButton = (
     <button type="button" onClick={printAgreement}
-      className="press inline-flex min-h-[36px] items-center gap-2 rounded border border-line-strong bg-paper px-3.5 py-2 text-left text-[0.8rem] font-medium text-ink hover:border-ink/50 max-sm:min-h-[44px]">
+      className="press inline-flex min-h-[36px] items-center gap-2 rounded-ctl border border-line-strong bg-paper px-3.5 py-2 text-left text-[0.8rem] font-medium text-ink hover:border-ink/50 max-sm:min-h-[44px]">
       <Icon name="download" className="h-3.5 w-3.5" />
       View / print agreement (save as PDF)
     </button>
@@ -2194,7 +2194,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
 
           {/* Contact composer: Roko's personal email, sent as roko@makeupbyroko.org */}
           {showCompose && (
-            <section ref={composeRef} className="rise-in border border-line bg-paper" style={slot(3)}>
+            <section ref={composeRef} className="rise-in rounded-card border border-line bg-paper" style={slot(3)}>
               <header className="flex items-center gap-3 border-b border-line py-1.5 pl-4 pr-1.5 sm:pl-5">
                 <div className="min-w-0 flex-1 py-1.5">
                   <h2 className="text-[0.95rem] font-semibold tracking-[-0.01em] text-ink">Message client</h2>
@@ -2210,7 +2210,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-5 sm:py-5">
                 {/* Date/time changes don't live here, so route her to the one panel. */}
                 <button type="button" onClick={() => { setShowCompose(false); openTimePicker(); }}
-                  className="press inline-flex min-h-[36px] items-center gap-2 self-start rounded bg-canvas px-3 py-2 text-left text-[0.8rem] font-medium text-ink-soft hover:text-ink">
+                  className="press inline-flex min-h-[36px] items-center gap-2 self-start rounded-ctl bg-canvas px-3 py-2 text-left text-[0.8rem] font-medium text-ink-soft hover:text-ink">
                   <Icon name="calendar" className="h-3.5 w-3.5" />
                   Changing the date or time? Do it here
                   <Icon name="right" className="h-3.5 w-3.5" />
@@ -2333,7 +2333,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   {undoTime.emailed && <span> · {firstName} was emailed the new time</span>}
                 </p>
                 <button type="button" onClick={undoTimeChange}
-                  className="press h-9 shrink-0 rounded px-2.5 text-[0.8rem] font-semibold text-rose hover:bg-rose/10">
+                  className="press h-9 shrink-0 rounded-ctl px-2.5 text-[0.8rem] font-semibold text-rose hover:bg-rose/10">
                   Undo
                 </button>
                 {/* Dismiss: she's happy with the change and doesn't want the row
@@ -2548,7 +2548,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                   disabled={(!pendingStart && !booking.time) || panelSending}
                   onClick={!pendingStart && booking.time ? clearTime : commitChange}
                   className={cx(
-                    'press mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded px-4 py-3 text-center text-[0.92rem] font-semibold disabled:pointer-events-none',
+                    'press mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-ctl px-4 py-3 text-center text-[0.92rem] font-semibold disabled:pointer-events-none',
                     pendingStart || booking.time ? 'bg-ink text-paper hover:bg-ink/85' : 'bg-canvas text-ink-muted',
                     panelSending && 'opacity-70',
                   )}
@@ -2602,7 +2602,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                       </button>
                     )}
                     <Fold open={!consultExpanded && confirmLaterOpen}>
-                      <div className="mt-3 border border-line bg-canvas/60 p-4">
+                      <div className="mt-3 rounded-ctl border border-line bg-canvas/60 p-4">
                         <p className="text-[0.92rem] font-semibold text-ink">Confirm without a consultation time?</p>
                         <p className="mt-1 text-[0.8rem] leading-relaxed text-ink-muted">
                           One email goes to <span className="font-medium text-ink">{booking.email}</span> right now with the confirmation and photo upload link. This card will keep reminding you to schedule the consultation.
@@ -2703,7 +2703,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                 </button>
               ) : (
                 <button type="button" onClick={() => setNotesEditing(true)}
-                  className="press flex min-h-[48px] w-full items-center gap-2 rounded border border-dashed border-line-strong px-4 text-ink-muted hover:border-ink/40 hover:text-ink-soft">
+                  className="press flex min-h-[48px] w-full items-center gap-2 rounded-ctl border border-dashed border-line-strong px-4 text-ink-muted hover:border-ink/40 hover:text-ink-soft">
                   <Icon name="pencil" className="h-3.5 w-3.5" />
                   <span className="text-[0.8rem] font-medium">Add a private note…</span>
                 </button>
@@ -2836,7 +2836,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     aria-pressed={isActive}
                     title={locked ? 'Set the appointment time first' : undefined}
                     className={cx(
-                      'press flex h-11 items-center justify-center gap-1.5 rounded border px-3 text-[0.86rem] capitalize',
+                      'press flex h-11 items-center justify-center gap-1.5 rounded-ctl border px-3 text-[0.86rem] capitalize',
                       isActive ? STATUS_ON[s]
                         : locked ? 'border-dashed border-line-strong font-medium text-ink-muted/70'
                         : 'border-line-strong bg-paper font-medium text-ink-soft hover:border-ink/50 hover:text-ink',
@@ -2853,7 +2853,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
             {!booking.time && booking.status !== 'confirmed' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
               <button type="button"
                 onClick={refuseConfirm}
-                className="mt-3 flex w-full items-start gap-2.5 rounded bg-tone-pending/[0.06] px-3.5 py-3 text-left transition-colors duration-200 hover:bg-tone-pending/10">
+                className="mt-3 flex w-full items-start gap-2.5 rounded-ctl bg-tone-pending/[0.06] px-3.5 py-3 text-left transition-colors duration-200 hover:bg-tone-pending/10">
                 <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-tone-pending" />
                 <span className="text-[0.8rem] leading-snug text-tone-pending">
                   No appointment time set yet, so this can&rsquo;t be confirmed.{' '}
@@ -2902,7 +2902,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               <div ref={consultRef} className="mt-5 border-t border-line pt-5">
                 {!booking.time && booking.status === 'pending' ? (
                   <button type="button" onClick={refuseConfirm}
-                    className="press flex w-full items-center gap-3 rounded border border-dashed border-line-strong px-4 py-3.5 text-left hover:border-ink/40">
+                    className="press flex w-full items-center gap-3 rounded-ctl border border-dashed border-line-strong px-4 py-3.5 text-left hover:border-ink/40">
                     <StepDot n={1} state="active" />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[0.92rem] font-semibold text-ink">
@@ -2924,7 +2924,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
               existed: a test, a duplicate, a wrong number. The line under it is
               there because the two look like the same action from a distance,
               and only one of them is recoverable. */}
-          <section className="rise-in border border-line bg-paper px-4 py-4 sm:px-5" style={slot(15)}>
+          <section className="rise-in rounded-card border border-line bg-paper px-4 py-4 sm:px-5" style={slot(15)}>
             {!confirmDelete ? (
               <Button variant="danger" icon={TrashIcon} onClick={() => setConfirmDelete(true)} className="max-sm:h-11">
                 Delete appointment
@@ -3229,7 +3229,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
       <button type="button" onClick={toggleSchedule} title="See your day side by side"
         aria-hidden={!(apptOut && !showSchedule)} tabIndex={apptOut && !showSchedule ? 0 : -1}
         className={cx(
-          'fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[150] inline-flex h-12 items-center gap-2 rounded bg-ink px-5 text-[0.86rem] font-semibold text-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-[opacity,transform] duration-300 ease-quint active:scale-[0.97] active:duration-75',
+          'fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[150] inline-flex h-12 items-center gap-2 rounded-ctl bg-ink px-5 text-[0.86rem] font-semibold text-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-[opacity,transform] duration-300 ease-quint active:scale-[0.97] active:duration-75',
           apptOut && !showSchedule ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0',
         )}>
         <Icon name="calendar" className="h-4 w-4" strokeWidth={1.8} />
@@ -3387,7 +3387,7 @@ export default function BookingDetail({ booking, onBack, onUpdateStatus, onUpdat
                     </p>
                   </>
                 ) : (
-                  <p className="rounded border border-dashed border-line-strong px-3.5 py-3 text-[0.8rem] leading-snug text-ink-muted">
+                  <p className="rounded-ctl border border-dashed border-line-strong px-3.5 py-3 text-[0.8rem] leading-snug text-ink-muted">
                     No note will be included. The email still reads warmly, it just says the booking is cancelled.
                   </p>
                 )}

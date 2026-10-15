@@ -51,7 +51,7 @@ function WeekDayCell({ d, todayKey, selectedDate, dateMap, confirmedDateMap = {}
       onDoubleClick={(e) => { e.preventDefault(); if (isBlocked) onUnblock(blockedMap[key]?.id); else onDoubleClick(key); }}
       title={isBlocked ? 'Day off · double-click to reopen' : isFull ? `Fully booked (${count})` : isFillingUp ? `${effectiveCap - count} spot(s) left` : 'Click to select · double-click to close the day'}
       className={cx(
-        'press relative flex w-full select-none flex-col items-center gap-1 border px-0.5 py-2.5 sm:gap-1.5 sm:px-1 sm:py-4',
+        'press relative flex w-full select-none flex-col items-center gap-1 rounded-ctl border px-0.5 py-2.5 sm:gap-1.5 sm:px-1 sm:py-4',
         isSel ? 'border-ink bg-ink text-paper'
           : isBlocked ? 'border-tone-alert/25 bg-tone-alert/[0.05]'
           : isFull ? 'border-tone-alert/20 bg-tone-alert/[0.03] hover:border-tone-alert/40'
@@ -286,7 +286,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
         type="button"
         onClick={() => isBlocked ? unblockMutation.mutate(blockedMap[key].id) : setBlockPopup({ date: key })}
         className={cx(
-          'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded border px-2.5 text-[0.72rem] font-medium transition-colors',
+          'press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-ctl border px-2.5 text-[0.72rem] font-medium transition-colors',
           isBlocked ? 'border-tone-alert/30 text-tone-alert hover:border-tone-alert/60' : 'border-line-strong text-ink-muted hover:border-tone-alert/40 hover:text-tone-alert',
         )}
       >
@@ -330,7 +330,7 @@ export default function AdminCalendar({ bookings, classRegs = [], currentMonth, 
 
   return (
     <>
-      <section className="border border-line bg-paper p-4 sm:p-6">
+      <section className="rounded-card border border-line bg-paper p-4 sm:p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Segmented
             size="sm"

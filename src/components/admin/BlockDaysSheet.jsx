@@ -60,7 +60,7 @@ export default function BlockDaysSheet({ dates = [], conflicts = [], busy, dm, o
       {!single && (
         <div className="mb-5 flex flex-wrap gap-1.5">
           {dates.map(d => (
-            <span key={d} className="inline-flex h-7 items-center bg-tone-alert/10 px-2 text-[0.74rem] font-medium tabular-nums text-tone-alert">
+            <span key={d} className="inline-flex h-7 items-center rounded-full bg-tone-alert/10 px-2.5 text-[0.74rem] font-medium tabular-nums text-tone-alert">
               {fmtShort(d)}
             </span>
           ))}
@@ -113,7 +113,7 @@ export default function BlockDaysSheet({ dates = [], conflicts = [], busy, dm, o
               onClick={() => setReason(s)}
               aria-pressed={on}
               className={cx(
-                'press inline-flex h-8 items-center rounded border px-2.5 text-[0.74rem] font-medium transition-colors',
+                'press inline-flex h-8 items-center rounded-ctl border px-2.5 text-[0.74rem] font-medium transition-colors',
                 on ? 'border-rose/40 bg-rose/10 text-rose' : 'border-line text-ink-muted hover:border-ink/30 hover:text-ink',
               )}
             >

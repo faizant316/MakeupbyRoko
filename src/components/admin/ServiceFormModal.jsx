@@ -13,10 +13,10 @@ const CATEGORIES = [
 // Field label, the same small caps the rest of the dashboard uses.
 const fieldLabel = 'mb-1.5 block text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink-muted';
 // inputClass is a fixed 44px single line; a textarea needs its own height.
-const areaClass = 'w-full resize-none rounded border border-line bg-paper px-3 py-2.5 text-[16px] leading-relaxed text-ink placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 focus:outline-none sm:text-[0.9rem]';
+const areaClass = 'w-full resize-none rounded-ctl border border-line bg-paper px-3 py-2.5 text-[16px] leading-relaxed text-ink placeholder:text-ink-muted/70 transition-colors duration-200 focus:border-ink/60 focus:outline-none sm:text-[0.9rem]';
 // Dashed drop targets: a hairline that turns rose while a file is over it.
 const dropClass = (over) => cx(
-  'relative w-full cursor-pointer border border-dashed transition-colors duration-200',
+  'relative w-full cursor-pointer rounded-card border border-dashed transition-colors duration-200',
   over ? 'border-rose bg-rose/[0.04]' : 'border-line-strong bg-canvas hover:border-ink/40',
 );
 
@@ -32,10 +32,10 @@ function Section({ children }) {
 // A removable entry under "What's included" and "Key features".
 function Chip({ children, onRemove }) {
   return (
-    <span className="inline-flex h-8 items-center gap-1 rounded border border-line bg-canvas pl-2.5 pr-1 text-[0.8rem] text-ink-soft">
+    <span className="inline-flex h-8 items-center gap-1 rounded-ctl border border-line bg-canvas pl-2.5 pr-1 text-[0.8rem] text-ink-soft">
       {children}
       <button type="button" onClick={onRemove} aria-label="Remove"
-        className="press flex h-6 w-6 items-center justify-center rounded text-ink-muted hover:text-tone-alert">
+        className="press flex h-6 w-6 items-center justify-center rounded-ctl text-ink-muted hover:text-tone-alert">
         <Cross className="h-2.5 w-2.5" strokeWidth={2.6} />
       </button>
     </span>
@@ -223,7 +223,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
               <Chevron open={catOpen} className="h-3.5 w-3.5 text-ink-muted" />
             </button>
             {catOpen && (
-              <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+              <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
                 style={{ '--origin': 'top left' }}>
                 {CATEGORIES.map(c => {
                   const on = form.category === c.value;
@@ -363,7 +363,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
           {form.before_after_photos.length > 0 && (
             <div className="mt-2 grid grid-cols-3 gap-2">
               {form.before_after_photos.map((photo, i) => (
-                <div key={i} className="group relative aspect-square overflow-hidden border border-line bg-canvas">
+                <div key={i} className="group relative aspect-square overflow-hidden rounded-ctl border border-line bg-canvas">
                   <img src={photo} alt={`Before & After ${i + 1}`} className="h-full w-full object-cover" />
                   <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo"
                     className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100">
@@ -378,7 +378,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
         {/* SETTINGS */}
         <Section>Visibility</Section>
 
-        <div className="flex items-center justify-between gap-4 border border-line bg-paper px-4 py-3">
+        <div className="flex items-center justify-between gap-4 rounded-card border border-line bg-paper px-4 py-3">
           <div className="min-w-0">
             <p className="text-[0.86rem] font-medium text-ink">Active service</p>
             <p className="text-[0.76rem] text-ink-muted">
@@ -401,7 +401,7 @@ export default function ServiceFormModal({ service, onSave, onClose, darkMode: d
         </Button>
 
         <Fold open={showPreview} lazy>
-          <div className="border border-line bg-canvas p-4">
+          <div className="rounded-card border border-line bg-canvas p-4">
             <p className="mb-3 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">How it looks on the homepage</p>
             <ServicePreview form={form} />
           </div>

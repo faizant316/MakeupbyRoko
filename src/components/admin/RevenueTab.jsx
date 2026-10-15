@@ -49,7 +49,7 @@ export const GRID_LINE = 'rgb(var(--c-line))';
 export function ChartTip({ active, payload, label, name, format = v => v }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="min-w-[9rem] border border-line bg-paper px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
+    <div className="min-w-[9rem] rounded-ctl border border-line bg-paper px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
       <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-muted">{label}</p>
       {payload.map(p => (
         <p key={p.name} className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[0.8rem]">
@@ -208,8 +208,8 @@ export default function RevenueTab({ darkMode }) {
 
       {/* ── Empty state (only before any real site activity) ─────────────── */}
       {noActivity && (
-        <div className="flex items-start gap-4 border border-line bg-paper px-4 py-5 sm:px-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-line text-rose">
+        <div className="flex items-start gap-4 rounded-card border border-line bg-paper px-4 py-5 sm:px-5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-rose">
             {/* A rising line, not a sparkle. The panel is about money that
                 has not arrived yet; a sparkle says nothing about that and is
                 the one icon that reads as generated on sight. */}
@@ -233,7 +233,7 @@ export default function RevenueTab({ darkMode }) {
               chart below; the strip under them is read-only. Hairline bentos,
               the gaps are the rules. ─────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px rounded-card overflow-hidden border border-line bg-line lg:grid-cols-4">
           <StatTile label="Class revenue"    sub="this month"     value={`$${(summary.thisMonthRevenue || 0).toLocaleString()}`} delta={revDelta}
             active={metric === 'revenue'}        onClick={() => setMetric('revenue')} />
           <StatTile label="Appointments"     sub="this month"     value={summary.thisMonthBookings ?? 0}                         delta={bookDelta}
@@ -243,7 +243,7 @@ export default function RevenueTab({ darkMode }) {
           <StatTile label="Class signups"    sub="paid, all time" value={summary.paidClassSignups ?? 0}
             active={metric === 'signups'}        onClick={() => setMetric('signups')} />
         </div>
-        <div className="grid grid-cols-3 gap-px border border-line bg-line">
+        <div className="grid grid-cols-3 gap-px rounded-card overflow-hidden border border-line bg-line">
           <InsightTile label="Completion rate" value={`${completionRate}%`}       sub="bookings done" />
           <InsightTile label="Avg per class"   value={`$${avgClassRev}`}          sub="per signup" />
           <InsightTile label="Peak day"        value={summary.peakDay || '–'}     sub="most bookings" />
@@ -262,7 +262,7 @@ export default function RevenueTab({ darkMode }) {
         const yFmt = m.money ? (v => v === 0 ? '' : `$${v >= 1000 ? `${+(v / 1000).toFixed(1)}k` : v}`) : undefined;
         const tipFmt = m.money ? (v => `$${(v || 0).toLocaleString()}`) : (v => v);
         return (
-          <section className="border border-line bg-paper">
+          <section className="rounded-card border border-line bg-paper">
             <PanelHead
               dot
               eyebrow={RANGE_TITLE[range]}
@@ -305,7 +305,7 @@ export default function RevenueTab({ darkMode }) {
       {classByType.length > 0 && (
         <div>
           <Label className="mb-3 block">Class revenue breakdown</Label>
-          <div className="grid gap-px border border-line bg-line sm:grid-cols-2">
+          <div className="grid gap-px rounded-card overflow-hidden border border-line bg-line sm:grid-cols-2">
             {classByType.map(cls => (
               <div key={cls.key} className="min-w-0 bg-paper px-4 py-4 sm:px-5">
                 <div className="flex items-baseline justify-between gap-3">
@@ -322,7 +322,7 @@ export default function RevenueTab({ darkMode }) {
       )}
 
       {/* ── Most booked services ────────────────────────────── */}
-      <section className="border border-line bg-paper">
+      <section className="rounded-card border border-line bg-paper">
         <PanelHead eyebrow="Appointment analytics" title="Most booked services" />
         {topServices.length === 0 ? (
           <div className="flex flex-col items-center gap-1.5 px-6 py-9 text-center">
@@ -365,7 +365,7 @@ export default function RevenueTab({ darkMode }) {
 
       {/* ── Booksy import context: kept out of the stats, acknowledged here ── */}
       {importedClients > 0 && (
-        <div className="flex items-start gap-3 border border-line bg-paper px-4 py-3.5 sm:px-5">
+        <div className="flex items-start gap-3 rounded-card border border-line bg-paper px-4 py-3.5 sm:px-5">
           <Users size={15} strokeWidth={1.6} className="mt-0.5 shrink-0 text-ink-muted" />
           <p className="text-[0.8rem] leading-snug text-ink-muted">
             <span className="font-semibold text-ink">{importedClients.toLocaleString()} clients</span> imported from Booksy live in your

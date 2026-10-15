@@ -19,7 +19,7 @@ const TONE = {
 
 export default function StatusBadge({ status }) {
   return (
-    <span className={`inline-flex h-[22px] shrink-0 items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em] ${TONE[status] || TONE.pending}`}>
+    <span className={`inline-flex h-[22px] shrink-0 items-center rounded-full px-2.5 text-[0.6rem] font-semibold uppercase tracking-[0.1em] ${TONE[status] || TONE.pending}`}>
       {status}
     </span>
   );

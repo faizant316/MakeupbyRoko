@@ -405,7 +405,7 @@ export default function ScheduleView({
             const look = blockLook(ev);
             return (
               <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
-                className={cx('flex items-center gap-1.5 rounded-[2px] py-1 pl-2 pr-2.5 text-[0.8rem]', look.cls, ev.onOpen ? 'transition-opacity hover:opacity-75' : 'cursor-default')}
+                className={cx('flex items-center gap-1.5 rounded-[6px] py-1 pl-2 pr-2.5 text-[0.8rem]', look.cls, ev.onOpen ? 'transition-opacity hover:opacity-75' : 'cursor-default')}
                 style={look.style}>
                 <span className="h-1.5 w-1.5 shrink-0" style={{ background: blockInk }} />
                 <span className="max-w-[200px] truncate">{ev.name}</span>
@@ -419,7 +419,7 @@ export default function ScheduleView({
           <span className="text-[0.68rem] font-medium text-ink-muted">No time set</span>
           {untimed.filter(ev => ev.type !== 'block').map(ev => (
             <button key={ev.id} type="button" onClick={ev.onOpen}
-              className="flex items-center gap-1.5 rounded-[2px] py-1 pl-2 pr-2.5 text-[0.8rem] text-ink transition-opacity hover:opacity-75"
+              className="flex items-center gap-1.5 rounded-[6px] py-1 pl-2 pr-2.5 text-[0.8rem] text-ink transition-opacity hover:opacity-75"
               style={{ background: `${EVENT_COLORS[ev.type]}1a` }}>
               <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: EVENT_COLORS[ev.type] }} />
               <span className="max-w-[150px] truncate">{ev.name}</span>
@@ -460,7 +460,7 @@ export default function ScheduleView({
             return (
               <button key={ev.id} type="button" onClick={ev.onOpen || undefined}
                 className={cx(
-                  'absolute z-10 overflow-hidden rounded-[2px] text-left',
+                  'absolute z-10 overflow-hidden rounded-[6px] text-left',
                   look.cls,
                   ev.status === 'completed' ? 'opacity-50' : ev.onOpen && 'transition-opacity hover:opacity-85',
                   !ev.onOpen && 'cursor-default',
@@ -558,7 +558,7 @@ export default function ScheduleView({
                   {u.length > 0 && (
                     <button type="button" onClick={u[0].onOpen} title={u.map(e => e.name).join(', ')}
                       aria-label={u.map(e => e.name).join(', ')}
-                      className="h-[14px] w-full rounded-[2px] border border-dashed transition-opacity hover:opacity-75"
+                      className="h-[14px] w-full rounded-[6px] border border-dashed transition-opacity hover:opacity-75"
                       style={{ background: `${colorOf(u[0].type)}26`, borderColor: colorOf(u[0].type) }} />
                   )}
                 </span>
@@ -601,7 +601,7 @@ export default function ScheduleView({
                         <button key={ev.id} type="button" onClick={ev.onOpen}
                           title={[ev.timeStr || 'No time', ev.name, ev.detail, ev.location].filter(Boolean).join(' · ')}
                           aria-label={[ev.timeStr || 'No time', ev.name, ev.detail].filter(Boolean).join(', ')}
-                          className={cx('absolute z-10 rounded-[2px]', look.cls, ev.status === 'completed' ? 'opacity-45' : 'transition-opacity hover:opacity-75')}
+                          className={cx('absolute z-10 rounded-[6px]', look.cls, ev.status === 'completed' ? 'opacity-45' : 'transition-opacity hover:opacity-75')}
                           style={{
                             top, height,
                             left: `calc(${ev.col * width}% + 1px)`,

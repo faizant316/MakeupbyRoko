@@ -210,7 +210,7 @@ export default function MonthCalendar({
                 : `${daySummary(events, booked, cap) || 'Nothing scheduled'}${off ? ` · Day off${reason ? ` (${reason})` : ''}` : ''}${onDoubleActivate ? ' · double-tap to close this day' : ''}`}
               className={cx(
                 // touch-manipulation kills the iOS double-tap zoom.
-                'group flex min-w-0 cursor-pointer touch-manipulation select-none flex-col border transition-[border-color,background-color,box-shadow] duration-200',
+                'group flex min-w-0 cursor-pointer touch-manipulation select-none flex-col rounded-ctl border transition-[border-color,background-color,box-shadow] duration-200',
                 cellPad, cellMinH, tone,
                 dense ? 'press items-center gap-1' : 'gap-0.5 sm:gap-1',
                 outside && 'opacity-50',
@@ -298,7 +298,7 @@ export default function MonthCalendar({
                       five closed days into five cells reading "BOOKSY TIM...",
                       with the one word that would have explained them cut off. */}
                   {off && (
-                    <div className="flex min-w-0 items-start gap-1 bg-tone-alert/10 px-1 py-1 text-tone-alert sm:px-1.5">
+                    <div className="flex min-w-0 items-start gap-1 rounded-[5px] bg-tone-alert/10 px-1 py-1 text-tone-alert sm:px-1.5">
                       <OffCross className="mt-[3px] h-[7px] w-[7px] shrink-0" />
                       <span className="hidden min-w-0 text-[0.56rem] font-semibold uppercase leading-[1.35] tracking-[0.06em] [overflow-wrap:anywhere] sm:block" title={reason || 'Day off'}>
                         {reason || 'Day off'}

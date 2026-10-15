@@ -65,7 +65,7 @@ export default function ConfirmDialog({
             <button
               type="button"
               onClick={onCancel}
-              className="press h-12 flex-1 rounded border border-line-strong bg-paper text-[0.86rem] font-medium text-ink-soft hover:border-ink/50 hover:text-ink"
+              className="press h-12 flex-1 rounded-ctl border border-line-strong bg-paper text-[0.86rem] font-medium text-ink-soft hover:border-ink/50 hover:text-ink"
             >
               {cancelLabel}
             </button>
@@ -74,7 +74,7 @@ export default function ConfirmDialog({
               onClick={onConfirm}
               disabled={busy}
               className={cx(
-                'press h-12 flex-1 rounded text-[0.86rem] font-semibold disabled:opacity-60',
+                'press h-12 flex-1 rounded-ctl text-[0.86rem] font-semibold disabled:opacity-60',
                 tone === 'danger' ? 'bg-tone-alert text-paper hover:bg-tone-alert/90' : 'bg-ink text-paper hover:bg-ink/85',
               )}
             >

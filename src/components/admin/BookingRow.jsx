@@ -155,7 +155,7 @@ export default function BookingRow({
           <button
             type="button"
             onClick={e => { e.stopPropagation(); openZoomRoom(join.url, join.meetingId); }}
-            className="press inline-flex h-8 items-center gap-1.5 rounded bg-rose px-3 text-[0.72rem] font-semibold text-paper hover:bg-rose/90"
+            className="press inline-flex h-8 items-center gap-1.5 rounded-ctl bg-rose px-3 text-[0.72rem] font-semibold text-paper hover:bg-rose/90"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 shrink-0" aria-hidden>
               <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" />

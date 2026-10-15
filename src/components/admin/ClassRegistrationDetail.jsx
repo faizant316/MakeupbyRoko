@@ -91,7 +91,7 @@ function WindowGrid({ windows, value, onChange }) {
             onClick={() => onChange(w)}
             aria-pressed={sel}
             className={cx(
-              'press h-11 rounded border px-2 text-center text-[0.8rem] font-semibold tabular-nums',
+              'press h-11 rounded-ctl border px-2 text-center text-[0.8rem] font-semibold tabular-nums',
               sel ? 'border-rose bg-rose text-paper' : 'border-line bg-paper text-ink-soft hover:border-line-strong hover:text-ink',
             )}
           >
@@ -280,7 +280,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
               onClick={() => setExpanded(true)}
               title="Edit lesson time or Zoom link"
               aria-label="Edit lesson details"
-              className="press flex h-11 w-11 shrink-0 items-center justify-center rounded border border-line-strong sm:h-10 sm:w-10 bg-paper text-ink-soft hover:border-ink/50 hover:text-ink"
+              className="press flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border border-line-strong sm:h-10 sm:w-10 bg-paper text-ink-soft hover:border-ink/50 hover:text-ink"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
                 <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -315,7 +315,7 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
           {isInPerson ? (
             <>
               {/* In studio: nothing to schedule */}
-              <div className="flex items-start gap-3 border border-line bg-canvas/60 px-4 py-3.5">
+              <div className="flex items-start gap-3 rounded-card border border-line bg-canvas/60 px-4 py-3.5">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden>
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
                 </svg>
@@ -364,12 +364,12 @@ function LessonScheduler({ reg, onUpdateReg, dm, className, phone, confirmFn }) 
                     type="button"
                     onClick={copyMeetLink}
                     className={cx(
-                      'press flex h-12 w-full items-center justify-between gap-3 rounded border bg-paper pl-3.5 pr-1.5 text-left',
+                      'press flex h-12 w-full items-center justify-between gap-3 rounded-ctl border bg-paper pl-3.5 pr-1.5 text-left',
                       linkCopied ? 'border-ink/50' : 'border-line-strong hover:border-ink/40',
                     )}
                   >
                     <span className="min-w-0 truncate text-[0.8rem] text-ink-soft">{meetLink}</span>
-                    <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[3px] bg-ink px-3 text-[0.76rem] font-semibold text-paper">
+                    <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-ctl bg-ink px-3 text-[0.76rem] font-semibold text-paper">
                       {linkCopied ? <><Check className="h-3 w-3" strokeWidth={3} /> Copied</> : 'Copy'}
                     </span>
                   </button>
@@ -516,7 +516,7 @@ function RefundChoice({ title, sub, amount, busy, disabled, onClick, icon, iconT
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="press flex w-full items-center justify-between gap-3 rounded border border-line bg-paper px-3.5 py-3 text-left hover:border-line-strong disabled:pointer-events-none disabled:opacity-60"
+      className="press flex w-full items-center justify-between gap-3 rounded-ctl border border-line bg-paper px-3.5 py-3 text-left hover:border-line-strong disabled:pointer-events-none disabled:opacity-60"
     >
       <span className="flex min-w-0 items-center gap-3">
         <StateIcon tone={iconTone}>{icon}</StateIcon>
@@ -697,7 +697,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
 
       <div className="flex flex-col gap-4 sm:gap-5">
         {/* Start and date, the two things she reads first. */}
-        <div className="grid grid-cols-2 divide-x divide-line border border-line bg-paper">
+        <div className="grid grid-cols-2 divide-x divide-line rounded-card overflow-hidden border border-line bg-paper">
           <div className="min-w-0 px-4 py-4 sm:px-5">
             <Label>Start</Label>
             <p className="mt-1.5 text-[1.05rem] font-semibold tabular-nums tracking-[-0.01em] text-ink sm:text-[1.2rem]">
@@ -780,7 +780,7 @@ export default function ClassRegistrationDetail({ reg: initialReg, onBack, darkM
 
         {/* Total */}
         {totalPrice > 0 && (
-          <div className="flex items-center justify-between gap-3 border border-line bg-paper px-4 py-3.5 sm:px-5">
+          <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-paper px-4 py-3.5 sm:px-5">
             <Label>{isUnpaid ? 'Total due' : 'Total paid'}</Label>
             <div className="flex items-center gap-3">
               <span className={cx('inline-flex h-[22px] items-center px-2 text-[0.6rem] font-semibold uppercase tracking-[0.1em]', paymentMeta.cls)}>

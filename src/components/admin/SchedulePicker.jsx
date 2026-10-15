@@ -48,7 +48,7 @@ function startMonth(value, openTo) {
 
 // The floating panel under a picker's field: square, one hairline, the one
 // shadow things that hover over the page are allowed.
-const POPOVER = 'pop-in absolute left-0 top-full z-50 mt-1 border border-line bg-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)]';
+const POPOVER = 'pop-in absolute left-0 top-full z-50 mt-1 rounded-card border border-line bg-paper shadow-[0_12px_32px_rgba(0,0,0,0.12)]';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden>
@@ -132,12 +132,12 @@ export function AdminDatePicker({ value, onChange, dm, accent, openTo, marker, a
             {/* Month nav */}
             <div className="mb-2 flex items-center justify-between">
               <button type="button" onClick={() => setView(new Date(year, month - 1))} aria-label="Previous month"
-                className="press flex h-9 w-9 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+                className="press flex h-9 w-9 items-center justify-center rounded-ctl text-ink-muted hover:bg-canvas hover:text-ink">
                 <Arrow dir="prev" />
               </button>
               <span className="text-[0.92rem] font-semibold tracking-[-0.01em] text-ink">{monthName}</span>
               <button type="button" onClick={() => setView(new Date(year, month + 1))} aria-label="Next month"
-                className="press flex h-9 w-9 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+                className="press flex h-9 w-9 items-center justify-center rounded-ctl text-ink-muted hover:bg-canvas hover:text-ink">
                 <Arrow dir="next" />
               </button>
             </div>
@@ -163,7 +163,7 @@ export function AdminDatePicker({ value, onChange, dm, accent, openTo, marker, a
                     onClick={() => { onChange(k); setOpen(false); }}
                     aria-pressed={isSel}
                     className={cx(
-                      'press relative flex h-10 w-full items-center justify-center rounded text-[0.86rem] tabular-nums transition-colors sm:h-9',
+                      'press relative flex h-10 w-full items-center justify-center rounded-ctl text-[0.86rem] tabular-nums transition-colors sm:h-9',
                       isSel ? 'bg-ink font-semibold text-paper'
                         : isToday ? 'font-semibold text-rose hover:bg-canvas'
                         : isMarked ? 'font-semibold text-ink hover:bg-canvas'

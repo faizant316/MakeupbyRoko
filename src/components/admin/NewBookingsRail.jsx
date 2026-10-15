@@ -87,7 +87,7 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, c
   if (loading) {
     return (
       <div className={className} aria-hidden="true">
-        <div className="border border-line bg-paper">
+        <div className="rounded-card border border-line bg-paper">
           <div className="px-4 py-4 sm:px-5">
             <span className="block h-4 w-36 bg-line/70" />
             <span className="mt-2.5 block h-2.5 w-44 max-w-full bg-line/50" />
@@ -256,7 +256,7 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, c
             </span>
           )}
           {noTime && (
-            <span className="mt-2 inline-flex items-center gap-1.5 bg-tone-pending/10 px-2 py-0.5 text-[0.66rem] font-semibold text-tone-pending">
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-tone-pending/10 px-2.5 py-0.5 text-[0.66rem] font-semibold text-tone-pending">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
               Needs a time
             </span>
@@ -277,7 +277,7 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, c
       {/* Hairline while everything has been seen; an ink edge while something
           hasn't. Nothing else about it changes between the two, so it never
           reads as a different widget, only as the same one asking for her. */}
-      <section className={cx('border bg-paper transition-colors duration-300', hasFresh ? 'border-ink' : 'border-line')}>
+      <section className={cx('rounded-card border bg-paper transition-colors duration-300', hasFresh ? 'border-ink' : 'border-line')}>
         <button
           type="button"
           onClick={() => setOpen(v => !v)}
@@ -288,7 +288,7 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, c
             <span className="flex items-center gap-2.5">
               <span className="text-[0.98rem] font-semibold tracking-[-0.01em] text-ink">Recent bookings</span>
               {hasFresh && (
-                <span className="inline-flex h-[18px] items-center bg-ink px-1.5 text-[0.6rem] font-semibold uppercase leading-none tracking-[0.08em] tabular-nums text-paper">
+                <span className="inline-flex h-[18px] items-center rounded-full bg-ink px-2 text-[0.6rem] font-semibold uppercase leading-none tracking-[0.08em] tabular-nums text-paper">
                   {unseen.length} new
                 </span>
               )}
@@ -332,7 +332,7 @@ export default function NewBookingsRail({ bookings, loading = false, onSelect, c
                       onClick={() => setStatusPick(t.key)}
                       aria-pressed={active}
                       className={cx(
-                        'press inline-flex h-8 items-center gap-1.5 rounded px-2.5 text-[0.76rem] font-medium transition-colors',
+                        'press inline-flex h-8 items-center gap-1.5 rounded-ctl px-2.5 text-[0.76rem] font-medium transition-colors',
                         active ? 'bg-canvas text-ink shadow-[0_0_0_1px_rgb(var(--c-line))]' : 'text-ink-muted hover:text-ink',
                       )}
                     >

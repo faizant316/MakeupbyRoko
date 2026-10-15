@@ -113,7 +113,7 @@ export function NavIcon({ name, className, strokeWidth = 1.6 }) {
 function Count({ n, className }) {
   if (!n) return null;
   return (
-    <span className={cx('min-w-[20px] bg-ink px-1.5 py-0.5 text-center text-[0.66rem] font-semibold tabular-nums leading-none text-paper', className)}>
+    <span className={cx('min-w-[20px] rounded-full bg-ink px-1.5 py-0.5 text-center text-[0.66rem] font-semibold tabular-nums leading-none text-paper', className)}>
       {n > 99 ? '99+' : n}
     </span>
   );
@@ -164,7 +164,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, counts = {}, dar
                         ref={drag.innerRef}
                         {...drag.draggableProps}
                         className={cx(
-                          'group relative flex items-center transition-colors duration-200',
+                          'group relative flex items-center rounded-ctl transition-colors duration-200',
                           snap.isDragging ? 'bg-paper shadow-[0_8px_24px_rgba(0,0,0,0.14)]' : on ? 'bg-canvas' : 'hover:bg-canvas/70',
                         )}
                       >
@@ -330,7 +330,7 @@ export function AdminDrawer({ open, onClose, activeTab, setActiveTab, counts = {
                 aria-current={on ? 'page' : undefined}
                 style={{ '--i': i++ }}
                 className={cx(
-                  'drawer-item press flex h-[52px] w-full items-center gap-3.5 px-3 text-left text-[0.98rem]',
+                  'drawer-item press flex h-[52px] w-full items-center rounded-ctl gap-3.5 px-3 text-left text-[0.98rem]',
                   on ? 'bg-ink/[0.06] font-semibold text-ink' : 'text-ink-soft active:bg-ink/[0.04]',
                 )}
               >

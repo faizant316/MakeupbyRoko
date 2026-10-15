@@ -58,12 +58,12 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm, c
   // The remove button shows on hover where there is a pointer to hover with,
   // and always on a touch screen, where there isn't.
   const PhotoTile = ({ url, idx }) => (
-    <div className="group relative aspect-square overflow-hidden border border-line bg-canvas">
+    <div className="group relative aspect-square overflow-hidden rounded-ctl border border-line bg-canvas">
       <button type="button" onClick={() => setLightbox(idx)} className="block h-full w-full" aria-label={`Open photo ${idx + 1}`}>
         <img src={url} alt={`Photo ${idx + 1}`} className="h-full w-full object-cover" />
       </button>
       <button type="button" onClick={() => handleDelete(idx)} aria-label={`Remove photo ${idx + 1}`} title="Remove"
-        className="press absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded bg-black/60 text-white opacity-100 transition-opacity duration-200 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
+        className="press absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-ctl bg-black/60 text-white opacity-100 transition-opacity duration-200 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
         <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="h-3 w-3"><path d="M18 6 6 18M6 6l12 12" /></svg>
       </button>
     </div>
@@ -93,7 +93,7 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm, c
     >
       {photos.length === 0 ? (
         <label className={cx(
-          'flex cursor-pointer items-center gap-3 rounded border border-dashed border-line-strong px-4 py-4 transition-colors duration-200 hover:border-ink/40',
+          'flex cursor-pointer items-center gap-3 rounded-ctl border border-dashed border-line-strong px-4 py-4 transition-colors duration-200 hover:border-ink/40',
           uploading && 'pointer-events-none opacity-50',
         )}>
           <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5 shrink-0 text-ink-muted"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
@@ -126,22 +126,22 @@ export default function BookingReferencePhotos({ booking, onUpdateBooking, dm, c
             <img src={photos[lightbox]} alt="Reference" className="max-h-[80svh] w-full object-contain" />
             <div className="absolute right-3 top-3 flex gap-2">
               <a href={photos[lightbox]} target="_blank" rel="noopener noreferrer" aria-label="Open full size"
-                className="press flex h-11 w-11 items-center justify-center rounded bg-white/15 text-white hover:bg-white/25" title="Open full size">
+                className="press flex h-11 w-11 items-center justify-center rounded-ctl bg-white/15 text-white hover:bg-white/25" title="Open full size">
                 <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><path d="M15 3h6v6M10 14 21 3" /></svg>
               </a>
               <button type="button" onClick={() => setLightbox(null)} aria-label="Close"
-                className="press flex h-11 w-11 items-center justify-center rounded bg-white/15 text-white hover:bg-white/25">
+                className="press flex h-11 w-11 items-center justify-center rounded-ctl bg-white/15 text-white hover:bg-white/25">
                 <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="h-4 w-4"><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
             </div>
             {photos.length > 1 && (
               <>
                 <button type="button" onClick={() => setLightbox((lightbox - 1 + photos.length) % photos.length)} aria-label="Previous photo"
-                  className="press absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded bg-white/15 text-white hover:bg-white/25">
+                  className="press absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-ctl bg-white/15 text-white hover:bg-white/25">
                   <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m15 18-6-6 6-6" /></svg>
                 </button>
                 <button type="button" onClick={() => setLightbox((lightbox + 1) % photos.length)} aria-label="Next photo"
-                  className="press absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded bg-white/15 text-white hover:bg-white/25">
+                  className="press absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-ctl bg-white/15 text-white hover:bg-white/25">
                   <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
               </>

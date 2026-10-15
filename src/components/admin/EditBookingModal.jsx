@@ -131,7 +131,7 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
               <Chevron open={svcOpen} className="h-3.5 w-3.5 text-ink-muted" />
             </button>
             {svcOpen && (
-              <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 max-h-[240px] overflow-y-auto overscroll-contain border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+              <div className="pop-in absolute left-0 right-0 top-full z-50 mt-1 max-h-[240px] overflow-y-auto overscroll-contain rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
                 style={{ '--origin': 'top left' }} data-lenis-prevent>
                 {SERVICES.length === 0 && <p className="px-3 py-2.5 text-[0.8rem] text-ink-muted">Loading services…</p>}
                 {SERVICES.map(s => (
@@ -178,7 +178,7 @@ export default function EditBookingModal({ booking, onSave, onClose, darkMode: d
         </Section>
 
         <Section title="Status">
-          <div role="radiogroup" aria-label="Status" className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+          <div role="radiogroup" aria-label="Status" className="grid grid-cols-2 gap-px rounded-ctl overflow-hidden border border-line bg-line sm:grid-cols-4">
             {STATUSES.map(s => {
               const on = form.status === s.value;
               return (

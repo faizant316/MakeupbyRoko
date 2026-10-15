@@ -18,7 +18,7 @@ import { Chevron, cx } from './ui';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // A quiet square around an icon: no border, a canvas tint under a pointer.
-const quietIcon = 'press flex shrink-0 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink';
+const quietIcon = 'press flex shrink-0 items-center justify-center rounded-ctl text-ink-muted hover:bg-canvas hover:text-ink';
 
 function Arrow({ dir, className }) {
   return (
@@ -79,7 +79,7 @@ export default function CalendarHeader({
             disabled={!canJump}
             aria-expanded={canJump ? showJump : undefined}
             className={cx(
-              'flex min-w-0 flex-col items-center rounded transition-colors duration-200',
+              'flex min-w-0 flex-col items-center rounded-ctl transition-colors duration-200',
               big ? 'px-3 py-1.5' : 'px-2 py-1',
               canJump ? 'press cursor-pointer hover:bg-canvas' : 'cursor-default',
             )}
@@ -105,7 +105,7 @@ export default function CalendarHeader({
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowJump(false)} aria-hidden="true" />
               <div className="absolute left-1/2 top-full z-50 mt-1.5 w-[min(300px,calc(100vw-2rem))] -translate-x-1/2">
-                <div className="pop-in border border-line bg-paper p-2 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top center' }}>
+                <div className="pop-in rounded-card border border-line bg-paper p-2 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top center' }}>
                   <div className="mb-1.5 flex items-center justify-between">
                     <button type="button" onClick={() => setJumpYear(y => y - 1)} aria-label="Previous year" className={cx(quietIcon, 'h-9 w-9')}>
                       <Arrow dir={-1} className="h-3.5 w-3.5" />
@@ -126,7 +126,7 @@ export default function CalendarHeader({
                           onClick={() => { onJump(i, jumpYear); setShowJump(false); }}
                           aria-pressed={isCur}
                           className={cx(
-                            'press h-9 rounded text-[0.8rem] transition-colors',
+                            'press h-9 rounded-ctl text-[0.8rem] transition-colors',
                             isCur ? 'bg-ink font-semibold text-paper'
                               : isNow ? 'font-semibold text-rose hover:bg-canvas'
                               : 'text-ink-soft hover:bg-canvas hover:text-ink',
@@ -149,7 +149,7 @@ export default function CalendarHeader({
             <button
               type="button"
               onClick={onToday}
-              className="press inline-flex h-8 shrink-0 items-center rounded border border-line-strong px-2.5 text-[0.72rem] font-medium text-ink-soft hover:border-ink/40 hover:text-ink"
+              className="press inline-flex h-8 shrink-0 items-center rounded-ctl border border-line-strong px-2.5 text-[0.72rem] font-medium text-ink-soft hover:border-ink/40 hover:text-ink"
             >
               Today
             </button>

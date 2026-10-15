@@ -236,7 +236,7 @@ function ClientDetail({ client, onBack, onOpenBooking, onOpenClassReg }) {
           </RowPanel>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 divide-x divide-line border border-line bg-paper">
+          <div className="grid grid-cols-3 divide-x divide-line rounded-card overflow-hidden border border-line bg-paper">
             {[
               { label: 'Bookings', value: client.total },
               { label: 'Completed', value: client.completedCount },
@@ -313,7 +313,7 @@ function ClientDetail({ client, onBack, onOpenBooking, onOpenClassReg }) {
           )}
 
           {apptRows.length === 0 && classRows.length === 0 && (
-            <p className="border border-line bg-paper px-5 py-10 text-center text-[0.86rem] text-ink-muted">No bookings on file yet</p>
+            <p className="rounded-card border border-line bg-paper px-5 py-10 text-center text-[0.86rem] text-ink-muted">No bookings on file yet</p>
           )}
         </div> {/* /right column */}
       </div> {/* /two-column grid */}
@@ -417,11 +417,11 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
           {/* The smart group you came in through, and the way back out of it. */}
           {activeGroup !== 'all' && (
             <div className="mb-4 flex items-center gap-2">
-              <span className="inline-flex h-8 items-center gap-1.5 rounded border border-line-strong bg-paper pl-3 pr-1 text-[0.8rem] font-medium text-ink">
+              <span className="inline-flex h-8 items-center gap-1.5 rounded-ctl border border-line-strong bg-paper pl-3 pr-1 text-[0.8rem] font-medium text-ink">
                 {group.label}
                 <span className="tabular-nums text-ink-muted">{visible.length}</span>
                 <button type="button" onClick={() => setActiveGroup('all')} aria-label="Show all clients"
-                  className="press ml-0.5 flex h-6 w-6 items-center justify-center rounded text-ink-muted hover:bg-canvas hover:text-ink">
+                  className="press ml-0.5 flex h-6 w-6 items-center justify-center rounded-ctl text-ink-muted hover:bg-canvas hover:text-ink">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3 w-3" aria-hidden><path d="M18 6 6 18M6 6l12 12" /></svg>
                 </button>
               </span>
@@ -435,7 +435,7 @@ export default function ClientsTab({ bookings = [], classRegs = [], darkMode: dm
           ) : (
             <div className="flex gap-1.5">
               {/* Rows, in one panel. Each letter is a quiet strip across it. */}
-              <div className="min-w-0 flex-1 self-start border border-line bg-paper">
+              <div className="min-w-0 flex-1 self-start rounded-card border border-line bg-paper">
                 {/* Column heads, laptop only */}
                 <div className="hidden items-center gap-3.5 border-b border-line px-5 py-2.5 sm:flex">
                   <span className="w-10 shrink-0" />
