@@ -66,7 +66,7 @@ function ZelleThumb({ bookingId, onOpen }) {
 
 const STATUSES = ['all', 'pending', 'confirmed', 'completed', 'cancelled'];
 
-// Month filter for the appointments list: a small calendar-icon trigger. The
+// Month filter for the appointments list: a calendar-icon trigger. The
 // native wheel on iOS (an invisible <select> over the trigger), a dropdown
 // everywhere else.
 function MonthSelect({ value, onChange, options }) {
@@ -88,13 +88,13 @@ function MonthSelect({ value, onChange, options }) {
     <button
       type="button"
       onClick={() => { if (!isIOS) setOpen(o => !o); }}
-      className={cx('press inline-flex h-9 items-center gap-1.5 rounded-ctl px-2 text-[0.78rem] font-medium transition-colors', hasFilter ? 'text-rose' : 'text-ink-muted hover:text-ink')}
+      className={cx('press inline-flex h-11 items-center gap-2 rounded-ctl px-2.5 text-[0.92rem] font-medium transition-colors', hasFilter ? 'text-rose' : 'text-ink-muted hover:text-ink')}
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-[15px] w-[15px] shrink-0" aria-hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] shrink-0" aria-hidden>
         <rect x="3" y="4.5" width="18" height="16" rx="2" /><path d="M3 9h18M8 2.5v4M16 2.5v4" />
       </svg>
       <span className="whitespace-nowrap">{hasFilter ? selected.label : 'Filter by month'}</span>
-      <Chevron open={open} className="h-3 w-3 opacity-70" />
+      <Chevron open={open} className="h-3.5 w-3.5 opacity-70" />
     </button>
   );
 
@@ -114,13 +114,13 @@ function MonthSelect({ value, onChange, options }) {
     <div ref={ref} className="relative inline-flex">
       {trigger}
       {open && (
-        <div className="pop-in absolute right-0 top-full z-50 mt-1 max-h-[280px] min-w-[200px] overflow-y-auto rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" data-lenis-prevent>
+        <div className="pop-in absolute right-0 top-full z-50 mt-1 max-h-[320px] min-w-[220px] overflow-y-auto rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" data-lenis-prevent>
           {options.map(o => {
             const isSel = o.value === value;
             return (
               <button key={o.value} type="button"
                 onClick={() => { onChange(o.value); setOpen(false); }}
-                className={cx('flex h-9 w-full items-center justify-between gap-2 px-3 text-left text-[0.8rem] transition-colors', isSel ? 'bg-canvas font-medium text-ink' : 'text-ink-soft hover:bg-canvas/60')}>
+                className={cx('flex h-11 w-full items-center justify-between gap-2 rounded-ctl px-3 text-left text-[0.9rem] transition-colors', isSel ? 'bg-canvas font-medium text-ink' : 'text-ink-soft hover:bg-canvas/60')}>
                 <span className="truncate">{o.label}</span>
                 {isSel && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3.5 w-3.5 shrink-0 text-rose" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>}
               </button>
@@ -577,7 +577,7 @@ export default function BookingsList({
 
       {/* Search: a line, not a box. Always on a laptop; one tap away on a phone. */}
       <div className={cx('mb-4', searchOpen || search ? '' : 'hidden sm:block')}>
-        <SearchLine value={search} onChange={setSearch} inputRef={searchInputRef} />
+        <SearchLine value={search} onChange={setSearch} inputRef={searchInputRef} size="lg" />
       </div>
 
       {/* What you're looking at, and one tap to change it: one list naming
@@ -619,26 +619,26 @@ export default function BookingsList({
               type="button"
               onClick={() => setFilterOpen(v => !v)}
               aria-expanded={filterOpen}
-              className={cx('press inline-flex h-9 items-center gap-2 rounded-ctl border px-3 text-[0.8rem] font-medium transition-colors', filterOpen ? 'border-ink/40 bg-paper text-ink' : 'border-line-strong bg-paper text-ink hover:border-ink/40')}
+              className={cx('press inline-flex h-11 items-center gap-2.5 rounded-ctl border px-4 text-[0.92rem] font-medium transition-colors', filterOpen ? 'border-ink/40 bg-paper text-ink' : 'border-line-strong bg-paper text-ink hover:border-ink/40')}
             >
-              {current.dot && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: current.dot }} />}
+              {current.dot && <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: current.dot }} />}
               <span>{current.label}</span>
               <span className="tabular-nums text-ink-muted">{current.count}</span>
-              <Chevron open={filterOpen} className="h-3.5 w-3.5 text-ink-muted" />
+              <Chevron open={filterOpen} className="h-4 w-4 text-ink-muted" />
             </button>
             {filterOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} aria-hidden="true" />
-                <div className="pop-in absolute left-0 top-full z-50 mt-1 w-[min(280px,88vw)] rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top left' }}>
+                <div className="pop-in absolute left-0 top-full z-50 mt-1 w-[min(300px,88vw)] rounded-card border border-line bg-paper p-1 shadow-[0_12px_32px_rgba(0,0,0,0.12)]" style={{ '--origin': 'top left' }}>
                   {options.map(o => (
                     <Fragment key={o.key}>
                       {o.key === 'courses' && <div className="mx-2 my-1 h-px bg-line" />}
                       <button
                         type="button"
                         onClick={() => { o.pick(); setFilterOpen(false); }}
-                        className={cx('flex h-10 w-full items-center gap-2.5 px-3 text-left text-[0.84rem] transition-colors', o.active ? 'bg-canvas font-semibold text-ink' : 'text-ink-soft hover:bg-canvas/60')}
+                        className={cx('flex h-11 w-full items-center gap-3 rounded-ctl px-3 text-left text-[0.92rem] transition-colors', o.active ? 'bg-canvas font-semibold text-ink' : 'text-ink-soft hover:bg-canvas/60')}
                       >
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: o.dot || 'transparent' }} />
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: o.dot || 'transparent' }} />
                         <span className="min-w-0 flex-1 truncate">{o.label}</span>
                         <span className="tabular-nums text-ink-muted">{o.count}</span>
                       </button>
@@ -889,9 +889,13 @@ export default function BookingsList({
       {/* Type + month filters for the appointments list. */}
       {viewType === 'appointments' && !selectedDate && !loading && (activeBookings.length > 0 || archivedBookings.length > 0) && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <Segmented options={TYPE_OPTIONS} value={typeFilter} onChange={setTypeFilter} />
+          <Segmented options={TYPE_OPTIONS} value={typeFilter} onChange={setTypeFilter} size="lg" />
+          {/* On a phone this wraps under the toggle; the nudge lines its icon
+              up with the toggle's left edge. */}
           {monthOptions.length > 1 && (
-            <MonthSelect value={effectiveMonth} onChange={setMonthFilter} options={monthOptions} />
+            <div className="-ml-2.5 sm:ml-0">
+              <MonthSelect value={effectiveMonth} onChange={setMonthFilter} options={monthOptions} />
+            </div>
           )}
         </div>
       )}

@@ -115,7 +115,7 @@ export function Tag({ className, children, title }) {
 // iOS-style, squared off. The selected segment is a white tile on the canvas.
 export function Segmented({ options, value, onChange, className, size = 'md' }) {
   return (
-    <div role="tablist" className={cx('inline-flex rounded-ctl border border-line bg-canvas p-0.5', className)}>
+    <div role="tablist" className={cx('inline-flex rounded-ctl border border-line bg-canvas', size === 'lg' ? 'p-1' : 'p-0.5', className)}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -127,7 +127,9 @@ export function Segmented({ options, value, onChange, className, size = 'md' }) 
             onClick={() => onChange(o.value)}
             className={cx(
               'flex items-center gap-1.5 rounded-[6px] font-medium transition-[color,background-color,box-shadow] duration-200',
-              size === 'sm' ? 'h-7 px-2.5 text-[0.74rem]' : 'h-8 px-3 text-[0.78rem] sm:px-3.5',
+              size === 'sm' ? 'h-7 px-2.5 text-[0.74rem]'
+                : size === 'lg' ? 'h-10 px-4 text-[0.92rem] sm:px-5'
+                : 'h-8 px-3 text-[0.78rem] sm:px-3.5',
               on ? 'bg-paper text-ink shadow-[0_0_0_1px_rgb(var(--c-line))]' : 'text-ink-muted hover:text-ink',
             )}
           >
@@ -288,10 +290,11 @@ export function Sheet({ open, onClose, title, eyebrow, children, footer, size = 
 
 // Search as a line, not a box: the glass, a hairline that darkens on focus,
 // and the word Search.
-export function SearchLine({ value, onChange, inputRef, className, placeholder = 'Search' }) {
+export function SearchLine({ value, onChange, inputRef, className, placeholder = 'Search', size = 'md' }) {
+  const lg = size === 'lg';
   return (
-    <div className={cx('group flex items-center gap-2.5 border-b border-line pb-2 transition-colors duration-200 focus-within:border-ink/40', className)}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="h-4 w-4 shrink-0 text-ink-muted transition-colors group-focus-within:text-ink-soft" aria-hidden>
+    <div className={cx('group flex items-center border-b border-line transition-colors duration-200 focus-within:border-ink/40', lg ? 'gap-3 pb-3' : 'gap-2.5 pb-2', className)}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={cx('shrink-0 text-ink-muted transition-colors group-focus-within:text-ink-soft', lg ? 'h-5 w-5' : 'h-4 w-4')} aria-hidden>
         <circle cx="11" cy="11" r="7" /><path d="m20 20-3.8-3.8" />
       </svg>
       <input
@@ -301,7 +304,7 @@ export function SearchLine({ value, onChange, inputRef, className, placeholder =
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[16px] text-ink outline-none placeholder:text-ink-muted/80 sm:text-[0.86rem] [&::-webkit-search-cancel-button]:hidden"
+        className={cx('min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-ink outline-none placeholder:text-ink-muted/80 [&::-webkit-search-cancel-button]:hidden', lg ? 'text-[16px] sm:text-[0.98rem]' : 'text-[16px] sm:text-[0.86rem]')}
         onClick={e => e.stopPropagation()}
       />
       {value && (

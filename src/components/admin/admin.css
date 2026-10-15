@@ -314,9 +314,15 @@ body.admin-ui {
    A deep berry, like a dark lipstick, instead of black. Stays this colour in
    dark mode too: it is the one rich moment on the page.
 
-   Three soft pools of light drifting under it: rose, magenta and a warm
-   nude, the colours of the work itself. Each is its own composited layer moving
-   by transform only, so the page never repaints for them. */
+   Four pools of pink and plum light flowing through it, slowly enough to read
+   over and quickly enough to see: petal pink, magenta, plum and a warm nude,
+   the colours of the work itself. They used to be wider than the card and
+   centred off it, so only their faded edges showed and the card looked flat.
+   Now each one is centred on its left/top point inside the card (the width
+   and the negative margins are both shares of the card's width, so this holds
+   for the wide laptop card and the tall phone one) and travels across it.
+   Transform only, each its own composited layer, so the page never repaints
+   for them. */
 .berry {
   background: linear-gradient(135deg, #3a1528 0%, #4c1c36 52%, #5f2745 100%);
 }
@@ -327,33 +333,56 @@ body.admin-ui {
   pointer-events: none;
 }
 .mesh > i {
+  --s: clamp(240px, 46%, 560px);
   position: absolute;
-  width: 90%;
+  width: var(--s);
   aspect-ratio: 1;
+  margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
   border-radius: 50%;
   will-change: transform;
 }
 .mesh > i:nth-child(1) {
-  left: -25%;
-  top: -55%;
-  background: radial-gradient(closest-side, rgba(236, 160, 190, 0.38), rgba(236, 160, 190, 0));
-  animation: mesh-a 19s ease-in-out infinite alternate;
+  left: 16%;
+  top: 12%;
+  background: radial-gradient(closest-side, rgba(255, 138, 186, 0.4), rgba(255, 138, 186, 0.14) 55%, rgba(255, 138, 186, 0));
+  animation: mesh-a 13s ease-in-out infinite;
 }
 .mesh > i:nth-child(2) {
-  right: -35%;
-  top: -10%;
-  background: radial-gradient(closest-side, rgba(196, 72, 126, 0.4), rgba(196, 72, 126, 0));
-  animation: mesh-b 23s ease-in-out infinite alternate;
+  left: 80%;
+  top: 28%;
+  background: radial-gradient(closest-side, rgba(214, 60, 138, 0.46), rgba(214, 60, 138, 0.16) 55%, rgba(214, 60, 138, 0));
+  animation: mesh-b 16s ease-in-out infinite;
 }
 .mesh > i:nth-child(3) {
-  left: 10%;
-  bottom: -70%;
-  background: radial-gradient(closest-side, rgba(240, 190, 170, 0.24), rgba(240, 190, 170, 0));
-  animation: mesh-c 27s ease-in-out infinite alternate;
+  left: 42%;
+  top: 96%;
+  background: radial-gradient(closest-side, rgba(150, 82, 190, 0.36), rgba(150, 82, 190, 0.12) 55%, rgba(150, 82, 190, 0));
+  animation: mesh-c 19s ease-in-out infinite;
 }
-@keyframes mesh-a { to { transform: translate3d(22%, 18%, 0) scale(1.15); } }
-@keyframes mesh-b { to { transform: translate3d(-24%, 14%, 0) scale(0.9); } }
-@keyframes mesh-c { to { transform: translate3d(18%, -22%, 0) scale(1.2); } }
+.mesh > i:nth-child(4) {
+  left: 94%;
+  top: 94%;
+  background: radial-gradient(closest-side, rgba(255, 186, 168, 0.24), rgba(255, 186, 168, 0));
+  animation: mesh-d 22s ease-in-out infinite;
+}
+@keyframes mesh-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  35% { transform: translate3d(70%, 25%, 0) scale(1.15); }
+  68% { transform: translate3d(25%, 45%, 0) scale(0.9); }
+}
+@keyframes mesh-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  40% { transform: translate3d(-80%, 20%, 0) scale(0.85); }
+  72% { transform: translate3d(-35%, -25%, 0) scale(1.1); }
+}
+@keyframes mesh-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.1); }
+  50% { transform: translate3d(-55%, -50%, 0) scale(0.9); }
+}
+@keyframes mesh-d {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-90%, -40%, 0) scale(1.2); }
+}
 [data-still='true'] .mesh > i {
   animation-play-state: paused;
 }

@@ -1,5 +1,5 @@
 'use client';
-// The top of Home: the greeting, a row of chips that say what is waiting, and
+// The top of Home: the greeting, a row of chips for anything new, and
 // the next appointment with a countdown to it. The one place in the dashboard
 // that is allowed to be a little theatrical, because it is the first thing
 // Roko sees and the question she opens it to answer: what's next, and is it
@@ -179,14 +179,6 @@ function goTo(selector) {
 }
 
 function Pulse({ chips }) {
-  if (!chips.length) {
-    return (
-      <p className={cx('rise-in inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[0.8rem] font-medium', CHIP_TONE.soft)} style={{ '--i': 3 }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>
-        All caught up
-      </p>
-    );
-  }
   return (
     // Scrolls sideways on a phone instead of wrapping into a paragraph, and
     // fades at the right edge to say there is more that way.
@@ -245,7 +237,7 @@ function NextUp({ bookings, onOpen }) {
   if (!next) {
     return (
       <section ref={ref} className={cx(shell, 'rise-in px-5 py-6 sm:px-7')} style={{ '--i': 2 }}>
-        <div aria-hidden className="mesh"><i /><i /><i /></div>
+        <div aria-hidden className="mesh"><i /><i /><i /><i /></div>
         <div className="relative">
           <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white/70">Next up</p>
           <p className="mt-2 text-[1.35rem] font-semibold tracking-[-0.02em]">Nothing booked ahead</p>
@@ -303,7 +295,7 @@ function NextUp({ bookings, onOpen }) {
 
   return (
     <section ref={ref} aria-label="Next appointment" className={cx(shell, 'rise-in')} style={{ '--i': 2 }}>
-      <div aria-hidden className="mesh"><i /><i /><i /></div>
+      <div aria-hidden className="mesh"><i /><i /><i /><i /></div>
 
       <div className="relative px-5 pb-5 pt-5 sm:px-7 sm:pb-6 sm:pt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
         <div className="min-w-0">
@@ -404,29 +396,23 @@ function NextUp({ bookings, onOpen }) {
 
 // ---- the whole top -----------------------------------------------------------------------
 
-export default function HomeTop({ bookings, onOpen, onAddClient, onShowPending }) {
+export default function HomeTop({ bookings, onOpen, onAddClient }) {
   const titleRef = useRef(null);
   useStillWhenHidden(titleRef);
   const now = new Date();
   const greeting = `Good ${partOfDay(now.getHours())},`;
   const date = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  // What is waiting, each one a tap from the thing it counts, and each
-  // booking counted once. "To confirm" and "needs a time" used to be two
-  // chips, but a booking with no time is nearly always one still to confirm,
-  // so the same few bookings showed up twice and a quiet week looked like a
-  // pile of alerts. A new booking is counted as new, not as waiting too.
+  // Good news only, each one a tap from the thing it counts. There is no
+  // "N to look over" chip on purpose: a vague count was the first thing she
+  // saw and read as homework. Pending bookings live in the list's Pending
+  // filter. With nothing new, the row is simply not there.
   const live = (bookings || []).filter(b => b.status !== 'cancelled' && b.status !== 'completed');
-  const unseenRows = live.filter(isBookingUnseen);
-  const unseen = unseenRows.length;
+  const unseen = live.filter(isBookingUnseen).length;
   const deposits = (bookings || []).filter(isDepositUnseen).length;
-  const waiting = live.filter(b => !unseenRows.includes(b) && (
-    ((b.status || 'pending') === 'pending' && (b.date || b.consultation_date)) || (!b.time && b.date)
-  )).length;
   const chips = [
     unseen > 0 && { key: 'new', tone: 'new', live: true, label: `${unseen} new ${unseen === 1 ? 'booking' : 'bookings'}`, onClick: () => goTo('[data-rail]') },
     deposits > 0 && { key: 'deposit', tone: 'soft', label: `${deposits} ${deposits === 1 ? 'deposit' : 'deposits'} in`, onClick: () => goTo('#bookings-list') },
-    waiting > 0 && { key: 'waiting', tone: 'soft', label: `${waiting} to look over`, onClick: () => { onShowPending?.(); goTo('#bookings-list'); } },
   ].filter(Boolean);
 
   return (
@@ -450,9 +436,11 @@ export default function HomeTop({ bookings, onOpen, onAddClient, onShowPending }
         )}
       </div>
 
-      <div className="mt-5">
-        <Pulse chips={chips} />
-      </div>
+      {chips.length > 0 && (
+        <div className="mt-5">
+          <Pulse chips={chips} />
+        </div>
+      )}
 
       <div className="mt-6">
         <NextUp bookings={bookings} onOpen={onOpen} />

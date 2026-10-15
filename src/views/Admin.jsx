@@ -340,7 +340,6 @@ export default function Admin() {
                 bookings={bookings}
                 onOpen={setSelectedBooking}
                 onAddClient={() => setEntryPanel({ mode: 'client', date: selectedDate })}
-                onShowPending={() => { setStatusFilter('pending'); setViewType('appointments'); setSelectedDate(null); }}
               />
             ) : !isDetailOpen && (
               <PageHeader title={activeTabLabel} sub={activeTabMeta?.sub} />

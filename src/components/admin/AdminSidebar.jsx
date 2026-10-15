@@ -210,7 +210,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, counts = {}, dar
         </button>
         <button type="button" onClick={onBackToSite} className="flex h-10 w-full items-center gap-3 px-3 text-[0.84rem] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-ink">
           <NavIcon name="site" className="h-[17px] w-[17px] shrink-0" />
-          View the website
+          Back to main site
         </button>
         <button type="button" onClick={onLogout} className="flex h-10 w-full items-center gap-3 px-3 text-[0.84rem] text-ink-muted transition-colors hover:bg-canvas/70 hover:text-tone-alert">
           <NavIcon name="logout" className="h-[17px] w-[17px] shrink-0" />
@@ -357,7 +357,7 @@ export function AdminDrawer({ open, onClose, activeTab, setActiveTab, counts = {
           </button>
           <button type="button" onClick={() => { onClose(); onBackToSite(); }} className={row} style={{ '--i': i++ }}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center"><NavIcon name="site" className="h-[18px] w-[18px]" /></span>
-            View the website
+            Back to main site
           </button>
         </nav>
 
